@@ -9,15 +9,15 @@ use crate::packet::{Packet, Packets};
 use crate::perf_libs;
 use crate::recycler::Recycler;
 use rayon::ThreadPool;
-use solana_metrics::inc_new_counter_debug;
-use solana_rayon_threadlimit::get_thread_count;
-use solana_sdk::hash::Hash;
-use solana_sdk::message::{MESSAGE_HEADER_LENGTH, MESSAGE_VERSION_PREFIX};
-use solana_sdk::pubkey::Pubkey;
-use solana_sdk::short_vec::decode_shortu16_len;
-use solana_sdk::signature::Signature;
+use analog_metrics::inc_new_counter_debug;
+use analog_rayon_threadlimit::get_thread_count;
+use analog_sdk::hash::Hash;
+use analog_sdk::message::{MESSAGE_HEADER_LENGTH, MESSAGE_VERSION_PREFIX};
+use analog_sdk::pubkey::Pubkey;
+use analog_sdk::short_vec::decode_shortu16_len;
+use analog_sdk::signature::Signature;
 #[cfg(test)]
-use solana_sdk::transaction::Transaction;
+use analog_sdk::transaction::Transaction;
 use std::convert::TryFrom;
 use std::mem::size_of;
 
@@ -353,7 +353,7 @@ fn check_for_simple_vote_transaction(
         .ok_or(PacketError::InvalidLen)?;
 
     if &packet.data[instruction_program_id_start..instruction_program_id_end]
-        == solana_sdk::vote::program::id().as_ref()
+        == analog_sdk::vote::program::id().as_ref()
     {
         packet.meta.is_simple_vote_tx = true;
     }
@@ -593,10 +593,10 @@ mod tests {
     use crate::sigverify::PacketOffsets;
     use crate::test_tx::{test_multisig_tx, test_tx, vote_tx};
     use bincode::{deserialize, serialize};
-    use solana_sdk::instruction::CompiledInstruction;
-    use solana_sdk::message::{Message, MessageHeader};
-    use solana_sdk::signature::{Keypair, Signature};
-    use solana_sdk::transaction::Transaction;
+    use analog_sdk::instruction::CompiledInstruction;
+    use analog_sdk::message::{Message, MessageHeader};
+    use analog_sdk::signature::{Keypair, Signature};
+    use analog_sdk::transaction::Transaction;
 
     const SIG_OFFSET: usize = 1;
 
@@ -705,7 +705,7 @@ mod tests {
 
     #[test]
     fn test_pubkey_too_small() {
-        solana_logger::setup();
+        analog_logger::setup();
         let mut tx = test_tx();
         let sig = tx.signatures[0];
         const NUM_SIG: usize = 18;
@@ -730,8 +730,8 @@ mod tests {
     fn test_pubkey_len() {
         // See that the verify cannot walk off the end of the packet
         // trying to index into the account_keys to access pubkey.
-        use solana_sdk::signer::{keypair::Keypair, Signer};
-        solana_logger::setup();
+        use analog_sdk::signer::{keypair::Keypair, Signer};
+        analog_logger::setup();
 
         const NUM_SIG: usize = 17;
         let keypair1 = Keypair::new();
@@ -1003,7 +1003,7 @@ mod tests {
 
     #[test]
     fn test_verify_multisig() {
-        solana_logger::setup();
+        analog_logger::setup();
 
         let tx = test_multisig_tx();
         let mut packet = sigverify::make_packet_from_transaction(tx);
@@ -1039,7 +1039,7 @@ mod tests {
     #[test]
     fn test_verify_fuzz() {
         use rand::{thread_rng, Rng};
-        solana_logger::setup();
+        analog_logger::setup();
 
         let tx = test_multisig_tx();
         let packet = sigverify::make_packet_from_transaction(tx);
@@ -1083,7 +1083,7 @@ mod tests {
 
     #[test]
     fn test_get_checked_scalar() {
-        solana_logger::setup();
+        analog_logger::setup();
         use curve25519_dalek::scalar::Scalar;
         use rand::{thread_rng, Rng};
         use rayon::prelude::*;
@@ -1123,7 +1123,7 @@ mod tests {
 
     #[test]
     fn test_ge_small_order() {
-        solana_logger::setup();
+        analog_logger::setup();
         use curve25519_dalek::edwards::CompressedEdwardsY;
         use rand::{thread_rng, Rng};
         use rayon::prelude::*;
@@ -1170,7 +1170,7 @@ mod tests {
 
     #[test]
     fn test_is_simple_vote_transaction() {
-        solana_logger::setup();
+        analog_logger::setup();
 
         // tansfer tx is not
         {
@@ -1201,7 +1201,7 @@ mod tests {
                 &[&key],
                 &[key1, key2],
                 Hash::default(),
-                vec![solana_vote_program::id(), Pubkey::new_unique()],
+                vec![analog_vote_program::id(), Pubkey::new_unique()],
                 vec![
                     CompiledInstruction::new(3, &(), vec![0, 1]),
                     CompiledInstruction::new(4, &(), vec![0, 2]),
@@ -1216,7 +1216,7 @@ mod tests {
 
     #[test]
     fn test_is_simple_vote_transaction_with_offsets() {
-        solana_logger::setup();
+        analog_logger::setup();
 
         let mut current_offset = 0usize;
         let mut batch = Packets::default();

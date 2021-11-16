@@ -26,7 +26,7 @@ def get_packages():
 
     manifest_path = dict()
 
-    # Build dictionary of packages and their immediate solana-only dependencies
+    # Build dictionary of packages and their immediate analog-only dependencies
     dependency_graph = dict()
     for pkg in metadata['packages']:
         manifest_path[pkg['name']] = pkg['manifest_path'];

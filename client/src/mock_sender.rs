@@ -16,8 +16,8 @@ use {
         rpc_sender::*,
     },
     serde_json::{json, Number, Value},
-    solana_account_decoder::{UiAccount, UiAccountEncoding},
-    solana_sdk::{
+    analog_account_decoder::{UiAccount, UiAccountEncoding},
+    analog_sdk::{
         account::Account,
         clock::{Slot, UnixTimestamp},
         epoch_info::EpochInfo,
@@ -29,13 +29,13 @@ use {
         sysvar::epoch_schedule::EpochSchedule,
         transaction::{self, Transaction, TransactionError},
     },
-    solana_transaction_status::{
+    analog_transaction_status::{
         EncodedConfirmedBlock, EncodedConfirmedTransaction, EncodedTransaction,
         EncodedTransactionWithStatusMeta, Rewards, TransactionConfirmationStatus,
         TransactionStatus, UiCompiledInstruction, UiMessage, UiRawMessage, UiTransaction,
         UiTransactionEncoding, UiTransactionStatusMeta,
     },
-    solana_version::Version,
+    analog_version::Version,
     std::{collections::HashMap, net::SocketAddr, str::FromStr, sync::RwLock},
 };
 
@@ -292,7 +292,7 @@ impl RpcSender for MockSender {
             "getLargestAccounts" => {
                 let rpc_account_balance = RpcAccountBalance {
                     address: PUBKEY.to_string(),
-                    lamports: 10000,
+                    tock: 10000,
                 };
 
                 json!(Response {
@@ -339,7 +339,7 @@ impl RpcSender for MockSender {
             "getVersion" => {
                 let version = Version::default();
                 json!(RpcVersionInfo {
-                    solana_core: version.to_string(),
+                    analog_core: version.to_string(),
                     feature_set: Some(version.feature_set),
                 })
             }
@@ -437,7 +437,7 @@ impl RpcSender for MockSender {
             "getProgramAccounts" => {
                 let pubkey = Pubkey::from_str(&PUBKEY.to_string()).unwrap();
                 let account = Account {
-                    lamports: 1_000_000,
+                    tock: 1_000_000,
                     data: vec![],
                     owner: pubkey,
                     executable: false,

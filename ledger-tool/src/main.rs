@@ -9,14 +9,14 @@ use log::*;
 use regex::Regex;
 use serde::Serialize;
 use serde_json::json;
-use solana_clap_utils::{
+use analog_clap_utils::{
     input_parsers::{cluster_type_of, pubkey_of, pubkeys_of},
     input_validators::{
         is_parsable, is_pow2, is_pubkey, is_pubkey_or_keypair, is_slot, is_valid_percentage,
     },
 };
-use solana_entry::entry::Entry;
-use solana_ledger::{
+use analog_entry::entry::Entry;
+use analog_ledger::{
     ancestor_iterator::AncestorIterator,
     bank_forks_utils,
     blockstore::{create_new_ledger, Blockstore, PurgeType},
@@ -24,8 +24,8 @@ use solana_ledger::{
     blockstore_processor::ProcessOptions,
     shred::Shred,
 };
-use solana_measure::measure::Measure;
-use solana_runtime::{
+use analog_measure::measure::Measure;
+use analog_runtime::{
     accounts_db::AccountsDbConfig,
     accounts_index::AccountsIndexConfig,
     bank::{Bank, RewardCalculationEvent},
@@ -40,14 +40,14 @@ use solana_runtime::{
         DEFAULT_MAX_INCREMENTAL_SNAPSHOT_ARCHIVES_TO_RETAIN,
     },
 };
-use solana_sdk::{
+use analog_sdk::{
     account::{AccountSharedData, ReadableAccount, WritableAccount},
     account_utils::StateMut,
     clock::{Epoch, Slot},
     genesis_config::{ClusterType, GenesisConfig},
     hash::Hash,
     inflation::Inflation,
-    native_token::{lamports_to_sol, sol_to_lamports, Sol},
+    native_token::{tock_to_anlog, anlog_to_tock, Anlog},
     pubkey::Pubkey,
     rent::Rent,
     shred_version::compute_shred_version,
@@ -55,8 +55,8 @@ use solana_sdk::{
     system_program,
     transaction::{SanitizedTransaction, TransactionError},
 };
-use solana_stake_program::stake_state::{self, PointValue};
-use solana_vote_program::{
+use analog_stake_program::stake_state::{self, PointValue};
+use analog_vote_program::{
     self,
     vote_state::{self, VoteState},
 };
@@ -92,7 +92,7 @@ fn output_slot_rewards(blockstore: &Blockstore, slot: Slot, method: &LedgerOutpu
                 );
 
                 for reward in rewards {
-                    let sign = if reward.lamports < 0 { "-" } else { "" };
+                    let sign = if reward.tock < 0 { "-" } else { "" };
                     println!(
                         "    {:<44}  {:^15}  {}◎{:<14.9}  ◎{:<18.9}   {}",
                         reward.pubkey,
@@ -102,8 +102,8 @@ fn output_slot_rewards(blockstore: &Blockstore, slot: Slot, method: &LedgerOutpu
                             "-".to_string()
                         },
                         sign,
-                        lamports_to_sol(reward.lamports.abs() as u64),
-                        lamports_to_sol(reward.post_balance),
+                       tock_to_anlog(reward.tock.abs() as u64),
+                       tock_to_anlog(reward.post_balance),
                         reward
                             .commission
                             .map(|commission| format!("{:>9}%", commission))
@@ -146,7 +146,7 @@ fn output_entry(
                     .map(|transaction_status| transaction_status.into());
 
                 if let Some(legacy_tx) = transaction.into_legacy_transaction() {
-                    solana_cli_output::display::println_transaction(
+                    analog_cli_output::display::println_transaction(
                         &legacy_tx, &tx_status, "      ", None, None,
                     );
                 } else {
@@ -427,9 +427,9 @@ fn graph_forks(bank_forks: &BankForks, include_all_votes: bool) -> String {
                         slot_stake_and_vote_count.get(&bank.slot())
                     {
                         format!(
-                            "\nvotes: {}, stake: {:.1} SOL ({:.1}%)",
+                            "\nvotes: {}, stake: {:.1} ANLOG ({:.1}%)",
                             votes,
-                            lamports_to_sol(*stake),
+                           tock_to_anlog(*stake),
                             *stake as f64 / *total_stake as f64 * 100.,
                         )
                     } else {
@@ -488,10 +488,10 @@ fn graph_forks(bank_forks: &BankForks, include_all_votes: bool) -> String {
         });
 
         dot.push(format!(
-            r#"  "last vote {}"[shape=box,label="Latest validator vote: {}\nstake: {} SOL\nroot slot: {}\nvote history:\n{}"];"#,
+            r#"  "last vote {}"[shape=box,label="Latest validator vote: {}\nstake: {} ANLOG\nroot slot: {}\nvote history:\n{}"];"#,
             node_pubkey,
             node_pubkey,
-            lamports_to_sol(*stake),
+           tock_to_anlog(*stake),
             vote_state.root_slot.unwrap_or(0),
             vote_state
                 .votes
@@ -522,9 +522,9 @@ fn graph_forks(bank_forks: &BankForks, include_all_votes: bool) -> String {
     // Annotate the final "..." node with absent vote and stake information
     if absent_votes > 0 {
         dot.push(format!(
-            r#"    "..."[label="...\nvotes: {}, stake: {:.1} SOL {:.1}%"];"#,
+            r#"    "..."[label="...\nvotes: {}, stake: {:.1} ANLOG {:.1}%"];"#,
             absent_votes,
-            lamports_to_sol(absent_stake),
+           tock_to_anlog(absent_stake),
             absent_stake as f64 / lowest_total_stake as f64 * 100.,
         ));
     }
@@ -566,7 +566,7 @@ fn graph_forks(bank_forks: &BankForks, include_all_votes: bool) -> String {
 }
 
 fn analyze_column<
-    T: solana_ledger::blockstore_db::Column + solana_ledger::blockstore_db::ColumnName,
+    T: analog_ledger::blockstore_db::Column + analog_ledger::blockstore_db::ColumnName,
 >(
     db: &Database,
     name: &str,
@@ -843,7 +843,7 @@ fn main() {
 
     const DEFAULT_ROOT_COUNT: &str = "1";
     const DEFAULT_MAX_SLOTS_ROOT_REPAIR: &str = "2000";
-    solana_logger::setup_with_default("solana=info");
+    analog_logger::setup_with_default("analog=info");
 
     let starting_slot_arg = Arg::with_name("starting_slot")
         .long("starting-slot")
@@ -981,16 +981,16 @@ fn main() {
     .help("The maximum number of incremental snapshot archives to hold on to when purging older snapshots.");
 
     let rent = Rent::default();
-    let default_bootstrap_validator_lamports = &sol_to_lamports(500.0)
+    let default_bootstrap_validator_lamports = &anlog_to_tock(500.0)
         .max(VoteState::get_rent_exempt_reserve(&rent))
         .to_string();
-    let default_bootstrap_validator_stake_lamports = &sol_to_lamports(0.5)
+    let default_bootstrap_validator_stake_lamports = &anlog_to_tock(0.5)
         .max(StakeState::get_rent_exempt_reserve(&rent))
         .to_string();
 
     let matches = App::new(crate_name!())
         .about(crate_description!())
-        .version(solana_version::version!())
+        .version(analog_version::version!())
         .setting(AppSettings::InferSubcommands)
         .setting(AppSettings::SubcommandRequiredElseHelp)
         .setting(AppSettings::VersionlessSubcommands)
@@ -1313,11 +1313,11 @@ fn main() {
             .arg(
                 Arg::with_name("faucet_lamports")
                     .short("t")
-                    .long("faucet-lamports")
+                    .long("faucet-tock")
                     .value_name("LAMPORTS")
                     .takes_value(true)
                     .requires("faucet_pubkey")
-                    .help("Number of lamports to assign to the faucet"),
+                    .help("Number of tock to assign to the faucet"),
             )
             .arg(
                 Arg::with_name("faucet_pubkey")
@@ -1353,19 +1353,19 @@ fn main() {
             )
             .arg(
                 Arg::with_name("bootstrap_validator_lamports")
-                    .long("bootstrap-validator-lamports")
+                    .long("bootstrap-validator-tock")
                     .value_name("LAMPORTS")
                     .takes_value(true)
                     .default_value(default_bootstrap_validator_lamports)
-                    .help("Number of lamports to assign to the bootstrap validator"),
+                    .help("Number of tock to assign to the bootstrap validator"),
             )
             .arg(
                 Arg::with_name("bootstrap_validator_stake_lamports")
-                    .long("bootstrap-validator-stake-lamports")
+                    .long("bootstrap-validator-stake-tock")
                     .value_name("LAMPORTS")
                     .takes_value(true)
                     .default_value(default_bootstrap_validator_stake_lamports)
-                    .help("Number of lamports to assign to the bootstrap validator's stake account"),
+                    .help("Number of tock to assign to the bootstrap validator's stake account"),
             )
             .arg(
                 Arg::with_name("rent_burn_percentage")
@@ -1605,7 +1605,7 @@ fn main() {
         )
         .get_matches();
 
-    info!("{} {}", crate_name!(), solana_version::version!());
+    info!("{} {}", crate_name!(), analog_version::version!());
 
     let ledger_path = PathBuf::from(value_t!(matches, "ledger_path", String).unwrap_or_else(
         |_err| {
@@ -1695,7 +1695,7 @@ fn main() {
 
             if let Some(hashes_per_tick) = arg_matches.value_of("hashes_per_tick") {
                 genesis_config.poh_config.hashes_per_tick = match hashes_per_tick {
-                    // Note: Unlike `solana-genesis`, "auto" is not supported here.
+                    // Note: Unlike `analog-genesis`, "auto" is not supported here.
                     "sleep" => None,
                     _ => Some(value_t_or_exit!(arg_matches, "hashes_per_tick", u64)),
                 }
@@ -1704,7 +1704,7 @@ fn main() {
             create_new_ledger(
                 &output_directory,
                 &genesis_config,
-                solana_runtime::hardened_unpack::MAX_GENESIS_ARCHIVE_UNPACKED_SIZE,
+                analog_runtime::hardened_unpack::MAX_GENESIS_ARCHIVE_UNPACKED_SIZE,
                 AccessType::PrimaryOnly,
             )
             .unwrap_or_else(|err| {
@@ -2121,7 +2121,7 @@ fn main() {
             let minimum_stake_lamports = StakeState::get_rent_exempt_reserve(&rent);
             if bootstrap_validator_stake_lamports < minimum_stake_lamports {
                 eprintln!(
-                    "Error: insufficient --bootstrap-validator-stake-lamports. \
+                    "Error: insufficient --bootstrap-validator-stake-tock. \
                            Minimum amount is {}",
                     minimum_stake_lamports
                 );
@@ -2216,7 +2216,7 @@ fn main() {
 
                         if let Some(hashes_per_tick) = hashes_per_tick {
                             child_bank.set_hashes_per_tick(match hashes_per_tick {
-                                // Note: Unlike `solana-genesis`, "auto" is not supported here.
+                                // Note: Unlike `analog-genesis`, "auto" is not supported here.
                                 "sleep" => None,
                                 _ => Some(value_t_or_exit!(arg_matches, "hashes_per_tick", u64)),
                             });
@@ -2295,7 +2295,7 @@ fn main() {
 
                         // Delete existing vote accounts
                         for (address, mut account) in bank
-                            .get_program_accounts(&solana_vote_program::id())
+                            .get_program_accounts(&analog_vote_program::id())
                             .unwrap()
                             .into_iter()
                         {
@@ -2502,7 +2502,7 @@ fn main() {
                 .unwrap()
                 .into_iter()
                 .filter(|(pubkey, _account, _slot)| {
-                    include_sysvars || !solana_sdk::sysvar::is_sysvar_id(pubkey)
+                    include_sysvars || !analog_sdk::sysvar::is_sysvar_id(pubkey)
                 })
                 .map(|(pubkey, account, slot)| (pubkey, (account, slot)))
                 .collect();
@@ -2525,7 +2525,7 @@ fn main() {
                 for (pubkey, (account, slot)) in accounts.into_iter() {
                     let data_len = account.data().len();
                     println!("{}:", pubkey);
-                    println!("  - balance: {} SOL", lamports_to_sol(account.lamports()));
+                    println!("  - balance: {} ANLOG",tock_to_anlog(account.tock()));
                     println!("  - owner: '{}'", account.owner());
                     println!("  - executable: {}", account.executable());
                     println!("  - slot: {}", slot);
@@ -2573,7 +2573,7 @@ fn main() {
                         println!("Recalculating capitalization");
                         let old_capitalization = bank.set_capitalization();
                         if old_capitalization == bank.capitalization() {
-                            eprintln!("Capitalization was identical: {}", Sol(old_capitalization));
+                            eprintln!("Capitalization was identical: {}", Anlog(old_capitalization));
                         }
                     }
 
@@ -2647,7 +2647,7 @@ fn main() {
                             new_credits_observed: Option<u64>,
                             skipped_reasons: String,
                         }
-                        use solana_stake_program::stake_state::InflationPointCalculationEvent;
+                        use analog_stake_program::stake_state::InflationPointCalculationEvent;
                         let stake_calculation_details: DashMap<Pubkey, CalculationDetail> =
                             DashMap::new();
                         let last_point_value = Arc::new(RwLock::new(None));
@@ -2756,9 +2756,9 @@ fn main() {
                             / warped_bank.epoch_duration_in_years(base_bank.epoch());
                         println!(
                             "Capitalization: {} => {} (+{} {}%; annualized {}%)",
-                            Sol(base_bank.capitalization()),
-                            Sol(warped_bank.capitalization()),
-                            Sol(warped_bank.capitalization() - base_bank.capitalization()),
+                            Anlog(base_bank.capitalization()),
+                            Anlog(warped_bank.capitalization()),
+                            Anlog(warped_bank.capitalization() - base_bank.capitalization()),
                             interest_per_epoch,
                             interest_per_year,
                         );
@@ -2775,7 +2775,7 @@ fn main() {
                                     account,
                                     base_bank
                                         .get_account(pubkey)
-                                        .map(|a| a.lamports())
+                                        .map(|a| a.tock())
                                         .unwrap_or_default(),
                                 )
                             })
@@ -2785,7 +2785,7 @@ fn main() {
                                 (
                                     *account.owner(),
                                     *base_lamports,
-                                    account.lamports() - base_lamports,
+                                    account.tock() - base_lamports,
                                     *pubkey,
                                 )
                             },
@@ -2804,7 +2804,7 @@ fn main() {
                             .map(|pubkey| (*pubkey, warped_bank.get_account(pubkey).unwrap()))
                             .collect::<Vec<_>>();
                         unchanged_accounts.sort_unstable_by_key(|(pubkey, account)| {
-                            (*account.owner(), account.lamports(), *pubkey)
+                            (*account.owner(), account.tock(), *pubkey)
                         });
                         let unchanged_accounts = unchanged_accounts.into_iter();
 
@@ -2816,12 +2816,12 @@ fn main() {
                         for (pubkey, warped_account) in all_accounts {
                             // Don't output sysvars; it's always updated but not related to
                             // inflation.
-                            if solana_sdk::sysvar::is_sysvar_id(&pubkey) {
+                            if analog_sdk::sysvar::is_sysvar_id(&pubkey) {
                                 continue;
                             }
 
                             if let Some(base_account) = base_bank.get_account(&pubkey) {
-                                let delta = warped_account.lamports() - base_account.lamports();
+                                let delta = warped_account.tock() - base_account.tock();
                                 let detail_ref = stake_calculation_details.get(&pubkey);
                                 let detail: Option<&CalculationDetail> =
                                     detail_ref.as_ref().map(|detail_ref| detail_ref.value());
@@ -2829,11 +2829,11 @@ fn main() {
                                     "{:<45}({}): {} => {} (+{} {:>4.9}%) {:?}",
                                     format!("{}", pubkey), // format! is needed to pad/justify correctly.
                                     base_account.owner(),
-                                    Sol(base_account.lamports()),
-                                    Sol(warped_account.lamports()),
-                                    Sol(delta),
-                                    ((warped_account.lamports() as f64)
-                                        / (base_account.lamports() as f64)
+                                    Anlog(base_account.tock()),
+                                    Anlog(warped_account.tock()),
+                                    Anlog(delta),
+                                    ((warped_account.tock() as f64)
+                                        / (base_account.tock() as f64)
                                         * 100_f64)
                                         - 100_f64,
                                     detail,
@@ -2892,8 +2892,8 @@ fn main() {
                                             rewarded_epoch: base_bank.epoch(),
                                             account: format!("{}", pubkey),
                                             owner: format!("{}", base_account.owner()),
-                                            old_balance: base_account.lamports(),
-                                            new_balance: warped_account.lamports(),
+                                            old_balance: base_account.tock(),
+                                            new_balance: warped_account.tock(),
                                             data_size: base_account.data().len(),
                                             delegation: format_or_na(detail.map(|d| d.voter)),
                                             delegation_owner: format_or_na(
@@ -2972,7 +2972,7 @@ fn main() {
                             }
                         }
                         if overall_delta > 0 {
-                            println!("Sum of lamports changes: {}", Sol(overall_delta));
+                            println!("Sum of tock changes: {}", Anlog(overall_delta));
                         }
                     } else {
                         if arg_matches.is_present("recalculate_capitalization") {
@@ -2987,7 +2987,7 @@ fn main() {
                         assert_capitalization(bank);
                         println!("Inflation: {:?}", bank.inflation());
                         println!("RentCollector: {:?}", bank.rent_collector());
-                        println!("Capitalization: {}", Sol(bank.capitalization()));
+                        println!("Capitalization: {}", Anlog(bank.capitalization()));
                     }
                 }
                 Err(err) => {

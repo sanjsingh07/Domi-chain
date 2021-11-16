@@ -4,17 +4,17 @@ use {
         bank::Bank,
     },
     log::*,
-    solana_sdk::{
+    analog_sdk::{
         account::ReadableAccount,
         pubkey::Pubkey,
         stake::{self, state::StakeState},
     },
-    solana_stake_program::stake_state,
+    analog_stake_program::stake_state,
     std::{collections::HashSet, sync::Arc},
 };
 
 pub struct NonCirculatingSupply {
-    pub lamports: u64,
+    pub tock: u64,
     pub accounts: Vec<Pubkey>,
 }
 
@@ -68,19 +68,19 @@ pub fn calculate_non_circulating_supply(bank: &Arc<Bank>) -> ScanResult<NonCircu
         }
     }
 
-    let lamports = non_circulating_accounts_set
+    let tock = non_circulating_accounts_set
         .iter()
         .map(|pubkey| bank.get_balance(pubkey))
         .sum();
 
     Ok(NonCirculatingSupply {
-        lamports,
+        tock,
         accounts: non_circulating_accounts_set.into_iter().collect(),
     })
 }
 
 // Mainnet-beta accounts that should be considered non-circulating
-solana_sdk::pubkeys!(
+analog_sdk::pubkeys!(
     non_circulating_accounts,
     [
         "9huDUZfxoJ7wGMTffUE7vh1xePqef7gyrLJu9NApncqA",
@@ -196,7 +196,7 @@ solana_sdk::pubkeys!(
 );
 
 // Withdraw authority for autostaked accounts on mainnet-beta
-solana_sdk::pubkeys!(
+analog_sdk::pubkeys!(
     withdraw_authority,
     [
         "8CUUMKYNGxdgYio5CLHRHyzMEhhVRMcqefgE6dLqnVRK",
@@ -215,7 +215,7 @@ solana_sdk::pubkeys!(
 #[cfg(test)]
 mod tests {
     use super::*;
-    use solana_sdk::{
+    use analog_sdk::{
         account::Account,
         account::AccountSharedData,
         epoch_schedule::EpochSchedule,
@@ -235,7 +235,7 @@ mod tests {
         let num_genesis_accounts = 10;
         for _ in 0..num_genesis_accounts {
             accounts.insert(
-                solana_sdk::pubkey::new_rand(),
+                analog_sdk::pubkey::new_rand(),
                 Account::new(balance, 0, &Pubkey::default()),
             );
         }
@@ -247,7 +247,7 @@ mod tests {
 
         let num_stake_accounts = 3;
         for _ in 0..num_stake_accounts {
-            let pubkey = solana_sdk::pubkey::new_rand();
+            let pubkey = analog_sdk::pubkey::new_rand();
             let meta = Meta {
                 authorized: Authorized::auto(&pubkey),
                 lockup: Lockup {
@@ -283,7 +283,7 @@ mod tests {
 
         let non_circulating_supply = calculate_non_circulating_supply(&bank).unwrap();
         assert_eq!(
-            non_circulating_supply.lamports,
+            non_circulating_supply.tock,
             (num_non_circulating_accounts + num_stake_accounts) * balance
         );
         assert_eq!(
@@ -301,7 +301,7 @@ mod tests {
         }
         let non_circulating_supply = calculate_non_circulating_supply(&bank).unwrap();
         assert_eq!(
-            non_circulating_supply.lamports,
+            non_circulating_supply.tock,
             (num_non_circulating_accounts * new_balance) + (num_stake_accounts * balance)
         );
         assert_eq!(
@@ -316,7 +316,7 @@ mod tests {
         assert_eq!(bank.epoch(), 1);
         let non_circulating_supply = calculate_non_circulating_supply(&bank).unwrap();
         assert_eq!(
-            non_circulating_supply.lamports,
+            non_circulating_supply.tock,
             num_non_circulating_accounts * new_balance
         );
         assert_eq!(

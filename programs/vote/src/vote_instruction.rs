@@ -8,8 +8,8 @@ use crate::{
 use log::*;
 use num_derive::{FromPrimitive, ToPrimitive};
 use serde_derive::{Deserialize, Serialize};
-use solana_metrics::inc_new_counter_info;
-use solana_sdk::{
+use analog_metrics::inc_new_counter_info;
+use analog_sdk::{
     decode_error::DecodeError,
     feature_set,
     hash::Hash,
@@ -144,11 +144,11 @@ pub fn create_account(
     from_pubkey: &Pubkey,
     vote_pubkey: &Pubkey,
     vote_init: &VoteInit,
-    lamports: u64,
+    tock: u64,
 ) -> Vec<Instruction> {
     let space = VoteState::size_of() as u64;
     let create_ix =
-        system_instruction::create_account(from_pubkey, vote_pubkey, lamports, space, &id());
+        system_instruction::create_account(from_pubkey, vote_pubkey, tock, space, &id());
     let init_ix = initialize_account(vote_pubkey, vote_init);
     vec![create_ix, init_ix]
 }
@@ -159,7 +159,7 @@ pub fn create_account_with_seed(
     base: &Pubkey,
     seed: &str,
     vote_init: &VoteInit,
-    lamports: u64,
+    tock: u64,
 ) -> Vec<Instruction> {
     let space = VoteState::size_of() as u64;
     let create_ix = system_instruction::create_account_with_seed(
@@ -167,7 +167,7 @@ pub fn create_account_with_seed(
         vote_pubkey,
         base,
         seed,
-        lamports,
+        tock,
         space,
         &id(),
     );
@@ -283,7 +283,7 @@ pub fn vote_switch(
 pub fn withdraw(
     vote_pubkey: &Pubkey,
     authorized_withdrawer_pubkey: &Pubkey,
-    lamports: u64,
+    tock: u64,
     to_pubkey: &Pubkey,
 ) -> Instruction {
     let account_metas = vec![
@@ -292,7 +292,7 @@ pub fn withdraw(
         AccountMeta::new_readonly(*authorized_withdrawer_pubkey, true),
     ];
 
-    Instruction::new_with_bincode(id(), &VoteInstruction::Withdraw(lamports), account_metas)
+    Instruction::new_with_bincode(id(), &VoteInstruction::Withdraw(tock), account_metas)
 }
 
 fn verify_rent_exemption(
@@ -300,7 +300,7 @@ fn verify_rent_exemption(
     rent_sysvar_account: &KeyedAccount,
 ) -> Result<(), InstructionError> {
     let rent: sysvar::rent::Rent = from_keyed_account(rent_sysvar_account)?;
-    if !rent.is_exempt(keyed_account.lamports()?, keyed_account.data_len()?) {
+    if !rent.is_exempt(keyed_account.tock()?, keyed_account.data_len()?) {
         Err(InstructionError::InsufficientFunds)
     } else {
         Ok(())
@@ -373,9 +373,9 @@ pub fn process_instruction(
                 &signers,
             )
         }
-        VoteInstruction::Withdraw(lamports) => {
+        VoteInstruction::Withdraw(tock) => {
             let to = keyed_account_at_index(keyed_accounts, first_instruction_account + 1)?;
-            vote_state::withdraw(me, lamports, to, &signers)
+            vote_state::withdraw(me, tock, to, &signers)
         }
         VoteInstruction::AuthorizeChecked(vote_authorize) => {
             if invoke_context.is_feature_active(&feature_set::vote_stake_checked_instructions::id())
@@ -406,7 +406,7 @@ mod tests {
     use super::*;
     use bincode::serialize;
     use solana_program_runtime::invoke_context::mock_process_instruction;
-    use solana_sdk::{
+    use analog_sdk::{
         account::{self, Account, AccountSharedData},
         rent::Rent,
     };
@@ -500,7 +500,7 @@ mod tests {
 
     #[test]
     fn test_vote_process_instruction() {
-        solana_logger::setup();
+        analog_logger::setup();
         let instructions = create_account(
             &Pubkey::new_unique(),
             &Pubkey::new_unique(),
@@ -658,7 +658,7 @@ mod tests {
 
     #[test]
     fn test_minimum_balance() {
-        let rent = solana_sdk::rent::Rent::default();
+        let rent = analog_sdk::rent::Rent::default();
         let minimum_balance = rent.minimum_balance(VoteState::size_of());
         // golden, may need updating when vote_state grows
         assert!(minimum_balance as f64 / 10f64.powf(9.0) < 0.04)

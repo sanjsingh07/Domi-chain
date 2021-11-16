@@ -1,13 +1,13 @@
 use crate::consensus::Stake;
-use solana_measure::measure::Measure;
-use solana_metrics::datapoint_info;
-use solana_rpc::rpc_subscriptions::RpcSubscriptions;
-use solana_runtime::{
+use analog_measure::measure::Measure;
+use analog_metrics::datapoint_info;
+use analog_rpc::rpc_subscriptions::RpcSubscriptions;
+use analog_runtime::{
     bank::Bank,
     commitment::{BlockCommitment, BlockCommitmentCache, CommitmentSlots, VOTE_THRESHOLD_SIZE},
 };
-use solana_sdk::clock::Slot;
-use solana_vote_program::vote_state::VoteState;
+use analog_sdk::clock::Slot;
+use analog_vote_program::vote_state::VoteState;
 use std::{
     cmp::max,
     collections::HashMap,
@@ -65,7 +65,7 @@ impl AggregateCommitmentService {
             sender,
             Self {
                 t_commitment: Builder::new()
-                    .name("solana-aggregate-stake-lockouts".to_string())
+                    .name("analog-aggregate-stake-lockouts".to_string())
                     .spawn(move || loop {
                         if exit_.load(Ordering::Relaxed) {
                             break;
@@ -183,8 +183,8 @@ impl AggregateCommitmentService {
 
         let mut commitment = HashMap::new();
         let mut rooted_stake: Vec<(Slot, u64)> = Vec::new();
-        for (lamports, account) in bank.vote_accounts().values() {
-            if *lamports == 0 {
+        for (tock, account) in bank.vote_accounts().values() {
+            if *tock == 0 {
                 continue;
             }
             if let Ok(vote_state) = account.vote_state().as_ref() {
@@ -193,7 +193,7 @@ impl AggregateCommitmentService {
                     &mut rooted_stake,
                     vote_state,
                     ancestors,
-                    *lamports,
+                    *tock,
                 );
             }
         }
@@ -206,7 +206,7 @@ impl AggregateCommitmentService {
         rooted_stake: &mut Vec<(Slot, u64)>,
         vote_state: &VoteState,
         ancestors: &[Slot],
-        lamports: u64,
+        tock: u64,
     ) {
         assert!(!ancestors.is_empty());
         let mut ancestors_index = 0;
@@ -216,13 +216,13 @@ impl AggregateCommitmentService {
                     commitment
                         .entry(*a)
                         .or_insert_with(BlockCommitment::default)
-                        .increase_rooted_stake(lamports);
+                        .increase_rooted_stake(tock);
                 } else {
                     ancestors_index = i;
                     break;
                 }
             }
-            rooted_stake.push((root, lamports));
+            rooted_stake.push((root, tock));
         }
 
         for vote in &vote_state.votes {
@@ -230,7 +230,7 @@ impl AggregateCommitmentService {
                 commitment
                     .entry(ancestors[ancestors_index])
                     .or_insert_with(BlockCommitment::default)
-                    .increase_confirmation_stake(vote.confirmation_count as usize, lamports);
+                    .increase_confirmation_stake(vote.confirmation_count as usize, tock);
                 ancestors_index += 1;
 
                 if ancestors_index == ancestors.len() {
@@ -248,15 +248,15 @@ impl AggregateCommitmentService {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use solana_ledger::genesis_utils::{create_genesis_config, GenesisConfigInfo};
-    use solana_runtime::{
+    use analog_ledger::genesis_utils::{create_genesis_config, GenesisConfigInfo};
+    use analog_runtime::{
         accounts_background_service::AbsRequestSender,
         bank_forks::BankForks,
         genesis_utils::{create_genesis_config_with_vote_accounts, ValidatorVoteKeypairs},
     };
-    use solana_sdk::{account::Account, pubkey::Pubkey, signature::Signer};
-    use solana_stake_program::stake_state;
-    use solana_vote_program::{
+    use analog_sdk::{account::Account, pubkey::Pubkey, signature::Signer};
+    use analog_stake_program::stake_state;
+    use analog_vote_program::{
         vote_state::{self, VoteStateVersions},
         vote_transaction,
     };
@@ -275,7 +275,7 @@ mod tests {
         let ancestors = vec![3, 4, 5, 7, 9, 11];
         let mut commitment = HashMap::new();
         let mut rooted_stake = vec![];
-        let lamports = 5;
+        let tock = 5;
         let mut vote_state = VoteState::default();
 
         let root = *ancestors.last().unwrap();
@@ -285,15 +285,15 @@ mod tests {
             &mut rooted_stake,
             &vote_state,
             &ancestors,
-            lamports,
+            tock,
         );
 
         for a in ancestors {
             let mut expected = BlockCommitment::default();
-            expected.increase_rooted_stake(lamports);
+            expected.increase_rooted_stake(tock);
             assert_eq!(*commitment.get(&a).unwrap(), expected);
         }
-        assert_eq!(rooted_stake[0], (root, lamports));
+        assert_eq!(rooted_stake[0], (root, tock));
     }
 
     #[test]
@@ -301,7 +301,7 @@ mod tests {
         let ancestors = vec![3, 4, 5, 7, 9, 11];
         let mut commitment = HashMap::new();
         let mut rooted_stake = vec![];
-        let lamports = 5;
+        let tock = 5;
         let mut vote_state = VoteState::default();
 
         let root = ancestors[2];
@@ -312,19 +312,19 @@ mod tests {
             &mut rooted_stake,
             &vote_state,
             &ancestors,
-            lamports,
+            tock,
         );
 
         for a in ancestors {
             let mut expected = BlockCommitment::default();
             if a <= root {
-                expected.increase_rooted_stake(lamports);
+                expected.increase_rooted_stake(tock);
             } else {
-                expected.increase_confirmation_stake(1, lamports);
+                expected.increase_confirmation_stake(1, tock);
             }
             assert_eq!(*commitment.get(&a).unwrap(), expected);
         }
-        assert_eq!(rooted_stake[0], (root, lamports));
+        assert_eq!(rooted_stake[0], (root, tock));
     }
 
     #[test]
@@ -332,7 +332,7 @@ mod tests {
         let ancestors = vec![3, 4, 5, 7, 9, 10, 11];
         let mut commitment = HashMap::new();
         let mut rooted_stake = vec![];
-        let lamports = 5;
+        let tock = 5;
         let mut vote_state = VoteState::default();
 
         let root = ancestors[2];
@@ -345,25 +345,25 @@ mod tests {
             &mut rooted_stake,
             &vote_state,
             &ancestors,
-            lamports,
+            tock,
         );
 
         for (i, a) in ancestors.iter().enumerate() {
             if *a <= root {
                 let mut expected = BlockCommitment::default();
-                expected.increase_rooted_stake(lamports);
+                expected.increase_rooted_stake(tock);
                 assert_eq!(*commitment.get(a).unwrap(), expected);
             } else if i <= 4 {
                 let mut expected = BlockCommitment::default();
-                expected.increase_confirmation_stake(2, lamports);
+                expected.increase_confirmation_stake(2, tock);
                 assert_eq!(*commitment.get(a).unwrap(), expected);
             } else if i <= 6 {
                 let mut expected = BlockCommitment::default();
-                expected.increase_confirmation_stake(1, lamports);
+                expected.increase_confirmation_stake(1, tock);
                 assert_eq!(*commitment.get(a).unwrap(), expected);
             }
         }
-        assert_eq!(rooted_stake[0], (root, lamports));
+        assert_eq!(rooted_stake[0], (root, tock));
     }
 
     #[test]
@@ -375,22 +375,22 @@ mod tests {
 
         let rooted_stake_amount = 40;
 
-        let sk1 = solana_sdk::pubkey::new_rand();
-        let pk1 = solana_sdk::pubkey::new_rand();
+        let sk1 = analog_sdk::pubkey::new_rand();
+        let pk1 = analog_sdk::pubkey::new_rand();
         let mut vote_account1 =
-            vote_state::create_account(&pk1, &solana_sdk::pubkey::new_rand(), 0, 100);
+            vote_state::create_account(&pk1, &analog_sdk::pubkey::new_rand(), 0, 100);
         let stake_account1 =
             stake_state::create_account(&sk1, &pk1, &vote_account1, &genesis_config.rent, 100);
-        let sk2 = solana_sdk::pubkey::new_rand();
-        let pk2 = solana_sdk::pubkey::new_rand();
+        let sk2 = analog_sdk::pubkey::new_rand();
+        let pk2 = analog_sdk::pubkey::new_rand();
         let mut vote_account2 =
-            vote_state::create_account(&pk2, &solana_sdk::pubkey::new_rand(), 0, 50);
+            vote_state::create_account(&pk2, &analog_sdk::pubkey::new_rand(), 0, 50);
         let stake_account2 =
             stake_state::create_account(&sk2, &pk2, &vote_account2, &genesis_config.rent, 50);
-        let sk3 = solana_sdk::pubkey::new_rand();
-        let pk3 = solana_sdk::pubkey::new_rand();
+        let sk3 = analog_sdk::pubkey::new_rand();
+        let pk3 = analog_sdk::pubkey::new_rand();
         let mut vote_account3 =
-            vote_state::create_account(&pk3, &solana_sdk::pubkey::new_rand(), 0, 1);
+            vote_state::create_account(&pk3, &analog_sdk::pubkey::new_rand(), 0, 1);
         let stake_account3 = stake_state::create_account(
             &sk3,
             &pk3,
@@ -398,10 +398,10 @@ mod tests {
             &genesis_config.rent,
             rooted_stake_amount,
         );
-        let sk4 = solana_sdk::pubkey::new_rand();
-        let pk4 = solana_sdk::pubkey::new_rand();
+        let sk4 = analog_sdk::pubkey::new_rand();
+        let pk4 = analog_sdk::pubkey::new_rand();
         let mut vote_account4 =
-            vote_state::create_account(&pk4, &solana_sdk::pubkey::new_rand(), 0, 1);
+            vote_state::create_account(&pk4, &analog_sdk::pubkey::new_rand(), 0, 1);
         let stake_account4 = stake_state::create_account(
             &sk4,
             &pk4,

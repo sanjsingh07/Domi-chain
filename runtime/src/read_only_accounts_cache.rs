@@ -2,7 +2,7 @@
 //! which can be large, loaded many times, and rarely change.
 use dashmap::{mapref::entry::Entry, DashMap};
 //use mapref::entry::{Entry, OccupiedEntry, VacantEntry};
-use solana_sdk::{
+use analog_sdk::{
     account::{AccountSharedData, ReadableAccount},
     clock::Slot,
     pubkey::Pubkey,
@@ -64,7 +64,7 @@ impl ReadOnlyAccountsCache {
 
         result.background = Some(
             Builder::new()
-                .name("solana-readonly-accounts-cache".to_string())
+                .name("analog-readonly-accounts-cache".to_string())
                 .spawn(move || {
                     bg.bg_purge_lru_items(false);
                 })
@@ -241,7 +241,7 @@ impl ReadOnlyAccountsCache {
 #[cfg(test)]
 pub mod tests {
     use super::*;
-    use solana_sdk::account::{accounts_equal, Account, WritableAccount};
+    use analog_sdk::account::{accounts_equal, Account, WritableAccount};
     #[test]
     fn test_accountsdb_sizeof() {
         // size_of(arc(x)) does not return the size of x
@@ -251,7 +251,7 @@ pub mod tests {
 
     #[test]
     fn test_read_only_accounts_cache_drop() {
-        solana_logger::setup();
+        analog_logger::setup();
         let cache = ReadOnlyAccountsCache::new_test(100);
         let stop = cache.stop.clone();
         drop(cache);
@@ -260,7 +260,7 @@ pub mod tests {
 
     #[test]
     fn test_read_only_accounts_cache() {
-        solana_logger::setup();
+        analog_logger::setup();
         let per_account_size = ReadOnlyAccountsCache::per_account_size();
         let data_size = 100;
         let max = data_size + per_account_size;

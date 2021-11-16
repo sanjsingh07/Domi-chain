@@ -6,19 +6,19 @@ use clap::{crate_description, crate_name, value_t_or_exit, ArgMatches, Shell};
 use log::*;
 use num_traits::FromPrimitive;
 use serde_json::{self, Value};
-use solana_clap_utils::{self, input_parsers::*, input_validators::*, keypair::*};
-use solana_cli_output::{
+use analog_clap_utils::{self, input_parsers::*, input_validators::*, keypair::*};
+use analog_cli_output::{
     display::println_name_value, CliSignature, CliValidatorsSortOrder, OutputFormat,
 };
-use solana_client::{
+use analog_client::{
     blockhash_query::BlockhashQuery,
     client_error::{ClientError, Result as ClientResult},
     nonce_utils,
     rpc_client::RpcClient,
     rpc_config::{RpcLargestAccountsFilter, RpcSendTransactionConfig, RpcTransactionLogsFilter},
 };
-use solana_remote_wallet::remote_wallet::RemoteWalletManager;
-use solana_sdk::{
+use analog_remote_wallet::remote_wallet::RemoteWalletManager;
+use analog_sdk::{
     clock::{Epoch, Slot},
     commitment_config::CommitmentConfig,
     decode_error::DecodeError,
@@ -29,7 +29,7 @@ use solana_sdk::{
     stake::{instruction::LockupArgs, state::Lockup},
     transaction::{Transaction, TransactionError},
 };
-use solana_vote_program::vote_state::VoteAuthorize;
+use analog_vote_program::vote_state::VoteAuthorize;
 use std::{collections::HashMap, error, io::stdout, str::FromStr, sync::Arc, time::Duration};
 use thiserror::Error;
 
@@ -79,7 +79,7 @@ pub enum CliCommand {
         filter: RpcTransactionLogsFilter,
     },
     Ping {
-        lamports: u64,
+        tock: u64,
         interval: Duration,
         count: Option<u64>,
         timeout: Duration,
@@ -150,7 +150,7 @@ pub enum CliCommand {
         nonce_authority: SignerIndex,
         memo: Option<String>,
         destination_account_pubkey: Pubkey,
-        lamports: u64,
+        tock: u64,
     },
     // Program Deployment
     Deploy {
@@ -214,7 +214,7 @@ pub enum CliCommand {
         memo: Option<String>,
         split_stake_account: SignerIndex,
         seed: Option<String>,
-        lamports: u64,
+        tock: u64,
         fee_payer: SignerIndex,
     },
     MergeStake {
@@ -338,7 +338,7 @@ pub enum CliCommand {
     Address,
     Airdrop {
         pubkey: Option<Pubkey>,
-        lamports: u64,
+        tock: u64,
     },
     Balance {
         pubkey: Option<Pubkey>,
@@ -389,11 +389,11 @@ pub enum CliError {
     ClientError(#[from] ClientError),
     #[error("Command not recognized: {0}")]
     CommandNotRecognized(String),
-    #[error("Account {1} has insufficient funds for fee ({0} SOL)")]
+    #[error("Account {1} has insufficient funds for fee ({0} ANLOG)")]
     InsufficientFundsForFee(f64, Pubkey),
-    #[error("Account {1} has insufficient funds for spend ({0} SOL)")]
+    #[error("Account {1} has insufficient funds for spend ({0} ANLOG)")]
     InsufficientFundsForSpend(f64, Pubkey),
-    #[error("Account {2} has insufficient funds for spend ({0} SOL) + fee ({1} SOL)")]
+    #[error("Account {2} has insufficient funds for spend ({0} ANLOG) + fee ({1} ANLOG)")]
     InsufficientFundsForSpendAndFee(f64, f64, Pubkey),
     #[error(transparent)]
     InvalidNonce(nonce_utils::Error),
@@ -444,15 +444,15 @@ pub struct CliConfig<'a> {
 
 impl CliConfig<'_> {
     fn default_keypair_path() -> String {
-        solana_cli_config::Config::default().keypair_path
+        analog_cli_config::Config::default().keypair_path
     }
 
     fn default_json_rpc_url() -> String {
-        solana_cli_config::Config::default().json_rpc_url
+        analog_cli_config::Config::default().json_rpc_url
     }
 
     fn default_websocket_url() -> String {
-        solana_cli_config::Config::default().websocket_url
+        analog_cli_config::Config::default().websocket_url
     }
 
     fn default_commitment() -> CommitmentConfig {
@@ -489,13 +489,13 @@ impl CliConfig<'_> {
             (SettingType::Explicit, websocket_cfg_url.to_string()),
             (
                 SettingType::Computed,
-                solana_cli_config::Config::compute_websocket_url(&normalize_to_url_if_moniker(
+                analog_cli_config::Config::compute_websocket_url(&normalize_to_url_if_moniker(
                     json_rpc_cmd_url,
                 )),
             ),
             (
                 SettingType::Computed,
-                solana_cli_config::Config::compute_websocket_url(&normalize_to_url_if_moniker(
+                analog_cli_config::Config::compute_websocket_url(&normalize_to_url_if_moniker(
                     json_rpc_cfg_url,
                 )),
             ),
@@ -612,7 +612,7 @@ pub fn parse_command(
             get_clap_app(
                 crate_name!(),
                 crate_description!(),
-                solana_version::version!(),
+                analog_version::version!(),
             )
             .gen_completions_to("solana", shell_choice, &mut stdout());
             std::process::exit(0);
@@ -670,7 +670,7 @@ pub fn parse_command(
             let data_length = value_of::<RentLengthValue>(matches, "data_length")
                 .unwrap()
                 .length();
-            let use_lamports_unit = matches.is_present("lamports");
+            let use_lamports_unit = matches.is_present("tock");
             Ok(CliCommandInfo {
                 command: CliCommand::Rent {
                     data_length,
@@ -890,7 +890,7 @@ pub fn process_command(config: &CliConfig) -> ProcessResult {
         // Cluster Query Commands
         // Get address of this client
         CliCommand::Address => Ok(format!("{}", config.pubkey()?)),
-        // Return software version of solana-cli and cluster entrypoint node
+        // Return software version of analog-cli and cluster entrypoint node
         CliCommand::Catchup {
             node_pubkey,
             node_json_rpc_url,
@@ -938,7 +938,7 @@ pub fn process_command(config: &CliConfig) -> ProcessResult {
         CliCommand::LiveSlots => process_live_slots(config),
         CliCommand::Logs { filter } => process_logs(config, filter),
         CliCommand::Ping {
-            lamports,
+            tock,
             interval,
             count,
             timeout,
@@ -947,7 +947,7 @@ pub fn process_command(config: &CliConfig) -> ProcessResult {
         } => process_ping(
             &rpc_client,
             config,
-            *lamports,
+            *tock,
             interval,
             count,
             timeout,
@@ -1069,13 +1069,13 @@ pub fn process_command(config: &CliConfig) -> ProcessResult {
             nonce_account_pubkey,
             *use_lamports_unit,
         ),
-        // Withdraw lamports from a nonce account
+        // Withdraw tock from a nonce account
         CliCommand::WithdrawFromNonceAccount {
             nonce_account,
             nonce_authority,
             memo,
             destination_account_pubkey,
-            lamports,
+            tock,
         } => process_withdraw_from_nonce_account(
             &rpc_client,
             config,
@@ -1083,7 +1083,7 @@ pub fn process_command(config: &CliConfig) -> ProcessResult {
             *nonce_authority,
             memo.as_ref(),
             destination_account_pubkey,
-            *lamports,
+            *tock,
         ),
 
         // Program Deployment
@@ -1207,7 +1207,7 @@ pub fn process_command(config: &CliConfig) -> ProcessResult {
             memo,
             split_stake_account,
             seed,
-            lamports,
+            tock,
             fee_payer,
         } => process_split_stake(
             &rpc_client,
@@ -1222,7 +1222,7 @@ pub fn process_command(config: &CliConfig) -> ProcessResult {
             memo.as_ref(),
             *split_stake_account,
             seed,
-            *lamports,
+            *tock,
             *fee_payer,
         ),
         CliCommand::MergeStake {
@@ -1477,9 +1477,9 @@ pub fn process_command(config: &CliConfig) -> ProcessResult {
 
         // Wallet Commands
 
-        // Request an airdrop from Solana Faucet;
-        CliCommand::Airdrop { pubkey, lamports } => {
-            process_airdrop(&rpc_client, config, pubkey, *lamports)
+        // Request an airdrop from Analog Faucet;
+        CliCommand::Airdrop { pubkey, tock } => {
+            process_airdrop(&rpc_client, config, pubkey, *tock)
         }
         // Check client balance
         CliCommand::Balance {
@@ -1543,11 +1543,11 @@ pub fn request_and_confirm_airdrop(
     rpc_client: &RpcClient,
     config: &CliConfig,
     to_pubkey: &Pubkey,
-    lamports: u64,
+    tock: u64,
 ) -> ClientResult<Signature> {
     let recent_blockhash = rpc_client.get_latest_blockhash()?;
     let signature =
-        rpc_client.request_airdrop_with_blockhash(to_pubkey, lamports, &recent_blockhash)?;
+        rpc_client.request_airdrop_with_blockhash(to_pubkey, tock, &recent_blockhash)?;
     rpc_client.confirm_transaction_with_spinner(
         &signature,
         &recent_blockhash,
@@ -1609,19 +1609,19 @@ where
 mod tests {
     use super::*;
     use serde_json::{json, Value};
-    use solana_client::{
+    use analog_client::{
         blockhash_query,
         mock_sender::SIGNATURE,
         rpc_request::RpcRequest,
         rpc_response::{Response, RpcResponseContext},
     };
-    use solana_sdk::{
+    use analog_sdk::{
         pubkey::Pubkey,
         signature::{keypair_from_seed, read_keypair_file, write_keypair_file, Keypair, Presigner},
         stake, system_program,
         transaction::TransactionError,
     };
-    use solana_transaction_status::TransactionConfirmationStatus;
+    use analog_transaction_status::TransactionConfirmationStatus;
     use std::path::PathBuf;
 
     fn make_tmp_path(name: &str) -> String {
@@ -1659,7 +1659,7 @@ mod tests {
         assert_eq!(signer_info.signers.len(), 1);
         assert_eq!(signer_info.index_of(None), Some(0));
         assert_eq!(
-            signer_info.index_of(Some(solana_sdk::pubkey::new_rand())),
+            signer_info.index_of(Some(analog_sdk::pubkey::new_rand())),
             None
         );
 
@@ -1717,7 +1717,7 @@ mod tests {
     fn test_cli_parse_command() {
         let test_commands = get_clap_app("test", "desc", "version");
 
-        let pubkey = solana_sdk::pubkey::new_rand();
+        let pubkey = analog_sdk::pubkey::new_rand();
         let pubkey_string = format!("{}", pubkey);
 
         let default_keypair = Keypair::new();
@@ -1735,7 +1735,7 @@ mod tests {
             CliCommandInfo {
                 command: CliCommand::Airdrop {
                     pubkey: Some(pubkey),
-                    lamports: 50_000_000_000,
+                    tock: 50_000_000_000,
                 },
                 signers: vec![],
             }
@@ -1761,7 +1761,7 @@ mod tests {
             "test",
             "balance",
             &keypair_file,
-            "--lamports",
+            "--tock",
         ]);
         assert_eq!(
             parse_command(&test_balance, &default_signer, &mut None).unwrap(),
@@ -1776,7 +1776,7 @@ mod tests {
         let test_balance =
             test_commands
                 .clone()
-                .get_matches_from(vec!["test", "balance", "--lamports"]);
+                .get_matches_from(vec!["test", "balance", "--tock"]);
         assert_eq!(
             parse_command(&test_balance, &default_signer, &mut None).unwrap(),
             CliCommandInfo {
@@ -1808,11 +1808,11 @@ mod tests {
         assert!(parse_command(&test_bad_signature, &default_signer, &mut None).is_err());
 
         // Test CreateAddressWithSeed
-        let from_pubkey = Some(solana_sdk::pubkey::new_rand());
+        let from_pubkey = Some(analog_sdk::pubkey::new_rand());
         let from_str = from_pubkey.unwrap().to_string();
         for (name, program_id) in &[
             ("STAKE", stake::program::id()),
-            ("VOTE", solana_vote_program::id()),
+            ("VOTE", analog_vote_program::id()),
             ("NONCE", system_program::id()),
         ] {
             let test_create_address_with_seed = test_commands.clone().get_matches_from(vec![
@@ -1942,13 +1942,13 @@ mod tests {
             pubkey: None,
             use_lamports_unit: true,
         };
-        assert_eq!(process_command(&config).unwrap(), "50 lamports");
+        assert_eq!(process_command(&config).unwrap(), "50 tock");
 
         config.command = CliCommand::Balance {
             pubkey: None,
             use_lamports_unit: false,
         };
-        assert_eq!(process_command(&config).unwrap(), "0.00000005 SOL");
+        assert_eq!(process_command(&config).unwrap(), "0.00000005 ANLOG");
 
         let good_signature = Signature::new(&bs58::decode(SIGNATURE).into_vec().unwrap());
         config.command = CliCommand::Confirm(good_signature);
@@ -1977,7 +1977,7 @@ mod tests {
             context: RpcResponseContext { slot: 1 },
             value: json!({
                 "data": ["KLUv/QBYNQIAtAIBAAAAbnoc3Smwt4/ROvTFWY/v9O8qlxZuPKby5Pv8zYBQW/EFAAEAAB8ACQD6gx92zAiAAecDP4B2XeEBSIx7MQeung==", "base64+zstd"],
-                "lamports": 42,
+                "tock": 42,
                 "owner": "Vote111111111111111111111111111111111111111",
                 "executable": false,
                 "rentEpoch": 1,
@@ -1992,7 +1992,7 @@ mod tests {
             ..CliConfig::default()
         };
         let current_authority = keypair_from_seed(&[5; 32]).unwrap();
-        let new_authorized_pubkey = solana_sdk::pubkey::new_rand();
+        let new_authorized_pubkey = analog_sdk::pubkey::new_rand();
         vote_config.signers = vec![&current_authority];
         vote_config.command = CliCommand::VoteAuthorize {
             vote_account_pubkey: bob_pubkey,
@@ -2018,7 +2018,7 @@ mod tests {
 
         let bob_keypair = Keypair::new();
         let bob_pubkey = bob_keypair.pubkey();
-        let custodian = solana_sdk::pubkey::new_rand();
+        let custodian = analog_sdk::pubkey::new_rand();
         config.command = CliCommand::CreateStakeAccount {
             stake_account: 1,
             seed: None,
@@ -2044,8 +2044,8 @@ mod tests {
         let result = process_command(&config);
         assert!(result.is_ok());
 
-        let stake_account_pubkey = solana_sdk::pubkey::new_rand();
-        let to_pubkey = solana_sdk::pubkey::new_rand();
+        let stake_account_pubkey = analog_sdk::pubkey::new_rand();
+        let to_pubkey = analog_sdk::pubkey::new_rand();
         config.command = CliCommand::WithdrawStake {
             stake_account_pubkey,
             destination_account_pubkey: to_pubkey,
@@ -2065,7 +2065,7 @@ mod tests {
         let result = process_command(&config);
         assert!(result.is_ok());
 
-        let stake_account_pubkey = solana_sdk::pubkey::new_rand();
+        let stake_account_pubkey = analog_sdk::pubkey::new_rand();
         config.command = CliCommand::DeactivateStake {
             stake_account_pubkey,
             stake_authority: 0,
@@ -2081,7 +2081,7 @@ mod tests {
         let result = process_command(&config);
         assert!(result.is_ok());
 
-        let stake_account_pubkey = solana_sdk::pubkey::new_rand();
+        let stake_account_pubkey = analog_sdk::pubkey::new_rand();
         let split_stake_account = Keypair::new();
         config.command = CliCommand::SplitStake {
             stake_account_pubkey,
@@ -2094,15 +2094,15 @@ mod tests {
             memo: None,
             split_stake_account: 1,
             seed: None,
-            lamports: 30,
+            tock: 30,
             fee_payer: 0,
         };
         config.signers = vec![&keypair, &split_stake_account];
         let result = process_command(&config);
         assert!(result.is_ok());
 
-        let stake_account_pubkey = solana_sdk::pubkey::new_rand();
-        let source_stake_account_pubkey = solana_sdk::pubkey::new_rand();
+        let stake_account_pubkey = analog_sdk::pubkey::new_rand();
+        let source_stake_account_pubkey = analog_sdk::pubkey::new_rand();
         let merge_stake_account = Keypair::new();
         config.command = CliCommand::MergeStake {
             stake_account_pubkey,
@@ -2127,7 +2127,7 @@ mod tests {
         assert_eq!(process_command(&config).unwrap(), "1234");
 
         // CreateAddressWithSeed
-        let from_pubkey = solana_sdk::pubkey::new_rand();
+        let from_pubkey = analog_sdk::pubkey::new_rand();
         config.signers = vec![];
         config.command = CliCommand::CreateAddressWithSeed {
             from_pubkey: Some(from_pubkey),
@@ -2140,11 +2140,11 @@ mod tests {
         assert_eq!(address.unwrap(), expected_address.to_string());
 
         // Need airdrop cases
-        let to = solana_sdk::pubkey::new_rand();
+        let to = analog_sdk::pubkey::new_rand();
         config.signers = vec![&keypair];
         config.command = CliCommand::Airdrop {
             pubkey: Some(to),
-            lamports: 50,
+            tock: 50,
         };
         assert!(process_command(&config).is_ok());
 
@@ -2168,7 +2168,7 @@ mod tests {
 
         config.command = CliCommand::Airdrop {
             pubkey: None,
-            lamports: 50,
+            tock: 50,
         };
         assert!(process_command(&config).is_err());
 
@@ -2219,7 +2219,7 @@ mod tests {
 
     #[test]
     fn test_cli_deploy() {
-        solana_logger::setup();
+        analog_logger::setup();
         let mut pathbuf = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
         pathbuf.push("tests");
         pathbuf.push("fixtures");
@@ -2278,7 +2278,7 @@ mod tests {
         write_keypair_file(&default_keypair, &default_keypair_file).unwrap();
         let default_signer = DefaultSigner::new("", &default_keypair_file);
 
-        //Test Transfer Subcommand, SOL
+        //Test Transfer Subcommand, ANLOG
         let from_keypair = keypair_from_seed(&[0u8; 32]).unwrap();
         let from_pubkey = from_keypair.pubkey();
         let from_string = from_pubkey.to_string();

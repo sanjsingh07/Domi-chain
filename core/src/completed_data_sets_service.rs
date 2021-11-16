@@ -1,8 +1,8 @@
 use crossbeam_channel::{Receiver, RecvTimeoutError, Sender};
-use solana_entry::entry::Entry;
-use solana_ledger::blockstore::{Blockstore, CompletedDataSetInfo};
-use solana_rpc::{max_slots::MaxSlots, rpc_subscriptions::RpcSubscriptions};
-use solana_sdk::signature::Signature;
+use analog_entry::entry::Entry;
+use analog_ledger::blockstore::{Blockstore, CompletedDataSetInfo};
+use analog_rpc::{max_slots::MaxSlots, rpc_subscriptions::RpcSubscriptions};
+use analog_sdk::signature::Signature;
 use std::{
     sync::{
         atomic::{AtomicBool, Ordering},
@@ -101,9 +101,9 @@ impl CompletedDataSetsService {
 #[cfg(test)]
 pub mod test {
     use super::*;
-    use solana_sdk::hash::Hash;
-    use solana_sdk::signature::{Keypair, Signer};
-    use solana_sdk::transaction::Transaction;
+    use analog_sdk::hash::Hash;
+    use analog_sdk::signature::{Keypair, Signer};
+    use analog_sdk::transaction::Transaction;
 
     #[test]
     fn test_zero_signatures() {

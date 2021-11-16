@@ -1,7 +1,7 @@
 use rayon::prelude::*;
-use solana_bucket_map::bucket_map::{BucketMap, BucketMapConfig};
-use solana_measure::measure::Measure;
-use solana_sdk::pubkey::Pubkey;
+use analog_bucket_map::bucket_map::{BucketMap, BucketMapConfig};
+use analog_measure::measure::Measure;
+use analog_sdk::pubkey::Pubkey;
 use std::path::PathBuf;
 #[test]
 #[ignore]

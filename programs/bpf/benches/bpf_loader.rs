@@ -3,23 +3,23 @@
 
 extern crate test;
 #[macro_use]
-extern crate solana_bpf_loader_program;
+extern crate analog_bpf_loader_program;
 
 use byteorder::{ByteOrder, LittleEndian, WriteBytesExt};
-use solana_bpf_loader_program::{
+use analog_bpf_loader_program::{
     create_vm, serialization::serialize_parameters, syscalls::register_syscalls, BpfError,
     ThisInstructionMeter,
 };
-use solana_measure::measure::Measure;
+use analog_measure::measure::Measure;
 use solana_rbpf::vm::{Config, Executable, InstructionMeter, SyscallRegistry};
-use solana_runtime::{
+use analog_runtime::{
     bank::Bank,
     bank_client::BankClient,
     genesis_utils::{create_genesis_config, GenesisConfigInfo},
     loader_utils::load_program,
 };
 use solana_program_runtime::invoke_context::with_mock_invoke_context;
-use solana_sdk::{
+use analog_sdk::{
     bpf_loader,
     client::SyncClient,
     entrypoint::SUCCESS,
@@ -171,7 +171,7 @@ fn bench_program_execute_noop(bencher: &mut Bencher) {
         ..
     } = create_genesis_config(50);
     let mut bank = Bank::new_for_benches(&genesis_config);
-    let (name, id, entrypoint) = solana_bpf_loader_program!();
+    let (name, id, entrypoint) = analog_bpf_loader_program!();
     bank.add_builtin(&name, &id, entrypoint);
     let bank = Arc::new(bank);
     let bank_client = BankClient::new_shared(&bank);

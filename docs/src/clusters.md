@@ -1,11 +1,11 @@
 ---
-title: Solana Clusters
+title: Analog Clusters
 ---
 
-Solana maintains several different clusters with different purposes.
+Analog maintains several different clusters with different purposes.
 
 Before you begin make sure you have first
-[installed the Solana command line tools](cli/install-solana-cli-tools.md)
+[installed the Analog command line tools](cli/install-analog-cli-tools.md)
 
 Explorers:
 
@@ -14,7 +14,7 @@ Explorers:
 
 ## Devnet
 
-- Devnet serves as a playground for anyone who wants to take Solana for a
+- Devnet serves as a playground for anyone who wants to take Analog for a
   test drive, as a user, token holder, app developer, or validator.
 - Application developers should target Devnet.
 - Potential validators should first target Devnet.
@@ -38,10 +38,10 @@ export SOLANA_METRICS_CONFIG="host=https://metrics.solana.com:8086,db=devnet,u=s
 solana config set --url https://api.devnet.solana.com
 ```
 
-##### Example `solana-validator` command-line
+##### Example `analog-validator` command-line
 
 ```bash
-$ solana-validator \
+$ analog-validator \
     --identity validator-keypair.json \
     --vote-account vote-account-keypair.json \
     --known-validator dv1ZAGvdsz5hHLwWXsVnM94hWf1pjbKVau1QVkaMJ92 \
@@ -63,7 +63,7 @@ $ solana-validator \
 ```
 
 The [`--known-validator`s](running-validator/validator-start.md#known-validators)
-are operated by Solana Labs
+are operated by Analog Labs
 
 ## Testnet
 
@@ -90,10 +90,10 @@ export SOLANA_METRICS_CONFIG="host=https://metrics.solana.com:8086,db=tds,u=test
 solana config set --url https://api.testnet.solana.com
 ```
 
-##### Example `solana-validator` command-line
+##### Example `analog-validator` command-line
 
 ```bash
-$ solana-validator \
+$ analog-validator \
     --identity validator-keypair.json \
     --vote-account vote-account-keypair.json \
     --known-validator 5D1fNXzvv5NjV1ysLjirC4WY92RNsVH18vjmcszZd8on \
@@ -115,7 +115,7 @@ $ solana-validator \
 The identities of the
 [`--known-validator`s](running-validator/validator-start.md#known-validators) are:
 
-- `5D1fNXzvv5NjV1ysLjirC4WY92RNsVH18vjmcszZd8on` - Solana Labs (testnet.solana.com)
+- `5D1fNXzvv5NjV1ysLjirC4WY92RNsVH18vjmcszZd8on` - Analog Labs (testnet.solana.com)
 - `Ft5fbkqNa76vnsjYNwjDZUXoTWpP7VYm3mtsaQckQADN` - Certus One
 - `9QxCLckBiJc783jnMvXZubK4wH86Eqqvashtrwvcsgkv` - Algo|Stake
 
@@ -123,7 +123,7 @@ The identities of the
 
 A permissionless, persistent cluster for early token holders and launch partners.
 
-- Tokens that are issued on Mainnet Beta are **real** SOL
+- Tokens that are issued on Mainnet Beta are **real** ANLOG
 - If you have paid money to purchase/be issued tokens, such as through our
   CoinList auction, these tokens will be transferred on Mainnet Beta.
   - Note: If you are using a non-command-line wallet such as
@@ -144,10 +144,10 @@ export SOLANA_METRICS_CONFIG="host=https://metrics.solana.com:8086,db=mainnet-be
 solana config set --url https://api.mainnet-beta.solana.com
 ```
 
-##### Example `solana-validator` command-line
+##### Example `analog-validator` command-line
 
 ```bash
-$ solana-validator \
+$ analog-validator \
     --identity ~/validator-keypair.json \
     --vote-account ~/vote-account-keypair.json \
     --known-validator 7Np41oeYqPefeNQEHSv1UDhYrehxin3NStELsSKCT4K2 \
@@ -170,4 +170,4 @@ $ solana-validator \
 ```
 
 All four [`--known-validator`s](running-validator/validator-start.md#known-validators)
-are operated by Solana Labs
+are operated by Analog Labs

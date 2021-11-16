@@ -2,7 +2,7 @@ use crate::bucket_stats::BucketStats;
 use crate::MaxSearch;
 use memmap2::MmapMut;
 use rand::{thread_rng, Rng};
-use solana_measure::measure::Measure;
+use analog_measure::measure::Measure;
 use std::fs::{remove_file, OpenOptions};
 use std::io::Seek;
 use std::io::SeekFrom;

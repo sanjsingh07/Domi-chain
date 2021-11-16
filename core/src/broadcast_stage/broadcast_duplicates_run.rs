@@ -2,10 +2,10 @@ use {
     super::*,
     crate::cluster_nodes::ClusterNodesCache,
     itertools::Itertools,
-    solana_entry::entry::Entry,
-    solana_gossip::cluster_info::DATA_PLANE_FANOUT,
-    solana_ledger::shred::Shredder,
-    solana_sdk::{
+    analog_entry::entry::Entry,
+    analog_gossip::cluster_info::DATA_PLANE_FANOUT,
+    analog_ledger::shred::Shredder,
+    analog_sdk::{
         hash::Hash,
         signature::{Keypair, Signature, Signer},
         system_transaction,

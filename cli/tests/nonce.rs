@@ -1,24 +1,24 @@
-use solana_cli::{
+use analog_cli::{
     cli::{process_command, request_and_confirm_airdrop, CliCommand, CliConfig},
     spend_utils::SpendAmount,
     test_utils::{check_ready, check_recent_balance},
 };
-use solana_cli_output::{parse_sign_only_reply_string, OutputFormat};
-use solana_client::{
+use analog_cli_output::{parse_sign_only_reply_string, OutputFormat};
+use analog_client::{
     blockhash_query::{self, BlockhashQuery},
     nonce_utils,
     rpc_client::RpcClient,
 };
-use solana_faucet::faucet::run_local_faucet;
-use solana_sdk::{
+use analog_faucet::faucet::run_local_faucet;
+use analog_sdk::{
     commitment_config::CommitmentConfig,
     hash::Hash,
     pubkey::Pubkey,
     signature::{keypair_from_seed, Keypair, Signer},
     system_program,
 };
-use solana_streamer::socket::SocketAddrSpace;
-use solana_test_validator::TestValidator;
+use analog_streamer::socket::SocketAddrSpace;
+use analog_test_validator::TestValidator;
 
 #[test]
 fn test_nonce() {
@@ -152,14 +152,14 @@ fn full_battery_tests(
     assert_ne!(first_nonce, third_nonce);
 
     // Withdraw from nonce account
-    let payee_pubkey = solana_sdk::pubkey::new_rand();
+    let payee_pubkey = analog_sdk::pubkey::new_rand();
     config_payer.signers = authorized_signers;
     config_payer.command = CliCommand::WithdrawFromNonceAccount {
         nonce_account,
         nonce_authority: index,
         memo: None,
         destination_account_pubkey: payee_pubkey,
-        lamports: 100,
+        tock: 100,
     };
     process_command(&config_payer).unwrap();
     check_recent_balance(1000, &rpc_client, &config_payer.signers[0].pubkey());
@@ -206,7 +206,7 @@ fn full_battery_tests(
         nonce_authority: 1,
         memo: None,
         destination_account_pubkey: payee_pubkey,
-        lamports: 100,
+        tock: 100,
     };
     process_command(&config_payer).unwrap();
     check_recent_balance(1000, &rpc_client, &config_payer.signers[0].pubkey());
@@ -217,7 +217,7 @@ fn full_battery_tests(
 #[test]
 #[allow(clippy::redundant_closure)]
 fn test_create_account_with_seed() {
-    solana_logger::setup();
+    analog_logger::setup();
     let mint_keypair = Keypair::new();
     let mint_pubkey = mint_keypair.pubkey();
     let faucet_addr = run_local_faucet(mint_keypair, None);

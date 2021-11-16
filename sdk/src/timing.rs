@@ -100,7 +100,7 @@ mod test {
 
     #[test]
     fn test_interval_update() {
-        solana_logger::setup();
+        analog_logger::setup();
         let i = AtomicInterval::default();
         assert!(!i.should_update(1000));
 

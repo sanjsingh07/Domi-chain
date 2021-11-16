@@ -2,16 +2,16 @@
 use {
     crate::accountsdb_plugin_manager::AccountsDbPluginManager,
     log::*,
-    solana_accountsdb_plugin_interface::accountsdb_plugin_interface::{
+    analog_accountsdb_plugin_interface::accountsdb_plugin_interface::{
         ReplicaAccountInfo, ReplicaAccountInfoVersions, SlotStatus,
     },
-    solana_measure::measure::Measure,
-    solana_metrics::*,
-    solana_runtime::{
+    analog_measure::measure::Measure,
+    analog_metrics::*,
+    analog_runtime::{
         accounts_update_notifier_interface::AccountsUpdateNotifierInterface,
         append_vec::{StoredAccountMeta, StoredMeta},
     },
-    solana_sdk::{
+    analog_sdk::{
         account::{AccountSharedData, ReadableAccount},
         clock::Slot,
     },
@@ -112,7 +112,7 @@ impl AccountsUpdateNotifierImpl {
     ) -> Option<ReplicaAccountInfo<'a>> {
         Some(ReplicaAccountInfo {
             pubkey: meta.pubkey.as_ref(),
-            lamports: account.lamports(),
+            tock: account.tock(),
             owner: account.owner().as_ref(),
             executable: account.executable(),
             rent_epoch: account.rent_epoch(),
@@ -127,7 +127,7 @@ impl AccountsUpdateNotifierImpl {
     ) -> Option<ReplicaAccountInfo<'a>> {
         Some(ReplicaAccountInfo {
             pubkey: stored_account_meta.meta.pubkey.as_ref(),
-            lamports: stored_account_meta.account_meta.lamports,
+            tock: stored_account_meta.account_meta.tock,
             owner: stored_account_meta.account_meta.owner.as_ref(),
             executable: stored_account_meta.account_meta.executable,
             rent_epoch: stored_account_meta.account_meta.rent_epoch,

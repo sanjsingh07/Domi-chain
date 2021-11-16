@@ -1,8 +1,8 @@
 #![cfg(feature = "test-bpf")]
 
-use solana_bpf_rust_sanity::process_instruction;
-use solana_program_test::*;
-use solana_sdk::{
+use analog_bpf_rust_sanity::process_instruction;
+use analog_program_test::*;
+use analog_sdk::{
     instruction::{AccountMeta, Instruction},
     pubkey::Pubkey,
     signature::{Keypair, Signer},
@@ -13,7 +13,7 @@ use solana_sdk::{
 async fn test_sysvars() {
     let program_id = Pubkey::new_unique();
     let program_test = ProgramTest::new(
-        "solana_bpf_rust_sanity",
+        "analog_bpf_rust_sanity",
         program_id,
         processor!(process_instruction),
     );

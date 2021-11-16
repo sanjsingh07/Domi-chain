@@ -1,5 +1,5 @@
 use crate::accounts_index::RollingBitField;
-use solana_sdk::clock::Slot;
+use analog_sdk::clock::Slot;
 use std::collections::HashMap;
 
 pub type AncestorsForSerialization = HashMap<Slot, usize>;
@@ -85,7 +85,7 @@ pub mod tests {
     use super::*;
     use crate::contains::Contains;
     use log::*;
-    use solana_measure::measure::Measure;
+    use analog_measure::measure::Measure;
     use std::collections::HashSet;
 
     impl std::iter::FromIterator<(Slot, usize)> for Ancestors {
@@ -114,7 +114,7 @@ pub mod tests {
 
     #[test]
     fn test_ancestors_permutations() {
-        solana_logger::setup();
+        analog_logger::setup();
         let mut ancestors = Ancestors::default();
         let mut hash = HashMap::new();
 
@@ -179,7 +179,7 @@ pub mod tests {
 
     #[test]
     fn test_ancestors_smaller() {
-        solana_logger::setup();
+        analog_logger::setup();
 
         for width in 0..34 {
             let mut hash = HashSet::new();

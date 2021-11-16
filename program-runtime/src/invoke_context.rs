@@ -4,7 +4,7 @@ use crate::{
     log_collector::LogCollector,
 };
 use log::*;
-use solana_sdk::{
+use analog_sdk::{
     account::{AccountSharedData, ReadableAccount},
     compute_budget::ComputeBudget,
     feature_set::{
@@ -322,16 +322,16 @@ impl<'a> InvokeContext for ThisInvokeContext<'a> {
                     err
                 })?;
             pre_sum = pre_sum
-                .checked_add(u128::from(pre_account.lamports()))
+                .checked_add(u128::from(pre_account.tock()))
                 .ok_or(InstructionError::UnbalancedInstruction)?;
             post_sum = post_sum
-                .checked_add(u128::from(account.lamports()))
+                .checked_add(u128::from(account.tock()))
                 .ok_or(InstructionError::UnbalancedInstruction)?;
             Ok(())
         };
         instruction.visit_each_account(&mut work)?;
 
-        // Verify that the total sum of all the lamports did not change
+        // Verify that the total sum of all the tock did not change
         if pre_sum != post_sum {
             return Err(InstructionError::UnbalancedInstruction);
         }
@@ -389,10 +389,10 @@ impl<'a> InvokeContext for ThisInvokeContext<'a> {
                                 err
                             })?;
                         pre_sum = pre_sum
-                            .checked_add(u128::from(pre_account.lamports()))
+                            .checked_add(u128::from(pre_account.tock()))
                             .ok_or(InstructionError::UnbalancedInstruction)?;
                         post_sum = post_sum
-                            .checked_add(u128::from(account.lamports()))
+                            .checked_add(u128::from(account.tock()))
                             .ok_or(InstructionError::UnbalancedInstruction)?;
                         if is_writable && !pre_account.executable() {
                             pre_account.update(&account);
@@ -405,7 +405,7 @@ impl<'a> InvokeContext for ThisInvokeContext<'a> {
         };
         instruction.visit_each_account(&mut work)?;
 
-        // Verify that the total sum of all the lamports did not change
+        // Verify that the total sum of all the tock did not change
         if pre_sum != post_sum {
             return Err(InstructionError::UnbalancedInstruction);
         }
@@ -601,7 +601,7 @@ pub fn with_mock_invoke_context<R, F: FnMut(&mut ThisInvokeContext) -> R>(
             false,
             false,
             loader_id,
-            AccountSharedData::new_ref(0, 0, &solana_sdk::native_loader::id()),
+            AccountSharedData::new_ref(0, 0, &analog_sdk::native_loader::id()),
         ),
         (
             false,
@@ -638,7 +638,7 @@ pub fn mock_process_instruction(
 ) -> Result<(), InstructionError> {
     let mut preparation =
         prepare_mock_invoke_context(&program_indices, instruction_data, keyed_accounts);
-    let processor_account = AccountSharedData::new_ref(0, 0, &solana_sdk::native_loader::id());
+    let processor_account = AccountSharedData::new_ref(0, 0, &analog_sdk::native_loader::id());
     program_indices.insert(0, preparation.accounts.len());
     preparation.accounts.push((*loader_id, processor_account));
     let mut invoke_context = ThisInvokeContext::new_mock(&preparation.accounts, &[]);
@@ -656,7 +656,7 @@ mod tests {
     use super::*;
     use crate::instruction_processor::InstructionProcessor;
     use serde::{Deserialize, Serialize};
-    use solana_sdk::{
+    use analog_sdk::{
         account::{ReadableAccount, WritableAccount},
         instruction::{AccountMeta, Instruction, InstructionError},
         keyed_account::keyed_account_at_index,
@@ -723,9 +723,9 @@ mod tests {
         let mut accounts = vec![];
         let mut metas = vec![];
         for i in 0..MAX_DEPTH {
-            invoke_stack.push(solana_sdk::pubkey::new_rand());
+            invoke_stack.push(analog_sdk::pubkey::new_rand());
             accounts.push((
-                solana_sdk::pubkey::new_rand(),
+                analog_sdk::pubkey::new_rand(),
                 Rc::new(RefCell::new(AccountSharedData::new(
                     i as u64,
                     1,
@@ -740,7 +740,7 @@ mod tests {
                 Rc::new(RefCell::new(AccountSharedData::new(
                     1,
                     1,
-                    &solana_sdk::pubkey::Pubkey::default(),
+                    &analog_sdk::pubkey::Pubkey::default(),
                 ))),
             ));
             metas.push(AccountMeta::new(*program_id, false));
@@ -827,7 +827,7 @@ mod tests {
     #[test]
     fn test_invoke_context_verify() {
         let accounts = vec![(
-            solana_sdk::pubkey::new_rand(),
+            analog_sdk::pubkey::new_rand(),
             Rc::new(RefCell::new(AccountSharedData::default())),
         )];
         let message = Message::new(
@@ -855,27 +855,27 @@ mod tests {
 
     #[test]
     fn test_process_cross_program() {
-        let caller_program_id = solana_sdk::pubkey::new_rand();
-        let callee_program_id = solana_sdk::pubkey::new_rand();
+        let caller_program_id = analog_sdk::pubkey::new_rand();
+        let callee_program_id = analog_sdk::pubkey::new_rand();
 
         let owned_account = AccountSharedData::new(42, 1, &callee_program_id);
-        let not_owned_account = AccountSharedData::new(84, 1, &solana_sdk::pubkey::new_rand());
-        let readonly_account = AccountSharedData::new(168, 1, &solana_sdk::pubkey::new_rand());
+        let not_owned_account = AccountSharedData::new(84, 1, &analog_sdk::pubkey::new_rand());
+        let readonly_account = AccountSharedData::new(168, 1, &analog_sdk::pubkey::new_rand());
         let loader_account = AccountSharedData::new(0, 0, &native_loader::id());
         let mut program_account = AccountSharedData::new(1, 0, &native_loader::id());
         program_account.set_executable(true);
 
         let accounts = vec![
             (
-                solana_sdk::pubkey::new_rand(),
+                analog_sdk::pubkey::new_rand(),
                 Rc::new(RefCell::new(owned_account)),
             ),
             (
-                solana_sdk::pubkey::new_rand(),
+                analog_sdk::pubkey::new_rand(),
                 Rc::new(RefCell::new(not_owned_account)),
             ),
             (
-                solana_sdk::pubkey::new_rand(),
+                analog_sdk::pubkey::new_rand(),
                 Rc::new(RefCell::new(readonly_account)),
             ),
             (caller_program_id, Rc::new(RefCell::new(loader_account))),
@@ -985,27 +985,27 @@ mod tests {
 
     #[test]
     fn test_native_invoke() {
-        let caller_program_id = solana_sdk::pubkey::new_rand();
-        let callee_program_id = solana_sdk::pubkey::new_rand();
+        let caller_program_id = analog_sdk::pubkey::new_rand();
+        let callee_program_id = analog_sdk::pubkey::new_rand();
 
         let owned_account = AccountSharedData::new(42, 1, &callee_program_id);
-        let not_owned_account = AccountSharedData::new(84, 1, &solana_sdk::pubkey::new_rand());
-        let readonly_account = AccountSharedData::new(168, 1, &solana_sdk::pubkey::new_rand());
+        let not_owned_account = AccountSharedData::new(84, 1, &analog_sdk::pubkey::new_rand());
+        let readonly_account = AccountSharedData::new(168, 1, &analog_sdk::pubkey::new_rand());
         let loader_account = AccountSharedData::new(0, 0, &native_loader::id());
         let mut program_account = AccountSharedData::new(1, 0, &native_loader::id());
         program_account.set_executable(true);
 
         let accounts = vec![
             (
-                solana_sdk::pubkey::new_rand(),
+                analog_sdk::pubkey::new_rand(),
                 Rc::new(RefCell::new(owned_account)),
             ),
             (
-                solana_sdk::pubkey::new_rand(),
+                analog_sdk::pubkey::new_rand(),
                 Rc::new(RefCell::new(not_owned_account)),
             ),
             (
-                solana_sdk::pubkey::new_rand(),
+                analog_sdk::pubkey::new_rand(),
                 Rc::new(RefCell::new(readonly_account)),
             ),
             (caller_program_id, Rc::new(RefCell::new(loader_account))),

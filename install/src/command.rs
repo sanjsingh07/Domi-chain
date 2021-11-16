@@ -8,9 +8,9 @@ use {
     console::{style, Emoji},
     indicatif::{ProgressBar, ProgressStyle},
     serde::{Deserialize, Serialize},
-    solana_client::rpc_client::RpcClient,
-    solana_config_program::{config_instruction, get_config_data, ConfigState},
-    solana_sdk::{
+    analog_client::rpc_client::RpcClient,
+    analog_config_program::{config_instruction, get_config_data, ConfigState},
+    analog_sdk::{
         hash::{Hash, Hasher},
         message::Message,
         pubkey::Pubkey,
@@ -192,7 +192,7 @@ fn load_release_version(version_yml: &Path) -> Result<ReleaseVersion, String> {
 /// Reads the supported TARGET triple for the given release
 fn load_release_target(release_dir: &Path) -> Result<String, String> {
     let mut version_yml = PathBuf::from(release_dir);
-    version_yml.push("solana-release");
+    version_yml.push("analog-release");
     version_yml.push("version.yml");
 
     let version = load_release_version(&version_yml)?;
@@ -220,13 +220,13 @@ fn new_update_manifest(
     {
         let recent_blockhash = rpc_client.get_latest_blockhash()?;
 
-        let lamports = rpc_client
+        let tock = rpc_client
             .get_minimum_balance_for_rent_exemption(SignedUpdateManifest::max_space() as usize)?;
 
         let instructions = config_instruction::create_account::<SignedUpdateManifest>(
             &from_keypair.pubkey(),
             &update_manifest_keypair.pubkey(),
-            lamports,
+            tock,
             vec![], // additional keys
         );
         let message = Message::new(&instructions, Some(&from_keypair.pubkey()));
@@ -299,7 +299,7 @@ fn check_env_path_for_bin_dir(config: &Config) {
 
     if !found {
         println!(
-            "\nPlease update your PATH environment variable to include the solana programs:\n    PATH=\"{}:$PATH\"\n",
+            "\nPlease update your PATH environment variable to include the analog programs:\n    PATH=\"{}:$PATH\"\n",
             config.active_release_bin_dir().to_str().unwrap()
         );
     }
@@ -529,7 +529,7 @@ pub fn init(
     explicit_release: Option<ExplicitRelease>,
 ) -> Result<(), String> {
     let config = {
-        // Write new config file only if different, so that running |solana-install init|
+        // Write new config file only if different, so that running |analog-install init|
         // repeatedly doesn't unnecessarily re-download
         let mut current_config = Config::load(config_file).unwrap_or_default();
         current_config.current_update_manifest = None;
@@ -561,7 +561,7 @@ pub fn init(
 
 fn github_release_download_url(release_semver: &str) -> String {
     format!(
-        "https://github.com/solana-labs/solana/releases/download/v{}/solana-release-{}.tar.bz2",
+        "https://github.com/analog-labs/analog/releases/download/v{}/analog-release-{}.tar.bz2",
         release_semver,
         crate::build_env::TARGET
     )
@@ -569,7 +569,7 @@ fn github_release_download_url(release_semver: &str) -> String {
 
 fn release_channel_download_url(release_channel: &str) -> String {
     format!(
-        "http://release.solana.com/{}/solana-release-{}.tar.bz2",
+        "http://release.analog.com/{}/analog-release-{}.tar.bz2",
         release_channel,
         crate::build_env::TARGET
     )
@@ -577,7 +577,7 @@ fn release_channel_download_url(release_channel: &str) -> String {
 
 fn release_channel_version_url(release_channel: &str) -> String {
     format!(
-        "http://release.solana.com/{}/solana-release-{}.yml",
+        "http://release.analog.com/{}/analog-release-{}.yml",
         release_channel,
         crate::build_env::TARGET
     )
@@ -860,9 +860,9 @@ fn check_for_newer_github_release(
     prerelease_allowed: bool,
 ) -> reqwest::Result<Option<String>> {
     let url =
-        reqwest::Url::parse("https://api.github.com/repos/solana-labs/solana/releases").unwrap();
+        reqwest::Url::parse("https://api.github.com/repos/analog-labs/analog/releases").unwrap();
     let client = reqwest::blocking::Client::builder()
-        .user_agent("solana-install")
+        .user_agent("analog-install")
         .build()?;
     let request = client.get(url).build()?;
     let response = client.execute(request)?;
@@ -983,7 +983,7 @@ pub fn init_or_update(config_file: &str, is_init: bool, check_only: bool) -> Res
                 let release_id = format!("{}-{}", release_channel, update_release_version.commit);
                 let release_dir = config.release_dir(&release_id);
                 let current_release_version_yml =
-                    release_dir.join("solana-release").join("version.yml");
+                    release_dir.join("analog-release").join("version.yml");
 
                 let download_url = release_channel_download_url(release_channel);
 
@@ -1120,7 +1120,7 @@ pub fn init_or_update(config_file: &str, is_init: bool, check_only: bool) -> Res
 
     let _ = fs::remove_dir_all(config.active_release_dir());
     symlink_dir(
-        release_dir.join("solana-release"),
+        release_dir.join("analog-release"),
         config.active_release_dir(),
     )
     .map_err(|err| {

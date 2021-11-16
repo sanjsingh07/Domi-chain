@@ -1,11 +1,11 @@
 [package]
-name = "solana-crate-features"
+name = "analog-crate-features"
 version = "1.9.0"
-description = "Solana Crate Features"
-authors = ["Solana Maintainers <maintainers@solana.foundation>"]
-repository = "https://github.com/solana-labs/solana"
+description = "Analog Crate Features"
+authors = ["Analog Maintainers <maintainers@solana.foundation>"]
+repository = "https://github.com/analog-labs/solana"
 homepage = "https://solana.com/"
-documentation = "https://docs.rs/solana-crate-features"
+documentation = "https://docs.rs/analog-crate-features"
 license = "Apache-2.0"
 edition = "2018"
 

@@ -4,7 +4,7 @@ use {
         address_generator::AddressGenerator,
         unlocks::{UnlockInfo, Unlocks},
     },
-    solana_sdk::{
+    analog_sdk::{
         account::Account,
         clock::Slot,
         genesis_config::GenesisConfig,
@@ -16,7 +16,7 @@ use {
         system_program,
         timing::years_as_slots,
     },
-    solana_stake_program::stake_state::create_lockup_stake_account,
+    analog_stake_program::stake_state::create_lockup_stake_account,
 };
 
 #[derive(Debug)]
@@ -24,12 +24,12 @@ pub struct StakerInfo {
     pub name: &'static str,
     pub staker: &'static str,
     pub withdrawer: Option<&'static str>,
-    pub lamports: u64,
+    pub tock: u64,
 }
 
-// lamports required to run staking operations for one year
+// tock required to run staking operations for one year
 //  the staker account needs carry enough
-//  lamports to cover TX fees (delegation) for one year,
+//  tock to cover TX fees (delegation) for one year,
 //  and we support one delegation per epoch
 fn calculate_staker_fees(genesis_config: &GenesisConfig, years: f64) -> u64 {
     genesis_config.fee_rate_governor.max_lamports_per_signature
@@ -40,7 +40,7 @@ fn calculate_staker_fees(genesis_config: &GenesisConfig, years: f64) -> u64 {
         ) as Slot)
 }
 
-/// create stake accounts for lamports with at most stake_granularity in each
+/// create stake accounts for tock with at most stake_granularity in each
 ///  account
 pub fn create_and_add_stakes(
     genesis_config: &mut GenesisConfig,
@@ -48,7 +48,7 @@ pub fn create_and_add_stakes(
     staker_info: &StakerInfo,
     // description of how the stakes' lockups will expire
     unlock_info: &UnlockInfo,
-    // the largest each stake account should be, in lamports
+    // the largest each stake account should be, in tock
     granularity: Option<u64>,
 ) -> u64 {
     let granularity = granularity.unwrap_or(std::u64::MAX);
@@ -70,7 +70,7 @@ pub fn create_and_add_stakes(
         .parse::<Pubkey>()
         .expect("invalid custodian");
 
-    let total_lamports = staker_info.lamports;
+    let total_lamports = staker_info.tock;
 
     // staker is a system account
     let staker_rent_reserve = genesis_config.rent.minimum_balance(0).max(1);
@@ -78,9 +78,9 @@ pub fn create_and_add_stakes(
 
     let mut stakes_lamports = total_lamports - staker_fees;
 
-    // lamports required to run staking operations for one year
+    // tock required to run staking operations for one year
     //  the staker account needs to be rent exempt *and* carry enough
-    //  lamports to cover TX fees (delegation) for one year,
+    //  tock to cover TX fees (delegation) for one year,
     //  and we support one delegation per epoch
     // a single staker may administer any number of accounts
     genesis_config
@@ -90,10 +90,10 @@ pub fn create_and_add_stakes(
             stakes_lamports -= staker_rent_reserve;
             Account::new(staker_rent_reserve, 0, &system_program::id())
         })
-        .lamports += staker_fees;
+        .tock += staker_fees;
 
     // the staker account needs to be rent exempt *and* carry enough
-    //  lamports to cover TX fees (delegation) for one year
+    //  tock to cover TX fees (delegation) for one year
     //  as we support one re-delegation per epoch
     let unlocks = Unlocks::new(
         unlock_info.cliff_fraction,
@@ -110,12 +110,12 @@ pub fn create_and_add_stakes(
     let stake_rent_reserve = StakeState::get_rent_exempt_reserve(&genesis_config.rent);
 
     for unlock in unlocks {
-        let lamports = unlock.amount(stakes_lamports);
+        let tock = unlock.amount(stakes_lamports);
 
-        let (granularity, remainder) = if granularity < lamports {
-            (granularity, lamports % granularity)
+        let (granularity, remainder) = if granularity < tock {
+            (granularity, tock % granularity)
         } else {
-            (lamports, 0)
+            (tock, 0)
         };
 
         let lockup = Lockup {
@@ -123,7 +123,7 @@ pub fn create_and_add_stakes(
             custodian,
             unix_timestamp: 0,
         };
-        for _ in 0..(lamports / granularity).saturating_sub(1) {
+        for _ in 0..(tock / granularity).saturating_sub(1) {
             genesis_config.add_account(
                 address_generator.next(),
                 create_lockup_stake_account(
@@ -166,7 +166,7 @@ pub fn create_and_add_stakes(
 #[cfg(test)]
 mod tests {
     use super::*;
-    use solana_sdk::rent::Rent;
+    use analog_sdk::rent::Rent;
 
     fn create_and_check_stakes(
         genesis_config: &mut GenesisConfig,
@@ -185,15 +185,15 @@ mod tests {
             genesis_config
                 .accounts
                 .iter()
-                .map(|(_pubkey, account)| account.lamports)
+                .map(|(_pubkey, account)| account.tock)
                 .sum::<u64>(),
             total_lamports,
         );
         assert!(genesis_config
             .accounts
             .iter()
-            .all(|(_pubkey, account)| account.lamports <= granularity
-                || account.lamports - granularity
+            .all(|(_pubkey, account)| account.tock <= granularity
+                || account.tock - granularity
                     <= StakeState::get_rent_exempt_reserve(&genesis_config.rent)));
     }
 
@@ -253,7 +253,7 @@ mod tests {
             &StakerInfo {
                 name: "fun",
                 staker: "P1aceHo1derPubkey11111111111111111111111111",
-                lamports: total_lamports,
+                tock: total_lamports,
                 withdrawer: None,
             },
             &UnlockInfo {
@@ -279,7 +279,7 @@ mod tests {
             &StakerInfo {
                 name: "fun",
                 staker: "P1aceHo1derPubkey11111111111111111111111111",
-                lamports: total_lamports,
+                tock: total_lamports,
                 withdrawer: None,
             },
             &UnlockInfo {
@@ -305,7 +305,7 @@ mod tests {
             &StakerInfo {
                 name: "fun",
                 staker: "P1aceHo1derPubkey11111111111111111111111111",
-                lamports: total_lamports,
+                tock: total_lamports,
                 withdrawer: None,
             },
             &UnlockInfo {
@@ -330,7 +330,7 @@ mod tests {
             &StakerInfo {
                 name: "fun",
                 staker: "P1aceHo1derPubkey11111111111111111111111111",
-                lamports: total_lamports,
+                tock: total_lamports,
                 withdrawer: None,
             },
             &UnlockInfo {

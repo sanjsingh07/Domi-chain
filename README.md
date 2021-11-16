@@ -1,13 +1,13 @@
 <p align="center">
   <a href="https://solana.com">
-    <img alt="Solana" src="https://i.imgur.com/IKyzQ6T.png" width="250" />
+    <img alt="Analog" src="https://i.imgur.com/IKyzQ6T.png" width="250" />
   </a>
 </p>
 
-[![Solana crate](https://img.shields.io/crates/v/solana-core.svg)](https://crates.io/crates/solana-core)
-[![Solana documentation](https://docs.rs/solana-core/badge.svg)](https://docs.rs/solana-core)
-[![Build status](https://badge.buildkite.com/8cc350de251d61483db98bdfc895b9ea0ac8ffa4a32ee850ed.svg?branch=master)](https://buildkite.com/solana-labs/solana/builds?branch=master)
-[![codecov](https://codecov.io/gh/solana-labs/solana/branch/master/graph/badge.svg)](https://codecov.io/gh/solana-labs/solana)
+[![Analog crate](https://img.shields.io/crates/v/analog-core.svg)](https://crates.io/crates/analog-core)
+[![Analog documentation](https://docs.rs/analog-core/badge.svg)](https://docs.rs/analog-core)
+[![Build status](https://badge.buildkite.com/8cc350de251d61483db98bdfc895b9ea0ac8ffa4a32ee850ed.svg?branch=master)](https://buildkite.com/analog-labs/solana/builds?branch=master)
+[![codecov](https://codecov.io/gh/analog-labs/solana/branch/master/graph/badge.svg)](https://codecov.io/gh/analog-labs/solana)
 
 # Building
 
@@ -47,8 +47,8 @@ $ softwareupdate --install-rosetta
 ## **2. Download the source code.**
 
 ```bash
-$ git clone https://github.com/solana-labs/solana.git
-$ cd solana
+$ git clone https://github.com/analog-labs/solana.git
+$ cd analog
 ```
 
 ## **3. Build.**
@@ -116,7 +116,7 @@ send us that patch!
 
 All claims, content, designs, algorithms, estimates, roadmaps,
 specifications, and performance measurements described in this project
-are done with the Solana Foundation's ("SF") good faith efforts. It is up to
+are done with the Analog Foundation's ("SF") good faith efforts. It is up to
 the reader to check and validate their accuracy and truthfulness.
 Furthermore, nothing in this project constitutes a solicitation for
 investment.
@@ -124,7 +124,7 @@ investment.
 Any content produced by SF or developer resources that SF provides, are
 for educational and inspirational purposes only. SF does not encourage,
 induce or sanction the deployment, integration or use of any such
-applications (including the code comprising the Solana blockchain
+applications (including the code comprising the Analog blockchain
 protocol) in violation of applicable laws or regulations and hereby
 prohibits any such deployment, integration or use. This includes use of
 any such applications by the reader (a) in violation of export control
@@ -141,14 +141,14 @@ prohibit U.S. persons (and other persons that are subject to such laws)
 from transacting with persons in certain countries and territories or
 that are on the SDN list. As a project based primarily on open-source
 software, it is possible that such sanctioned persons may nevertheless
-bypass prohibitions, obtain the code comprising the Solana blockchain
+bypass prohibitions, obtain the code comprising the Analog blockchain
 protocol (or other project code or applications) and deploy, integrate,
 or otherwise use it. Accordingly, there is a risk to individuals that
-other persons using the Solana blockchain protocol may be sanctioned
+other persons using the Analog blockchain protocol may be sanctioned
 persons and that transactions with such persons would be a violation of
 U.S. export controls and sanctions law. This risk applies to
 individuals, organizations, and other ecosystem participants that
-deploy, integrate, or use the Solana blockchain protocol code directly
-(e.g., as a node operator), and individuals that transact on the Solana
+deploy, integrate, or use the Analog blockchain protocol code directly
+(e.g., as a node operator), and individuals that transact on the Analog
 blockchain through light clients, third party interfaces, and/or wallet
 software.

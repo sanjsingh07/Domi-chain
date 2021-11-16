@@ -3,11 +3,11 @@ use {
     chrono::{DateTime, Local, NaiveDateTime, SecondsFormat, TimeZone, Utc},
     console::style,
     indicatif::{ProgressBar, ProgressStyle},
-    solana_sdk::{
-        clock::UnixTimestamp, hash::Hash, message::Message, native_token::lamports_to_sol,
+    analog_sdk::{
+        clock::UnixTimestamp, hash::Hash, message::Message, native_token::tock_to_anlog,
         program_utils::limited_deserialize, pubkey::Pubkey, stake, transaction::Transaction,
     },
-    solana_transaction_status::UiTransactionStatusMeta,
+    analog_transaction_status::UiTransactionStatusMeta,
     spl_memo::id as spl_memo_id,
     spl_memo::v1::id as spl_memo_v1_id,
     std::{collections::HashMap, fmt, io},
@@ -36,29 +36,29 @@ fn is_memo_program(k: &Pubkey) -> bool {
 }
 
 pub fn build_balance_message_with_config(
-    lamports: u64,
+    tock: u64,
     config: &BuildBalanceMessageConfig,
 ) -> String {
     let value = if config.use_lamports_unit {
-        lamports.to_string()
+        tock.to_string()
     } else {
-        let sol = lamports_to_sol(lamports);
-        let sol_str = format!("{:.9}", sol);
+        let anlog =tock_to_anlog(tock);
+        let anlog_str = format!("{:.9}", anlog);
         if config.trim_trailing_zeros {
-            sol_str
+            anlog_str
                 .trim_end_matches('0')
                 .trim_end_matches('.')
                 .to_string()
         } else {
-            sol_str
+            anlog_str
         }
     };
     let unit = if config.show_unit {
         if config.use_lamports_unit {
-            let ess = if lamports == 1 { "" } else { "s" };
+            let ess = if tock == 1 { "" } else { "s" };
             format!(" lamport{}", ess)
         } else {
-            " SOL".to_string()
+            " ANLOG".to_string()
         }
     } else {
         "".to_string()
@@ -66,9 +66,9 @@ pub fn build_balance_message_with_config(
     format!("{}{}", value, unit)
 }
 
-pub fn build_balance_message(lamports: u64, use_lamports_unit: bool, show_unit: bool) -> String {
+pub fn build_balance_message(tock: u64, use_lamports_unit: bool, show_unit: bool) -> String {
     build_balance_message_with_config(
-        lamports,
+        tock,
         &BuildBalanceMessageConfig {
             use_lamports_unit,
             show_unit,
@@ -236,9 +236,9 @@ pub fn write_transaction<W: io::Write>(
         }
 
         let mut raw = true;
-        if program_pubkey == solana_vote_program::id() {
+        if program_pubkey == analog_vote_program::id() {
             if let Ok(vote_instruction) = limited_deserialize::<
-                solana_vote_program::vote_instruction::VoteInstruction,
+                analog_vote_program::vote_instruction::VoteInstruction,
             >(&instruction.data)
             {
                 writeln!(w, "{}  {:?}", prefix, vote_instruction)?;
@@ -251,9 +251,9 @@ pub fn write_transaction<W: io::Write>(
                 writeln!(w, "{}  {:?}", prefix, stake_instruction)?;
                 raw = false;
             }
-        } else if program_pubkey == solana_sdk::system_program::id() {
+        } else if program_pubkey == analog_sdk::system_program::id() {
             if let Ok(system_instruction) = limited_deserialize::<
-                solana_sdk::system_instruction::SystemInstruction,
+                analog_sdk::system_instruction::SystemInstruction,
             >(&instruction.data)
             {
                 writeln!(w, "{}  {:?}", prefix, system_instruction)?;
@@ -285,7 +285,7 @@ pub fn write_transaction<W: io::Write>(
             w,
             "{}  Fee: ◎{}",
             prefix,
-            lamports_to_sol(transaction_status.fee)
+           tock_to_anlog(transaction_status.fee)
         )?;
         assert_eq!(
             transaction_status.pre_balances.len(),
@@ -303,7 +303,7 @@ pub fn write_transaction<W: io::Write>(
                     "{}  Account {} balance: ◎{}",
                     prefix,
                     i,
-                    lamports_to_sol(*pre)
+                   tock_to_anlog(*pre)
                 )?;
             } else {
                 writeln!(
@@ -311,8 +311,8 @@ pub fn write_transaction<W: io::Write>(
                     "{}  Account {} balance: ◎{} -> ◎{}",
                     prefix,
                     i,
-                    lamports_to_sol(*pre),
-                    lamports_to_sol(*post)
+                   tock_to_anlog(*pre),
+                   tock_to_anlog(*post)
                 )?;
             }
         }
@@ -335,7 +335,7 @@ pub fn write_transaction<W: io::Write>(
                     prefix, "Address", "Type", "Amount", "New Balance"
                 )?;
                 for reward in rewards {
-                    let sign = if reward.lamports < 0 { "-" } else { "" };
+                    let sign = if reward.tock < 0 { "-" } else { "" };
                     writeln!(
                         w,
                         "{}  {:<44}  {:^15}  {}◎{:<14.9}  ◎{:<18.9}",
@@ -347,8 +347,8 @@ pub fn write_transaction<W: io::Write>(
                             "-".to_string()
                         },
                         sign,
-                        lamports_to_sol(reward.lamports.abs() as u64),
-                        lamports_to_sol(reward.post_balance)
+                       tock_to_anlog(reward.tock.abs() as u64),
+                       tock_to_anlog(reward.post_balance)
                     )?;
                 }
             }
@@ -429,7 +429,7 @@ pub fn unix_timestamp_to_string(unix_timestamp: UnixTimestamp) -> String {
 #[cfg(test)]
 mod test {
     use super::*;
-    use solana_sdk::pubkey::Pubkey;
+    use analog_sdk::pubkey::Pubkey;
 
     #[test]
     fn test_format_labeled_address() {

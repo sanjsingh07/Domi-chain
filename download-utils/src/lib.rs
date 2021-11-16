@@ -2,11 +2,11 @@
 use console::Emoji;
 use indicatif::{ProgressBar, ProgressStyle};
 use log::*;
-use solana_runtime::{
+use analog_runtime::{
     snapshot_package::SnapshotType,
     snapshot_utils::{self, ArchiveFormat},
 };
-use solana_sdk::{clock::Slot, genesis_config::DEFAULT_GENESIS_ARCHIVE, hash::Hash};
+use analog_sdk::{clock::Slot, genesis_config::DEFAULT_GENESIS_ARCHIVE, hash::Hash};
 use std::fs::{self, File};
 use std::io;
 use std::io::Read;
@@ -269,7 +269,7 @@ pub fn download_snapshot_archive<'a, 'b>(
         ArchiveFormat::TarZstd,
         ArchiveFormat::TarGzip,
         ArchiveFormat::TarBzip2,
-        ArchiveFormat::Tar, // `solana-test-validator` creates uncompressed snapshots
+        ArchiveFormat::Tar, // `analog-test-validator` creates uncompressed snapshots
     ] {
         let destination_path = match snapshot_type {
             SnapshotType::FullSnapshot => snapshot_utils::build_full_snapshot_archive_path(

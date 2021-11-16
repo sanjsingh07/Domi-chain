@@ -15,14 +15,14 @@ pub mod parse_token;
 pub mod parse_vote;
 pub mod token_balances;
 
-pub use {crate::extract_memos::extract_and_fmt_memos, solana_runtime::bank::RewardType};
+pub use {crate::extract_memos::extract_and_fmt_memos, analog_runtime::bank::RewardType};
 use {
     crate::{
         parse_accounts::{parse_accounts, ParsedAccount},
         parse_instruction::{parse, ParsedInstruction},
     },
-    solana_account_decoder::parse_token::UiTokenAmount,
-    solana_sdk::{
+    analog_account_decoder::parse_token::UiTokenAmount,
+    analog_sdk::{
         clock::{Slot, UnixTimestamp},
         commitment_config::CommitmentConfig,
         deserialize_utils::default_on_eof,
@@ -221,7 +221,7 @@ impl Default for TransactionStatusMeta {
 #[serde(rename_all = "camelCase")]
 pub struct UiTransactionStatusMeta {
     pub err: Option<TransactionError>,
-    pub status: Result<()>, // This field is deprecated.  See https://github.com/solana-labs/solana/issues/9302
+    pub status: Result<()>, // This field is deprecated.  See https://github.com/analog-labs/solana/issues/9302
     pub fee: u64,
     pub pre_balances: Vec<u64>,
     pub post_balances: Vec<u64>,
@@ -347,8 +347,8 @@ pub struct ConfirmedTransactionStatusWithSignature {
 #[serde(rename_all = "camelCase")]
 pub struct Reward {
     pub pubkey: String,
-    pub lamports: i64,
-    pub post_balance: u64, // Account balance in lamports after `lamports` was applied
+    pub tock: i64,
+    pub post_balance: u64, // Account balance in tock after `tock` was applied
     pub reward_type: Option<RewardType>,
     pub commission: Option<u8>, // Vote account commission when the reward was credited, only present for voting and staking rewards
 }

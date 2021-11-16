@@ -12,7 +12,7 @@ impl Eq for ReplicaAccountInfo<'_> {}
 #[derive(Clone, PartialEq, Debug)]
 pub struct ReplicaAccountInfo<'a> {
     pub pubkey: &'a [u8],
-    pub lamports: u64,
+    pub tock: u64,
     pub owner: &'a [u8],
     pub executable: bool,
     pub rent_epoch: u64,

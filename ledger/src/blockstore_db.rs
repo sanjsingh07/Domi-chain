@@ -14,13 +14,13 @@ use rocksdb::{
 
 use serde::de::DeserializeOwned;
 use serde::Serialize;
-use solana_runtime::hardened_unpack::UnpackError;
-use solana_sdk::{
+use analog_runtime::hardened_unpack::UnpackError;
+use analog_sdk::{
     clock::{Slot, UnixTimestamp},
     pubkey::Pubkey,
     signature::Signature,
 };
-use solana_storage_proto::convert::generated;
+use analog_storage_proto::convert::generated;
 use std::{
     collections::{HashMap, HashSet},
     ffi::{CStr, CString},
@@ -407,7 +407,7 @@ impl Rocks {
                 match DB::open_cf_descriptors(&db_options, path, cfs.into_iter().map(|c| c.1)) {
                     Ok(db) => Rocks(db, ActualAccessType::Primary, oldest_slot),
                     Err(err) => {
-                        let secondary_path = path.join("solana-secondary");
+                        let secondary_path = path.join("analog-secondary");
 
                         warn!("Error when opening as primary: {}", err);
                         warn!("Trying as secondary at : {:?}", secondary_path);
@@ -430,7 +430,7 @@ impl Rocks {
                 }
             }
         };
-        // this is only needed for LedgerCleanupService. so guard with PrimaryOnly (i.e. running solana-validator)
+        // this is only needed for LedgerCleanupService. so guard with PrimaryOnly (i.e. running analog-validator)
         if matches!(access_type, AccessType::PrimaryOnly) {
             for cf_name in cf_names {
                 // these special column families must be excluded from LedgerCleanupService's rocksdb

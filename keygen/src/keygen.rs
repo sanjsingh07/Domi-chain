@@ -4,7 +4,7 @@ use clap::{
     crate_description, crate_name, value_t, value_t_or_exit, values_t_or_exit, App, AppSettings,
     Arg, ArgMatches, SubCommand,
 };
-use solana_clap_utils::{
+use analog_clap_utils::{
     input_parsers::STDOUT_OUTFILE_TOKEN,
     input_validators::{is_parsable, is_prompt_signer_source},
     keypair::{
@@ -13,9 +13,9 @@ use solana_clap_utils::{
     },
     ArgConstant, DisplayError,
 };
-use solana_cli_config::{Config, CONFIG_FILE};
-use solana_remote_wallet::remote_wallet::RemoteWalletManager;
-use solana_sdk::{
+use analog_cli_config::{Config, CONFIG_FILE};
+use analog_remote_wallet::remote_wallet::RemoteWalletManager;
+use analog_sdk::{
     instruction::{AccountMeta, Instruction},
     message::Message,
     pubkey::{write_pubkey_file, Pubkey},
@@ -331,7 +331,7 @@ fn main() -> Result<(), Box<dyn error::Error>> {
     let default_num_threads = num_cpus::get().to_string();
     let matches = App::new(crate_name!())
         .about(crate_description!())
-        .version(solana_version::version!())
+        .version(analog_version::version!())
         .setting(AppSettings::SubcommandRequiredElseHelp)
         .arg({
             let arg = Arg::with_name("config_file")
@@ -410,7 +410,7 @@ fn main() -> Result<(), Box<dyn error::Error>> {
                         .takes_value(true)
                         .multiple(true)
                         .validator(grind_validator_starts_with)
-                        .help("Saves specified number of keypairs whos public key starts with the indicated prefix\nExample: --starts-with sol:4\nPREFIX type is Base58\nCOUNT type is u64"),
+                        .help("Saves specified number of keypairs whos public key starts with the indicated prefix\nExample: --starts-with anlog:4\nPREFIX type is Base58\nCOUNT type is u64"),
                 )
                 .arg(
                     Arg::with_name("ends_with")
@@ -430,7 +430,7 @@ fn main() -> Result<(), Box<dyn error::Error>> {
                         .takes_value(true)
                         .multiple(true)
                         .validator(grind_validator_starts_and_ends_with)
-                        .help("Saves specified number of keypairs whos public key starts and ends with the indicated perfix and suffix\nExample: --starts-and-ends-with sol:ana:4\nPREFIX and SUFFIX type is Base58\nCOUNT type is u64"),
+                        .help("Saves specified number of keypairs whos public key starts and ends with the indicated perfix and suffix\nExample: --starts-and-ends-with anlog:ana:4\nPREFIX and SUFFIX type is Base58\nCOUNT type is u64"),
                 )
                 .arg(
                     Arg::with_name("num_threads")

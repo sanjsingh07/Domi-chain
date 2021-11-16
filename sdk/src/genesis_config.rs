@@ -10,7 +10,7 @@ use crate::{
     fee_calculator::FeeRateGovernor,
     hash::{hash, Hash},
     inflation::Inflation,
-    native_token::lamports_to_sol,
+    native_token::tock_to_anlog,
     poh_config::PohConfig,
     pubkey::Pubkey,
     rent::Rent,
@@ -82,7 +82,7 @@ pub struct GenesisConfig {
     /// network speed configuration
     pub poh_config: PohConfig,
     /// this field exists only to ensure that the binary layout of GenesisConfig remains compatible
-    /// with the Solana v0.23 release line
+    /// with the Analog v0.23 release line
     pub __backwards_compat_with_v0_23: u64,
     /// transaction fee config
     pub fee_rate_governor: FeeRateGovernor,
@@ -97,13 +97,13 @@ pub struct GenesisConfig {
 }
 
 // useful for basic tests
-pub fn create_genesis_config(lamports: u64) -> (GenesisConfig, Keypair) {
+pub fn create_genesis_config(tock: u64) -> (GenesisConfig, Keypair) {
     let faucet_keypair = Keypair::new();
     (
         GenesisConfig::new(
             &[(
                 faucet_keypair.pubkey(),
-                AccountSharedData::new(lamports, 0, &system_program::id()),
+                AccountSharedData::new(tock, 0, &system_program::id()),
             )],
             &[],
         ),
@@ -252,7 +252,7 @@ impl fmt::Display for GenesisConfig {
              {:?}\n\
              {:?}\n\
              {:?}\n\
-             Capitalization: {} SOL in {} accounts\n\
+             Capitalization: {} ANLOG in {} accounts\n\
              Native instruction processors: {:#?}\n\
              Rewards pool: {:#?}\n\
              ",
@@ -273,12 +273,12 @@ impl fmt::Display for GenesisConfig {
             self.inflation,
             self.rent,
             self.fee_rate_governor,
-            lamports_to_sol(
+           tock_to_anlog(
                 self.accounts
                     .iter()
                     .map(|(pubkey, account)| {
-                        assert!(account.lamports > 0, "{:?}", (pubkey, account));
-                        account.lamports
+                        assert!(account.tock > 0, "{:?}", (pubkey, account));
+                        account.tock
                     })
                     .sum::<u64>()
             ),
@@ -324,17 +324,17 @@ mod tests {
             AccountSharedData::new(10_000, 0, &Pubkey::default()),
         );
         config.add_account(
-            solana_sdk::pubkey::new_rand(),
+            analog_sdk::pubkey::new_rand(),
             AccountSharedData::new(1, 0, &Pubkey::default()),
         );
-        config.add_native_instruction_processor("hi".to_string(), solana_sdk::pubkey::new_rand());
+        config.add_native_instruction_processor("hi".to_string(), analog_sdk::pubkey::new_rand());
 
         assert_eq!(config.accounts.len(), 2);
         assert!(config
             .accounts
             .iter()
             .any(|(pubkey, account)| *pubkey == faucet_keypair.pubkey()
-                && account.lamports == 10_000));
+                && account.tock == 10_000));
 
         let path = &make_tmp_path("genesis_config");
         config.write(path).expect("write");

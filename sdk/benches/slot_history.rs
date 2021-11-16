@@ -1,7 +1,7 @@
 #![feature(test)]
 
 extern crate test;
-use solana_sdk::{
+use analog_sdk::{
     account::{create_account_for_test, from_account},
     slot_history::SlotHistory,
 };

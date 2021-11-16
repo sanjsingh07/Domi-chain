@@ -51,10 +51,10 @@ pub fn activate(feature_id: &Pubkey, funding_address: &Pubkey, rent: &Rent) -> V
 pub fn activate_with_lamports(
     feature_id: &Pubkey,
     funding_address: &Pubkey,
-    lamports: u64,
+    tock: u64,
 ) -> Vec<Instruction> {
     vec![
-        system_instruction::transfer(funding_address, feature_id, lamports),
+        system_instruction::transfer(funding_address, feature_id, tock),
         system_instruction::allocate(feature_id, Feature::size_of() as u64),
         system_instruction::assign(feature_id, &id()),
     ]

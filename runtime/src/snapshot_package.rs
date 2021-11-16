@@ -9,9 +9,9 @@ use crate::{
     },
 };
 use log::*;
-use solana_sdk::clock::Slot;
-use solana_sdk::genesis_config::ClusterType;
-use solana_sdk::hash::Hash;
+use analog_sdk::clock::Slot;
+use analog_sdk::genesis_config::ClusterType;
+use analog_sdk::hash::Hash;
 use std::{
     fs,
     path::{Path, PathBuf},

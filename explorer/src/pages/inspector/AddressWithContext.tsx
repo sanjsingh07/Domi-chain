@@ -22,7 +22,7 @@ export const createFeePayerValidator = (
     // TODO: Actually nonce accounts can pay fees too
     if (account.details.space > 0)
       return "Only unallocated accounts can pay fees";
-    if (account.lamports < feeLamports) {
+    if (account.tock < feeLamports) {
       return "Insufficient funds for fees";
     }
     return;
@@ -94,7 +94,7 @@ function AccountInfo({
       {ownerAddress
         ? `Owned by ${
             ownerLabel || ownerAddress
-          }. Balance is ${lamportsToSolString(info.data.lamports)} SOL`
+          }. Balance is ${lamportsToSolString(info.data.tock)} ANLOG`
         : "Account doesn't exist"}
     </span>
   );

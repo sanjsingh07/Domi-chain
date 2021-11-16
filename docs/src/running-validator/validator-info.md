@@ -4,9 +4,9 @@ title: Publishing Validator Info
 
 You can publish your validator information to the chain to be publicly visible to other users.
 
-## Run solana validator-info
+## Run analog validator-info
 
-Run the solana CLI to populate a validator info account:
+Run the analog CLI to populate a validator info account:
 
 ```bash
 solana validator-info publish --keypair ~/validator-keypair.json <VALIDATOR_INFO_ARGS> <VALIDATOR_NAME>
@@ -42,7 +42,7 @@ Validator info from 8WdJvDz6obhADdxpGCiJKZsDYwTLNEDFizayqziDc9ah
 
 ## Keybase
 
-Including a Keybase username allows client applications \(like the Solana
+Including a Keybase username allows client applications \(like the Analog
 Network Explorer\) to automatically pull in your validator public profile,
 including cryptographic proofs, brand identity, etc. To connect your validator
 pubkey with Keybase:

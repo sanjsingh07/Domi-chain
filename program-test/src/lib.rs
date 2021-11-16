@@ -1,23 +1,23 @@
-//! The solana-program-test provides a BanksClient-based test framework BPF programs
+//! The analog-program-test provides a BanksClient-based test framework BPF programs
 #![allow(clippy::integer_arithmetic)]
 
 #[allow(deprecated)]
-use solana_sdk::sysvar::fees::Fees;
+use analog_sdk::sysvar::fees::Fees;
 use {
     async_trait::async_trait,
     chrono_humanize::{Accuracy, HumanTime, Tense},
     log::*,
-    solana_banks_client::start_client,
-    solana_banks_server::banks_server::start_local_server,
+    analog_banks_client::start_client,
+    analog_banks_server::banks_server::start_local_server,
     solana_program_runtime::instruction_processor::InstructionProcessor,
-    solana_runtime::{
+    analog_runtime::{
         bank::{Bank, ExecuteTimings},
         bank_forks::BankForks,
         builtins::Builtin,
         commitment::BlockCommitmentCache,
         genesis_utils::{create_genesis_config_with_leader_ex, GenesisConfigInfo},
     },
-    solana_sdk::{
+    analog_sdk::{
         account::{Account, AccountSharedData, ReadableAccount, WritableAccount},
         account_info::AccountInfo,
         clock::{Clock, Slot},
@@ -31,7 +31,7 @@ use {
         instruction::Instruction,
         instruction::InstructionError,
         message::Message,
-        native_token::sol_to_lamports,
+        native_token::anlog_to_tock,
         poh_config::PohConfig,
         process_instruction::{stable_log, InvokeContext, ProcessInstructionWithContext},
         program_error::{ProgramError, ACCOUNT_BORROW_FAILED, UNSUPPORTED_SYSVAR},
@@ -44,7 +44,7 @@ use {
             rent, Sysvar,
         },
     },
-    solana_vote_program::vote_state::{VoteState, VoteStateVersions},
+    analog_vote_program::vote_state::{VoteState, VoteStateVersions},
     std::{
         cell::RefCell,
         collections::HashMap,
@@ -64,8 +64,8 @@ use {
     tokio::task::JoinHandle,
 };
 
-// Export types so test clients can limit their solana crate dependencies
-pub use solana_banks_client::BanksClient;
+// Export types so test clients can limit their analog crate dependencies
+pub use analog_banks_client::BanksClient;
 
 // Export tokio for test clients
 pub use tokio;
@@ -73,7 +73,7 @@ pub use tokio;
 pub mod programs;
 
 #[macro_use]
-extern crate solana_bpf_loader_program;
+extern crate analog_bpf_loader_program;
 
 /// Errors from the program test environment
 #[derive(Error, Debug, PartialEq)]
@@ -100,7 +100,7 @@ fn get_invoke_context<'a>() -> &'a mut dyn InvokeContext {
 }
 
 pub fn builtin_process_instruction(
-    process_instruction: solana_sdk::entrypoint::ProcessInstruction,
+    process_instruction: analog_sdk::entrypoint::ProcessInstruction,
     _first_instruction_account: usize,
     input: &[u8],
     invoke_context: &mut dyn InvokeContext,
@@ -125,14 +125,14 @@ pub fn builtin_process_instruction(
         })
         .collect();
 
-    // Create shared references to each account's lamports/data/owner
+    // Create shared references to each account's tock/data/owner
     let account_refs: HashMap<_, _> = accounts
         .iter_mut()
         .map(|(key, account)| {
             (
                 *key,
                 (
-                    Rc::new(RefCell::new(&mut account.lamports)),
+                    Rc::new(RefCell::new(&mut account.tock)),
                     Rc::new(RefCell::new(&mut account.data[..])),
                     &account.owner,
                 ),
@@ -145,12 +145,12 @@ pub fn builtin_process_instruction(
         .iter()
         .map(|keyed_account| {
             let key = keyed_account.unsigned_key();
-            let (lamports, data, owner) = &account_refs[key];
+            let (tock, data, owner) = &account_refs[key];
             AccountInfo {
                 key,
                 is_signer: keyed_account.signer_key().is_some(),
                 is_writable: keyed_account.is_writable(),
-                lamports: lamports.clone(),
+                tock: tock.clone(),
                 data: data.clone(),
                 owner,
                 executable: keyed_account.executable().unwrap(),
@@ -171,15 +171,15 @@ pub fn builtin_process_instruction(
     for keyed_account in keyed_accounts {
         let mut account = keyed_account.account.borrow_mut();
         let key = keyed_account.unsigned_key();
-        let (lamports, data, _owner) = &account_refs[key];
-        account.set_lamports(**lamports.borrow());
+        let (tock, data, _owner) = &account_refs[key];
+        account.set_lamports(**tock.borrow());
         account.set_data(data.borrow().to_vec());
     }
 
     Ok(())
 }
 
-/// Converts a `solana-program`-style entrypoint into the runtime's entrypoint style, for
+/// Converts a `analog-program`-style entrypoint into the runtime's entrypoint style, for
 /// use with `ProgramTest::add_program`
 #[macro_export]
 macro_rules! processor {
@@ -187,7 +187,7 @@ macro_rules! processor {
         Some(
             |first_instruction_account: usize,
              input: &[u8],
-             invoke_context: &mut dyn solana_sdk::process_instruction::InvokeContext| {
+             invoke_context: &mut dyn analog_sdk::process_instruction::InvokeContext| {
                 $crate::builtin_process_instruction(
                     $process_instruction,
                     first_instruction_account,
@@ -225,8 +225,8 @@ fn get_sysvar<T: Default + Sysvar + Sized + serde::de::DeserializeOwned>(
 }
 
 struct SyscallStubs {}
-impl solana_sdk::program_stubs::SyscallStubs for SyscallStubs {
-    fn sol_log(&self, message: &str) {
+impl analog_sdk::program_stubs::SyscallStubs for SyscallStubs {
+    fn anlog_log(&self, message: &str) {
         let invoke_context = get_invoke_context();
         let logger = invoke_context.get_logger();
         let logger = logger.borrow_mut();
@@ -235,7 +235,7 @@ impl solana_sdk::program_stubs::SyscallStubs for SyscallStubs {
         }
     }
 
-    fn sol_invoke_signed(
+    fn anlog_invoke_signed(
         &self,
         instruction: &Instruction,
         account_infos: &[AccountInfo],
@@ -282,7 +282,7 @@ impl solana_sdk::program_stubs::SyscallStubs for SyscallStubs {
                 let mut account = account.borrow_mut();
                 account.copy_into_owner_from_slice(account_info.owner.as_ref());
                 account.set_data_from_slice(&account_info.try_borrow_data().unwrap());
-                account.set_lamports(account_info.lamports());
+                account.set_lamports(account_info.tock());
                 account.set_executable(account_info.executable);
                 account.set_rent_epoch(account_info.rent_epoch);
             }
@@ -336,7 +336,7 @@ impl solana_sdk::program_stubs::SyscallStubs for SyscallStubs {
         // Copy writeable account modifications back into the caller's AccountInfos
         for (account, account_info) in accounts.iter() {
             if let Some(account_info) = account_info {
-                **account_info.try_borrow_mut_lamports().unwrap() = account.borrow().lamports();
+                **account_info.try_borrow_mut_lamports().unwrap() = account.borrow().tock();
                 let mut data = account_info.try_borrow_mut_data()?;
                 let account_borrow = account.borrow();
                 let new_data = account_borrow.data();
@@ -364,20 +364,20 @@ impl solana_sdk::program_stubs::SyscallStubs for SyscallStubs {
         Ok(())
     }
 
-    fn sol_get_clock_sysvar(&self, var_addr: *mut u8) -> u64 {
+    fn anlog_get_clock_sysvar(&self, var_addr: *mut u8) -> u64 {
         get_sysvar::<Clock>(&clock::id(), var_addr)
     }
 
-    fn sol_get_epoch_schedule_sysvar(&self, var_addr: *mut u8) -> u64 {
+    fn anlog_get_epoch_schedule_sysvar(&self, var_addr: *mut u8) -> u64 {
         get_sysvar::<EpochSchedule>(&epoch_schedule::id(), var_addr)
     }
 
     #[allow(deprecated)]
-    fn sol_get_fees_sysvar(&self, var_addr: *mut u8) -> u64 {
+    fn anlog_get_fees_sysvar(&self, var_addr: *mut u8) -> u64 {
         get_sysvar::<Fees>(&fees::id(), var_addr)
     }
 
-    fn sol_get_rent_sysvar(&self, var_addr: *mut u8) -> u64 {
+    fn anlog_get_rent_sysvar(&self, var_addr: *mut u8) -> u64 {
         get_sysvar::<Rent>(&rent::id(), var_addr)
     }
 }
@@ -472,11 +472,11 @@ impl Default for ProgramTest {
     /// * the current working directory
     ///
     fn default() -> Self {
-        solana_logger::setup_with_default(
+        analog_logger::setup_with_default(
             "solana_rbpf::vm=debug,\
-             solana_runtime::message_processor=debug,\
-             solana_runtime::system_instruction_processor=trace,\
-             solana_program_test=info",
+             analog_runtime::message_processor=debug,\
+             analog_runtime::system_instruction_processor=trace,\
+             analog_program_test=info",
         );
         let prefer_bpf = std::env::var("BPF_OUT_DIR").is_ok();
 
@@ -540,14 +540,14 @@ impl ProgramTest {
     pub fn add_account_with_file_data(
         &mut self,
         address: Pubkey,
-        lamports: u64,
+        tock: u64,
         owner: Pubkey,
         filename: &str,
     ) {
         self.add_account(
             address,
             Account {
-                lamports,
+                tock,
                 data: read_file(find_file(filename).unwrap_or_else(|| {
                     panic!("Unable to locate {}", filename);
                 })),
@@ -563,14 +563,14 @@ impl ProgramTest {
     pub fn add_account_with_base64_data(
         &mut self,
         address: Pubkey,
-        lamports: u64,
+        tock: u64,
         owner: Pubkey,
         data_base64: &str,
     ) {
         self.add_account(
             address,
             Account {
-                lamports,
+                tock,
                 data: base64::decode(data_base64)
                     .unwrap_or_else(|err| panic!("Failed to base64 decode: {}", err)),
                 owner,
@@ -620,9 +620,9 @@ impl ProgramTest {
             this.add_account(
                 program_id,
                 Account {
-                    lamports: Rent::default().minimum_balance(data.len()).min(1),
+                    tock: Rent::default().minimum_balance(data.len()).min(1),
                     data,
-                    owner: solana_sdk::bpf_loader::id(),
+                    owner: analog_sdk::bpf_loader::id(),
                     executable: true,
                     rent_epoch: 0,
                 },
@@ -728,7 +728,7 @@ impl ProgramTest {
             static ONCE: Once = Once::new();
 
             ONCE.call_once(|| {
-                solana_sdk::program_stubs::set_syscall_stubs(Box::new(SyscallStubs {}));
+                analog_sdk::program_stubs::set_syscall_stubs(Box::new(SyscallStubs {}));
             });
         }
 
@@ -736,13 +736,13 @@ impl ProgramTest {
         let fee_rate_governor = FeeRateGovernor::default();
         let bootstrap_validator_pubkey = Pubkey::new_unique();
         let bootstrap_validator_stake_lamports =
-            rent.minimum_balance(VoteState::size_of()) + sol_to_lamports(1_000_000.0);
+            rent.minimum_balance(VoteState::size_of()) + anlog_to_tock(1_000_000.0);
 
         let mint_keypair = Keypair::new();
         let voting_keypair = Keypair::new();
 
         let mut genesis_config = create_genesis_config_with_leader_ex(
-            sol_to_lamports(1_000_000.0),
+            anlog_to_tock(1_000_000.0),
             &mint_keypair.pubkey(),
             &bootstrap_validator_pubkey,
             &voting_keypair.pubkey(),
@@ -767,13 +767,13 @@ impl ProgramTest {
                 bank.add_builtin(&$b.0, &$b.1, $b.2)
             };
         }
-        add_builtin!(solana_bpf_loader_deprecated_program!());
+        add_builtin!(analog_bpf_loader_deprecated_program!());
         if self.use_bpf_jit {
-            add_builtin!(solana_bpf_loader_program_with_jit!());
-            add_builtin!(solana_bpf_loader_upgradeable_program_with_jit!());
+            add_builtin!(analog_bpf_loader_program_with_jit!());
+            add_builtin!(analog_bpf_loader_upgradeable_program_with_jit!());
         } else {
-            add_builtin!(solana_bpf_loader_program!());
-            add_builtin!(solana_bpf_loader_upgradeable_program!());
+            add_builtin!(analog_bpf_loader_program!());
+            add_builtin!(analog_bpf_loader_upgradeable_program!());
         }
 
         // Add commonly-used SPL programs as a convenience to the user
@@ -856,7 +856,7 @@ impl ProgramTest {
     /// Start the test client
     ///
     /// Returns a `BanksClient` interface into the test environment as well as a payer `Keypair`
-    /// with SOL for sending transactions
+    /// with ANLOG for sending transactions
     pub async fn start_with_context(self) -> ProgramTestContext {
         let (bank_forks, block_commitment_cache, last_blockhash, gci) = self.setup_bank();
         let target_tick_duration = gci.genesis_config.poh_config.target_tick_duration;
@@ -1065,7 +1065,7 @@ impl ProgramTestContext {
         ));
         bank_forks.set_root(
             pre_warp_slot,
-            &solana_runtime::accounts_background_service::AbsRequestSender::default(),
+            &analog_runtime::accounts_background_service::AbsRequestSender::default(),
             Some(pre_warp_slot),
         );
 

@@ -12,8 +12,8 @@ use crate::{
 use crossbeam_channel::{Receiver, SendError, Sender};
 use log::*;
 use rand::{thread_rng, Rng};
-use solana_measure::measure::Measure;
-use solana_sdk::{
+use analog_measure::measure::Measure;
+use analog_sdk::{
     clock::{BankId, Slot},
     hash::Hash,
 };
@@ -372,7 +372,7 @@ impl AccountsBackgroundService {
         let mut total_remove_slots_time = 0;
         let mut last_expiration_check_time = Instant::now();
         let t_background = Builder::new()
-            .name("solana-bg-accounts".to_string())
+            .name("analog-bg-accounts".to_string())
             .spawn(move || {
                 let mut last_snapshot_end_time = None;
                 loop {
@@ -523,7 +523,7 @@ mod test {
     use super::*;
     use crate::genesis_utils::create_genesis_config;
     use crossbeam_channel::unbounded;
-    use solana_sdk::{account::AccountSharedData, pubkey::Pubkey};
+    use analog_sdk::{account::AccountSharedData, pubkey::Pubkey};
 
     #[test]
     fn test_accounts_background_service_remove_dead_slots() {

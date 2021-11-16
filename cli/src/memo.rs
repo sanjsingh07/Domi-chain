@@ -1,5 +1,5 @@
-use solana_sdk::instruction::Instruction;
-use solana_sdk::pubkey::Pubkey;
+use analog_sdk::instruction::Instruction;
+use analog_sdk::pubkey::Pubkey;
 use spl_memo::id;
 
 pub trait WithMemo {

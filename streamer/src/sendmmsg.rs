@@ -152,7 +152,7 @@ mod tests {
     use crate::packet::Packet;
     use crate::recvmmsg::recv_mmsg;
     use crate::sendmmsg::{batch_send, multi_target_send, SendPktsError};
-    use solana_sdk::packet::PACKET_DATA_SIZE;
+    use analog_sdk::packet::PACKET_DATA_SIZE;
     use std::{
         io::ErrorKind,
         net::{IpAddr, Ipv4Addr, Ipv6Addr, SocketAddr, UdpSocket},

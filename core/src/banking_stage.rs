@@ -6,19 +6,19 @@ use crossbeam_channel::{Receiver as CrossbeamReceiver, RecvTimeoutError};
 use itertools::Itertools;
 use lru::LruCache;
 use retain_mut::RetainMut;
-use solana_entry::entry::hash_transactions;
-use solana_gossip::{cluster_info::ClusterInfo, contact_info::ContactInfo};
-use solana_ledger::blockstore_processor::TransactionStatusSender;
-use solana_measure::measure::Measure;
-use solana_metrics::{inc_new_counter_debug, inc_new_counter_info};
-use solana_perf::{
+use analog_entry::entry::hash_transactions;
+use analog_gossip::{cluster_info::ClusterInfo, contact_info::ContactInfo};
+use analog_ledger::blockstore_processor::TransactionStatusSender;
+use analog_measure::measure::Measure;
+use analog_metrics::{inc_new_counter_debug, inc_new_counter_info};
+use analog_perf::{
     cuda_runtime::PinnedVec,
     data_budget::DataBudget,
     packet::{limited_deserialize, Packet, Packets, PACKETS_PER_BATCH},
     perf_libs,
 };
-use solana_poh::poh_recorder::{BankStart, PohRecorder, PohRecorderError, TransactionRecorder};
-use solana_runtime::{
+use analog_poh::poh_recorder::{BankStart, PohRecorder, PohRecorderError, TransactionRecorder};
+use analog_runtime::{
     accounts_db::ErrorCounters,
     bank::{
         Bank, ExecuteTimings, TransactionBalancesSet, TransactionCheckResult,
@@ -30,7 +30,7 @@ use solana_runtime::{
     transaction_batch::TransactionBatch,
     vote_sender_types::ReplayVoteSender,
 };
-use solana_sdk::{
+use analog_sdk::{
     clock::{
         Slot, DEFAULT_TICKS_PER_SLOT, MAX_PROCESSING_AGE, MAX_TRANSACTION_FORWARDING_DELAY,
         MAX_TRANSACTION_FORWARDING_DELAY_GPU,
@@ -43,8 +43,8 @@ use solana_sdk::{
     timing::{duration_as_ms, timestamp, AtomicInterval},
     transaction::{self, SanitizedTransaction, TransactionError, VersionedTransaction},
 };
-use solana_streamer::sendmmsg::{batch_send, SendPktsError};
-use solana_transaction_status::token_balances::{
+use analog_streamer::sendmmsg::{batch_send, SendPktsError};
+use analog_transaction_status::token_balances::{
     collect_token_balances, TransactionTokenBalancesSet,
 };
 use std::{
@@ -350,7 +350,7 @@ impl BankingStage {
                 let data_budget = data_budget.clone();
                 let cost_model = cost_model.clone();
                 Builder::new()
-                    .name("solana-banking-stage-tx".to_string())
+                    .name("analog-banking-stage-tx".to_string())
                     .spawn(move || {
                         Self::process_loop(
                             &verified_receiver,
@@ -1663,22 +1663,22 @@ mod tests {
     use super::*;
     use crossbeam_channel::unbounded;
     use itertools::Itertools;
-    use solana_entry::entry::{next_entry, Entry, EntrySlice};
-    use solana_gossip::{cluster_info::Node, contact_info::ContactInfo};
-    use solana_ledger::{
+    use analog_entry::entry::{next_entry, Entry, EntrySlice};
+    use analog_gossip::{cluster_info::Node, contact_info::ContactInfo};
+    use analog_ledger::{
         blockstore::{entries_to_test_shreds, Blockstore},
         genesis_utils::{create_genesis_config, GenesisConfigInfo},
         get_tmp_ledger_path,
         leader_schedule_cache::LeaderScheduleCache,
     };
-    use solana_perf::packet::to_packets_chunked;
-    use solana_poh::{
+    use analog_perf::packet::to_packets_chunked;
+    use analog_poh::{
         poh_recorder::{create_test_recorder, Record, WorkingBankEntry},
         poh_service::PohService,
     };
-    use solana_rpc::transaction_status_service::TransactionStatusService;
-    use solana_runtime::cost_model::CostModel;
-    use solana_sdk::{
+    use analog_rpc::transaction_status_service::TransactionStatusService;
+    use analog_runtime::cost_model::CostModel;
+    use analog_sdk::{
         hash::Hash,
         instruction::InstructionError,
         poh_config::PohConfig,
@@ -1687,9 +1687,9 @@ mod tests {
         system_transaction,
         transaction::{Transaction, TransactionError},
     };
-    use solana_streamer::socket::SocketAddrSpace;
-    use solana_transaction_status::TransactionWithStatusMeta;
-    use solana_vote_program::vote_transaction;
+    use analog_streamer::socket::SocketAddrSpace;
+    use analog_transaction_status::TransactionWithStatusMeta;
+    use analog_vote_program::vote_transaction;
     use std::{
         net::SocketAddr,
         path::Path,
@@ -1749,7 +1749,7 @@ mod tests {
 
     #[test]
     fn test_banking_stage_tick() {
-        solana_logger::setup();
+        analog_logger::setup();
         let GenesisConfigInfo {
             mut genesis_config, ..
         } = create_genesis_config(2);
@@ -1820,7 +1820,7 @@ mod tests {
 
     #[test]
     fn test_banking_stage_entries_only() {
-        solana_logger::setup();
+        analog_logger::setup();
         let GenesisConfigInfo {
             genesis_config,
             mint_keypair,
@@ -1867,16 +1867,16 @@ mod tests {
             bank.process_transaction(&fund_tx).unwrap();
 
             // good tx
-            let to = solana_sdk::pubkey::new_rand();
+            let to = analog_sdk::pubkey::new_rand();
             let tx = system_transaction::transfer(&mint_keypair, &to, 1, start_hash);
 
             // good tx, but no verify
-            let to2 = solana_sdk::pubkey::new_rand();
+            let to2 = analog_sdk::pubkey::new_rand();
             let tx_no_ver = system_transaction::transfer(&keypair, &to2, 2, start_hash);
 
             // bad tx, AccountNotFound
             let keypair = Keypair::new();
-            let to3 = solana_sdk::pubkey::new_rand();
+            let to3 = analog_sdk::pubkey::new_rand();
             let tx_anf = system_transaction::transfer(&keypair, &to3, 1, start_hash);
 
             // send 'em over
@@ -1941,7 +1941,7 @@ mod tests {
 
     #[test]
     fn test_banking_stage_entryfication() {
-        solana_logger::setup();
+        analog_logger::setup();
         // In this attack we'll demonstrate that a verifier can interpret the ledger
         // differently if either the server doesn't signal the ledger to add an
         // Entry OR if the verifier tries to parallelize across multiple Entries.
@@ -1952,7 +1952,7 @@ mod tests {
         } = create_slow_genesis_config(2);
         let (verified_sender, verified_receiver) = unbounded();
 
-        // Process a batch that includes a transaction that receives two lamports.
+        // Process a batch that includes a transaction that receives two tock.
         let alice = Keypair::new();
         let tx =
             system_transaction::transfer(&mint_keypair, &alice.pubkey(), 2, genesis_config.hash());
@@ -2037,7 +2037,7 @@ mod tests {
                     .for_each(|x| assert_eq!(*x, Ok(())));
             }
 
-            // Assert the user holds two lamports, not three. If the stage only outputs one
+            // Assert the user holds two tock, not three. If the stage only outputs one
             // entry, then the second transaction will be rejected, because it drives
             // the account balance below zero before the credit is added.
             assert_eq!(bank.get_balance(&alice.pubkey()), 2);
@@ -2053,7 +2053,7 @@ mod tests {
 
     #[test]
     fn test_bank_record_transactions() {
-        solana_logger::setup();
+        analog_logger::setup();
 
         let GenesisConfigInfo {
             genesis_config,
@@ -2084,9 +2084,9 @@ mod tests {
             let poh_simulator = simulate_poh(record_receiver, &poh_recorder);
 
             poh_recorder.lock().unwrap().set_bank(&bank);
-            let pubkey = solana_sdk::pubkey::new_rand();
+            let pubkey = analog_sdk::pubkey::new_rand();
             let keypair2 = Keypair::new();
-            let pubkey2 = solana_sdk::pubkey::new_rand();
+            let pubkey2 = analog_sdk::pubkey::new_rand();
 
             let txs = sanitize_transactions(vec![
                 system_transaction::transfer(&mint_keypair, &pubkey, 1, genesis_config.hash()),
@@ -2207,8 +2207,8 @@ mod tests {
 
     #[test]
     fn test_should_process_or_forward_packets() {
-        let my_pubkey = solana_sdk::pubkey::new_rand();
-        let my_pubkey1 = solana_sdk::pubkey::new_rand();
+        let my_pubkey = analog_sdk::pubkey::new_rand();
+        let my_pubkey1 = analog_sdk::pubkey::new_rand();
         let bank = Arc::new(Bank::default_for_tests());
         assert_matches!(
             BankingStage::consume_or_forward_packets(&my_pubkey, None, Some(&bank), false, false),
@@ -2286,8 +2286,8 @@ mod tests {
         );
     }
 
-    fn create_slow_genesis_config(lamports: u64) -> GenesisConfigInfo {
-        let mut config_info = create_genesis_config(lamports);
+    fn create_slow_genesis_config(tock: u64) -> GenesisConfigInfo {
+        let mut config_info = create_genesis_config(tock);
         // For these tests there's only 1 slot, don't want to run out of ticks
         config_info.genesis_config.ticks_per_slot *= 8;
         config_info
@@ -2295,14 +2295,14 @@ mod tests {
 
     #[test]
     fn test_bank_process_and_record_transactions() {
-        solana_logger::setup();
+        analog_logger::setup();
         let GenesisConfigInfo {
             genesis_config,
             mint_keypair,
             ..
         } = create_slow_genesis_config(10_000);
         let bank = Arc::new(Bank::new_no_wallclock_throttle_for_tests(&genesis_config));
-        let pubkey = solana_sdk::pubkey::new_rand();
+        let pubkey = analog_sdk::pubkey::new_rand();
 
         let transactions = sanitize_transactions(vec![system_transaction::transfer(
             &mint_keypair,
@@ -2407,7 +2407,7 @@ mod tests {
         let poh_recorder = poh_recorder.clone();
         let is_exited = poh_recorder.lock().unwrap().is_exited.clone();
         let tick_producer = Builder::new()
-            .name("solana-simulate_poh".to_string())
+            .name("analog-simulate_poh".to_string())
             .spawn(move || loop {
                 PohService::read_record_receiver_and_process(
                     &poh_recorder,
@@ -2423,15 +2423,15 @@ mod tests {
 
     #[test]
     fn test_bank_process_and_record_transactions_account_in_use() {
-        solana_logger::setup();
+        analog_logger::setup();
         let GenesisConfigInfo {
             genesis_config,
             mint_keypair,
             ..
         } = create_slow_genesis_config(10_000);
         let bank = Arc::new(Bank::new_no_wallclock_throttle_for_tests(&genesis_config));
-        let pubkey = solana_sdk::pubkey::new_rand();
-        let pubkey1 = solana_sdk::pubkey::new_rand();
+        let pubkey = analog_sdk::pubkey::new_rand();
+        let pubkey1 = analog_sdk::pubkey::new_rand();
 
         let transactions = sanitize_transactions(vec![
             system_transaction::transfer(&mint_keypair, &pubkey, 1, genesis_config.hash()),
@@ -2487,7 +2487,7 @@ mod tests {
 
     #[test]
     fn test_filter_valid_packets() {
-        solana_logger::setup();
+        analog_logger::setup();
 
         let mut all_packets = (0..16)
             .map(|packets_id| {
@@ -2528,7 +2528,7 @@ mod tests {
 
     #[test]
     fn test_process_transactions_returns_unprocessed_txs() {
-        solana_logger::setup();
+        analog_logger::setup();
         let GenesisConfigInfo {
             genesis_config,
             mint_keypair,
@@ -2536,7 +2536,7 @@ mod tests {
         } = create_slow_genesis_config(10_000);
         let bank = Arc::new(Bank::new_no_wallclock_throttle_for_tests(&genesis_config));
 
-        let pubkey = solana_sdk::pubkey::new_rand();
+        let pubkey = analog_sdk::pubkey::new_rand();
 
         let transactions = sanitize_transactions(vec![system_transaction::transfer(
             &mint_keypair,
@@ -2555,7 +2555,7 @@ mod tests {
                 bank.clone(),
                 Some((4, 4)),
                 bank.ticks_per_slot(),
-                &solana_sdk::pubkey::new_rand(),
+                &analog_sdk::pubkey::new_rand(),
                 &Arc::new(blockstore),
                 &Arc::new(LeaderScheduleCache::new_from_bank(&bank)),
                 &Arc::new(PohConfig::default()),
@@ -2595,15 +2595,15 @@ mod tests {
 
     #[test]
     fn test_write_persist_transaction_status() {
-        solana_logger::setup();
+        analog_logger::setup();
         let GenesisConfigInfo {
             genesis_config,
             mint_keypair,
             ..
         } = create_slow_genesis_config(10_000);
         let bank = Arc::new(Bank::new_no_wallclock_throttle_for_tests(&genesis_config));
-        let pubkey = solana_sdk::pubkey::new_rand();
-        let pubkey1 = solana_sdk::pubkey::new_rand();
+        let pubkey = analog_sdk::pubkey::new_rand();
+        let pubkey1 = analog_sdk::pubkey::new_rand();
         let keypair1 = Keypair::new();
 
         let success_tx =
@@ -2734,7 +2734,7 @@ mod tests {
             bank.clone(),
             Some((4, 4)),
             bank.ticks_per_slot(),
-            &solana_sdk::pubkey::new_rand(),
+            &analog_sdk::pubkey::new_rand(),
             &Arc::new(blockstore),
             &Arc::new(LeaderScheduleCache::new_from_bank(&bank)),
             &Arc::new(PohConfig::default()),
@@ -2743,9 +2743,9 @@ mod tests {
         let poh_recorder = Arc::new(Mutex::new(poh_recorder));
 
         // Set up unparallelizable conflicting transactions
-        let pubkey0 = solana_sdk::pubkey::new_rand();
-        let pubkey1 = solana_sdk::pubkey::new_rand();
-        let pubkey2 = solana_sdk::pubkey::new_rand();
+        let pubkey0 = analog_sdk::pubkey::new_rand();
+        let pubkey1 = analog_sdk::pubkey::new_rand();
+        let pubkey2 = analog_sdk::pubkey::new_rand();
         let transactions = vec![
             system_transaction::transfer(mint_keypair, &pubkey0, 1, genesis_config.hash()),
             system_transaction::transfer(mint_keypair, &pubkey1, 1, genesis_config.hash()),
@@ -2926,7 +2926,7 @@ mod tests {
 
     #[test]
     fn test_forwarder_budget() {
-        solana_logger::setup();
+        analog_logger::setup();
         // Create `Packets` with 1 unprocessed element
         let single_element_packets = Packets::new(vec![Packet::default()]);
         let mut unprocessed_packets: UnprocessedPackets =
@@ -2975,7 +2975,7 @@ mod tests {
 
     #[test]
     fn test_push_unprocessed_batch_limit() {
-        solana_logger::setup();
+        analog_logger::setup();
         // Create `Packets` with 2 unprocessed elements
         let new_packets = Packets::new(vec![Packet::default(); 2]);
         let mut unprocessed_packets: UnprocessedPackets =
@@ -3078,7 +3078,7 @@ mod tests {
     #[test]
     fn test_packet_message() {
         let keypair = Keypair::new();
-        let pubkey = solana_sdk::pubkey::new_rand();
+        let pubkey = analog_sdk::pubkey::new_rand();
         let blockhash = Hash::new_unique();
         let transaction = system_transaction::transfer(&keypair, &pubkey, 1, blockhash);
         let packet = Packet::from_data(None, &transaction).unwrap();
@@ -3109,7 +3109,7 @@ mod tests {
 
     #[test]
     fn test_transactions_from_packets() {
-        use solana_sdk::feature_set::FeatureSet;
+        use analog_sdk::feature_set::FeatureSet;
         let keypair = Keypair::new();
         let transfer_tx =
             system_transaction::transfer(&keypair, &keypair.pubkey(), 1, Hash::default());

@@ -8,8 +8,8 @@ use crate::{
 };
 
 use log::*;
-use solana_entry::entry::VerifyRecyclers;
-use solana_runtime::{
+use analog_entry::entry::VerifyRecyclers;
+use analog_runtime::{
     accounts_update_notifier_interface::AccountsUpdateNotifier,
     bank_forks::BankForks,
     snapshot_archive_info::SnapshotArchiveInfoGetter,
@@ -18,7 +18,7 @@ use solana_runtime::{
     snapshot_package::AccountsPackageSender,
     snapshot_utils,
 };
-use solana_sdk::{clock::Slot, genesis_config::GenesisConfig};
+use analog_sdk::{clock::Slot, genesis_config::GenesisConfig};
 use std::{fs, path::PathBuf, process, result};
 
 pub type LoadResult = result::Result<

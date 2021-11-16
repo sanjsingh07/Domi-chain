@@ -1,37 +1,37 @@
 [package]
-name = "solana-poh"
+name = "analog-poh"
 version = "1.9.0"
-description = "Solana PoH"
-authors = ["Solana Maintainers <maintainers@solana.foundation>"]
-repository = "https://github.com/solana-labs/solana"
+description = "Analog PoH"
+authors = ["Analog Maintainers <maintainers@solana.foundation>"]
+repository = "https://github.com/analog-labs/solana"
 license = "Apache-2.0"
 homepage = "https://solana.com/"
-documentation = "https://docs.rs/solana-poh"
+documentation = "https://docs.rs/analog-poh"
 edition = "2018"
 
 [dependencies]
 core_affinity = "0.5.10"
 crossbeam-channel = "0.5"
 log = "0.4.14"
-solana-entry = { path = "../entry", version = "=1.9.0" }
-solana-ledger = { path = "../ledger", version = "=1.9.0" }
-solana-measure = { path = "../measure", version = "=1.9.0" }
-solana-metrics = { path = "../metrics", version = "=1.9.0" }
-solana-runtime = { path = "../runtime", version = "=1.9.0" }
-solana-sdk = { path = "../sdk", version = "=1.9.0" }
-solana-sys-tuner = { path = "../sys-tuner", version = "=1.9.0" }
+analog-entry = { path = "../entry", version = "=1.9.0" }
+analog-ledger = { path = "../ledger", version = "=1.9.0" }
+analog-measure = { path = "../measure", version = "=1.9.0" }
+analog-metrics = { path = "../metrics", version = "=1.9.0" }
+analog-runtime = { path = "../runtime", version = "=1.9.0" }
+analog-sdk = { path = "../sdk", version = "=1.9.0" }
+analog-sys-tuner = { path = "../sys-tuner", version = "=1.9.0" }
 thiserror = "1.0"
 
 [dev-dependencies]
 bincode = "1.3.3"
 matches = "0.1.9"
 rand = "0.7.0"
-solana-logger = { path = "../logger", version = "=1.9.0" }
-solana-perf = { path = "../perf", version = "=1.9.0" }
+analog-logger = { path = "../logger", version = "=1.9.0" }
+analog-perf = { path = "../perf", version = "=1.9.0" }
 
 [lib]
 crate-type = ["lib"]
-name = "solana_poh"
+name = "analog_poh"
 
 [[bench]]
 name = "poh"

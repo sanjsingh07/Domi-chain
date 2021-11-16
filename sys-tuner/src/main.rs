@@ -39,10 +39,10 @@ fn tune_poh_service_priority(uid: u32) {
     use std::process::Command;
     use std::str::from_utf8;
 
-    if let Some(pid) = find_pid("solana-validato", "/proc", uid, |dir| {
+    if let Some(pid) = find_pid("analog-validato", "/proc", uid, |dir| {
         let mut path = dir.path();
         path.push("task");
-        find_pid("solana-poh-serv", path, uid, |dir1| {
+        find_pid("analog-poh-serv", path, uid, |dir1| {
             if let Ok(pid) = dir1.file_name().into_string() {
                 pid.parse::<u64>().ok()
             } else {
@@ -99,10 +99,10 @@ fn tune_kernel_udp_buffers_and_vmmap() {
 
 #[cfg(unix)]
 fn main() {
-    solana_logger::setup();
+    analog_logger::setup();
     let matches = App::new(crate_name!())
         .about(crate_description!())
-        .version(solana_version::version!())
+        .version(analog_version::version!())
         .arg(
             Arg::with_name("user")
                 .long("user")
@@ -121,13 +121,13 @@ fn main() {
     info!("Tune will service requests only from user {}", user);
 
     unsafe { libc::umask(0o077) };
-    if let Err(e) = std::fs::remove_file(solana_sys_tuner::SOLANA_SYS_TUNER_PATH) {
+    if let Err(e) = std::fs::remove_file(analog_sys_tuner::SOLANA_SYS_TUNER_PATH) {
         if e.kind() != std::io::ErrorKind::NotFound {
             panic!("Failed to remove stale socket file: {:?}", e)
         }
     }
 
-    let listener = unix_socket::UnixListener::bind(solana_sys_tuner::SOLANA_SYS_TUNER_PATH)
+    let listener = unix_socket::UnixListener::bind(analog_sys_tuner::SOLANA_SYS_TUNER_PATH)
         .expect("Failed to bind to the socket file");
 
     let peer_uid;
@@ -135,9 +135,9 @@ fn main() {
     // set socket permission
     if let Some(user) = users::get_user_by_name(&user) {
         peer_uid = user.uid();
-        info!("UID for solana is {}", peer_uid);
+        info!("UID for analog is {}", peer_uid);
         nix::unistd::chown(
-            solana_sys_tuner::SOLANA_SYS_TUNER_PATH,
+            analog_sys_tuner::SOLANA_SYS_TUNER_PATH,
             Some(nix::unistd::Uid::from_raw(peer_uid)),
             None,
         )

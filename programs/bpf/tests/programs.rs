@@ -1,28 +1,28 @@
 #![cfg(any(feature = "bpf_c", feature = "bpf_rust"))]
 
 #[macro_use]
-extern crate solana_bpf_loader_program;
+extern crate analog_bpf_loader_program;
 
 use itertools::izip;
 use log::{log_enabled, trace, Level::Trace};
-use solana_account_decoder::parse_bpf_loader::{
+use analog_account_decoder::parse_bpf_loader::{
     parse_bpf_upgradeable_loader, BpfUpgradeableLoaderAccountType,
 };
-use solana_bpf_loader_program::{
+use analog_bpf_loader_program::{
     create_vm,
     serialization::{deserialize_parameters, serialize_parameters},
     syscalls::register_syscalls,
     BpfError, ThisInstructionMeter,
 };
-use solana_bpf_rust_invoke::instructions::*;
-use solana_bpf_rust_realloc::instructions::*;
-use solana_bpf_rust_realloc_invoke::instructions::*;
-use solana_cli_output::display::println_transaction;
+use analog_bpf_rust_invoke::instructions::*;
+use analog_bpf_rust_realloc::instructions::*;
+use analog_bpf_rust_realloc_invoke::instructions::*;
+use analog_cli_output::display::println_transaction;
 use solana_rbpf::{
     static_analysis::Analysis,
     vm::{Config, Executable, Tracer},
 };
-use solana_runtime::{
+use analog_runtime::{
     bank::{Bank, ExecuteTimings, TransactionBalancesSet, TransactionResults},
     bank_client::BankClient,
     genesis_utils::{create_genesis_config, GenesisConfigInfo},
@@ -32,7 +32,7 @@ use solana_runtime::{
     },
 };
 use solana_program_runtime::invoke_context::with_mock_invoke_context;
-use solana_sdk::{
+use analog_sdk::{
     account::{AccountSharedData, ReadableAccount},
     account_utils::StateMut,
     bpf_loader, bpf_loader_deprecated, bpf_loader_upgradeable,
@@ -51,7 +51,7 @@ use solana_sdk::{
     sysvar::{clock, rent},
     transaction::{SanitizedTransaction, Transaction, TransactionError},
 };
-use solana_transaction_status::{
+use analog_transaction_status::{
     token_balances::collect_token_balances, ConfirmedTransaction, InnerInstructions,
     TransactionStatusMeta, TransactionWithStatusMeta, UiTransactionEncoding,
 };
@@ -423,7 +423,7 @@ fn print_confirmed_tx(name: &str, confirmed_tx: ConfirmedTransaction) {
 #[test]
 #[cfg(any(feature = "bpf_c", feature = "bpf_rust"))]
 fn test_program_bpf_sanity() {
-    solana_logger::setup();
+    analog_logger::setup();
 
     let mut programs = Vec::new();
     #[cfg(feature = "bpf_c")]
@@ -449,21 +449,21 @@ fn test_program_bpf_sanity() {
     #[cfg(feature = "bpf_rust")]
     {
         programs.extend_from_slice(&[
-            ("solana_bpf_rust_128bit", true),
-            ("solana_bpf_rust_alloc", true),
-            ("solana_bpf_rust_custom_heap", true),
-            ("solana_bpf_rust_dep_crate", true),
-            ("solana_bpf_rust_external_spend", false),
-            ("solana_bpf_rust_iter", true),
-            ("solana_bpf_rust_many_args", true),
-            ("solana_bpf_rust_membuiltins", true),
-            ("solana_bpf_rust_noop", true),
-            ("solana_bpf_rust_panic", false),
-            ("solana_bpf_rust_param_passing", true),
-            ("solana_bpf_rust_rand", true),
-            ("solana_bpf_rust_sanity", true),
-            ("solana_bpf_rust_secp256k1_recover", true),
-            ("solana_bpf_rust_sha", true),
+            ("analog_bpf_rust_128bit", true),
+            ("analog_bpf_rust_alloc", true),
+            ("analog_bpf_rust_custom_heap", true),
+            ("analog_bpf_rust_dep_crate", true),
+            ("analog_bpf_rust_external_spend", false),
+            ("analog_bpf_rust_iter", true),
+            ("analog_bpf_rust_many_args", true),
+            ("analog_bpf_rust_membuiltins", true),
+            ("analog_bpf_rust_noop", true),
+            ("analog_bpf_rust_panic", false),
+            ("analog_bpf_rust_param_passing", true),
+            ("analog_bpf_rust_rand", true),
+            ("analog_bpf_rust_sanity", true),
+            ("analog_bpf_rust_secp256k1_recover", true),
+            ("analog_bpf_rust_sha", true),
         ]);
     }
 
@@ -477,7 +477,7 @@ fn test_program_bpf_sanity() {
         } = create_genesis_config(50);
 
         let mut bank = Bank::new_for_tests(&genesis_config);
-        let (name, id, entrypoint) = solana_bpf_loader_program!();
+        let (name, id, entrypoint) = analog_bpf_loader_program!();
         bank.add_builtin(&name, &id, entrypoint);
         let bank_client = BankClient::new(bank);
 
@@ -501,7 +501,7 @@ fn test_program_bpf_sanity() {
 #[test]
 #[cfg(any(feature = "bpf_c", feature = "bpf_rust"))]
 fn test_program_bpf_loader_deprecated() {
-    solana_logger::setup();
+    analog_logger::setup();
 
     let mut programs = Vec::new();
     #[cfg(feature = "bpf_c")]
@@ -510,7 +510,7 @@ fn test_program_bpf_loader_deprecated() {
     }
     #[cfg(feature = "bpf_rust")]
     {
-        programs.extend_from_slice(&[("solana_bpf_rust_deprecated_loader")]);
+        programs.extend_from_slice(&[("analog_bpf_rust_deprecated_loader")]);
     }
 
     for program in programs.iter() {
@@ -522,7 +522,7 @@ fn test_program_bpf_loader_deprecated() {
             ..
         } = create_genesis_config(50);
         let mut bank = Bank::new_for_tests(&genesis_config);
-        let (name, id, entrypoint) = solana_bpf_loader_deprecated_program!();
+        let (name, id, entrypoint) = analog_bpf_loader_deprecated_program!();
         bank.add_builtin(&name, &id, entrypoint);
         let bank_client = BankClient::new(bank);
 
@@ -541,7 +541,7 @@ fn test_program_bpf_loader_deprecated() {
 
 #[test]
 fn test_program_bpf_duplicate_accounts() {
-    solana_logger::setup();
+    analog_logger::setup();
 
     let mut programs = Vec::new();
     #[cfg(feature = "bpf_c")]
@@ -550,7 +550,7 @@ fn test_program_bpf_duplicate_accounts() {
     }
     #[cfg(feature = "bpf_rust")]
     {
-        programs.extend_from_slice(&[("solana_bpf_rust_dup_accounts")]);
+        programs.extend_from_slice(&[("analog_bpf_rust_dup_accounts")]);
     }
 
     for program in programs.iter() {
@@ -562,7 +562,7 @@ fn test_program_bpf_duplicate_accounts() {
             ..
         } = create_genesis_config(50);
         let mut bank = Bank::new_for_tests(&genesis_config);
-        let (name, id, entrypoint) = solana_bpf_loader_program!();
+        let (name, id, entrypoint) = analog_bpf_loader_program!();
         bank.add_builtin(&name, &id, entrypoint);
         let bank = Arc::new(bank);
         let bank_client = BankClient::new_shared(&bank);
@@ -604,23 +604,23 @@ fn test_program_bpf_duplicate_accounts() {
         bank.store_account(&pubkey, &account);
         let instruction = Instruction::new_with_bytes(program_id, &[4], account_metas.clone());
         let result = bank_client.send_and_confirm_instruction(&mint_keypair, instruction);
-        let lamports = bank_client.get_balance(&pubkey).unwrap();
+        let tock = bank_client.get_balance(&pubkey).unwrap();
         assert!(result.is_ok());
-        assert_eq!(lamports, 11);
+        assert_eq!(tock, 11);
 
         bank.store_account(&pubkey, &account);
         let instruction = Instruction::new_with_bytes(program_id, &[5], account_metas.clone());
         let result = bank_client.send_and_confirm_instruction(&mint_keypair, instruction);
-        let lamports = bank_client.get_balance(&pubkey).unwrap();
+        let tock = bank_client.get_balance(&pubkey).unwrap();
         assert!(result.is_ok());
-        assert_eq!(lamports, 12);
+        assert_eq!(tock, 12);
 
         bank.store_account(&pubkey, &account);
         let instruction = Instruction::new_with_bytes(program_id, &[6], account_metas.clone());
         let result = bank_client.send_and_confirm_instruction(&mint_keypair, instruction);
-        let lamports = bank_client.get_balance(&pubkey).unwrap();
+        let tock = bank_client.get_balance(&pubkey).unwrap();
         assert!(result.is_ok());
-        assert_eq!(lamports, 13);
+        assert_eq!(tock, 13);
 
         let keypair = Keypair::new();
         let pubkey = keypair.pubkey();
@@ -641,7 +641,7 @@ fn test_program_bpf_duplicate_accounts() {
 
 #[test]
 fn test_program_bpf_error_handling() {
-    solana_logger::setup();
+    analog_logger::setup();
 
     let mut programs = Vec::new();
     #[cfg(feature = "bpf_c")]
@@ -650,7 +650,7 @@ fn test_program_bpf_error_handling() {
     }
     #[cfg(feature = "bpf_rust")]
     {
-        programs.extend_from_slice(&[("solana_bpf_rust_error_handling")]);
+        programs.extend_from_slice(&[("analog_bpf_rust_error_handling")]);
     }
 
     for program in programs.iter() {
@@ -662,7 +662,7 @@ fn test_program_bpf_error_handling() {
             ..
         } = create_genesis_config(50);
         let mut bank = Bank::new_for_tests(&genesis_config);
-        let (name, id, entrypoint) = solana_bpf_loader_program!();
+        let (name, id, entrypoint) = analog_bpf_loader_program!();
         bank.add_builtin(&name, &id, entrypoint);
         let bank_client = BankClient::new(bank);
         let program_id = load_bpf_program(&bank_client, &bpf_loader::id(), &mint_keypair, program);
@@ -745,7 +745,7 @@ fn test_program_bpf_error_handling() {
 #[test]
 #[cfg(any(feature = "bpf_c", feature = "bpf_rust"))]
 fn test_return_data_and_log_data_syscall() {
-    solana_logger::setup();
+    analog_logger::setup();
 
     let mut programs = Vec::new();
     #[cfg(feature = "bpf_c")]
@@ -754,7 +754,7 @@ fn test_return_data_and_log_data_syscall() {
     }
     #[cfg(feature = "bpf_rust")]
     {
-        programs.extend_from_slice(&[("solana_bpf_rust_log_data")]);
+        programs.extend_from_slice(&[("analog_bpf_rust_log_data")]);
     }
 
     for program in programs.iter() {
@@ -764,7 +764,7 @@ fn test_return_data_and_log_data_syscall() {
             ..
         } = create_genesis_config(50);
         let mut bank = Bank::new_for_tests(&genesis_config);
-        let (name, id, entrypoint) = solana_bpf_loader_program!();
+        let (name, id, entrypoint) = analog_bpf_loader_program!();
         bank.add_builtin(&name, &id, entrypoint);
         let bank = Arc::new(bank);
         let bank_client = BankClient::new_shared(&bank);
@@ -797,7 +797,7 @@ fn test_return_data_and_log_data_syscall() {
 
 #[test]
 fn test_program_bpf_invoke_sanity() {
-    solana_logger::setup();
+    analog_logger::setup();
 
     #[allow(dead_code)]
     #[derive(Debug)]
@@ -814,9 +814,9 @@ fn test_program_bpf_invoke_sanity() {
     {
         programs.push((
             Languages::Rust,
-            "solana_bpf_rust_invoke",
-            "solana_bpf_rust_invoked",
-            "solana_bpf_rust_noop",
+            "analog_bpf_rust_invoke",
+            "analog_bpf_rust_invoked",
+            "analog_bpf_rust_noop",
         ));
     }
     for program in programs.iter() {
@@ -828,7 +828,7 @@ fn test_program_bpf_invoke_sanity() {
             ..
         } = create_genesis_config(50);
         let mut bank = Bank::new_for_tests(&genesis_config);
-        let (name, id, entrypoint) = solana_bpf_loader_program!();
+        let (name, id, entrypoint) = analog_bpf_loader_program!();
         bank.add_builtin(&name, &id, entrypoint);
         let bank = Arc::new(bank);
         let bank_client = BankClient::new_shared(&bank);
@@ -872,7 +872,7 @@ fn test_program_bpf_invoke_sanity() {
             AccountMeta::new_readonly(derived_key3, false),
             AccountMeta::new_readonly(system_program::id(), false),
             AccountMeta::new(from_keypair.pubkey(), true),
-            AccountMeta::new_readonly(solana_sdk::ed25519_program::id(), false),
+            AccountMeta::new_readonly(analog_sdk::ed25519_program::id(), false),
             AccountMeta::new_readonly(invoke_program_id, false),
         ];
 
@@ -1148,7 +1148,7 @@ fn test_program_bpf_program_id_spoofing() {
         ..
     } = create_genesis_config(50);
     let mut bank = Bank::new_for_tests(&genesis_config);
-    let (name, id, entrypoint) = solana_bpf_loader_program!();
+    let (name, id, entrypoint) = analog_bpf_loader_program!();
     bank.add_builtin(&name, &id, entrypoint);
     let bank = Arc::new(bank);
     let bank_client = BankClient::new_shared(&bank);
@@ -1157,13 +1157,13 @@ fn test_program_bpf_program_id_spoofing() {
         &bank_client,
         &bpf_loader::id(),
         &mint_keypair,
-        "solana_bpf_rust_spoof1",
+        "analog_bpf_rust_spoof1",
     );
     let malicious_system_pubkey = load_bpf_program(
         &bank_client,
         &bpf_loader::id(),
         &mint_keypair,
-        "solana_bpf_rust_spoof1_system",
+        "analog_bpf_rust_spoof1_system",
     );
 
     let from_pubkey = Pubkey::new_unique();
@@ -1201,7 +1201,7 @@ fn test_program_bpf_caller_has_access_to_cpi_program() {
         ..
     } = create_genesis_config(50);
     let mut bank = Bank::new_for_tests(&genesis_config);
-    let (name, id, entrypoint) = solana_bpf_loader_program!();
+    let (name, id, entrypoint) = analog_bpf_loader_program!();
     bank.add_builtin(&name, &id, entrypoint);
     let bank = Arc::new(bank);
     let bank_client = BankClient::new_shared(&bank);
@@ -1210,13 +1210,13 @@ fn test_program_bpf_caller_has_access_to_cpi_program() {
         &bank_client,
         &bpf_loader::id(),
         &mint_keypair,
-        "solana_bpf_rust_caller_access",
+        "analog_bpf_rust_caller_access",
     );
     let caller2_pubkey = load_bpf_program(
         &bank_client,
         &bpf_loader::id(),
         &mint_keypair,
-        "solana_bpf_rust_caller_access",
+        "analog_bpf_rust_caller_access",
     );
     let account_metas = vec![
         AccountMeta::new_readonly(caller_pubkey, false),
@@ -1233,7 +1233,7 @@ fn test_program_bpf_caller_has_access_to_cpi_program() {
 #[cfg(feature = "bpf_rust")]
 #[test]
 fn test_program_bpf_ro_modify() {
-    solana_logger::setup();
+    analog_logger::setup();
 
     let GenesisConfigInfo {
         genesis_config,
@@ -1241,7 +1241,7 @@ fn test_program_bpf_ro_modify() {
         ..
     } = create_genesis_config(50);
     let mut bank = Bank::new_for_tests(&genesis_config);
-    let (name, id, entrypoint) = solana_bpf_loader_program!();
+    let (name, id, entrypoint) = analog_bpf_loader_program!();
     bank.add_builtin(&name, &id, entrypoint);
     let bank = Arc::new(bank);
     let bank_client = BankClient::new_shared(&bank);
@@ -1250,7 +1250,7 @@ fn test_program_bpf_ro_modify() {
         &bank_client,
         &bpf_loader::id(),
         &mint_keypair,
-        "solana_bpf_rust_ro_modify",
+        "analog_bpf_rust_ro_modify",
     );
 
     let test_keypair = Keypair::new();
@@ -1290,7 +1290,7 @@ fn test_program_bpf_ro_modify() {
 #[cfg(feature = "bpf_rust")]
 #[test]
 fn test_program_bpf_call_depth() {
-    solana_logger::setup();
+    analog_logger::setup();
 
     let GenesisConfigInfo {
         genesis_config,
@@ -1298,14 +1298,14 @@ fn test_program_bpf_call_depth() {
         ..
     } = create_genesis_config(50);
     let mut bank = Bank::new_for_tests(&genesis_config);
-    let (name, id, entrypoint) = solana_bpf_loader_program!();
+    let (name, id, entrypoint) = analog_bpf_loader_program!();
     bank.add_builtin(&name, &id, entrypoint);
     let bank_client = BankClient::new(bank);
     let program_id = load_bpf_program(
         &bank_client,
         &bpf_loader::id(),
         &mint_keypair,
-        "solana_bpf_rust_call_depth",
+        "analog_bpf_rust_call_depth",
     );
 
     let instruction = Instruction::new_with_bincode(
@@ -1325,7 +1325,7 @@ fn test_program_bpf_call_depth() {
 #[cfg(feature = "bpf_rust")]
 #[test]
 fn test_program_bpf_compute_budget() {
-    solana_logger::setup();
+    analog_logger::setup();
 
     let GenesisConfigInfo {
         genesis_config,
@@ -1333,14 +1333,14 @@ fn test_program_bpf_compute_budget() {
         ..
     } = create_genesis_config(50);
     let mut bank = Bank::new_for_tests(&genesis_config);
-    let (name, id, entrypoint) = solana_bpf_loader_program!();
+    let (name, id, entrypoint) = analog_bpf_loader_program!();
     bank.add_builtin(&name, &id, entrypoint);
     let bank_client = BankClient::new(bank);
     let program_id = load_bpf_program(
         &bank_client,
         &bpf_loader::id(),
         &mint_keypair,
-        "solana_bpf_rust_noop",
+        "analog_bpf_rust_noop",
     );
     let message = Message::new(
         &[
@@ -1358,7 +1358,7 @@ fn test_program_bpf_compute_budget() {
 
 #[test]
 fn assert_instruction_count() {
-    solana_logger::setup();
+    analog_logger::setup();
 
     let mut programs = Vec::new();
     #[cfg(feature = "bpf_c")]
@@ -1382,21 +1382,21 @@ fn assert_instruction_count() {
     #[cfg(feature = "bpf_rust")]
     {
         programs.extend_from_slice(&[
-            ("solana_bpf_rust_128bit", 584),
-            ("solana_bpf_rust_alloc", 7388),
-            ("solana_bpf_rust_custom_heap", 536),
-            ("solana_bpf_rust_dep_crate", 47),
-            ("solana_bpf_rust_external_spend", 507),
-            ("solana_bpf_rust_iter", 824),
-            ("solana_bpf_rust_many_args", 941),
-            ("solana_bpf_rust_mem", 3086),
-            ("solana_bpf_rust_membuiltins", 3976),
-            ("solana_bpf_rust_noop", 481),
-            ("solana_bpf_rust_param_passing", 146),
-            ("solana_bpf_rust_rand", 488),
-            ("solana_bpf_rust_sanity", 8455),
-            ("solana_bpf_rust_secp256k1_recover", 25216),
-            ("solana_bpf_rust_sha", 30692),
+            ("analog_bpf_rust_128bit", 584),
+            ("analog_bpf_rust_alloc", 7388),
+            ("analog_bpf_rust_custom_heap", 536),
+            ("analog_bpf_rust_dep_crate", 47),
+            ("analog_bpf_rust_external_spend", 507),
+            ("analog_bpf_rust_iter", 824),
+            ("analog_bpf_rust_many_args", 941),
+            ("analog_bpf_rust_mem", 3086),
+            ("analog_bpf_rust_membuiltins", 3976),
+            ("analog_bpf_rust_noop", 481),
+            ("analog_bpf_rust_param_passing", 146),
+            ("analog_bpf_rust_rand", 488),
+            ("analog_bpf_rust_sanity", 8455),
+            ("analog_bpf_rust_secp256k1_recover", 25216),
+            ("analog_bpf_rust_sha", 30692),
         ]);
     }
 
@@ -1423,7 +1423,7 @@ fn assert_instruction_count() {
 #[cfg(any(feature = "bpf_rust"))]
 #[test]
 fn test_program_bpf_instruction_introspection() {
-    solana_logger::setup();
+    analog_logger::setup();
 
     let GenesisConfigInfo {
         genesis_config,
@@ -1432,7 +1432,7 @@ fn test_program_bpf_instruction_introspection() {
     } = create_genesis_config(50_000);
     let mut bank = Bank::new_for_tests(&genesis_config);
 
-    let (name, id, entrypoint) = solana_bpf_loader_program!();
+    let (name, id, entrypoint) = analog_bpf_loader_program!();
     bank.add_builtin(&name, &id, entrypoint);
     let bank = Arc::new(bank);
     let bank_client = BankClient::new_shared(&bank);
@@ -1441,7 +1441,7 @@ fn test_program_bpf_instruction_introspection() {
         &bank_client,
         &bpf_loader::id(),
         &mint_keypair,
-        "solana_bpf_rust_instruction_introspection",
+        "analog_bpf_rust_instruction_introspection",
     );
 
     // Passing transaction
@@ -1481,7 +1481,7 @@ fn test_program_bpf_instruction_introspection() {
 #[cfg(feature = "bpf_rust")]
 #[test]
 fn test_program_bpf_test_use_latest_executor() {
-    solana_logger::setup();
+    analog_logger::setup();
 
     let GenesisConfigInfo {
         genesis_config,
@@ -1489,20 +1489,20 @@ fn test_program_bpf_test_use_latest_executor() {
         ..
     } = create_genesis_config(50);
     let mut bank = Bank::new_for_tests(&genesis_config);
-    let (name, id, entrypoint) = solana_bpf_loader_program!();
+    let (name, id, entrypoint) = analog_bpf_loader_program!();
     bank.add_builtin(&name, &id, entrypoint);
     let bank_client = BankClient::new(bank);
     let panic_id = load_bpf_program(
         &bank_client,
         &bpf_loader::id(),
         &mint_keypair,
-        "solana_bpf_rust_panic",
+        "analog_bpf_rust_panic",
     );
 
     let program_keypair = Keypair::new();
 
     // Write the panic program into the program account
-    let elf = read_bpf_program("solana_bpf_rust_panic");
+    let elf = read_bpf_program("analog_bpf_rust_panic");
     let message = Message::new(
         &[system_instruction::create_account(
             &mint_keypair.pubkey(),
@@ -1537,7 +1537,7 @@ fn test_program_bpf_test_use_latest_executor() {
         .is_err());
 
     // Write the noop program into the same program account
-    let elf = read_bpf_program("solana_bpf_rust_noop");
+    let elf = read_bpf_program("analog_bpf_rust_noop");
     write_bpf_program(
         &bank_client,
         &bpf_loader::id(),
@@ -1576,7 +1576,7 @@ fn test_program_bpf_test_use_latest_executor() {
 #[cfg(feature = "bpf_rust")]
 #[test]
 fn test_program_bpf_test_use_latest_executor2() {
-    solana_logger::setup();
+    analog_logger::setup();
 
     let GenesisConfigInfo {
         genesis_config,
@@ -1584,26 +1584,26 @@ fn test_program_bpf_test_use_latest_executor2() {
         ..
     } = create_genesis_config(50);
     let mut bank = Bank::new_for_tests(&genesis_config);
-    let (name, id, entrypoint) = solana_bpf_loader_program!();
+    let (name, id, entrypoint) = analog_bpf_loader_program!();
     bank.add_builtin(&name, &id, entrypoint);
     let bank_client = BankClient::new(bank);
     let invoke_and_error = load_bpf_program(
         &bank_client,
         &bpf_loader::id(),
         &mint_keypair,
-        "solana_bpf_rust_invoke_and_error",
+        "analog_bpf_rust_invoke_and_error",
     );
     let invoke_and_ok = load_bpf_program(
         &bank_client,
         &bpf_loader::id(),
         &mint_keypair,
-        "solana_bpf_rust_invoke_and_ok",
+        "analog_bpf_rust_invoke_and_ok",
     );
 
     let program_keypair = Keypair::new();
 
     // Write the panic program into the program account
-    let elf = read_bpf_program("solana_bpf_rust_panic");
+    let elf = read_bpf_program("analog_bpf_rust_panic");
     let message = Message::new(
         &[system_instruction::create_account(
             &mint_keypair.pubkey(),
@@ -1668,7 +1668,7 @@ fn test_program_bpf_test_use_latest_executor2() {
     );
 
     // Write the noop program into the same program account
-    let elf = read_bpf_program("solana_bpf_rust_noop");
+    let elf = read_bpf_program("analog_bpf_rust_noop");
     write_bpf_program(
         &bank_client,
         &bpf_loader::id(),
@@ -1706,7 +1706,7 @@ fn test_program_bpf_test_use_latest_executor2() {
 #[cfg(feature = "bpf_rust")]
 #[test]
 fn test_program_bpf_upgrade() {
-    solana_logger::setup();
+    analog_logger::setup();
 
     let GenesisConfigInfo {
         genesis_config,
@@ -1714,7 +1714,7 @@ fn test_program_bpf_upgrade() {
         ..
     } = create_genesis_config(50);
     let mut bank = Bank::new_for_tests(&genesis_config);
-    let (name, id, entrypoint) = solana_bpf_loader_upgradeable_program!();
+    let (name, id, entrypoint) = analog_bpf_loader_upgradeable_program!();
     bank.add_builtin(&name, &id, entrypoint);
     let bank_client = BankClient::new(bank);
 
@@ -1729,7 +1729,7 @@ fn test_program_bpf_upgrade() {
         &buffer_keypair,
         &program_keypair,
         &authority_keypair,
-        "solana_bpf_rust_upgradeable",
+        "analog_bpf_rust_upgradeable",
     );
 
     let mut instruction = Instruction::new_with_bytes(
@@ -1756,7 +1756,7 @@ fn test_program_bpf_upgrade() {
         &buffer_keypair,
         &program_id,
         &authority_keypair,
-        "solana_bpf_rust_upgraded",
+        "analog_bpf_rust_upgraded",
     );
 
     // Call upgraded program
@@ -1785,7 +1785,7 @@ fn test_program_bpf_upgrade() {
         &buffer_keypair,
         &program_id,
         &new_authority_keypair,
-        "solana_bpf_rust_upgradeable",
+        "analog_bpf_rust_upgradeable",
     );
 
     // Call original program
@@ -1800,7 +1800,7 @@ fn test_program_bpf_upgrade() {
 #[cfg(feature = "bpf_rust")]
 #[test]
 fn test_program_bpf_upgrade_and_invoke_in_same_tx() {
-    solana_logger::setup();
+    analog_logger::setup();
 
     let GenesisConfigInfo {
         genesis_config,
@@ -1808,7 +1808,7 @@ fn test_program_bpf_upgrade_and_invoke_in_same_tx() {
         ..
     } = create_genesis_config(50);
     let mut bank = Bank::new_for_tests(&genesis_config);
-    let (name, id, entrypoint) = solana_bpf_loader_upgradeable_program!();
+    let (name, id, entrypoint) = analog_bpf_loader_upgradeable_program!();
     bank.add_builtin(&name, &id, entrypoint);
     let bank = Arc::new(bank);
     let bank_client = BankClient::new_shared(&bank);
@@ -1824,7 +1824,7 @@ fn test_program_bpf_upgrade_and_invoke_in_same_tx() {
         &buffer_keypair,
         &program_keypair,
         &authority_keypair,
-        "solana_bpf_rust_noop",
+        "analog_bpf_rust_noop",
     );
 
     let invoke_instruction = Instruction::new_with_bytes(
@@ -1848,7 +1848,7 @@ fn test_program_bpf_upgrade_and_invoke_in_same_tx() {
         &mint_keypair,
         &buffer_keypair,
         &authority_keypair,
-        "solana_bpf_rust_panic",
+        "analog_bpf_rust_panic",
     );
 
     // Invoke, then upgrade the program, and then invoke again in same tx
@@ -1880,7 +1880,7 @@ fn test_program_bpf_upgrade_and_invoke_in_same_tx() {
 #[cfg(feature = "bpf_rust")]
 #[test]
 fn test_program_bpf_invoke_upgradeable_via_cpi() {
-    solana_logger::setup();
+    analog_logger::setup();
 
     let GenesisConfigInfo {
         genesis_config,
@@ -1888,16 +1888,16 @@ fn test_program_bpf_invoke_upgradeable_via_cpi() {
         ..
     } = create_genesis_config(50);
     let mut bank = Bank::new_for_tests(&genesis_config);
-    let (name, id, entrypoint) = solana_bpf_loader_program!();
+    let (name, id, entrypoint) = analog_bpf_loader_program!();
     bank.add_builtin(&name, &id, entrypoint);
-    let (name, id, entrypoint) = solana_bpf_loader_upgradeable_program!();
+    let (name, id, entrypoint) = analog_bpf_loader_upgradeable_program!();
     bank.add_builtin(&name, &id, entrypoint);
     let bank_client = BankClient::new(bank);
     let invoke_and_return = load_bpf_program(
         &bank_client,
         &bpf_loader::id(),
         &mint_keypair,
-        "solana_bpf_rust_invoke_and_return",
+        "analog_bpf_rust_invoke_and_return",
     );
 
     // Deploy upgradeable program
@@ -1911,7 +1911,7 @@ fn test_program_bpf_invoke_upgradeable_via_cpi() {
         &buffer_keypair,
         &program_keypair,
         &authority_keypair,
-        "solana_bpf_rust_upgradeable",
+        "analog_bpf_rust_upgradeable",
     );
 
     let mut instruction = Instruction::new_with_bytes(
@@ -1940,7 +1940,7 @@ fn test_program_bpf_invoke_upgradeable_via_cpi() {
         &buffer_keypair,
         &program_id,
         &authority_keypair,
-        "solana_bpf_rust_upgraded",
+        "analog_bpf_rust_upgraded",
     );
 
     // Call the upgraded program
@@ -1969,7 +1969,7 @@ fn test_program_bpf_invoke_upgradeable_via_cpi() {
         &buffer_keypair,
         &program_id,
         &new_authority_keypair,
-        "solana_bpf_rust_upgradeable",
+        "analog_bpf_rust_upgradeable",
     );
 
     // Call original program
@@ -1984,7 +1984,7 @@ fn test_program_bpf_invoke_upgradeable_via_cpi() {
 #[test]
 #[cfg(any(feature = "bpf_c", feature = "bpf_rust"))]
 fn test_program_bpf_disguised_as_bpf_loader() {
-    solana_logger::setup();
+    analog_logger::setup();
 
     let mut programs = Vec::new();
     #[cfg(feature = "bpf_c")]
@@ -1993,7 +1993,7 @@ fn test_program_bpf_disguised_as_bpf_loader() {
     }
     #[cfg(feature = "bpf_rust")]
     {
-        programs.extend_from_slice(&[("solana_bpf_rust_noop")]);
+        programs.extend_from_slice(&[("analog_bpf_rust_noop")]);
     }
 
     for program in programs.iter() {
@@ -2003,7 +2003,7 @@ fn test_program_bpf_disguised_as_bpf_loader() {
             ..
         } = create_genesis_config(50);
         let mut bank = Bank::new_for_tests(&genesis_config);
-        let (name, id, entrypoint) = solana_bpf_loader_deprecated_program!();
+        let (name, id, entrypoint) = analog_bpf_loader_deprecated_program!();
         bank.add_builtin(&name, &id, entrypoint);
         let bank_client = BankClient::new(bank);
 
@@ -2027,7 +2027,7 @@ fn test_program_bpf_disguised_as_bpf_loader() {
 #[test]
 #[cfg(feature = "bpf_c")]
 fn test_program_bpf_c_dup() {
-    solana_logger::setup();
+    analog_logger::setup();
 
     let GenesisConfigInfo {
         genesis_config,
@@ -2035,7 +2035,7 @@ fn test_program_bpf_c_dup() {
         ..
     } = create_genesis_config(50);
     let mut bank = Bank::new_for_tests(&genesis_config);
-    let (name, id, entrypoint) = solana_bpf_loader_program!();
+    let (name, id, entrypoint) = analog_bpf_loader_program!();
     bank.add_builtin(&name, &id, entrypoint);
 
     let account_address = Pubkey::new_unique();
@@ -2058,7 +2058,7 @@ fn test_program_bpf_c_dup() {
 #[cfg(feature = "bpf_rust")]
 #[test]
 fn test_program_bpf_upgrade_via_cpi() {
-    solana_logger::setup();
+    analog_logger::setup();
 
     let GenesisConfigInfo {
         genesis_config,
@@ -2066,16 +2066,16 @@ fn test_program_bpf_upgrade_via_cpi() {
         ..
     } = create_genesis_config(50);
     let mut bank = Bank::new_for_tests(&genesis_config);
-    let (name, id, entrypoint) = solana_bpf_loader_program!();
+    let (name, id, entrypoint) = analog_bpf_loader_program!();
     bank.add_builtin(&name, &id, entrypoint);
-    let (name, id, entrypoint) = solana_bpf_loader_upgradeable_program!();
+    let (name, id, entrypoint) = analog_bpf_loader_upgradeable_program!();
     bank.add_builtin(&name, &id, entrypoint);
     let bank_client = BankClient::new(bank);
     let invoke_and_return = load_bpf_program(
         &bank_client,
         &bpf_loader::id(),
         &mint_keypair,
-        "solana_bpf_rust_invoke_and_return",
+        "analog_bpf_rust_invoke_and_return",
     );
 
     // Deploy upgradeable program
@@ -2089,7 +2089,7 @@ fn test_program_bpf_upgrade_via_cpi() {
         &buffer_keypair,
         &program_keypair,
         &authority_keypair,
-        "solana_bpf_rust_upgradeable",
+        "analog_bpf_rust_upgradeable",
     );
     let program_account = bank_client.get_account(&program_id).unwrap().unwrap();
     let programdata_address = match program_account.state() {
@@ -2122,7 +2122,7 @@ fn test_program_bpf_upgrade_via_cpi() {
     );
 
     // Load the buffer account
-    let path = create_bpf_path("solana_bpf_rust_upgraded");
+    let path = create_bpf_path("analog_bpf_rust_upgraded");
     let mut file = File::open(&path).unwrap_or_else(|err| {
         panic!("Failed to open {}: {}", path.display(), err);
     });
@@ -2172,7 +2172,7 @@ fn test_program_bpf_upgrade_via_cpi() {
 #[cfg(feature = "bpf_rust")]
 #[test]
 fn test_program_bpf_upgrade_self_via_cpi() {
-    solana_logger::setup();
+    analog_logger::setup();
 
     let GenesisConfigInfo {
         genesis_config,
@@ -2180,9 +2180,9 @@ fn test_program_bpf_upgrade_self_via_cpi() {
         ..
     } = create_genesis_config(50);
     let mut bank = Bank::new_for_tests(&genesis_config);
-    let (name, id, entrypoint) = solana_bpf_loader_program!();
+    let (name, id, entrypoint) = analog_bpf_loader_program!();
     bank.add_builtin(&name, &id, entrypoint);
-    let (name, id, entrypoint) = solana_bpf_loader_upgradeable_program!();
+    let (name, id, entrypoint) = analog_bpf_loader_upgradeable_program!();
     bank.add_builtin(&name, &id, entrypoint);
     let bank = Arc::new(bank);
     let bank_client = BankClient::new_shared(&bank);
@@ -2190,7 +2190,7 @@ fn test_program_bpf_upgrade_self_via_cpi() {
         &bank_client,
         &bpf_loader::id(),
         &mint_keypair,
-        "solana_bpf_rust_noop",
+        "analog_bpf_rust_noop",
     );
 
     // Deploy upgradeable program
@@ -2204,7 +2204,7 @@ fn test_program_bpf_upgrade_self_via_cpi() {
         &buffer_keypair,
         &program_keypair,
         &authority_keypair,
-        "solana_bpf_rust_invoke_and_return",
+        "analog_bpf_rust_invoke_and_return",
     );
 
     let mut invoke_instruction = Instruction::new_with_bytes(
@@ -2230,7 +2230,7 @@ fn test_program_bpf_upgrade_self_via_cpi() {
         &mint_keypair,
         &buffer_keypair,
         &authority_keypair,
-        "solana_bpf_rust_panic",
+        "analog_bpf_rust_panic",
     );
 
     // Invoke, then upgrade the program, and then invoke again in same tx
@@ -2262,7 +2262,7 @@ fn test_program_bpf_upgrade_self_via_cpi() {
 #[cfg(feature = "bpf_rust")]
 #[test]
 fn test_program_bpf_set_upgrade_authority_via_cpi() {
-    solana_logger::setup();
+    analog_logger::setup();
 
     let GenesisConfigInfo {
         genesis_config,
@@ -2270,9 +2270,9 @@ fn test_program_bpf_set_upgrade_authority_via_cpi() {
         ..
     } = create_genesis_config(50);
     let mut bank = Bank::new_for_tests(&genesis_config);
-    let (name, id, entrypoint) = solana_bpf_loader_program!();
+    let (name, id, entrypoint) = analog_bpf_loader_program!();
     bank.add_builtin(&name, &id, entrypoint);
-    let (name, id, entrypoint) = solana_bpf_loader_upgradeable_program!();
+    let (name, id, entrypoint) = analog_bpf_loader_upgradeable_program!();
     bank.add_builtin(&name, &id, entrypoint);
     let bank_client = BankClient::new(bank);
 
@@ -2281,7 +2281,7 @@ fn test_program_bpf_set_upgrade_authority_via_cpi() {
         &bank_client,
         &bpf_loader::id(),
         &mint_keypair,
-        "solana_bpf_rust_invoke_and_return",
+        "analog_bpf_rust_invoke_and_return",
     );
 
     // Deploy upgradeable program
@@ -2295,7 +2295,7 @@ fn test_program_bpf_set_upgrade_authority_via_cpi() {
         &buffer_keypair,
         &program_keypair,
         &authority_keypair,
-        "solana_bpf_rust_upgradeable",
+        "analog_bpf_rust_upgradeable",
     );
 
     // Set program upgrade authority instruction to invoke via CPI
@@ -2355,7 +2355,7 @@ fn test_program_upgradeable_locks() {
         buffer_keypair: &Keypair,
         program_keypair: &Keypair,
     ) -> (Arc<Bank>, Transaction, Transaction) {
-        solana_logger::setup();
+        analog_logger::setup();
 
         let GenesisConfigInfo {
             genesis_config,
@@ -2363,7 +2363,7 @@ fn test_program_upgradeable_locks() {
             ..
         } = create_genesis_config(2_000_000_000);
         let mut bank = Bank::new_for_tests(&genesis_config);
-        let (name, id, entrypoint) = solana_bpf_loader_upgradeable_program!();
+        let (name, id, entrypoint) = analog_bpf_loader_upgradeable_program!();
         bank.add_builtin(&name, &id, entrypoint);
         let bank = Arc::new(bank);
         let bank_client = BankClient::new_shared(&bank);
@@ -2374,11 +2374,11 @@ fn test_program_upgradeable_locks() {
             buffer_keypair,
             program_keypair,
             payer_keypair,
-            "solana_bpf_rust_panic",
+            "analog_bpf_rust_panic",
         );
 
         // Load the buffer account
-        let path = create_bpf_path("solana_bpf_rust_noop");
+        let path = create_bpf_path("analog_bpf_rust_noop");
         let mut file = File::open(&path).unwrap_or_else(|err| {
             panic!("Failed to open {}: {}", path.display(), err);
         });
@@ -2490,7 +2490,7 @@ fn test_program_upgradeable_locks() {
 #[cfg(feature = "bpf_rust")]
 #[test]
 fn test_program_bpf_finalize() {
-    solana_logger::setup();
+    analog_logger::setup();
 
     let GenesisConfigInfo {
         genesis_config,
@@ -2498,7 +2498,7 @@ fn test_program_bpf_finalize() {
         ..
     } = create_genesis_config(50);
     let mut bank = Bank::new_for_tests(&genesis_config);
-    let (name, id, entrypoint) = solana_bpf_loader_program!();
+    let (name, id, entrypoint) = analog_bpf_loader_program!();
     bank.add_builtin(&name, &id, entrypoint);
     let bank = Arc::new(bank);
     let bank_client = BankClient::new_shared(&bank);
@@ -2507,13 +2507,13 @@ fn test_program_bpf_finalize() {
         &bank_client,
         &bpf_loader::id(),
         &mint_keypair,
-        "solana_bpf_rust_finalize",
+        "analog_bpf_rust_finalize",
     );
 
     let noop_keypair = Keypair::new();
 
     // Write the noop program into the same program account
-    let elf = read_bpf_program("solana_bpf_rust_noop");
+    let elf = read_bpf_program("analog_bpf_rust_noop");
     let message = Message::new(
         &[system_instruction::create_account(
             &mint_keypair.pubkey(),
@@ -2552,7 +2552,7 @@ fn test_program_bpf_finalize() {
 #[cfg(feature = "bpf_rust")]
 #[test]
 fn test_program_bpf_ro_account_modify() {
-    solana_logger::setup();
+    analog_logger::setup();
 
     let GenesisConfigInfo {
         genesis_config,
@@ -2560,7 +2560,7 @@ fn test_program_bpf_ro_account_modify() {
         ..
     } = create_genesis_config(50);
     let mut bank = Bank::new_for_tests(&genesis_config);
-    let (name, id, entrypoint) = solana_bpf_loader_program!();
+    let (name, id, entrypoint) = analog_bpf_loader_program!();
     bank.add_builtin(&name, &id, entrypoint);
     let bank = Arc::new(bank);
     let bank_client = BankClient::new_shared(&bank);
@@ -2569,7 +2569,7 @@ fn test_program_bpf_ro_account_modify() {
         &bank_client,
         &bpf_loader::id(),
         &mint_keypair,
-        "solana_bpf_rust_ro_account_modify",
+        "analog_bpf_rust_ro_account_modify",
     );
 
     let argument_keypair = Keypair::new();
@@ -2614,7 +2614,7 @@ fn test_program_bpf_ro_account_modify() {
 #[cfg(feature = "bpf_rust")]
 #[test]
 fn test_program_bpf_realloc() {
-    solana_logger::setup();
+    analog_logger::setup();
 
     let GenesisConfigInfo {
         genesis_config,
@@ -2625,7 +2625,7 @@ fn test_program_bpf_realloc() {
     let signer = &[&mint_keypair];
 
     let mut bank = Bank::new_for_tests(&genesis_config);
-    let (name, id, entrypoint) = solana_bpf_loader_program!();
+    let (name, id, entrypoint) = analog_bpf_loader_program!();
     bank.add_builtin(&name, &id, entrypoint);
     let bank = Arc::new(bank);
     let bank_client = BankClient::new_shared(&bank);
@@ -2634,7 +2634,7 @@ fn test_program_bpf_realloc() {
         &bank_client,
         &bpf_loader::id(),
         &mint_keypair,
-        "solana_bpf_rust_realloc",
+        "analog_bpf_rust_realloc",
     );
 
     let mut bump = 0;
@@ -2775,7 +2775,7 @@ fn test_program_bpf_realloc() {
         )
         .unwrap();
     let account = bank.get_account(&pubkey).unwrap();
-    assert_eq!(&solana_sdk::system_program::id(), account.owner());
+    assert_eq!(&analog_sdk::system_program::id(), account.owner());
     let data = bank_client.get_account_data(&pubkey).unwrap().unwrap();
     assert_eq!(MAX_PERMITTED_DATA_INCREASE, data.len());
 
@@ -2805,7 +2805,7 @@ fn test_program_bpf_realloc() {
                         &[REALLOC_AND_ASSIGN_TO_SELF_VIA_SYSTEM_PROGRAM],
                         vec![
                             AccountMeta::new(pubkey, true),
-                            AccountMeta::new(solana_sdk::system_program::id(), false),
+                            AccountMeta::new(analog_sdk::system_program::id(), false),
                         ],
                     )],
                     Some(&mint_pubkey),
@@ -2826,7 +2826,7 @@ fn test_program_bpf_realloc() {
                     &[ASSIGN_TO_SELF_VIA_SYSTEM_PROGRAM_AND_REALLOC],
                     vec![
                         AccountMeta::new(pubkey, true),
-                        AccountMeta::new(solana_sdk::system_program::id(), false),
+                        AccountMeta::new(analog_sdk::system_program::id(), false),
                     ],
                 )],
                 Some(&mint_pubkey),
@@ -2870,7 +2870,7 @@ fn test_program_bpf_realloc() {
 #[cfg(feature = "bpf_rust")]
 #[test]
 fn test_program_bpf_realloc_invoke() {
-    solana_logger::setup();
+    analog_logger::setup();
 
     let GenesisConfigInfo {
         genesis_config,
@@ -2881,7 +2881,7 @@ fn test_program_bpf_realloc_invoke() {
     let signer = &[&mint_keypair];
 
     let mut bank = Bank::new_for_tests(&genesis_config);
-    let (name, id, entrypoint) = solana_bpf_loader_program!();
+    let (name, id, entrypoint) = analog_bpf_loader_program!();
     bank.add_builtin(&name, &id, entrypoint);
     let bank = Arc::new(bank);
     let bank_client = BankClient::new_shared(&bank);
@@ -2890,14 +2890,14 @@ fn test_program_bpf_realloc_invoke() {
         &bank_client,
         &bpf_loader::id(),
         &mint_keypair,
-        "solana_bpf_rust_realloc",
+        "analog_bpf_rust_realloc",
     );
 
     let realloc_invoke_program_id = load_bpf_program(
         &bank_client,
         &bpf_loader::id(),
         &mint_keypair,
-        "solana_bpf_rust_realloc_invoke",
+        "analog_bpf_rust_realloc_invoke",
     );
 
     let mut bump = 0;
@@ -3065,7 +3065,7 @@ fn test_program_bpf_realloc_invoke() {
         )
         .unwrap();
     let account = bank.get_account(&pubkey).unwrap();
-    assert_eq!(&solana_sdk::system_program::id(), account.owner());
+    assert_eq!(&analog_sdk::system_program::id(), account.owner());
     let data = bank_client.get_account_data(&pubkey).unwrap().unwrap();
     assert_eq!(MAX_PERMITTED_DATA_INCREASE, data.len());
 
@@ -3096,7 +3096,7 @@ fn test_program_bpf_realloc_invoke() {
                         vec![
                             AccountMeta::new(pubkey, true),
                             AccountMeta::new_readonly(realloc_program_id, false),
-                            AccountMeta::new_readonly(solana_sdk::system_program::id(), false),
+                            AccountMeta::new_readonly(analog_sdk::system_program::id(), false),
                         ],
                     )],
                     Some(&mint_pubkey),
@@ -3118,7 +3118,7 @@ fn test_program_bpf_realloc_invoke() {
                     vec![
                         AccountMeta::new(pubkey, true),
                         AccountMeta::new_readonly(realloc_program_id, false),
-                        AccountMeta::new_readonly(solana_sdk::system_program::id(), false),
+                        AccountMeta::new_readonly(analog_sdk::system_program::id(), false),
                     ],
                 )],
                 Some(&mint_pubkey),
@@ -3226,7 +3226,7 @@ fn test_program_bpf_realloc_invoke() {
                     vec![
                         AccountMeta::new(mint_pubkey, true),
                         AccountMeta::new(new_pubkey, true),
-                        AccountMeta::new(solana_sdk::system_program::id(), false),
+                        AccountMeta::new(analog_sdk::system_program::id(), false),
                         AccountMeta::new_readonly(realloc_invoke_program_id, false),
                     ],
                 )],

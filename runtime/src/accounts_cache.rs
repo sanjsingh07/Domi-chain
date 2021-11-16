@@ -1,5 +1,5 @@
 use dashmap::DashMap;
-use solana_sdk::{
+use analog_sdk::{
     account::{AccountSharedData, ReadableAccount},
     clock::Slot,
     hash::Hash,

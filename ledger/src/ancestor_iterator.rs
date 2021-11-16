@@ -1,5 +1,5 @@
 use crate::blockstore::*;
-use solana_sdk::{clock::Slot, hash::Hash};
+use analog_sdk::{clock::Slot, hash::Hash};
 
 pub struct AncestorIterator<'a> {
     current: Option<Slot>,
@@ -75,7 +75,7 @@ impl<'a> Iterator for AncestorIteratorWithHash<'a> {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use solana_sdk::hash::Hash;
+    use analog_sdk::hash::Hash;
     use std::{collections::HashMap, path::Path};
     use trees::tr;
 

@@ -18,7 +18,7 @@ use {
     },
     serde::Serialize,
     solana_program::{system_instruction::SystemInstruction, system_program},
-    solana_sdk::feature_set,
+    analog_sdk::feature_set,
     std::result,
     std::sync::Arc,
     thiserror::Error,
@@ -218,7 +218,7 @@ impl Transaction {
     /// Create a signed transaction
     /// * `from_keypairs` - The keys used to sign the transaction.
     /// * `keys` - The keys for the transaction.  These are the program state
-    ///    instances or lamport recipient keys.
+    ///    instances ortockrecipient keys.
     /// * `recent_blockhash` - The PoH hash.
     /// * `program_ids` - The keys that identify programs used in the `instruction` vector.
     /// * `instructions` - Instructions that will be executed atomically.
@@ -543,10 +543,10 @@ mod tests {
     #[test]
     fn test_refs() {
         let key = Keypair::new();
-        let key1 = solana_sdk::pubkey::new_rand();
-        let key2 = solana_sdk::pubkey::new_rand();
-        let prog1 = solana_sdk::pubkey::new_rand();
-        let prog2 = solana_sdk::pubkey::new_rand();
+        let key1 = analog_sdk::pubkey::new_rand();
+        let key2 = analog_sdk::pubkey::new_rand();
+        let prog1 = analog_sdk::pubkey::new_rand();
+        let prog2 = analog_sdk::pubkey::new_rand();
         let instructions = vec![
             CompiledInstruction::new(3, &(), vec![0, 1]),
             CompiledInstruction::new(4, &(), vec![0, 2]),
@@ -614,7 +614,7 @@ mod tests {
     fn test_sanitize_txs() {
         let key = Keypair::new();
         let id0 = Pubkey::default();
-        let program_id = solana_sdk::pubkey::new_rand();
+        let program_id = analog_sdk::pubkey::new_rand();
         let ix = Instruction::new_with_bincode(
             program_id,
             &0,
@@ -711,7 +711,7 @@ mod tests {
     fn test_transaction_minimum_serialized_size() {
         let alice_keypair = Keypair::new();
         let alice_pubkey = alice_keypair.pubkey();
-        let bob_pubkey = solana_sdk::pubkey::new_rand();
+        let bob_pubkey = analog_sdk::pubkey::new_rand();
         let ix = system_instruction::transfer(&alice_pubkey, &bob_pubkey, 42);
 
         let expected_data_size = size_of::<u32>() + size_of::<u64>();
@@ -789,7 +789,7 @@ mod tests {
     #[should_panic]
     fn test_partial_sign_mismatched_key() {
         let keypair = Keypair::new();
-        let fee_payer = solana_sdk::pubkey::new_rand();
+        let fee_payer = analog_sdk::pubkey::new_rand();
         let ix = Instruction::new_with_bincode(
             Pubkey::default(),
             &0,
@@ -872,7 +872,7 @@ mod tests {
         let program_id = Pubkey::default();
         let keypair0 = Keypair::new();
         let id0 = keypair0.pubkey();
-        let id1 = solana_sdk::pubkey::new_rand();
+        let id1 = analog_sdk::pubkey::new_rand();
         let ix = Instruction::new_with_bincode(
             program_id,
             &0,
@@ -923,7 +923,7 @@ mod tests {
         assert_eq!(tx.signatures[1], presigner_sig);
 
         // Wrong key should error, not panic
-        let another_pubkey = solana_sdk::pubkey::new_rand();
+        let another_pubkey = analog_sdk::pubkey::new_rand();
         let ix = Instruction::new_with_bincode(
             program_id,
             &0,

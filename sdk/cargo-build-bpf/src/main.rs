@@ -4,8 +4,8 @@ use {
         crate_description, crate_name, crate_version, value_t, value_t_or_exit, values_t, App, Arg,
     },
     regex::Regex,
-    solana_download_utils::download_file,
-    solana_sdk::signature::{write_keypair_file, Keypair},
+    analog_download_utils::download_file,
+    analog_sdk::signature::{write_keypair_file, Keypair},
     std::{
         collections::{HashMap, HashSet},
         env,
@@ -135,7 +135,7 @@ fn install_if_missing(
         fs::remove_dir(&target_path).map_err(|err| err.to_string())?;
     }
 
-    // Check whether the package is already in ~/.cache/solana.
+    // Check whether the package is already in ~/.cache/analog.
     // Download it and place in the proper location if not found.
     if !target_path.is_dir()
         && !target_path
@@ -429,7 +429,7 @@ fn build_bpf_package(config: &Config, target_directory: &Path, package: &cargo_m
         }
     };
 
-    let legacy_program_feature_present = package.name == "solana-sdk";
+    let legacy_program_feature_present = package.name == "analog-sdk";
     let root_package_dir = &package.manifest_path.parent().unwrap_or_else(|| {
         eprintln!("Unable to get directory of {}", package.manifest_path);
         exit(1);
@@ -464,9 +464,9 @@ fn build_bpf_package(config: &Config, target_directory: &Path, package: &cargo_m
         println!("Legacy program feature detected");
     }
     let bpf_tools_download_file_name = if cfg!(target_os = "macos") {
-        "solana-bpf-tools-osx.tar.bz2"
+        "analog-bpf-tools-osx.tar.bz2"
     } else {
-        "solana-bpf-tools-linux.tar.bz2"
+        "analog-bpf-tools-linux.tar.bz2"
     };
 
     let home_dir = PathBuf::from(env::var("HOME").unwrap_or_else(|err| {
@@ -477,14 +477,14 @@ fn build_bpf_package(config: &Config, target_directory: &Path, package: &cargo_m
     let package = "bpf-tools";
     let target_path = home_dir
         .join(".cache")
-        .join("solana")
+        .join("analog")
         .join(version)
         .join(package);
     install_if_missing(
         config,
         package,
         version,
-        "https://github.com/solana-labs/bpf-tools/releases/download",
+        "https://github.com/analog-labs/bpf-tools/releases/download",
         bpf_tools_download_file_name,
         &target_path,
     )
@@ -630,7 +630,7 @@ fn build_bpf_package(config: &Config, target_directory: &Path, package: &cargo_m
 
         println!();
         println!("To deploy this program:");
-        println!("  $ solana program deploy {}", program_so.display());
+        println!("  $ analog program deploy {}", program_so.display());
         println!("The program address will default to this keypair (override with --program-id):");
         println!("  {}", program_keypair.display());
     } else if config.dump {
@@ -681,7 +681,7 @@ fn build_bpf(config: Config, manifest_path: Option<PathBuf>) {
 
 fn main() {
     if cfg!(windows) {
-        println!("Solana Rust BPF toolchain is not available on Windows");
+        println!("Analog Rust BPF toolchain is not available on Windows");
         exit(1);
     }
     let default_config = Config::default();
@@ -714,7 +714,7 @@ fn main() {
                 .value_name("PATH")
                 .takes_value(true)
                 .default_value(&default_bpf_sdk)
-                .help("Path to the Solana BPF SDK"),
+                .help("Path to the Analog BPF SDK"),
         )
         .arg(
             Arg::with_name("cargo_args")

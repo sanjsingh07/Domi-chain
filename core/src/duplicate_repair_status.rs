@@ -1,5 +1,5 @@
-use solana_ledger::blockstore::Blockstore;
-use solana_sdk::{clock::Slot, hash::Hash, pubkey::Pubkey, timing::timestamp};
+use analog_ledger::blockstore::Blockstore;
+use analog_sdk::{clock::Slot, hash::Hash, pubkey::Pubkey, timing::timestamp};
 use std::{collections::HashMap, net::SocketAddr};
 
 // Number of validators to sample for the ancestor repair
@@ -352,7 +352,7 @@ impl DeadSlotAncestorRequestStatus {
 pub mod tests {
     use super::*;
     use rand::{self, seq::SliceRandom, thread_rng};
-    use solana_ledger::get_tmp_ledger_path_auto_delete;
+    use analog_ledger::get_tmp_ledger_path_auto_delete;
     use std::{collections::BTreeMap, net::IpAddr};
     use tempfile::TempDir;
 

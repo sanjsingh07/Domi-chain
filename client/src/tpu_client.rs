@@ -8,7 +8,7 @@ use crate::{
 };
 use bincode::serialize;
 use log::*;
-use solana_sdk::{
+use analog_sdk::{
     clock::Slot,
     commitment_config::CommitmentConfig,
     message::Message,

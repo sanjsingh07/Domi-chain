@@ -12,11 +12,11 @@ Each validator uses _signatures per slot_ \(SPS\) to estimate network congestion
 
 The client uses the JSON RPC API to query the cluster for the current fee parameters. Those parameters are tagged with a blockhash and remain valid until that blockhash is old enough to be rejected by the slot leader.
 
-Before sending a transaction to the cluster, a client may submit the transaction and fee account data to an SDK module called the _fee calculator_. So long as the client's SDK version matches the slot leader's version, the client is assured that its account will be changed exactly the same number of lamports as returned by the fee calculator.
+Before sending a transaction to the cluster, a client may submit the transaction and fee account data to an SDK module called the _fee calculator_. So long as the client's SDK version matches the slot leader's version, the client is assured that its account will be changed exactly the same number of tock as returned by the fee calculator.
 
 ## Fee Parameters
 
-In the first implementation of this design, the only fee parameter is `lamports_per_signature`. The more signatures the cluster needs to verify, the higher the fee. The exact number of lamports is determined by the ratio of SPS to the SPS target. At the end of each slot, the cluster lowers `lamports_per_signature` when SPS is below the target and raises it when above the target. The minimum value for `lamports_per_signature` is 50% of the target `lamports_per_signature` and the maximum value is 10x the target \`lamports_per_signature'
+In the first implementation of this design, the only fee parameter is `lamports_per_signature`. The more signatures the cluster needs to verify, the higher the fee. The exact number of tock is determined by the ratio of SPS to the SPS target. At the end of each slot, the cluster lowers `lamports_per_signature` when SPS is below the target and raises it when above the target. The minimum value for `lamports_per_signature` is 50% of the target `lamports_per_signature` and the maximum value is 10x the target \`lamports_per_signature'
 
 Future parameters might include:
 

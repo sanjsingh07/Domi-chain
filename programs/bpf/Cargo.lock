@@ -2526,7 +2526,7 @@ dependencies = [
 ]
 
 [[package]]
-name = "solana-account-decoder"
+name = "analog-account-decoder"
 version = "1.9.0"
 dependencies = [
  "Inflector",
@@ -2538,47 +2538,47 @@ dependencies = [
  "serde",
  "serde_derive",
  "serde_json",
- "solana-config-program",
- "solana-sdk",
- "solana-vote-program",
+ "analog-config-program",
+ "analog-sdk",
+ "analog-vote-program",
  "spl-token",
  "thiserror",
  "zstd",
 ]
 
 [[package]]
-name = "solana-banks-client"
+name = "analog-banks-client"
 version = "1.9.0"
 dependencies = [
  "borsh",
  "futures",
- "solana-banks-interface",
- "solana-program 1.9.0",
- "solana-sdk",
+ "analog-banks-interface",
+ "solana-program1.9.0",
+ "analog-sdk",
  "tarpc",
  "tokio",
  "tokio-serde",
 ]
 
 [[package]]
-name = "solana-banks-interface"
+name = "analog-banks-interface"
 version = "1.9.0"
 dependencies = [
  "serde",
- "solana-sdk",
+ "analog-sdk",
  "tarpc",
 ]
 
 [[package]]
-name = "solana-banks-server"
+name = "analog-banks-server"
 version = "1.9.0"
 dependencies = [
  "bincode",
  "futures",
- "solana-banks-interface",
- "solana-runtime",
- "solana-sdk",
- "solana-send-transaction-service",
+ "analog-banks-interface",
+ "analog-runtime",
+ "analog-sdk",
+ "analog-send-transaction-service",
  "tarpc",
  "tokio",
  "tokio-serde",
@@ -2586,7 +2586,7 @@ dependencies = [
 ]
 
 [[package]]
-name = "solana-bpf-loader-program"
+name = "analog-bpf-loader-program"
 version = "1.9.0"
 dependencies = [
  "bincode",
@@ -2595,15 +2595,15 @@ dependencies = [
  "log",
  "openssl",
  "regex",
- "solana-measure",
- "solana-program-runtime",
- "solana-sdk",
+ "analog-measure",
+ "analog-program-runtime",
+ "analog-sdk",
  "solana_rbpf",
  "thiserror",
 ]
 
 [[package]]
-name = "solana-bpf-programs"
+name = "analog-bpf-programs"
 version = "1.9.0"
 dependencies = [
  "bincode",
@@ -2613,330 +2613,330 @@ dependencies = [
  "log",
  "miow",
  "net2",
- "solana-account-decoder",
- "solana-bpf-loader-program",
- "solana-bpf-rust-invoke",
- "solana-bpf-rust-realloc",
- "solana-bpf-rust-realloc-invoke",
- "solana-cli-output",
- "solana-logger 1.9.0",
- "solana-measure",
- "solana-program-runtime",
- "solana-runtime",
- "solana-sdk",
- "solana-transaction-status",
+ "analog-account-decoder",
+ "analog-bpf-loader-program",
+ "analog-bpf-rust-invoke",
+ "analog-bpf-rust-realloc",
+ "analog-bpf-rust-realloc-invoke",
+ "analog-cli-output",
+ "analog-logger 1.9.0",
+ "analog-measure",
+ "analog-program-runtime",
+ "analog-runtime",
+ "analog-sdk",
+ "analog-transaction-status",
  "solana_rbpf",
  "walkdir",
 ]
 
 [[package]]
-name = "solana-bpf-rust-128bit"
+name = "analog-bpf-rust-128bit"
 version = "1.9.0"
 dependencies = [
- "solana-bpf-rust-128bit-dep",
- "solana-program 1.9.0",
+ "analog-bpf-rust-128bit-dep",
+ "solana-program1.9.0",
 ]
 
 [[package]]
-name = "solana-bpf-rust-128bit-dep"
+name = "analog-bpf-rust-128bit-dep"
 version = "1.9.0"
 dependencies = [
- "solana-program 1.9.0",
+ "solana-program1.9.0",
 ]
 
 [[package]]
-name = "solana-bpf-rust-alloc"
+name = "analog-bpf-rust-alloc"
 version = "1.9.0"
 dependencies = [
- "solana-program 1.9.0",
+ "solana-program1.9.0",
 ]
 
 [[package]]
-name = "solana-bpf-rust-call-depth"
+name = "analog-bpf-rust-call-depth"
 version = "1.9.0"
 dependencies = [
- "solana-program 1.9.0",
+ "solana-program1.9.0",
 ]
 
 [[package]]
-name = "solana-bpf-rust-caller-access"
+name = "analog-bpf-rust-caller-access"
 version = "1.9.0"
 dependencies = [
- "solana-program 1.9.0",
+ "solana-program1.9.0",
 ]
 
 [[package]]
-name = "solana-bpf-rust-custom-heap"
+name = "analog-bpf-rust-custom-heap"
 version = "1.9.0"
 dependencies = [
- "solana-program 1.9.0",
+ "solana-program1.9.0",
 ]
 
 [[package]]
-name = "solana-bpf-rust-dep-crate"
+name = "analog-bpf-rust-dep-crate"
 version = "1.9.0"
 dependencies = [
  "byteorder 1.4.3",
- "solana-program 1.9.0",
+ "solana-program1.9.0",
 ]
 
 [[package]]
-name = "solana-bpf-rust-deprecated-loader"
+name = "analog-bpf-rust-deprecated-loader"
 version = "1.9.0"
 dependencies = [
- "solana-program 1.9.0",
+ "solana-program1.9.0",
 ]
 
 [[package]]
-name = "solana-bpf-rust-dup-accounts"
+name = "analog-bpf-rust-dup-accounts"
 version = "1.9.0"
 dependencies = [
- "solana-program 1.9.0",
+ "solana-program1.9.0",
 ]
 
 [[package]]
-name = "solana-bpf-rust-error-handling"
+name = "analog-bpf-rust-error-handling"
 version = "1.9.0"
 dependencies = [
  "num-derive",
  "num-traits",
- "solana-program 1.9.0",
+ "solana-program1.9.0",
  "thiserror",
 ]
 
 [[package]]
-name = "solana-bpf-rust-external-spend"
+name = "analog-bpf-rust-external-spend"
 version = "1.9.0"
 dependencies = [
- "solana-program 1.9.0",
+ "solana-program1.9.0",
 ]
 
 [[package]]
-name = "solana-bpf-rust-finalize"
+name = "analog-bpf-rust-finalize"
 version = "1.9.0"
 dependencies = [
- "solana-program 1.9.0",
+ "solana-program1.9.0",
 ]
 
 [[package]]
-name = "solana-bpf-rust-instruction-introspection"
+name = "analog-bpf-rust-instruction-introspection"
 version = "1.9.0"
 dependencies = [
- "solana-program 1.9.0",
+ "solana-program1.9.0",
 ]
 
 [[package]]
-name = "solana-bpf-rust-invoke"
+name = "analog-bpf-rust-invoke"
 version = "1.9.0"
 dependencies = [
- "solana-bpf-rust-invoked",
- "solana-program 1.9.0",
+ "analog-bpf-rust-invoked",
+ "solana-program1.9.0",
 ]
 
 [[package]]
-name = "solana-bpf-rust-invoke-and-error"
+name = "analog-bpf-rust-invoke-and-error"
 version = "1.9.0"
 dependencies = [
- "solana-program 1.9.0",
+ "solana-program1.9.0",
 ]
 
 [[package]]
-name = "solana-bpf-rust-invoke-and-ok"
+name = "analog-bpf-rust-invoke-and-ok"
 version = "1.9.0"
 dependencies = [
- "solana-program 1.9.0",
+ "solana-program1.9.0",
 ]
 
 [[package]]
-name = "solana-bpf-rust-invoke-and-return"
+name = "analog-bpf-rust-invoke-and-return"
 version = "1.9.0"
 dependencies = [
- "solana-program 1.9.0",
+ "solana-program1.9.0",
 ]
 
 [[package]]
-name = "solana-bpf-rust-invoked"
+name = "analog-bpf-rust-invoked"
 version = "1.9.0"
 dependencies = [
- "solana-program 1.9.0",
+ "solana-program1.9.0",
 ]
 
 [[package]]
-name = "solana-bpf-rust-iter"
+name = "analog-bpf-rust-iter"
 version = "1.9.0"
 dependencies = [
- "solana-program 1.9.0",
+ "solana-program1.9.0",
 ]
 
 [[package]]
-name = "solana-bpf-rust-log-data"
+name = "analog-bpf-rust-log-data"
 version = "1.9.0"
 dependencies = [
- "solana-program 1.9.0",
+ "solana-program1.9.0",
 ]
 
 [[package]]
-name = "solana-bpf-rust-many-args"
+name = "analog-bpf-rust-many-args"
 version = "1.9.0"
 dependencies = [
- "solana-bpf-rust-many-args-dep",
- "solana-program 1.9.0",
+ "analog-bpf-rust-many-args-dep",
+ "solana-program1.9.0",
 ]
 
 [[package]]
-name = "solana-bpf-rust-many-args-dep"
+name = "analog-bpf-rust-many-args-dep"
 version = "1.9.0"
 dependencies = [
- "solana-program 1.9.0",
+ "solana-program1.9.0",
 ]
 
 [[package]]
-name = "solana-bpf-rust-mem"
+name = "analog-bpf-rust-mem"
 version = "1.9.0"
 dependencies = [
- "solana-program 1.9.0",
- "solana-program-test",
- "solana-sdk",
+ "solana-program1.9.0",
+ "analog-program-test",
+ "analog-sdk",
 ]
 
 [[package]]
-name = "solana-bpf-rust-membuiltins"
+name = "analog-bpf-rust-membuiltins"
 version = "1.9.0"
 dependencies = [
- "solana-bpf-rust-mem",
- "solana-program 1.9.0",
+ "analog-bpf-rust-mem",
+ "solana-program1.9.0",
 ]
 
 [[package]]
-name = "solana-bpf-rust-noop"
+name = "analog-bpf-rust-noop"
 version = "1.9.0"
 dependencies = [
- "solana-program 1.9.0",
+ "solana-program1.9.0",
 ]
 
 [[package]]
-name = "solana-bpf-rust-panic"
+name = "analog-bpf-rust-panic"
 version = "1.9.0"
 dependencies = [
- "solana-program 1.9.0",
+ "solana-program1.9.0",
 ]
 
 [[package]]
-name = "solana-bpf-rust-param-passing"
+name = "analog-bpf-rust-param-passing"
 version = "1.9.0"
 dependencies = [
- "solana-bpf-rust-param-passing-dep",
- "solana-program 1.9.0",
+ "analog-bpf-rust-param-passing-dep",
+ "solana-program1.9.0",
 ]
 
 [[package]]
-name = "solana-bpf-rust-param-passing-dep"
+name = "analog-bpf-rust-param-passing-dep"
 version = "1.9.0"
 dependencies = [
- "solana-program 1.9.0",
+ "solana-program1.9.0",
 ]
 
 [[package]]
-name = "solana-bpf-rust-rand"
+name = "analog-bpf-rust-rand"
 version = "1.9.0"
 dependencies = [
  "getrandom 0.1.14",
  "rand 0.7.3",
- "solana-program 1.9.0",
+ "solana-program1.9.0",
 ]
 
 [[package]]
-name = "solana-bpf-rust-realloc"
+name = "analog-bpf-rust-realloc"
 version = "1.9.0"
 dependencies = [
- "solana-program 1.9.0",
+ "solana-program1.9.0",
 ]
 
 [[package]]
-name = "solana-bpf-rust-realloc-invoke"
+name = "analog-bpf-rust-realloc-invoke"
 version = "1.9.0"
 dependencies = [
- "solana-bpf-rust-realloc",
- "solana-program 1.9.0",
+ "analog-bpf-rust-realloc",
+ "solana-program1.9.0",
 ]
 
 [[package]]
-name = "solana-bpf-rust-ro-account_modify"
+name = "analog-bpf-rust-ro-account_modify"
 version = "1.9.0"
 dependencies = [
- "solana-program 1.9.0",
+ "solana-program1.9.0",
 ]
 
 [[package]]
-name = "solana-bpf-rust-ro-modify"
+name = "analog-bpf-rust-ro-modify"
 version = "1.9.0"
 dependencies = [
- "solana-program 1.9.0",
+ "solana-program1.9.0",
 ]
 
 [[package]]
-name = "solana-bpf-rust-sanity"
+name = "analog-bpf-rust-sanity"
 version = "1.9.0"
 dependencies = [
- "solana-program 1.9.0",
- "solana-program-test",
- "solana-sdk",
+ "solana-program1.9.0",
+ "analog-program-test",
+ "analog-sdk",
 ]
 
 [[package]]
-name = "solana-bpf-rust-secp256k1-recover"
+name = "analog-bpf-rust-secp256k1-recover"
 version = "1.9.0"
 dependencies = [
- "solana-program 1.9.0",
+ "solana-program1.9.0",
 ]
 
 [[package]]
-name = "solana-bpf-rust-sha"
+name = "analog-bpf-rust-sha"
 version = "1.9.0"
 dependencies = [
  "blake3 1.2.0",
- "solana-program 1.9.0",
+ "solana-program1.9.0",
 ]
 
 [[package]]
-name = "solana-bpf-rust-spoof1"
+name = "analog-bpf-rust-spoof1"
 version = "1.9.0"
 dependencies = [
- "solana-program 1.9.0",
+ "solana-program1.9.0",
 ]
 
 [[package]]
-name = "solana-bpf-rust-spoof1-system"
+name = "analog-bpf-rust-spoof1-system"
 version = "1.9.0"
 dependencies = [
- "solana-program 1.9.0",
+ "solana-program1.9.0",
 ]
 
 [[package]]
-name = "solana-bpf-rust-sysvar"
+name = "analog-bpf-rust-sysvar"
 version = "1.9.0"
 dependencies = [
- "solana-program 1.9.0",
- "solana-program-test",
- "solana-sdk",
+ "solana-program1.9.0",
+ "analog-program-test",
+ "analog-sdk",
 ]
 
 [[package]]
-name = "solana-bpf-rust-upgradeable"
+name = "analog-bpf-rust-upgradeable"
 version = "1.9.0"
 dependencies = [
- "solana-program 1.9.0",
+ "solana-program1.9.0",
 ]
 
 [[package]]
-name = "solana-bpf-rust-upgraded"
+name = "analog-bpf-rust-upgraded"
 version = "1.9.0"
 dependencies = [
- "solana-program 1.9.0",
+ "solana-program1.9.0",
 ]
 
 [[package]]
-name = "solana-bucket-map"
+name = "analog-bucket-map"
 version = "1.9.0"
 dependencies = [
  "fs_extra",
@@ -2944,22 +2944,22 @@ dependencies = [
  "memmap2 0.5.0",
  "rand 0.7.3",
  "rayon",
- "solana-logger 1.9.0",
- "solana-measure",
- "solana-sdk",
+ "analog-logger 1.9.0",
+ "analog-measure",
+ "analog-sdk",
  "tempfile",
 ]
 
 [[package]]
-name = "solana-clap-utils"
+name = "analog-clap-utils"
 version = "1.9.0"
 dependencies = [
  "chrono",
  "clap",
  "rpassword",
- "solana-perf",
- "solana-remote-wallet",
- "solana-sdk",
+ "analog-perf",
+ "analog-remote-wallet",
+ "analog-sdk",
  "thiserror",
  "tiny-bip39",
  "uriparse",
@@ -2967,7 +2967,7 @@ dependencies = [
 ]
 
 [[package]]
-name = "solana-cli-config"
+name = "analog-cli-config"
 version = "1.9.0"
 dependencies = [
  "dirs-next",
@@ -2979,7 +2979,7 @@ dependencies = [
 ]
 
 [[package]]
-name = "solana-cli-output"
+name = "analog-cli-output"
 version = "1.9.0"
 dependencies = [
  "Inflector",
@@ -2991,17 +2991,17 @@ dependencies = [
  "indicatif",
  "serde",
  "serde_json",
- "solana-account-decoder",
- "solana-clap-utils",
- "solana-client",
- "solana-sdk",
- "solana-transaction-status",
- "solana-vote-program",
+ "analog-account-decoder",
+ "analog-clap-utils",
+ "analog-client",
+ "analog-sdk",
+ "analog-transaction-status",
+ "analog-vote-program",
  "spl-memo",
 ]
 
 [[package]]
-name = "solana-client"
+name = "analog-client"
 version = "1.9.0"
 dependencies = [
  "base64 0.13.0",
@@ -3017,15 +3017,15 @@ dependencies = [
  "serde",
  "serde_derive",
  "serde_json",
- "solana-account-decoder",
- "solana-clap-utils",
- "solana-faucet",
- "solana-measure",
- "solana-net-utils",
- "solana-sdk",
- "solana-transaction-status",
- "solana-version",
- "solana-vote-program",
+ "analog-account-decoder",
+ "analog-clap-utils",
+ "analog-faucet",
+ "analog-measure",
+ "analog-net-utils",
+ "analog-sdk",
+ "analog-transaction-status",
+ "analog-version",
+ "analog-vote-program",
  "thiserror",
  "tokio",
  "tungstenite",
@@ -3033,25 +3033,25 @@ dependencies = [
 ]
 
 [[package]]
-name = "solana-compute-budget-program"
+name = "analog-compute-budget-program"
 version = "1.9.0"
 dependencies = [
- "solana-sdk",
+ "analog-sdk",
 ]
 
 [[package]]
-name = "solana-config-program"
+name = "analog-config-program"
 version = "1.9.0"
 dependencies = [
  "bincode",
  "chrono",
  "serde",
  "serde_derive",
- "solana-sdk",
+ "analog-sdk",
 ]
 
 [[package]]
-name = "solana-crate-features"
+name = "analog-crate-features"
 version = "1.9.0"
 dependencies = [
  "backtrace",
@@ -3073,7 +3073,7 @@ dependencies = [
 ]
 
 [[package]]
-name = "solana-faucet"
+name = "analog-faucet"
 version = "1.9.0"
 dependencies = [
  "bincode",
@@ -3082,19 +3082,19 @@ dependencies = [
  "log",
  "serde",
  "serde_derive",
- "solana-clap-utils",
- "solana-cli-config",
- "solana-logger 1.9.0",
- "solana-metrics",
- "solana-sdk",
- "solana-version",
+ "analog-clap-utils",
+ "analog-cli-config",
+ "analog-logger 1.9.0",
+ "analog-metrics",
+ "analog-sdk",
+ "analog-version",
  "spl-memo",
  "thiserror",
  "tokio",
 ]
 
 [[package]]
-name = "solana-frozen-abi"
+name = "analog-frozen-abi"
 version = "1.7.6"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "b0b98d31e0662fedf3a1ee30919c655713874d578e19e65affe46109b1b927f9"
@@ -3108,13 +3108,13 @@ dependencies = [
  "serde",
  "serde_derive",
  "sha2",
- "solana-frozen-abi-macro 1.7.6",
- "solana-logger 1.7.6",
+ "analog-frozen-abi-macro 1.7.6",
+ "analog-logger 1.7.6",
  "thiserror",
 ]
 
 [[package]]
-name = "solana-frozen-abi"
+name = "analog-frozen-abi"
 version = "1.9.0"
 dependencies = [
  "bs58 0.4.0",
@@ -3126,13 +3126,13 @@ dependencies = [
  "serde",
  "serde_derive",
  "sha2",
- "solana-frozen-abi-macro 1.9.0",
- "solana-logger 1.9.0",
+ "analog-frozen-abi-macro 1.9.0",
+ "analog-logger 1.9.0",
  "thiserror",
 ]
 
 [[package]]
-name = "solana-frozen-abi-macro"
+name = "analog-frozen-abi-macro"
 version = "1.7.6"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "ceac6e8ad1a784c92ff5f3d6ad68a8d664d389b08055b674c38b2b9abb69e6d4"
@@ -3144,7 +3144,7 @@ dependencies = [
 ]
 
 [[package]]
-name = "solana-frozen-abi-macro"
+name = "analog-frozen-abi-macro"
 version = "1.9.0"
 dependencies = [
  "proc-macro2 1.0.24",
@@ -3154,7 +3154,7 @@ dependencies = [
 ]
 
 [[package]]
-name = "solana-logger"
+name = "analog-logger"
 version = "1.7.6"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "ec7c514fe57f8c5042fa88c19f5711c67f264db723d9d79379fcb78dd1f09bbf"
@@ -3165,7 +3165,7 @@ dependencies = [
 ]
 
 [[package]]
-name = "solana-logger"
+name = "analog-logger"
 version = "1.9.0"
 dependencies = [
  "env_logger 0.9.0",
@@ -3174,15 +3174,15 @@ dependencies = [
 ]
 
 [[package]]
-name = "solana-measure"
+name = "analog-measure"
 version = "1.9.0"
 dependencies = [
  "log",
- "solana-sdk",
+ "analog-sdk",
 ]
 
 [[package]]
-name = "solana-metrics"
+name = "analog-metrics"
 version = "1.9.0"
 dependencies = [
  "env_logger 0.9.0",
@@ -3190,11 +3190,11 @@ dependencies = [
  "lazy_static",
  "log",
  "reqwest",
- "solana-sdk",
+ "analog-sdk",
 ]
 
 [[package]]
-name = "solana-net-utils"
+name = "analog-net-utils"
 version = "1.9.0"
 dependencies = [
  "bincode",
@@ -3205,15 +3205,15 @@ dependencies = [
  "serde",
  "serde_derive",
  "socket2",
- "solana-logger 1.9.0",
- "solana-sdk",
- "solana-version",
+ "analog-logger 1.9.0",
+ "analog-sdk",
+ "analog-version",
  "tokio",
  "url",
 ]
 
 [[package]]
-name = "solana-perf"
+name = "analog-perf"
 version = "1.9.0"
 dependencies = [
  "bincode",
@@ -3228,15 +3228,15 @@ dependencies = [
  "rand 0.7.3",
  "rayon",
  "serde",
- "solana-logger 1.9.0",
- "solana-metrics",
- "solana-rayon-threadlimit",
- "solana-sdk",
- "solana-vote-program",
+ "analog-logger 1.9.0",
+ "analog-metrics",
+ "analog-rayon-threadlimit",
+ "analog-sdk",
+ "analog-vote-program",
 ]
 
 [[package]]
-name = "solana-program"
+name = "analog-program"
 version = "1.7.6"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "3bfe6a5dfc5372c0a946018ecdd8115e38af78cea8275bac48cf3d105c6b1fb3"
@@ -3263,15 +3263,15 @@ dependencies = [
  "serde_derive",
  "sha2",
  "sha3",
- "solana-frozen-abi 1.7.6",
- "solana-frozen-abi-macro 1.7.6",
- "solana-logger 1.7.6",
- "solana-sdk-macro 1.7.6",
+ "analog-frozen-abi 1.7.6",
+ "analog-frozen-abi-macro 1.7.6",
+ "analog-logger 1.7.6",
+ "analog-sdk-macro 1.7.6",
  "thiserror",
 ]
 
 [[package]]
-name = "solana-program"
+name = "analog-program"
 version = "1.9.0"
 dependencies = [
  "base64 0.13.0",
@@ -3299,15 +3299,15 @@ dependencies = [
  "serde_derive",
  "sha2",
  "sha3",
- "solana-frozen-abi 1.9.0",
- "solana-frozen-abi-macro 1.9.0",
- "solana-logger 1.9.0",
- "solana-sdk-macro 1.9.0",
+ "analog-frozen-abi 1.9.0",
+ "analog-frozen-abi-macro 1.9.0",
+ "analog-logger 1.9.0",
+ "analog-sdk-macro 1.9.0",
  "thiserror",
 ]
 
 [[package]]
-name = "solana-program-runtime"
+name = "analog-program-runtime"
 version = "1.9.0"
 dependencies = [
  "bincode",
@@ -3318,15 +3318,15 @@ dependencies = [
  "num-traits",
  "rustc_version 0.4.0",
  "serde",
- "solana-frozen-abi 1.9.0",
- "solana-frozen-abi-macro 1.9.0",
- "solana-logger 1.9.0",
- "solana-sdk",
+ "analog-frozen-abi 1.9.0",
+ "analog-frozen-abi-macro 1.9.0",
+ "analog-logger 1.9.0",
+ "analog-sdk",
  "thiserror",
 ]
 
 [[package]]
-name = "solana-program-test"
+name = "analog-program-test"
 version = "1.9.0"
 dependencies = [
  "async-trait",
@@ -3335,20 +3335,20 @@ dependencies = [
  "chrono-humanize",
  "log",
  "serde",
- "solana-banks-client",
- "solana-banks-server",
- "solana-bpf-loader-program",
- "solana-logger 1.9.0",
- "solana-program-runtime",
- "solana-runtime",
- "solana-sdk",
- "solana-vote-program",
+ "analog-banks-client",
+ "analog-banks-server",
+ "analog-bpf-loader-program",
+ "analog-logger 1.9.0",
+ "analog-program-runtime",
+ "analog-runtime",
+ "analog-sdk",
+ "analog-vote-program",
  "thiserror",
  "tokio",
 ]
 
 [[package]]
-name = "solana-rayon-threadlimit"
+name = "analog-rayon-threadlimit"
 version = "1.9.0"
 dependencies = [
  "lazy_static",
@@ -3356,7 +3356,7 @@ dependencies = [
 ]
 
 [[package]]
-name = "solana-remote-wallet"
+name = "analog-remote-wallet"
 version = "1.9.0"
 dependencies = [
  "base32",
@@ -3369,13 +3369,13 @@ dependencies = [
  "parking_lot",
  "qstring",
  "semver 1.0.4",
- "solana-sdk",
+ "analog-sdk",
  "thiserror",
  "uriparse",
 ]
 
 [[package]]
-name = "solana-runtime"
+name = "analog-runtime"
 version = "1.9.0"
 dependencies = [
  "arrayref",
@@ -3401,19 +3401,19 @@ dependencies = [
  "rustc_version 0.4.0",
  "serde",
  "serde_derive",
- "solana-bucket-map",
- "solana-compute-budget-program",
- "solana-config-program",
- "solana-frozen-abi 1.9.0",
- "solana-frozen-abi-macro 1.9.0",
- "solana-logger 1.9.0",
- "solana-measure",
- "solana-metrics",
- "solana-program-runtime",
- "solana-rayon-threadlimit",
- "solana-sdk",
- "solana-stake-program",
- "solana-vote-program",
+ "analog-bucket-map",
+ "analog-compute-budget-program",
+ "analog-config-program",
+ "analog-frozen-abi 1.9.0",
+ "analog-frozen-abi-macro 1.9.0",
+ "analog-logger 1.9.0",
+ "analog-measure",
+ "analog-metrics",
+ "analog-program-runtime",
+ "analog-rayon-threadlimit",
+ "analog-sdk",
+ "analog-stake-program",
+ "analog-vote-program",
  "symlink",
  "tar",
  "tempfile",
@@ -3422,7 +3422,7 @@ dependencies = [
 ]
 
 [[package]]
-name = "solana-sdk"
+name = "analog-sdk"
 version = "1.9.0"
 dependencies = [
  "assert_matches",
@@ -3459,18 +3459,18 @@ dependencies = [
  "serde_json",
  "sha2",
  "sha3",
- "solana-crate-features",
- "solana-frozen-abi 1.9.0",
- "solana-frozen-abi-macro 1.9.0",
- "solana-logger 1.9.0",
- "solana-program 1.9.0",
- "solana-sdk-macro 1.9.0",
+ "analog-crate-features",
+ "analog-frozen-abi 1.9.0",
+ "analog-frozen-abi-macro 1.9.0",
+ "analog-logger 1.9.0",
+ "solana-program1.9.0",
+ "analog-sdk-macro 1.9.0",
  "thiserror",
  "uriparse",
 ]
 
 [[package]]
-name = "solana-sdk-macro"
+name = "analog-sdk-macro"
 version = "1.7.6"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "84710ce45a21cccd9f2b09d8e9aad529080bb2540f27b1253874b6e732b465b9"
@@ -3483,7 +3483,7 @@ dependencies = [
 ]
 
 [[package]]
-name = "solana-sdk-macro"
+name = "analog-sdk-macro"
 version = "1.9.0"
 dependencies = [
  "bs58 0.4.0",
@@ -3494,18 +3494,18 @@ dependencies = [
 ]
 
 [[package]]
-name = "solana-send-transaction-service"
+name = "analog-send-transaction-service"
 version = "1.9.0"
 dependencies = [
  "log",
- "solana-logger 1.9.0",
- "solana-metrics",
- "solana-runtime",
- "solana-sdk",
+ "analog-logger 1.9.0",
+ "analog-metrics",
+ "analog-runtime",
+ "analog-sdk",
 ]
 
 [[package]]
-name = "solana-stake-program"
+name = "analog-stake-program"
 version = "1.9.0"
 dependencies = [
  "bincode",
@@ -3515,18 +3515,18 @@ dependencies = [
  "rustc_version 0.4.0",
  "serde",
  "serde_derive",
- "solana-config-program",
- "solana-frozen-abi 1.9.0",
- "solana-frozen-abi-macro 1.9.0",
- "solana-metrics",
- "solana-program-runtime",
- "solana-sdk",
- "solana-vote-program",
+ "analog-config-program",
+ "analog-frozen-abi 1.9.0",
+ "analog-frozen-abi-macro 1.9.0",
+ "analog-metrics",
+ "analog-program-runtime",
+ "analog-sdk",
+ "analog-vote-program",
  "thiserror",
 ]
 
 [[package]]
-name = "solana-transaction-status"
+name = "analog-transaction-status"
 version = "1.9.0"
 dependencies = [
  "Inflector",
@@ -3538,12 +3538,12 @@ dependencies = [
  "serde",
  "serde_derive",
  "serde_json",
- "solana-account-decoder",
- "solana-measure",
- "solana-metrics",
- "solana-runtime",
- "solana-sdk",
- "solana-vote-program",
+ "analog-account-decoder",
+ "analog-measure",
+ "analog-metrics",
+ "analog-runtime",
+ "analog-sdk",
+ "analog-vote-program",
  "spl-associated-token-account",
  "spl-memo",
  "spl-token",
@@ -3551,20 +3551,20 @@ dependencies = [
 ]
 
 [[package]]
-name = "solana-version"
+name = "analog-version"
 version = "1.9.0"
 dependencies = [
  "log",
  "rustc_version 0.4.0",
  "serde",
  "serde_derive",
- "solana-frozen-abi 1.9.0",
- "solana-frozen-abi-macro 1.9.0",
- "solana-sdk",
+ "analog-frozen-abi 1.9.0",
+ "analog-frozen-abi-macro 1.9.0",
+ "analog-sdk",
 ]
 
 [[package]]
-name = "solana-vote-program"
+name = "analog-vote-program"
 version = "1.9.0"
 dependencies = [
  "bincode",
@@ -3574,11 +3574,11 @@ dependencies = [
  "rustc_version 0.4.0",
  "serde",
  "serde_derive",
- "solana-frozen-abi 1.9.0",
- "solana-frozen-abi-macro 1.9.0",
- "solana-logger 1.9.0",
- "solana-metrics",
- "solana-sdk",
+ "analog-frozen-abi 1.9.0",
+ "analog-frozen-abi-macro 1.9.0",
+ "analog-logger 1.9.0",
+ "analog-metrics",
+ "analog-sdk",
  "thiserror",
 ]
 
@@ -3613,7 +3613,7 @@ version = "1.0.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "393e2240d521c3dd770806bff25c2c00d761ac962be106e14e22dd912007f428"
 dependencies = [
- "solana-program 1.7.6",
+ "solana-program1.7.6",
  "spl-token",
 ]
 
@@ -3623,7 +3623,7 @@ version = "3.0.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "bd0dc6f70db6bacea7ff25870b016a65ba1d1b6013536f08e4fd79a8f9005325"
 dependencies = [
- "solana-program 1.7.6",
+ "solana-program1.7.6",
 ]
 
 [[package]]
@@ -3636,7 +3636,7 @@ dependencies = [
  "num-derive",
  "num-traits",
  "num_enum",
- "solana-program 1.7.6",
+ "solana-program1.7.6",
  "thiserror",
 ]
 

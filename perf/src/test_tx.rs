@@ -1,5 +1,5 @@
 use {
-    solana_sdk::{
+    analog_sdk::{
         hash::Hash,
         instruction::CompiledInstruction,
         signature::{Keypair, Signer},
@@ -8,7 +8,7 @@ use {
         system_program, system_transaction,
         transaction::Transaction,
     },
-    solana_vote_program::vote_transaction,
+    analog_vote_program::vote_transaction,
 };
 
 pub fn test_tx() -> Transaction {
@@ -22,10 +22,10 @@ pub fn test_multisig_tx() -> Transaction {
     let keypair0 = Keypair::new();
     let keypair1 = Keypair::new();
     let keypairs = vec![&keypair0, &keypair1];
-    let lamports = 5;
+    let tock = 5;
     let blockhash = Hash::default();
 
-    let transfer_instruction = SystemInstruction::Transfer { lamports };
+    let transfer_instruction = SystemInstruction::Transfer { tock };
 
     let program_ids = vec![system_program::id(), stake::program::id()];
 

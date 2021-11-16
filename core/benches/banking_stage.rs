@@ -7,30 +7,30 @@ use crossbeam_channel::unbounded;
 use log::*;
 use rand::{thread_rng, Rng};
 use rayon::prelude::*;
-use solana_core::banking_stage::{BankingStage, BankingStageStats};
-use solana_entry::entry::{next_hash, Entry};
-use solana_gossip::cluster_info::ClusterInfo;
-use solana_gossip::cluster_info::Node;
-use solana_ledger::blockstore_processor::process_entries;
-use solana_ledger::genesis_utils::{create_genesis_config, GenesisConfigInfo};
-use solana_ledger::{blockstore::Blockstore, get_tmp_ledger_path};
-use solana_perf::packet::to_packets_chunked;
-use solana_perf::test_tx::test_tx;
-use solana_poh::poh_recorder::{create_test_recorder, WorkingBankEntry};
-use solana_runtime::bank::Bank;
-use solana_runtime::cost_model::CostModel;
-use solana_sdk::genesis_config::GenesisConfig;
-use solana_sdk::hash::Hash;
-use solana_sdk::message::Message;
-use solana_sdk::pubkey;
-use solana_sdk::signature::Keypair;
-use solana_sdk::signature::Signature;
-use solana_sdk::signature::Signer;
-use solana_sdk::system_instruction;
-use solana_sdk::system_transaction;
-use solana_sdk::timing::{duration_as_us, timestamp};
-use solana_sdk::transaction::{Transaction, VersionedTransaction};
-use solana_streamer::socket::SocketAddrSpace;
+use analog_core::banking_stage::{BankingStage, BankingStageStats};
+use analog_entry::entry::{next_hash, Entry};
+use analog_gossip::cluster_info::ClusterInfo;
+use analog_gossip::cluster_info::Node;
+use analog_ledger::blockstore_processor::process_entries;
+use analog_ledger::genesis_utils::{create_genesis_config, GenesisConfigInfo};
+use analog_ledger::{blockstore::Blockstore, get_tmp_ledger_path};
+use analog_perf::packet::to_packets_chunked;
+use analog_perf::test_tx::test_tx;
+use analog_poh::poh_recorder::{create_test_recorder, WorkingBankEntry};
+use analog_runtime::bank::Bank;
+use analog_runtime::cost_model::CostModel;
+use analog_sdk::genesis_config::GenesisConfig;
+use analog_sdk::hash::Hash;
+use analog_sdk::message::Message;
+use analog_sdk::pubkey;
+use analog_sdk::signature::Keypair;
+use analog_sdk::signature::Signature;
+use analog_sdk::signature::Signer;
+use analog_sdk::system_instruction;
+use analog_sdk::system_transaction;
+use analog_sdk::timing::{duration_as_us, timestamp};
+use analog_sdk::transaction::{Transaction, VersionedTransaction};
+use analog_streamer::socket::SocketAddrSpace;
 use std::collections::VecDeque;
 use std::sync::atomic::Ordering;
 use std::sync::mpsc::Receiver;
@@ -142,7 +142,7 @@ enum TransactionType {
 }
 
 fn bench_banking(bencher: &mut Bencher, tx_type: TransactionType) {
-    solana_logger::setup();
+    analog_logger::setup();
     let num_threads = BankingStage::num_threads() as usize;
     //   a multiple of packet chunk duplicates to avoid races
     const CHUNKS: usize = 8;
@@ -315,7 +315,7 @@ fn simulate_process_entries(
         );
     }
 
-    // Transfer lamports to each other
+    // Transfer tock to each other
     let entry = Entry {
         num_hashes: 1,
         hash: next_hash(&bank.last_blockhash(), 1, &tx_vector),

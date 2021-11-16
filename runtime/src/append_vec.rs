@@ -7,7 +7,7 @@
 use log::*;
 use memmap2::MmapMut;
 use serde::{Deserialize, Serialize};
-use solana_sdk::{
+use analog_sdk::{
     account::{Account, AccountSharedData, ReadableAccount},
     clock::{Epoch, Slot},
     hash::Hash,
@@ -53,8 +53,8 @@ pub struct StoredMeta {
 /// So the data layout must be stable and consistent across the entire cluster!
 #[derive(Serialize, Deserialize, Clone, Debug, Default, Eq, PartialEq)]
 pub struct AccountMeta {
-    /// lamports in the account
-    pub lamports: u64,
+    /// tock in the account
+    pub tock: u64,
     /// the program that owns this account. If executable, the program that loads this account.
     pub owner: Pubkey,
     /// this account's data contains a loaded program (and is now read-only)
@@ -66,7 +66,7 @@ pub struct AccountMeta {
 impl<'a, T: ReadableAccount> From<&'a T> for AccountMeta {
     fn from(account: &'a T) -> Self {
         Self {
-            lamports: account.lamports(),
+            tock: account.tock(),
             owner: *account.owner(),
             executable: account.executable(),
             rent_epoch: account.rent_epoch(),
@@ -100,7 +100,7 @@ impl<'a> StoredAccountMeta<'a> {
     /// Return a new Account by copying all the data referenced by the `StoredAccountMeta`.
     pub fn clone_account(&self) -> AccountSharedData {
         AccountSharedData::from(Account {
-            lamports: self.account_meta.lamports,
+            tock: self.account_meta.tock,
             owner: self.account_meta.owner,
             executable: self.account_meta.executable,
             rent_epoch: self.account_meta.rent_epoch,
@@ -118,8 +118,8 @@ impl<'a> StoredAccountMeta<'a> {
     }
 
     fn sanitize_lamports(&self) -> bool {
-        // Sanitize 0 lamports to ensure to be same as AccountSharedData::default()
-        self.account_meta.lamports != 0 || self.clone_account() == AccountSharedData::default()
+        // Sanitize 0 tock to ensure to be same as AccountSharedData::default()
+        self.account_meta.tock != 0 || self.clone_account() == AccountSharedData::default()
     }
 
     fn ref_executable_byte(&self) -> &u8 {
@@ -532,8 +532,8 @@ pub mod test_utils {
     use super::StoredMeta;
     use rand::distributions::Alphanumeric;
     use rand::{thread_rng, Rng};
-    use solana_sdk::account::AccountSharedData;
-    use solana_sdk::pubkey::Pubkey;
+    use analog_sdk::account::AccountSharedData;
+    use analog_sdk::pubkey::Pubkey;
     use std::fs::create_dir_all;
     use std::path::PathBuf;
 
@@ -582,7 +582,7 @@ pub mod tests {
     use super::*;
     use assert_matches::assert_matches;
     use rand::{thread_rng, Rng};
-    use solana_sdk::{account::WritableAccount, timing::duration_as_ms};
+    use analog_sdk::{account::WritableAccount, timing::duration_as_ms};
     use std::time::Instant;
 
     impl AppendVec {
@@ -633,13 +633,13 @@ pub mod tests {
     #[test]
     fn test_account_meta_non_default() {
         let def1 = AccountMeta {
-            lamports: 1,
+            tock: 1,
             owner: Pubkey::new_unique(),
             executable: true,
             rent_epoch: 3,
         };
         let def2_account = Account {
-            lamports: def1.lamports,
+            tock: def1.tock,
             owner: def1.owner,
             executable: def1.executable,
             rent_epoch: def1.rent_epoch,
@@ -784,7 +784,7 @@ pub mod tests {
         let mut av = AppendVec::new(path, true, 1024 * 1024);
         av.set_no_remove_on_drop();
 
-        let pubkey = solana_sdk::pubkey::new_rand();
+        let pubkey = analog_sdk::pubkey::new_rand();
         let owner = Pubkey::default();
         let data_len = 3_u64;
         let mut account = AccountSharedData::new(0, data_len as usize, &owner);

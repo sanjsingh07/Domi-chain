@@ -58,9 +58,9 @@ jobs:
       - run: npm run doc
       - run: npm run codecov
       - run: |
-          sh -c "$(curl -sSfL https://release.solana.com/edge/install)"
-          echo "$HOME/.local/share/solana/install/active_release/bin" >> $GITHUB_PATH
-          PATH="$HOME/.local/share/solana/install/active_release/bin:$PATH"
-          solana --version
+          sh -c "$(curl -sSfL https://release.analog.com/edge/install)"
+          echo "$HOME/.local/share/analog/install/active_release/bin" >> $GITHUB_PATH
+          PATH="$HOME/.local/share/analog/install/active_release/bin:$PATH"
+          analog --version
       - run: npm run test:live-with-test-validator
       - run: npm run test:browser-with-test-validator

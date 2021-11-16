@@ -1,4 +1,4 @@
-//! An Upgradeable Solana BPF loader.
+//! An Upgradeable Analog BPF loader.
 //!
 //! The upgradeable BPF loader is responsible for deploying, upgrading, and
 //! executing BPF programs.  The upgradeable loader allows a program's authority
@@ -88,14 +88,14 @@ pub fn create_buffer(
     payer_address: &Pubkey,
     buffer_address: &Pubkey,
     authority_address: &Pubkey,
-    lamports: u64,
+    tock: u64,
     program_len: usize,
 ) -> Result<Vec<Instruction>, InstructionError> {
     Ok(vec![
         system_instruction::create_account(
             payer_address,
             buffer_address,
-            lamports,
+            tock,
             UpgradeableLoaderState::buffer_len(program_len)? as u64,
             &id(),
         ),

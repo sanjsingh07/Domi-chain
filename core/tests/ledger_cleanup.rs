@@ -4,11 +4,11 @@
 #[cfg(test)]
 mod tests {
     use log::*;
-    use solana_core::ledger_cleanup_service::LedgerCleanupService;
-    use solana_ledger::blockstore::{make_many_slot_entries, Blockstore};
-    use solana_ledger::get_tmp_ledger_path;
-    use solana_ledger::shred::Shred;
-    use solana_measure::measure::Measure;
+    use analog_core::ledger_cleanup_service::LedgerCleanupService;
+    use analog_ledger::blockstore::{make_many_slot_entries, Blockstore};
+    use analog_ledger::get_tmp_ledger_path;
+    use analog_ledger::shred::Shred;
+    use analog_measure::measure::Measure;
     use std::collections::VecDeque;
     use std::str::FromStr;
     use std::sync::atomic::{AtomicBool, AtomicU64, Ordering};
@@ -215,7 +215,7 @@ mod tests {
 
     #[test]
     fn test_ledger_cleanup_compaction() {
-        solana_logger::setup();
+        analog_logger::setup();
         let blockstore_path = get_tmp_ledger_path!();
         let mut blockstore = Blockstore::open(&blockstore_path).unwrap();
         let config = get_benchmark_config();

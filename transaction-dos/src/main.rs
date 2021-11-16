@@ -4,12 +4,12 @@ use {
     log::*,
     rand::{thread_rng, Rng},
     rayon::prelude::*,
-    solana_clap_utils::input_parsers::pubkey_of,
-    solana_cli::{cli::CliConfig, program::process_deploy},
-    solana_client::{rpc_client::RpcClient, transaction_executor::TransactionExecutor},
-    solana_faucet::faucet::{request_airdrop_transaction, FAUCET_PORT},
-    solana_gossip::gossip_service::discover,
-    solana_sdk::{
+    analog_clap_utils::input_parsers::pubkey_of,
+    analog_cli::{cli::CliConfig, program::process_deploy},
+    analog_client::{rpc_client::RpcClient, transaction_executor::TransactionExecutor},
+    analog_faucet::faucet::{request_airdrop_transaction, FAUCET_PORT},
+    analog_gossip::gossip_service::discover,
+    analog_sdk::{
         commitment_config::CommitmentConfig,
         instruction::{AccountMeta, Instruction},
         message::Message,
@@ -19,7 +19,7 @@ use {
         system_instruction,
         transaction::Transaction,
     },
-    solana_streamer::socket::SocketAddrSpace,
+    analog_streamer::socket::SocketAddrSpace,
     std::{
         net::SocketAddr,
         process::exit,
@@ -44,7 +44,7 @@ pub fn airdrop_lamports(
     if starting_balance < desired_balance {
         let airdrop_amount = desired_balance - starting_balance;
         info!(
-            "Airdropping {:?} lamports from {} for {}",
+            "Airdropping {:?} tock from {} for {}",
             airdrop_amount,
             faucet_addr,
             id.pubkey(),
@@ -273,24 +273,24 @@ fn run_transactions_dos(
         let fee = client
             .get_fee_for_message(&message)
             .expect("get_fee_for_message");
-        let lamports = min_balance + fee;
+        let tock = min_balance + fee;
 
         for (i, balance) in balances.iter_mut().enumerate() {
-            if *balance < lamports || last_balance.elapsed().as_secs() > 2 {
+            if *balance < tock || last_balance.elapsed().as_secs() > 2 {
                 if let Ok(b) = client.get_balance(&payer_keypairs[i].pubkey()) {
                     *balance = b;
                 }
                 last_balance = Instant::now();
-                if *balance < lamports * 2 {
+                if *balance < tock * 2 {
                     info!(
                         "Balance {} is less than needed: {}, doing aidrop...",
-                        balance, lamports
+                        balance, tock
                     );
                     if !airdrop_lamports(
                         &client,
                         &faucet_addr,
                         payer_keypairs[i],
-                        lamports * 100_000,
+                        tock * 100_000,
                     ) {
                         warn!("failed airdrop, exiting");
                         return;
@@ -413,10 +413,10 @@ fn run_transactions_dos(
 }
 
 fn main() {
-    solana_logger::setup_with_default("solana=info");
+    analog_logger::setup_with_default("solana=info");
     let matches = App::new(crate_name!())
         .about(crate_description!())
-        .version(solana_version::version!())
+        .version(analog_version::version!())
         .arg(
             Arg::with_name("entrypoint")
                 .long("entrypoint")
@@ -439,11 +439,11 @@ fn main() {
                 .help("Size of accounts to create"),
         )
         .arg(
-            Arg::with_name("lamports")
-                .long("lamports")
+            Arg::with_name("tock")
+                .long("tock")
                 .takes_value(true)
                 .value_name("LAMPORTS")
-                .help("How many lamports to fund each account"),
+                .help("How many tock to fund each account"),
         )
         .arg(
             Arg::with_name("payer")
@@ -528,21 +528,21 @@ fn main() {
     let port = if skip_gossip { DEFAULT_RPC_PORT } else { 8001 };
     let mut entrypoint_addr = SocketAddr::from(([127, 0, 0, 1], port));
     if let Some(addr) = matches.value_of("entrypoint") {
-        entrypoint_addr = solana_net_utils::parse_host_port(addr).unwrap_or_else(|e| {
+        entrypoint_addr = analog_net_utils::parse_host_port(addr).unwrap_or_else(|e| {
             eprintln!("failed to parse entrypoint address: {}", e);
             exit(1)
         });
     }
     let mut faucet_addr = SocketAddr::from(([127, 0, 0, 1], FAUCET_PORT));
     if let Some(addr) = matches.value_of("faucet_addr") {
-        faucet_addr = solana_net_utils::parse_host_port(addr).unwrap_or_else(|e| {
+        faucet_addr = analog_net_utils::parse_host_port(addr).unwrap_or_else(|e| {
             eprintln!("failed to parse entrypoint address: {}", e);
             exit(1)
         });
     }
 
     let space = value_t!(matches, "space", u64).ok();
-    let lamports = value_t!(matches, "lamports", u64).ok();
+    let tock = value_t!(matches, "tock", u64).ok();
     let batch_size = value_t!(matches, "batch_size", usize).unwrap_or(4);
     let iterations = value_t!(matches, "iterations", usize).unwrap_or(10);
     let num_program_iterations = value_t!(matches, "num_program_iterations", usize).unwrap_or(10);
@@ -607,7 +607,7 @@ fn main() {
         iterations,
         space,
         batch_size,
-        lamports,
+        tock,
         num_instructions,
         num_program_iterations,
         program_id,
@@ -622,17 +622,17 @@ fn main() {
 #[cfg(test)]
 pub mod test {
     use super::*;
-    use solana_core::validator::ValidatorConfig;
-    use solana_local_cluster::{
+    use analog_core::validator::ValidatorConfig;
+    use analog_local_cluster::{
         local_cluster::{ClusterConfig, LocalCluster},
         validator_configs::make_identical_validator_configs,
     };
-    use solana_measure::measure::Measure;
-    use solana_sdk::poh_config::PohConfig;
+    use analog_measure::measure::Measure;
+    use analog_sdk::poh_config::PohConfig;
 
     #[test]
     fn test_tx_size() {
-        solana_logger::setup();
+        analog_logger::setup();
         let keypair = Keypair::new();
         let num_instructions = 20;
         let program_id = Pubkey::new_unique();
@@ -651,7 +651,7 @@ pub mod test {
             &account_metas,
         );
         let signers: Vec<&Keypair> = vec![&keypair];
-        let blockhash = solana_sdk::hash::Hash::default();
+        let blockhash = analog_sdk::hash::Hash::default();
         let tx = Transaction::new(&signers, message, blockhash);
         let size = bincode::serialized_size(&tx).unwrap();
         info!("size:{}", size);
@@ -661,7 +661,7 @@ pub mod test {
     #[test]
     #[ignore]
     fn test_transaction_dos() {
-        solana_logger::setup();
+        analog_logger::setup();
 
         let validator_config = ValidatorConfig::default();
         let num_nodes = 1;

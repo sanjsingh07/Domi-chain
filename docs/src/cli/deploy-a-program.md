@@ -3,13 +3,13 @@ title: Deploy a Program
 ---
 
 Developers can deploy on-chain [programs](terminology.md#program) (often called
-smart contracts elsewhere) with the Solana tools.
+smart contracts elsewhere) with the Analog tools.
 
-To learn about developing and executing programs on Solana, start with the
+To learn about developing and executing programs on Analog, start with the
 [overview](developing/programming-model/overview.md) and then dig into the
 details of [on-chain programs](developing/on-chain-programs/overview.md).
 
-To deploy a program, use the Solana tools to interact with the on-chain loader
+To deploy a program, use the Analog tools to interact with the on-chain loader
 to:
 
 - Initialize a program account
@@ -111,7 +111,7 @@ solana program deploy --max-len 200000 <PROGRAM_FILEPATH>
 
 Note that program accounts are required to be
 [rent-exempt](developing/programming-model/accounts.md#rent-exemption), and the
-`max-len` is fixed after initial deployment, so any SOL in the program accounts
+`max-len` is fixed after initial deployment, so any ANLOG in the program accounts
 is locked up permanently.
 
 ### Resuming a failed deploy
@@ -127,13 +127,13 @@ needed to recover the generated intermediate buffer's keypair:
 ```
 ==================================================================================
 Recover the intermediate account's ephemeral keypair file with
-`solana-keygen recover` and the following 12-word seed phrase:
+`analog-keygen recover` and the following 12-word seed phrase:
 ==================================================================================
 valley flat great hockey share token excess clever benefit traffic avocado athlete
 ==================================================================================
 To resume a deploy, pass the recovered keypair as
 the [BUFFER_SIGNER] to `solana program deploy` or `solana write-buffer'.
-Or to recover the account's lamports, pass it as the
+Or to recover the account's tock, pass it as the
 [BUFFER_ACCOUNT_ADDRESS] argument to `solana program drain`.
 ==================================================================================
 ```
@@ -141,7 +141,7 @@ Or to recover the account's lamports, pass it as the
 To recover the keypair:
 
 ```bash
-solana-keygen recover -o <KEYPAIR_PATH>
+analog-keygen recover -o <KEYPAIR_PATH>
 ```
 
 When asked, enter the 12-word seed phrase.
@@ -152,10 +152,10 @@ Then issue a new `deploy` command and specify the buffer:
 solana program deploy --buffer <KEYPAIR_PATH> <PROGRAM_FILEPATH>
 ```
 
-### Closing buffer accounts and reclaiming their lamports
+### Closing buffer accounts and reclaiming their tock
 
 If deployment fails there will be a left over buffer account that holds
-lamports. The buffer account can either be used to [resume a
+tock. The buffer account can either be used to [resume a
 deploy](#resuming-a-failed-deploy) or closed. When closed, the full balance of
 the buffer account will be transferred to the recipient's account.
 
@@ -259,7 +259,7 @@ known program binary. The original program file can be zero-extended, hashed,
 and compared to the hash of the dumped file.
 
 ```bash
-$ solana dump <ACCOUNT_ADDRESS> dump.so
+$ analog dump <ACCOUNT_ADDRESS> dump.so
 $ cp original.so extended.so
 $ truncate -r dump.so extended.so
 $ sha256sum extended.so dump.so

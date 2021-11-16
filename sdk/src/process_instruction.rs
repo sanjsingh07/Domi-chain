@@ -1,7 +1,7 @@
 #![cfg(feature = "full")]
 
 use itertools::Itertools;
-use solana_sdk::{
+use analog_sdk::{
     account::AccountSharedData,
     compute_budget::ComputeBudget,
     hash::Hash,

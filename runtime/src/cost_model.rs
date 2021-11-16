@@ -6,7 +6,7 @@
 //!
 use crate::{block_cost_limits::*, execute_cost_table::ExecuteCostTable};
 use log::*;
-use solana_sdk::{pubkey::Pubkey, transaction::SanitizedTransaction};
+use analog_sdk::{pubkey::Pubkey, transaction::SanitizedTransaction};
 use std::collections::HashMap;
 
 const MAX_WRITABLE_ACCOUNTS: usize = 256;
@@ -186,7 +186,7 @@ mod tests {
         bank::Bank,
         genesis_utils::{create_genesis_config, GenesisConfigInfo},
     };
-    use solana_sdk::{
+    use analog_sdk::{
         bpf_loader,
         hash::Hash,
         instruction::CompiledInstruction,
@@ -203,7 +203,7 @@ mod tests {
     };
 
     fn test_setup() -> (Keypair, Hash) {
-        solana_logger::setup();
+        analog_logger::setup();
         let GenesisConfigInfo {
             genesis_config,
             mint_keypair,
@@ -267,8 +267,8 @@ mod tests {
     fn test_cost_model_transaction_many_transfer_instructions() {
         let (mint_keypair, start_hash) = test_setup();
 
-        let key1 = solana_sdk::pubkey::new_rand();
-        let key2 = solana_sdk::pubkey::new_rand();
+        let key1 = analog_sdk::pubkey::new_rand();
+        let key2 = analog_sdk::pubkey::new_rand();
         let instructions =
             system_instruction::transfer_many(&mint_keypair.pubkey(), &[(key1, 1), (key2, 1)]);
         let message = Message::new(&instructions, Some(&mint_keypair.pubkey()));
@@ -295,10 +295,10 @@ mod tests {
         let (mint_keypair, start_hash) = test_setup();
 
         // construct a transaction with multiple random instructions
-        let key1 = solana_sdk::pubkey::new_rand();
-        let key2 = solana_sdk::pubkey::new_rand();
-        let prog1 = solana_sdk::pubkey::new_rand();
-        let prog2 = solana_sdk::pubkey::new_rand();
+        let key1 = analog_sdk::pubkey::new_rand();
+        let key2 = analog_sdk::pubkey::new_rand();
+        let prog1 = analog_sdk::pubkey::new_rand();
+        let prog2 = analog_sdk::pubkey::new_rand();
         let instructions = vec![
             CompiledInstruction::new(3, &(), vec![0, 1]),
             CompiledInstruction::new(4, &(), vec![0, 2]),
@@ -418,10 +418,10 @@ mod tests {
     fn test_cost_model_can_be_shared_concurrently_with_rwlock() {
         let (mint_keypair, start_hash) = test_setup();
         // construct a transaction with multiple random instructions
-        let key1 = solana_sdk::pubkey::new_rand();
-        let key2 = solana_sdk::pubkey::new_rand();
-        let prog1 = solana_sdk::pubkey::new_rand();
-        let prog2 = solana_sdk::pubkey::new_rand();
+        let key1 = analog_sdk::pubkey::new_rand();
+        let key2 = analog_sdk::pubkey::new_rand();
+        let prog1 = analog_sdk::pubkey::new_rand();
+        let prog2 = analog_sdk::pubkey::new_rand();
         let instructions = vec![
             CompiledInstruction::new(3, &(), vec![0, 1]),
             CompiledInstruction::new(4, &(), vec![0, 2]),
@@ -497,7 +497,7 @@ mod tests {
             .is_some());
         assert!(cost_model
             .instruction_execution_cost_table
-            .get_cost(&solana_vote_program::id())
+            .get_cost(&analog_vote_program::id())
             .is_some());
     }
 }

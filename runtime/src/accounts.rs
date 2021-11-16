@@ -21,7 +21,7 @@ use dashmap::{
 };
 use log::*;
 use rand::{thread_rng, Rng};
-use solana_sdk::{
+use analog_sdk::{
     account::{Account, AccountSharedData, ReadableAccount, WritableAccount},
     account_utils::StateMut,
     bpf_loader_upgradeable::{self, UpgradeableLoaderState},
@@ -254,7 +254,7 @@ impl Accounts {
                         payer_index = Some(i);
                     }
 
-                    if solana_sdk::sysvar::instructions::check_id(key) {
+                    if analog_sdk::sysvar::instructions::check_id(key) {
                         Self::construct_instructions_account(
                             message,
                             feature_set
@@ -319,7 +319,7 @@ impl Accounts {
                         }
 
                         tx_rent += rent;
-                        rent_debits.insert(key, rent, account.lamports());
+                        rent_debits.insert(key, rent, account.tock());
 
                         account
                     }
@@ -339,7 +339,7 @@ impl Accounts {
                     warn!("Payer index should be 0! {:?}", tx);
                 }
                 let payer_account = &mut accounts[payer_index].1;
-                if payer_account.lamports() == 0 {
+                if payer_account.tock() == 0 {
                     error_counters.account_not_found += 1;
                     return Err(TransactionError::AccountNotFound);
                 }
@@ -355,7 +355,7 @@ impl Accounts {
                     }
                 };
 
-                if payer_account.lamports() < fee + min_balance {
+                if payer_account.tock() < fee + min_balance {
                     error_counters.insufficient_funds += 1;
                     return Err(TransactionError::InsufficientFundsForFee);
                 }
@@ -525,7 +525,7 @@ impl Accounts {
         account: AccountSharedData,
         slot: Slot,
     ) -> Option<(AccountSharedData, Slot)> {
-        if account.lamports() > 0 {
+        if account.tock() > 0 {
             Some((account, slot))
         } else {
             None
@@ -644,7 +644,7 @@ impl Accounts {
             bank_id,
             |collector: &mut BinaryHeap<Reverse<(u64, Pubkey)>>, option| {
                 if let Some((pubkey, account, _slot)) = option {
-                    if account.lamports() == 0 {
+                    if account.tock() == 0 {
                         return;
                     }
                     let contains_address = filter_by_address.contains(pubkey);
@@ -659,12 +659,12 @@ impl Accounts {
                         let Reverse(entry) = collector
                             .peek()
                             .expect("BinaryHeap::peek should succeed when len > 0");
-                        if *entry >= (account.lamports(), *pubkey) {
+                        if *entry >= (account.tock(), *pubkey) {
                             return;
                         }
                         collector.pop();
                     }
-                    collector.push(Reverse((account.lamports(), *pubkey)));
+                    collector.push(Reverse((account.tock(), *pubkey)));
                 }
             },
         )?;
@@ -720,10 +720,10 @@ impl Accounts {
         }
     }
 
-    fn is_loadable(lamports: u64) -> bool {
-        // Don't ever load zero lamport accounts into runtime because
+    fn is_loadable(tock: u64) -> bool {
+        // Don't ever load zerotockaccounts into runtime because
         // the existence of zero-lamport accounts are never deterministic!!
-        lamports > 0
+        tock > 0
     }
 
     fn load_while_filtering<F: Fn(&AccountSharedData) -> bool>(
@@ -732,7 +732,7 @@ impl Accounts {
         filter: F,
     ) {
         if let Some(mapped_account_tuple) = some_account_tuple
-            .filter(|(_, account, _)| Self::is_loadable(account.lamports()) && filter(account))
+            .filter(|(_, account, _)| Self::is_loadable(account.tock()) && filter(account))
             .map(|(pubkey, account, _slot)| (*pubkey, account))
         {
             collector.push(mapped_account_tuple)
@@ -809,7 +809,7 @@ impl Accounts {
             bank_id,
             |collector: &mut Vec<(Pubkey, AccountSharedData, Slot)>, some_account_tuple| {
                 if let Some((pubkey, account, slot)) = some_account_tuple
-                    .filter(|(_, account, _)| Self::is_loadable(account.lamports()))
+                    .filter(|(_, account, _)| Self::is_loadable(account.tock()))
                 {
                     collector.push((*pubkey, account, slot))
                 }
@@ -1085,7 +1085,7 @@ impl Accounts {
                         loaded_transaction.rent += rent;
                         loaded_transaction
                             .rent_debits
-                            .insert(key, rent, account.lamports());
+                            .insert(key, rent, account.tock());
                     }
                     accounts.push((&*key, &*account));
                 }
@@ -1146,7 +1146,7 @@ pub fn create_test_accounts(
     slot: Slot,
 ) {
     for t in 0..num {
-        let pubkey = solana_sdk::pubkey::new_rand();
+        let pubkey = analog_sdk::pubkey::new_rand();
         let account =
             AccountSharedData::new((t + 1) as u64, 0, AccountSharedData::default().owner());
         accounts.store_slow_uncached(slot, &pubkey, &account);
@@ -1168,7 +1168,7 @@ pub fn update_accounts_bench(accounts: &Accounts, pubkeys: &[Pubkey], slot: u64)
 mod tests {
     use super::*;
     use crate::rent_collector::RentCollector;
-    use solana_sdk::{
+    use analog_sdk::{
         account::{AccountSharedData, WritableAccount},
         epoch_schedule::EpochSchedule,
         genesis_config::ClusterType,
@@ -1412,7 +1412,7 @@ mod tests {
         let keypair = Keypair::new();
         let key0 = keypair.pubkey();
 
-        let account = AccountSharedData::new(1, 1, &solana_sdk::pubkey::new_rand()); // <-- owner is not the system program
+        let account = AccountSharedData::new(1, 1, &analog_sdk::pubkey::new_rand()); // <-- owner is not the system program
         accounts.push((key0, account));
 
         let instructions = vec![CompiledInstruction::new(1, &(), vec![0])];
@@ -1479,7 +1479,7 @@ mod tests {
         assert_eq!(loaded_accounts.len(), 1);
         let (load_res, _nonce_rollback) = &loaded_accounts[0];
         let loaded_transaction = load_res.as_ref().unwrap();
-        assert_eq!(loaded_transaction.accounts[0].1.lamports(), min_balance);
+        assert_eq!(loaded_transaction.accounts[0].1.tock(), min_balance);
 
         // Fee leaves zero balance fails
         accounts[0].1.set_lamports(min_balance);
@@ -1762,13 +1762,13 @@ mod tests {
         );
 
         // Load accounts owned by various programs into AccountsDb
-        let pubkey0 = solana_sdk::pubkey::new_rand();
+        let pubkey0 = analog_sdk::pubkey::new_rand();
         let account0 = AccountSharedData::new(1, 0, &Pubkey::new(&[2; 32]));
         accounts.store_slow_uncached(0, &pubkey0, &account0);
-        let pubkey1 = solana_sdk::pubkey::new_rand();
+        let pubkey1 = analog_sdk::pubkey::new_rand();
         let account1 = AccountSharedData::new(1, 0, &Pubkey::new(&[2; 32]));
         accounts.store_slow_uncached(0, &pubkey1, &account1);
-        let pubkey2 = solana_sdk::pubkey::new_rand();
+        let pubkey2 = analog_sdk::pubkey::new_rand();
         let account2 = AccountSharedData::new(1, 0, &Pubkey::new(&[3; 32]));
         accounts.store_slow_uncached(0, &pubkey2, &account2);
 
@@ -2327,7 +2327,7 @@ mod tests {
     fn test_collect_accounts_to_store() {
         let keypair0 = Keypair::new();
         let keypair1 = Keypair::new();
-        let pubkey = solana_sdk::pubkey::new_rand();
+        let pubkey = analog_sdk::pubkey::new_rand();
         let account0 = AccountSharedData::new(1, 0, &Pubkey::default());
         let account1 = AccountSharedData::new(2, 0, &Pubkey::default());
         let account2 = AccountSharedData::new(3, 0, &Pubkey::default());
@@ -2436,7 +2436,7 @@ mod tests {
 
     #[test]
     fn huge_clean() {
-        solana_logger::setup();
+        analog_logger::setup();
         let accounts = Accounts::new_with_config_for_tests(
             Vec::new(),
             &ClusterType::Development,
@@ -2448,7 +2448,7 @@ mod tests {
         let zero_account = AccountSharedData::new(0, 0, AccountSharedData::default().owner());
         info!("storing..");
         for i in 0..2_000 {
-            let pubkey = solana_sdk::pubkey::new_rand();
+            let pubkey = analog_sdk::pubkey::new_rand();
             let account =
                 AccountSharedData::new((i + 1) as u64, 0, AccountSharedData::default().owner());
             accounts.store_slow_uncached(i, &pubkey, &account);
@@ -2484,7 +2484,7 @@ mod tests {
 
     #[test]
     fn test_instructions() {
-        solana_logger::setup();
+        analog_logger::setup();
         let accounts = Accounts::new_with_config_for_tests(
             Vec::new(),
             &ClusterType::Development,
@@ -2493,12 +2493,12 @@ mod tests {
             AccountShrinkThreshold::default(),
         );
 
-        let instructions_key = solana_sdk::sysvar::instructions::id();
+        let instructions_key = analog_sdk::sysvar::instructions::id();
         let keypair = Keypair::new();
         let instructions = vec![CompiledInstruction::new(1, &(), vec![0, 1])];
         let tx = Transaction::new_with_compiled_instructions(
             &[&keypair],
-            &[solana_sdk::pubkey::new_rand(), instructions_key],
+            &[analog_sdk::pubkey::new_rand(), instructions_key],
             Hash::default(),
             vec![native_loader::id()],
             instructions,
@@ -2806,8 +2806,8 @@ mod tests {
             .cloned()
             .unwrap();
         assert_eq!(
-            collected_nonce_account.lamports(),
-            nonce_account_pre.lamports(),
+            collected_nonce_account.tock(),
+            nonce_account_pre.tock(),
         );
         assert!(nonce_account::verify_nonce_account(
             &collected_nonce_account,
@@ -2908,8 +2908,8 @@ mod tests {
             .cloned()
             .unwrap();
         assert_eq!(
-            collected_nonce_account.lamports(),
-            nonce_account_pre.lamports()
+            collected_nonce_account.tock(),
+            nonce_account_pre.tock()
         );
         assert!(nonce_account::verify_nonce_account(
             &collected_nonce_account,

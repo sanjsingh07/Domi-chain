@@ -1,26 +1,26 @@
 #![feature(test)]
 
-extern crate solana_core;
+extern crate analog_core;
 extern crate test;
 
 use crossbeam_channel::unbounded;
 use log::*;
 use rand::{thread_rng, Rng};
-use solana_core::sigverify::TransactionSigVerifier;
-use solana_core::sigverify_stage::SigVerifyStage;
-use solana_perf::packet::to_packets_chunked;
-use solana_perf::test_tx::test_tx;
-use solana_sdk::hash::Hash;
-use solana_sdk::signature::{Keypair, Signer};
-use solana_sdk::system_transaction;
-use solana_sdk::timing::duration_as_ms;
+use analog_core::sigverify::TransactionSigVerifier;
+use analog_core::sigverify_stage::SigVerifyStage;
+use analog_perf::packet::to_packets_chunked;
+use analog_perf::test_tx::test_tx;
+use analog_sdk::hash::Hash;
+use analog_sdk::signature::{Keypair, Signer};
+use analog_sdk::system_transaction;
+use analog_sdk::timing::duration_as_ms;
 use std::sync::mpsc::channel;
 use std::time::{Duration, Instant};
 use test::Bencher;
 
 #[bench]
 fn bench_packet_discard(bencher: &mut Bencher) {
-    solana_logger::setup();
+    analog_logger::setup();
     let len = 30 * 1000;
     let chunk_size = 1024;
     let tx = test_tx();
@@ -58,7 +58,7 @@ fn bench_packet_discard(bencher: &mut Bencher) {
 
 #[bench]
 fn bench_sigverify_stage(bencher: &mut Bencher) {
-    solana_logger::setup();
+    analog_logger::setup();
     let (packet_s, packet_r) = channel();
     let (verified_s, verified_r) = unbounded();
     let verifier = TransactionSigVerifier::default();

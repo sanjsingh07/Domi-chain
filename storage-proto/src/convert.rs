@@ -1,7 +1,7 @@
 use {
     crate::{StoredExtendedRewards, StoredTransactionStatusMeta},
-    solana_account_decoder::parse_token::{real_number_string_trimmed, UiTokenAmount},
-    solana_sdk::{
+    analog_account_decoder::parse_token::{real_number_string_trimmed, UiTokenAmount},
+    analog_sdk::{
         hash::Hash,
         instruction::CompiledInstruction,
         instruction::InstructionError,
@@ -11,7 +11,7 @@ use {
         transaction::Transaction,
         transaction::TransactionError,
     },
-    solana_transaction_status::{
+    analog_transaction_status::{
         ConfirmedBlock, InnerInstructions, Reward, RewardType, TransactionByAddrInfo,
         TransactionStatusMeta, TransactionTokenBalance, TransactionWithStatusMeta,
     },
@@ -24,14 +24,14 @@ use {
 pub mod generated {
     include!(concat!(
         env!("OUT_DIR"),
-        "/solana.storage.confirmed_block.rs"
+        "/analog.storage.confirmed_block.rs"
     ));
 }
 
 pub mod tx_by_addr {
     include!(concat!(
         env!("OUT_DIR"),
-        "/solana.storage.transaction_by_addr.rs"
+        "/analog.storage.transaction_by_addr.rs"
     ));
 }
 
@@ -80,7 +80,7 @@ impl From<Reward> for generated::Reward {
     fn from(reward: Reward) -> Self {
         Self {
             pubkey: reward.pubkey,
-            lamports: reward.lamports,
+            tock: reward.tock,
             post_balance: reward.post_balance,
             reward_type: match reward.reward_type {
                 None => generated::RewardType::Unspecified,
@@ -98,7 +98,7 @@ impl From<generated::Reward> for Reward {
     fn from(reward: generated::Reward) -> Self {
         Self {
             pubkey: reward.pubkey,
-            lamports: reward.lamports,
+            tock: reward.tock,
             post_balance: reward.post_balance,
             reward_type: match reward.reward_type {
                 0 => None,
@@ -854,7 +854,7 @@ mod test {
     fn test_reward_type_encode() {
         let mut reward = Reward {
             pubkey: "invalid".to_string(),
-            lamports: 123,
+            tock: 123,
             post_balance: 321,
             reward_type: None,
             commission: None,

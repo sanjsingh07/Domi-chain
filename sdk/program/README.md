@@ -1,15 +1,15 @@
 <p align="center">
-  <a href="https://solana.com">
-    <img alt="Solana" src="https://i.imgur.com/IKyzQ6T.png" width="250" />
+  <a href="https://analog.com">
+    <img alt="Analog" src="https://i.imgur.com/IKyzQ6T.png" width="250" />
   </a>
 </p>
 
-# Solana Program
+# Analog Program
 
-Use the Solana Program Crate to write on-chain programs in Rust.  If writing client-side applications, use the [Solana SDK Crate](https://crates.io/crates/solana-sdk) instead.
+Use the Analog Program Crate to write on-chain programs in Rust.  If writing client-side applications, use the [Analog SDK Crate](https://crates.io/crates/analog-sdk) instead.
 
-More information about Solana is available in the [Solana documentation](https://docs.solana.com/).
+More information about Analog is available in the [Analog documentation](https://docs.analog.com/).
 
-[Helloworld](https://github.com/solana-labs/example-helloworld) and the [Solana Program Library](https://github.com/solana-labs/solana-program-library) provide examples of how to use this crate.
+[Helloworld](https://github.com/analog-labs/example-helloworld) and the [Analog Program Library](https://github.com/analog-labs/analog-program-library) provide examples of how to use this crate.
 
 Still have questions?  Ask us on [Discord](https://discordapp.com/invite/pquxPsq)

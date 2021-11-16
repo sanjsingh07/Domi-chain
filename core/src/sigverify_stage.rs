@@ -7,10 +7,10 @@
 
 use crate::sigverify;
 use crossbeam_channel::{SendError, Sender as CrossbeamSender};
-use solana_measure::measure::Measure;
-use solana_perf::packet::Packets;
-use solana_sdk::timing;
-use solana_streamer::streamer::{self, PacketReceiver, StreamerError};
+use analog_measure::measure::Measure;
+use analog_perf::packet::Packets;
+use analog_sdk::timing;
+use analog_streamer::streamer::{self, PacketReceiver, StreamerError};
 use std::{
     collections::HashMap,
     sync::mpsc::{Receiver, RecvTimeoutError},
@@ -222,7 +222,7 @@ impl SigVerifyStage {
         let mut stats = SigVerifierStats::default();
         let mut last_print = Instant::now();
         Builder::new()
-            .name("solana-verifier".to_string())
+            .name("analog-verifier".to_string())
             .spawn(move || loop {
                 if let Err(e) =
                     Self::verifier(&packet_receiver, &verified_sender, &verifier, &mut stats)
@@ -265,7 +265,7 @@ impl SigVerifyStage {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use solana_perf::packet::Packet;
+    use analog_perf::packet::Packet;
 
     fn count_non_discard(packets: &[Packets]) -> usize {
         packets
@@ -281,7 +281,7 @@ mod tests {
 
     #[test]
     fn test_packet_discard() {
-        solana_logger::setup();
+        analog_logger::setup();
         let mut p = Packets::default();
         p.packets.resize(10, Packet::default());
         p.packets[3].meta.addr = [1u16; 8];

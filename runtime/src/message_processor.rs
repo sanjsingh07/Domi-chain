@@ -1,12 +1,12 @@
 use serde::{Deserialize, Serialize};
-use solana_measure::measure::Measure;
+use analog_measure::measure::Measure;
 use solana_program_runtime::{
     instruction_processor::{ExecuteDetailsTimings, Executors, InstructionProcessor},
     instruction_recorder::InstructionRecorder,
     invoke_context::ThisInvokeContext,
     log_collector::LogCollector,
 };
-use solana_sdk::{
+use analog_sdk::{
     account::{AccountSharedData, WritableAccount},
     compute_budget::ComputeBudget,
     feature_set::{
@@ -28,7 +28,7 @@ use std::{cell::RefCell, rc::Rc, sync::Arc};
 pub struct MessageProcessor {}
 
 #[cfg(RUSTC_WITH_SPECIALIZATION)]
-impl ::solana_frozen_abi::abi_example::AbiExample for MessageProcessor {
+impl ::analog_frozen_abi::abi_example::AbiExample for MessageProcessor {
     fn example() -> Self {
         // MessageProcessor's fields are #[serde(skip)]-ed and not Serialize
         // so, just rely on Default anyway.
@@ -155,7 +155,7 @@ mod tests {
     use super::*;
     use crate::rent_collector::RentCollector;
     use solana_program_runtime::invoke_context::ThisComputeMeter;
-    use solana_sdk::{
+    use analog_sdk::{
         account::ReadableAccount,
         instruction::{AccountMeta, Instruction, InstructionError},
         keyed_account::keyed_account_at_index,
@@ -179,7 +179,7 @@ mod tests {
         #[derive(Serialize, Deserialize)]
         enum MockSystemInstruction {
             Correct,
-            AttemptCredit { lamports: u64 },
+            AttemptCredit { tock: u64 },
             AttemptDataChange { data: u8 },
         }
 
@@ -192,15 +192,15 @@ mod tests {
             if let Ok(instruction) = bincode::deserialize(data) {
                 match instruction {
                     MockSystemInstruction::Correct => Ok(()),
-                    MockSystemInstruction::AttemptCredit { lamports } => {
+                    MockSystemInstruction::AttemptCredit { tock } => {
                         keyed_account_at_index(keyed_accounts, first_instruction_account)?
                             .account
                             .borrow_mut()
-                            .checked_sub_lamports(lamports)?;
+                            .checked_sub_lamports(tock)?;
                         keyed_account_at_index(keyed_accounts, first_instruction_account + 1)?
                             .account
                             .borrow_mut()
-                            .checked_add_lamports(lamports)?;
+                            .checked_add_lamports(tock)?;
                         Ok(())
                     }
                     // Change data in a read-only account
@@ -227,11 +227,11 @@ mod tests {
         )));
         let accounts = vec![
             (
-                solana_sdk::pubkey::new_rand(),
+                analog_sdk::pubkey::new_rand(),
                 AccountSharedData::new_ref(100, 1, &mock_system_program_id),
             ),
             (
-                solana_sdk::pubkey::new_rand(),
+                analog_sdk::pubkey::new_rand(),
                 AccountSharedData::new_ref(0, 1, &mock_system_program_id),
             ),
             (mock_system_program_id, program_account),
@@ -271,13 +271,13 @@ mod tests {
             0,
         );
         assert_eq!(result, Ok(()));
-        assert_eq!(accounts[0].1.borrow().lamports(), 100);
-        assert_eq!(accounts[1].1.borrow().lamports(), 0);
+        assert_eq!(accounts[0].1.borrow().tock(), 100);
+        assert_eq!(accounts[1].1.borrow().tock(), 0);
 
         let message = Message::new(
             &[Instruction::new_with_bincode(
                 mock_system_program_id,
-                &MockSystemInstruction::AttemptCredit { lamports: 50 },
+                &MockSystemInstruction::AttemptCredit { tock: 50 },
                 account_metas.clone(),
             )],
             Some(&accounts[0].0),
@@ -349,7 +349,7 @@ mod tests {
         enum MockSystemInstruction {
             BorrowFail,
             MultiBorrowMut,
-            DoWork { lamports: u64, data: u8 },
+            DoWork { tock: u64, data: u8 },
         }
 
         fn mock_system_process_instruction(
@@ -367,7 +367,7 @@ mod tests {
                         let dup_account =
                             keyed_account_at_index(keyed_accounts, first_instruction_account + 2)?
                                 .try_account_ref_mut()?;
-                        if from_account.lamports() != dup_account.lamports() {
+                        if from_account.tock() != dup_account.tock() {
                             return Err(InstructionError::InvalidArgument);
                         }
                         Ok(())
@@ -377,7 +377,7 @@ mod tests {
                             let from_account =
                                 keyed_account_at_index(keyed_accounts, first_instruction_account)?
                                     .try_account_ref_mut()?;
-                            from_account.lamports()
+                            from_account.tock()
                         };
                         let dup_lamports = {
                             let dup_account = keyed_account_at_index(
@@ -385,14 +385,14 @@ mod tests {
                                 first_instruction_account + 2,
                             )?
                             .try_account_ref_mut()?;
-                            dup_account.lamports()
+                            dup_account.tock()
                         };
                         if from_lamports != dup_lamports {
                             return Err(InstructionError::InvalidArgument);
                         }
                         Ok(())
                     }
-                    MockSystemInstruction::DoWork { lamports, data } => {
+                    MockSystemInstruction::DoWork { tock, data } => {
                         {
                             let mut to_account = keyed_account_at_index(
                                 keyed_accounts,
@@ -404,16 +404,16 @@ mod tests {
                                 first_instruction_account + 2,
                             )?
                             .try_account_ref_mut()?;
-                            dup_account.checked_sub_lamports(lamports)?;
-                            to_account.checked_add_lamports(lamports)?;
+                            dup_account.checked_sub_lamports(tock)?;
+                            to_account.checked_add_lamports(tock)?;
                             dup_account.set_data(vec![data]);
                         }
                         keyed_account_at_index(keyed_accounts, first_instruction_account)?
                             .try_account_ref_mut()?
-                            .checked_sub_lamports(lamports)?;
+                            .checked_sub_lamports(tock)?;
                         keyed_account_at_index(keyed_accounts, first_instruction_account + 1)?
                             .try_account_ref_mut()?
-                            .checked_add_lamports(lamports)?;
+                            .checked_add_lamports(tock)?;
                         Ok(())
                     }
                 }
@@ -432,11 +432,11 @@ mod tests {
         )));
         let accounts = vec![
             (
-                solana_sdk::pubkey::new_rand(),
+                analog_sdk::pubkey::new_rand(),
                 AccountSharedData::new_ref(100, 1, &mock_program_id),
             ),
             (
-                solana_sdk::pubkey::new_rand(),
+                analog_sdk::pubkey::new_rand(),
                 AccountSharedData::new_ref(0, 1, &mock_program_id),
             ),
             (mock_program_id, program_account),
@@ -518,7 +518,7 @@ mod tests {
             &[Instruction::new_with_bincode(
                 mock_program_id,
                 &MockSystemInstruction::DoWork {
-                    lamports: 10,
+                    tock: 10,
                     data: 42,
                 },
                 account_metas,
@@ -543,8 +543,8 @@ mod tests {
             0,
         );
         assert_eq!(result, Ok(()));
-        assert_eq!(accounts[0].1.borrow().lamports(), 80);
-        assert_eq!(accounts[1].1.borrow().lamports(), 20);
+        assert_eq!(accounts[0].1.borrow().tock(), 80);
+        assert_eq!(accounts[1].1.borrow().tock(), 20);
         assert_eq!(accounts[0].1.borrow().data(), &vec![42]);
     }
 

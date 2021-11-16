@@ -8,12 +8,12 @@ use {
     crate::{
         broadcast_stage::broadcast_utils::UnfinishedSlotInfo, cluster_nodes::ClusterNodesCache,
     },
-    solana_entry::entry::Entry,
-    solana_ledger::shred::{
+    analog_entry::entry::Entry,
+    analog_ledger::shred::{
         ProcessShredsStats, Shred, Shredder, MAX_DATA_SHREDS_PER_FEC_BLOCK,
         SHRED_TICK_REFERENCE_MASK,
     },
-    solana_sdk::{
+    analog_sdk::{
         signature::Keypair,
         timing::{duration_as_us, AtomicInterval},
     },
@@ -509,18 +509,18 @@ impl BroadcastRun for StandardBroadcastRun {
 #[cfg(test)]
 mod test {
     use super::*;
-    use solana_entry::entry::create_ticks;
-    use solana_gossip::cluster_info::{ClusterInfo, Node};
-    use solana_ledger::genesis_utils::create_genesis_config;
-    use solana_ledger::{
+    use analog_entry::entry::create_ticks;
+    use analog_gossip::cluster_info::{ClusterInfo, Node};
+    use analog_ledger::genesis_utils::create_genesis_config;
+    use analog_ledger::{
         blockstore::Blockstore, get_tmp_ledger_path, shred::max_ticks_per_n_shreds,
     };
-    use solana_runtime::bank::Bank;
-    use solana_sdk::{
+    use analog_runtime::bank::Bank;
+    use analog_sdk::{
         genesis_config::GenesisConfig,
         signature::{Keypair, Signer},
     };
-    use solana_streamer::socket::SocketAddrSpace;
+    use analog_streamer::socket::SocketAddrSpace;
     use std::ops::Deref;
     use std::sync::Arc;
     use std::time::Duration;

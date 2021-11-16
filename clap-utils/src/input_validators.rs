@@ -1,7 +1,7 @@
 use {
     crate::keypair::{parse_signer_source, SignerSourceKind, ASK_KEYWORD},
     chrono::DateTime,
-    solana_sdk::{
+    analog_sdk::{
         clock::{Epoch, Slot},
         hash::Hash,
         pubkey::{Pubkey, MAX_SEED_LEN},
@@ -380,7 +380,7 @@ where
             value, err
         )
     })?;
-    if solana_perf::thread::is_renice_allowed(adjustment) {
+    if analog_perf::thread::is_renice_allowed(adjustment) {
         Ok(())
     } else {
         Err(String::from(

@@ -24,17 +24,17 @@ use crate::{
     voting_service::VotingService,
 };
 use crossbeam_channel::unbounded;
-use solana_gossip::cluster_info::ClusterInfo;
-use solana_ledger::{
+use analog_gossip::cluster_info::ClusterInfo;
+use analog_ledger::{
     blockstore::Blockstore, blockstore_processor::TransactionStatusSender,
     leader_schedule_cache::LeaderScheduleCache,
 };
-use solana_poh::poh_recorder::PohRecorder;
-use solana_rpc::{
+use analog_poh::poh_recorder::PohRecorder;
+use analog_rpc::{
     max_slots::MaxSlots, optimistically_confirmed_bank_tracker::BankNotificationSender,
     rpc_subscriptions::RpcSubscriptions,
 };
-use solana_runtime::{
+use analog_runtime::{
     accounts_background_service::{
         AbsRequestHandler, AbsRequestSender, AccountsBackgroundService, SnapshotRequestHandler,
     },
@@ -46,7 +46,7 @@ use solana_runtime::{
     snapshot_package::{AccountsPackageReceiver, AccountsPackageSender, PendingSnapshotPackage},
     vote_sender_types::ReplayVoteSender,
 };
-use solana_sdk::{clock::Slot, pubkey::Pubkey, signature::Keypair};
+use analog_sdk::{clock::Slot, pubkey::Pubkey, signature::Keypair};
 use std::{
     boxed::Box,
     collections::HashSet,
@@ -377,24 +377,24 @@ impl Tvu {
 pub mod tests {
     use super::*;
     use serial_test::serial;
-    use solana_gossip::cluster_info::{ClusterInfo, Node};
-    use solana_ledger::{
+    use analog_gossip::cluster_info::{ClusterInfo, Node};
+    use analog_ledger::{
         blockstore::BlockstoreSignals,
         create_new_tmp_ledger,
         genesis_utils::{create_genesis_config, GenesisConfigInfo},
     };
-    use solana_poh::poh_recorder::create_test_recorder;
-    use solana_rpc::optimistically_confirmed_bank_tracker::OptimisticallyConfirmedBank;
-    use solana_runtime::bank::Bank;
-    use solana_sdk::signature::{Keypair, Signer};
-    use solana_streamer::socket::SocketAddrSpace;
+    use analog_poh::poh_recorder::create_test_recorder;
+    use analog_rpc::optimistically_confirmed_bank_tracker::OptimisticallyConfirmedBank;
+    use analog_runtime::bank::Bank;
+    use analog_sdk::signature::{Keypair, Signer};
+    use analog_streamer::socket::SocketAddrSpace;
     use std::sync::atomic::Ordering;
 
     #[ignore]
     #[test]
     #[serial]
     fn test_tvu_exit() {
-        solana_logger::setup();
+        analog_logger::setup();
         let leader = Node::new_localhost();
         let target1_keypair = Keypair::new();
         let target1 = Node::new_localhost_with_pubkey(&target1_keypair.pubkey());

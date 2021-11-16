@@ -1,5 +1,5 @@
 use crate::system_instruction_processor;
-use solana_sdk::{
+use analog_sdk::{
     feature_set,
     instruction::InstructionError,
     process_instruction::{stable_log, InvokeContext, ProcessInstructionWithContext},
@@ -9,7 +9,7 @@ use solana_sdk::{
 use std::fmt;
 
 #[cfg(RUSTC_WITH_SPECIALIZATION)]
-use solana_frozen_abi::abi_example::AbiExample;
+use analog_frozen_abi::abi_example::AbiExample;
 
 fn process_instruction_with_program_logging(
     process_instruction: ProcessInstructionWithContext,
@@ -112,22 +112,22 @@ fn genesis_builtins() -> Vec<Builtin> {
         ),
         Builtin::new(
             "vote_program",
-            solana_vote_program::id(),
-            with_program_logging!(solana_vote_program::vote_instruction::process_instruction),
+            analog_vote_program::id(),
+            with_program_logging!(analog_vote_program::vote_instruction::process_instruction),
         ),
         Builtin::new(
             "stake_program",
             stake::program::id(),
-            with_program_logging!(solana_stake_program::stake_instruction::process_instruction),
+            with_program_logging!(analog_stake_program::stake_instruction::process_instruction),
         ),
         Builtin::new(
             "config_program",
-            solana_config_program::id(),
-            with_program_logging!(solana_config_program::config_processor::process_instruction),
+            analog_config_program::id(),
+            with_program_logging!(analog_config_program::config_processor::process_instruction),
         ),
         Builtin::new(
             "secp256k1_program",
-            solana_sdk::secp256k1_program::id(),
+            analog_sdk::secp256k1_program::id(),
             dummy_process_instruction,
         ),
     ]
@@ -149,14 +149,14 @@ fn dummy_process_instruction(
 /// This is to enable the runtime to determine categorically whether the builtin update has
 /// occurred, and preserve idempotency in Bank::add_native_program across genesis, snapshot, and
 /// normal child Bank creation.
-/// https://github.com/solana-labs/solana/blob/84b139cc94b5be7c9e0c18c2ad91743231b85a0d/runtime/src/bank.rs#L1723
+/// https://github.com/analog-labs/solana/blob/84b139cc94b5be7c9e0c18c2ad91743231b85a0d/runtime/src/bank.rs#L1723
 fn feature_builtins() -> Vec<(Builtin, Pubkey, ActivationType)> {
     vec![
         (
             Builtin::new(
                 "compute_budget_program",
-                solana_sdk::compute_budget::id(),
-                solana_compute_budget_program::process_instruction,
+                analog_sdk::compute_budget::id(),
+                analog_compute_budget_program::process_instruction,
             ),
             feature_set::add_compute_budget_program::id(),
             ActivationType::NewProgram,
@@ -167,7 +167,7 @@ fn feature_builtins() -> Vec<(Builtin, Pubkey, ActivationType)> {
         (
             Builtin::new(
                 "secp256k1_program",
-                solana_sdk::secp256k1_program::id(),
+                analog_sdk::secp256k1_program::id(),
                 dummy_process_instruction,
             ),
             feature_set::prevent_calling_precompiles_as_programs::id(),

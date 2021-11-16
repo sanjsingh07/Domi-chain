@@ -1,13 +1,13 @@
 [package]
-name = "solana-tokens"
+name = "analog-tokens"
 description = "Blockchain, Rebuilt for Scale"
-authors = ["Solana Maintainers <maintainers@solana.foundation>"]
+authors = ["Analog Maintainers <maintainers@analog.foundation>"]
 edition = "2018"
 version = "1.9.0"
-repository = "https://github.com/solana-labs/solana"
+repository = "https://github.com/analog-labs/analog"
 license = "Apache-2.0"
-homepage = "https://solana.com/"
-documentation = "https://docs.rs/solana-tokens"
+homepage = "https://analog.com/"
+documentation = "https://docs.rs/analog-tokens"
 
 [dependencies]
 chrono = { version = "0.4", features = ["serde"] }
@@ -19,14 +19,14 @@ indexmap = "1.7.0"
 indicatif = "0.16.2"
 pickledb = "0.4.1"
 serde = { version = "1.0", features = ["derive"] }
-solana-account-decoder = { path = "../account-decoder", version = "=1.9.0" }
-solana-clap-utils = { path = "../clap-utils", version = "=1.9.0" }
-solana-cli-config = { path = "../cli-config", version = "=1.9.0" }
-solana-client = { path = "../client", version = "=1.9.0" }
-solana-remote-wallet = { path = "../remote-wallet", version = "=1.9.0" }
-solana-sdk = { path = "../sdk", version = "=1.9.0" }
-solana-transaction-status = { path = "../transaction-status", version = "=1.9.0" }
-solana-version = { path = "../version", version = "=1.9.0" }
+analog-account-decoder = { path = "../account-decoder", version = "=1.9.0" }
+analog-clap-utils = { path = "../clap-utils", version = "=1.9.0" }
+analog-cli-config = { path = "../cli-config", version = "=1.9.0" }
+analog-client = { path = "../client", version = "=1.9.0" }
+analog-remote-wallet = { path = "../remote-wallet", version = "=1.9.0" }
+analog-sdk = { path = "../sdk", version = "=1.9.0" }
+analog-transaction-status = { path = "../transaction-status", version = "=1.9.0" }
+analog-version = { path = "../version", version = "=1.9.0" }
 spl-associated-token-account-v1-0 = { package = "spl-associated-token-account", version = "=1.0.3" }
 spl-token-v2-0 = { package = "spl-token", version = "=3.2.0", features = ["no-entrypoint"] }
 tempfile = "3.2.0"
@@ -34,6 +34,6 @@ thiserror = "1.0"
 
 [dev-dependencies]
 bincode = "1.3.3"
-solana-logger = { path = "../logger", version = "=1.9.0" }
-solana-streamer = { path = "../streamer", version = "=1.9.0" }
-solana-test-validator = { path = "../test-validator", version = "=1.9.0" }
+analog-logger = { path = "../logger", version = "=1.9.0" }
+analog-streamer = { path = "../streamer", version = "=1.9.0" }
+analog-test-validator = { path = "../test-validator", version = "=1.9.0" }

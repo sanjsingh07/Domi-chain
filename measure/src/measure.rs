@@ -1,4 +1,4 @@
-use solana_sdk::timing::duration_as_ns;
+use analog_sdk::timing::duration_as_ns;
 use std::{fmt, time::Instant};
 
 #[derive(Debug)]
@@ -51,7 +51,7 @@ impl Measure {
     ///
     /// ```
     /// // Call a function with a single argument
-    /// # use solana_measure::measure::Measure;
+    /// # use analog_measure::measure::Measure;
     /// # fn my_function(fizz: i32) -> i32 { fizz }
     /// let (result, measure) = Measure::this(my_function, 42, "my_func");
     /// # assert_eq!(result, 42);
@@ -59,14 +59,14 @@ impl Measure {
     ///
     /// ```
     /// // Call a function with multiple arguments
-    /// # use solana_measure::measure::Measure;
+    /// # use analog_measure::measure::Measure;
     /// let (result, measure) = Measure::this(|(arg1, arg2)| std::cmp::min(arg1, arg2), (42, 123), "minimum");
     /// # assert_eq!(result, 42);
     /// ```
     ///
     /// ```
     /// // Call a method
-    /// # use solana_measure::measure::Measure;
+    /// # use analog_measure::measure::Measure;
     /// # struct Foo { x: i32 }
     /// # impl Foo { fn bar(&self, arg: i32) -> i32 { self.x + arg } }
     /// # let baz = 8;

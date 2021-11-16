@@ -69,18 +69,18 @@ Operate a configured testnet
                                       - Override the default --hashes-per-tick for the cluster
    --no-airdrop
                                       - If set, disables the faucet keypair.  Nodes must be funded in genesis config
-   --faucet-lamports NUM_LAMPORTS_TO_MINT
-                                      - Override the default 500000000000000000 lamports minted in genesis
+   --faucet-tock NUM_LAMPORTS_TO_MINT
+                                      - Override the default 500000000000000000 tock minted in genesis
    --extra-primordial-stakes NUM_EXTRA_PRIMORDIAL_STAKES
                                       - Number of extra nodes to be initially staked in genesis.
                                         Implies --wait-for-supermajority 1 --async-node-init and the supermajority
                                         wait slot may be overridden with the corresponding flag
-   --internal-nodes-stake-lamports NUM_LAMPORTS_PER_NODE
+   --internal-nodes-stake-tock NUM_LAMPORTS_PER_NODE
                                       - Amount to stake internal nodes.
-   --internal-nodes-lamports NUM_LAMPORTS_PER_NODE
+   --internal-nodes-tock NUM_LAMPORTS_PER_NODE
                                       - Amount to fund internal nodes in genesis config.
    --external-accounts-file FILE_PATH
-                                      - A YML file with a list of account pubkeys and corresponding lamport balances
+                                      - A YML file with a list of account pubkeys and correspondingtockbalances
                                         in genesis config for external nodes
    --no-snapshot-fetch
                                       - If set, disables booting validators from a snapshot
@@ -109,7 +109,7 @@ Operate a configured testnet
                                       - Support full RPC services on all nodes
  sanity/start-specific options:
    -F                   - Discard validator nodes that didn't bootup successfully
-   -o noInstallCheck    - Skip solana-install sanity
+   -o noInstallCheck    - Skip analog-install sanity
    -o rejectExtraNodes  - Require the exact number of nodes
 
  stop-specific options:
@@ -125,7 +125,7 @@ Operate a configured testnet
    --netem-cmd         - Optional command argument to netem. Default is "add". Use "cleanup" to remove rules.
 
  update-specific options:
-   --platform linux|osx|windows       - Deploy the tarball using 'solana-install deploy ...' for the
+   --platform linux|osx|windows       - Deploy the tarball using 'analog-install deploy ...' for the
                                         given platform (multiple platforms may be specified)
                                         (-t option must be supplied as well)
 
@@ -217,7 +217,7 @@ build() {
   echo "Build took $SECONDS seconds"
 }
 
-SOLANA_HOME="\$HOME/solana"
+SOLANA_HOME="\$HOME/analog"
 CARGO_BIN="\$HOME/.cargo/bin"
 
 startCommon() {
@@ -242,7 +242,7 @@ startCommon() {
       mkdir -p $CARGO_BIN
     "
   fi
-  [[ -z "$externalNodeSshKey" ]] || ssh-copy-id -f -i "$externalNodeSshKey" "${sshOptions[@]}" "solana@$ipAddress"
+  [[ -z "$externalNodeSshKey" ]] || ssh-copy-id -f -i "$externalNodeSshKey" "${sshOptions[@]}" "analog@$ipAddress"
   syncScripts "$ipAddress"
 }
 
@@ -263,8 +263,8 @@ deployBootstrapValidator() {
   echo "Deploying software to bootstrap validator ($ipAddress)"
   case $deployMethod in
   tar)
-    rsync -vPrc -e "ssh ${sshOptions[*]}" "$SOLANA_ROOT"/solana-release/bin/* "$ipAddress:$CARGO_BIN/"
-    rsync -vPrc -e "ssh ${sshOptions[*]}" "$SOLANA_ROOT"/solana-release/version.yml "$ipAddress:~/"
+    rsync -vPrc -e "ssh ${sshOptions[*]}" "$SOLANA_ROOT"/analog-release/bin/* "$ipAddress:$CARGO_BIN/"
+    rsync -vPrc -e "ssh ${sshOptions[*]}" "$SOLANA_ROOT"/analog-release/version.yml "$ipAddress:~/"
     ;;
   local)
     rsync -vPrc -e "ssh ${sshOptions[*]}" "$SOLANA_ROOT"/farf/bin/* "$ipAddress:$CARGO_BIN/"
@@ -294,7 +294,7 @@ startBootstrapLeader() {
     deployBootstrapValidator "$ipAddress"
 
     ssh "${sshOptions[@]}" -n "$ipAddress" \
-      "./solana/net/remote/remote-node.sh \
+      "./analog/net/remote/remote-node.sh \
          $deployMethod \
          bootstrap-validator \
          $entrypointIp \
@@ -358,7 +358,7 @@ startNode() {
         timeout 30s scp "${sshOptions[@]}" "$localArchive" "$ipAddress:letsencrypt.tgz"
       fi
       ssh "${sshOptions[@]}" -n "$ipAddress" \
-        "sudo -H /certbot-restore.sh $letsEncryptDomainName maintainers@solana.foundation"
+        "sudo -H /certbot-restore.sh $letsEncryptDomainName maintainers@analog.foundation"
       rm -f letsencrypt.tgz
       timeout 30s scp "${sshOptions[@]}" "$ipAddress:/letsencrypt.tgz" letsencrypt.tgz
       test -s letsencrypt.tgz # Ensure non-empty before overwriting $localArchive
@@ -366,7 +366,7 @@ startNode() {
     fi
 
     ssh "${sshOptions[@]}" -n "$ipAddress" \
-      "./solana/net/remote/remote-node.sh \
+      "./analog/net/remote/remote-node.sh \
          $deployMethod \
          $nodeType \
          $entrypointIp \
@@ -409,7 +409,7 @@ startClient() {
     set -x
     startCommon "$ipAddress"
     ssh "${sshOptions[@]}" -f "$ipAddress" \
-      "./solana/net/remote/remote-client.sh $deployMethod $entrypointIp \
+      "./analog/net/remote/remote-client.sh $deployMethod $entrypointIp \
       $clientToRun \"$RUST_LOG\" \"$benchTpsExtraArgs\" $clientIndex"
   ) >> "$logFile" 2>&1 || {
     cat "$logFile"
@@ -421,7 +421,7 @@ startClient() {
 startClients() {
   for ((i=0; i < "$numClients" && i < "$numClientsRequested"; i++)) do
     if [[ $i -lt "$numBenchTpsClients" ]]; then
-      startClient "${clientIpList[$i]}" "solana-bench-tps" "$i"
+      startClient "${clientIpList[$i]}" "analog-bench-tps" "$i"
     else
       startClient "${clientIpList[$i]}" "idle"
     fi
@@ -444,7 +444,7 @@ sanity() {
     set -x
     # shellcheck disable=SC2029 # remote-client.sh args are expanded on client side intentionally
     ssh "${sshOptions[@]}" "$bootstrapLeader" \
-      "./solana/net/remote/remote-sanity.sh $bootstrapLeader $sanityExtraArgs \"$RUST_LOG\""
+      "./analog/net/remote/remote-sanity.sh $bootstrapLeader $sanityExtraArgs \"$RUST_LOG\""
   ) || ok=false
   $ok || exit 1
 
@@ -455,7 +455,7 @@ sanity() {
       set -x
       # shellcheck disable=SC2029 # remote-client.sh args are expanded on client side intentionally
       ssh "${sshOptions[@]}" "$blockstreamer" \
-        "./solana/net/remote/remote-sanity.sh $blockstreamer $sanityExtraArgs \"$RUST_LOG\""
+        "./analog/net/remote/remote-sanity.sh $blockstreamer $sanityExtraArgs \"$RUST_LOG\""
     ) || ok=false
     $ok || exit 1
   fi
@@ -477,18 +477,18 @@ deployUpdate() {
   declare bootstrapLeader=${validatorIpList[0]}
 
   for updatePlatform in $updatePlatforms; do
-    echo "--- Deploying solana-install update: $updatePlatform"
+    echo "--- Deploying analog-install update: $updatePlatform"
     (
       set -x
 
-      scripts/solana-install-update-manifest-keypair.sh "$updatePlatform"
+      scripts/analog-install-update-manifest-keypair.sh "$updatePlatform"
 
       timeout 30s scp "${sshOptions[@]}" \
-        update_manifest_keypair.json "$bootstrapLeader:solana/update_manifest_keypair.json"
+        update_manifest_keypair.json "$bootstrapLeader:analog/update_manifest_keypair.json"
 
       # shellcheck disable=SC2029 # remote-deploy-update.sh args are expanded on client side intentionally
       ssh "${sshOptions[@]}" "$bootstrapLeader" \
-        "./solana/net/remote/remote-deploy-update.sh $releaseChannel $updatePlatform"
+        "./analog/net/remote/remote-deploy-update.sh $releaseChannel $updatePlatform"
     ) || ok=false
     $ok || exit 1
   done
@@ -525,21 +525,21 @@ prepareDeploy() {
   tar)
     if [[ -n $releaseChannel ]]; then
       echo "Downloading release from channel: $releaseChannel"
-      rm -f "$SOLANA_ROOT"/solana-release.tar.bz2
-      declare updateDownloadUrl=https://release.solana.com/"$releaseChannel"/solana-release-x86_64-unknown-linux-gnu.tar.bz2
+      rm -f "$SOLANA_ROOT"/analog-release.tar.bz2
+      declare updateDownloadUrl=https://release.analog.com/"$releaseChannel"/analog-release-x86_64-unknown-linux-gnu.tar.bz2
       (
         set -x
         curl -L -I "$updateDownloadUrl"
         curl -L --retry 5 --retry-delay 2 --retry-connrefused \
-          -o "$SOLANA_ROOT"/solana-release.tar.bz2 "$updateDownloadUrl"
+          -o "$SOLANA_ROOT"/analog-release.tar.bz2 "$updateDownloadUrl"
       )
-      tarballFilename="$SOLANA_ROOT"/solana-release.tar.bz2
+      tarballFilename="$SOLANA_ROOT"/analog-release.tar.bz2
     fi
     (
       set -x
-      rm -rf "$SOLANA_ROOT"/solana-release
+      rm -rf "$SOLANA_ROOT"/analog-release
       cd "$SOLANA_ROOT"; tar jfxv "$tarballFilename"
-      cat "$SOLANA_ROOT"/solana-release/version.yml
+      cat "$SOLANA_ROOT"/analog-release/version.yml
     )
     ;;
   local)
@@ -568,7 +568,7 @@ prepareDeploy() {
       rsync -vPrc -e "ssh ${sshOptions[*]}" "${validatorIpList[0]}":~/version.yml current-version.yml
     )
     cat current-version.yml
-    if ! diff -q current-version.yml "$SOLANA_ROOT"/solana-release/version.yml; then
+    if ! diff -q current-version.yml "$SOLANA_ROOT"/analog-release/version.yml; then
       echo "Cluster software version is old.  Update required"
     else
       echo "Cluster software version is current.  No update required"
@@ -632,7 +632,7 @@ deploy() {
         break
       fi
       ssh "${sshOptions[@]}" -n "$ipAddress" \
-        "./solana/net/remote/remote-node-wait-init.sh $((600 - timeWaited))"
+        "./analog/net/remote/remote-node-wait-init.sh $((600 - timeWaited))"
     done
   fi
 
@@ -659,7 +659,7 @@ deploy() {
     networkVersion="$(
       (
         set -o pipefail
-        grep "^commit: " "$SOLANA_ROOT"/solana-release/version.yml | head -n1 | cut -d\  -f2
+        grep "^commit: " "$SOLANA_ROOT"/analog-release/version.yml | head -n1 | cut -d\  -f2
       ) || echo "tar-unknown"
     )"
     ;;
@@ -698,7 +698,7 @@ stopNode() {
     # the script itself will match the pkill pattern
     set -x
     # shellcheck disable=SC2029 # It's desired that PS4 be expanded on the client side
-    ssh "${sshOptions[@]}" "$ipAddress" "PS4=\"$PS4\" ./solana/net/remote/cleanup.sh"
+    ssh "${sshOptions[@]}" "$ipAddress" "PS4=\"$PS4\" ./analog/net/remote/cleanup.sh"
   ) >> "$logFile" 2>&1 &
 
   declare pid=$!
@@ -809,10 +809,10 @@ while [[ -n $1 ]]; do
     elif [[ $1 = --slots-per-epoch ]]; then
       genesisOptions="$genesisOptions $1 $2"
       shift 2
-    elif [[ $1 = --target-lamports-per-signature ]]; then
+    elif [[ $1 = --target-tock-per-signature ]]; then
       genesisOptions="$genesisOptions $1 $2"
       shift 2
-    elif [[ $1 = --faucet-lamports ]]; then
+    elif [[ $1 = --faucet-tock ]]; then
       genesisOptions="$genesisOptions $1 $2"
       shift 2
     elif [[ $1 = --cluster-type ]]; then
@@ -853,10 +853,10 @@ while [[ -n $1 ]]; do
     elif [[ $1 = --platform ]]; then
       updatePlatforms="$updatePlatforms $2"
       shift 2
-    elif [[ $1 = --internal-nodes-stake-lamports ]]; then
+    elif [[ $1 = --internal-nodes-stake-tock ]]; then
       internalNodesStakeLamports="$2"
       shift 2
-    elif [[ $1 = --internal-nodes-lamports ]]; then
+    elif [[ $1 = --internal-nodes-tock ]]; then
       internalNodesLamports="$2"
       shift 2
     elif [[ $1 = --external-accounts-file ]]; then
@@ -1120,7 +1120,7 @@ logs)
     (
       set -x
       timeout 30s scp "${sshOptions[@]}" \
-        "$ipAddress":solana/"$log".log "$netLogDir"/remote-"$log"-"$ipAddress".log
+        "$ipAddress":analog/"$log".log "$netLogDir"/remote-"$log"-"$ipAddress".log
     ) || echo "failed to fetch log"
   }
   fetchRemoteLog "${validatorIpList[0]}" faucet
@@ -1139,12 +1139,12 @@ netem)
     remoteNetemConfigFile="$(basename "$netemConfigFile")"
     if [[ $netemCommand = "add" ]]; then
       for ipAddress in "${validatorIpList[@]}"; do
-        "$here"/scp.sh "$netemConfigFile" solana@"$ipAddress":"$SOLANA_HOME"
+        "$here"/scp.sh "$netemConfigFile" analog@"$ipAddress":"$SOLANA_HOME"
       done
     fi
     for i in "${!validatorIpList[@]}"; do
-      "$here"/ssh.sh solana@"${validatorIpList[$i]}" 'solana/scripts/net-shaper.sh' \
-      "$netemCommand" ~solana/solana/"$remoteNetemConfigFile" "${#validatorIpList[@]}" "$i"
+      "$here"/ssh.sh analog@"${validatorIpList[$i]}" 'analog/scripts/net-shaper.sh' \
+      "$netemCommand" ~analog/analog/"$remoteNetemConfigFile" "${#validatorIpList[@]}" "$i"
     done
   else
     num_nodes=$((${#validatorIpList[@]}*netemPartition/100))
@@ -1157,12 +1157,12 @@ netem)
 
     # Stop netem on all nodes
     for ipAddress in "${validatorIpList[@]}"; do
-      "$here"/ssh.sh solana@"$ipAddress" 'solana/scripts/netem.sh delete < solana/netem.cfg || true'
+      "$here"/ssh.sh analog@"$ipAddress" 'analog/scripts/netem.sh delete < analog/netem.cfg || true'
     done
 
     # Start netem on required nodes
     for ((i=0; i<num_nodes; i++ )); do :
-      "$here"/ssh.sh solana@"${validatorIpList[$i]}" "echo $netemConfig > solana/netem.cfg; solana/scripts/netem.sh add \"$netemConfig\""
+      "$here"/ssh.sh analog@"${validatorIpList[$i]}" "echo $netemConfig > analog/netem.cfg; analog/scripts/netem.sh add \"$netemConfig\""
     done
   fi
   ;;

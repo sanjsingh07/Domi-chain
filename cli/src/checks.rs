@@ -1,10 +1,10 @@
 use crate::cli::CliError;
-use solana_client::{
+use analog_client::{
     client_error::{ClientError, Result as ClientResult},
     rpc_client::RpcClient,
 };
-use solana_sdk::{
-    commitment_config::CommitmentConfig, message::Message, native_token::lamports_to_sol,
+use analog_sdk::{
+    commitment_config::CommitmentConfig, message::Message, native_token::tock_to_anlog,
     pubkey::Pubkey,
 };
 
@@ -76,13 +76,13 @@ pub fn check_account_for_spend_multiple_fees_with_commitment(
     {
         if balance > 0 {
             return Err(CliError::InsufficientFundsForSpendAndFee(
-                lamports_to_sol(balance),
-                lamports_to_sol(fee),
+               tock_to_anlog(balance),
+               tock_to_anlog(fee),
                 *account_pubkey,
             ));
         } else {
             return Err(CliError::InsufficientFundsForFee(
-                lamports_to_sol(fee),
+               tock_to_anlog(fee),
                 *account_pubkey,
             ));
         }
@@ -124,10 +124,10 @@ pub fn check_account_for_balance_with_commitment(
     balance: u64,
     commitment: CommitmentConfig,
 ) -> ClientResult<bool> {
-    let lamports = rpc_client
+    let tock = rpc_client
         .get_balance_with_commitment(account_pubkey, commitment)?
         .value;
-    if lamports != 0 && lamports >= balance {
+    if tock != 0 && tock >= balance {
         return Ok(true);
     }
     Ok(false)
@@ -151,11 +151,11 @@ pub fn check_unique_pubkeys(
 mod tests {
     use super::*;
     use serde_json::json;
-    use solana_client::{
+    use analog_client::{
         rpc_request::RpcRequest,
         rpc_response::{Response, RpcResponseContext},
     };
-    use solana_sdk::system_instruction;
+    use analog_sdk::system_instruction;
     use std::collections::HashMap;
 
     #[test]
@@ -165,7 +165,7 @@ mod tests {
             context: RpcResponseContext { slot: 1 },
             value: json!(account_balance),
         });
-        let pubkey = solana_sdk::pubkey::new_rand();
+        let pubkey = analog_sdk::pubkey::new_rand();
 
         let pubkey0 = Pubkey::new(&[0; 32]);
         let pubkey1 = Pubkey::new(&[1; 32]);
@@ -229,7 +229,7 @@ mod tests {
             context: RpcResponseContext { slot: 1 },
             value: json!(account_balance),
         });
-        let pubkey = solana_sdk::pubkey::new_rand();
+        let pubkey = analog_sdk::pubkey::new_rand();
 
         let mut mocks = HashMap::new();
         mocks.insert(RpcRequest::GetBalance, account_balance_response);
@@ -277,9 +277,9 @@ mod tests {
 
     #[test]
     fn test_check_unique_pubkeys() {
-        let pubkey0 = solana_sdk::pubkey::new_rand();
+        let pubkey0 = analog_sdk::pubkey::new_rand();
         let pubkey_clone = pubkey0;
-        let pubkey1 = solana_sdk::pubkey::new_rand();
+        let pubkey1 = analog_sdk::pubkey::new_rand();
 
         check_unique_pubkeys((&pubkey0, "foo".to_string()), (&pubkey1, "bar".to_string()))
             .expect("unexpected result");

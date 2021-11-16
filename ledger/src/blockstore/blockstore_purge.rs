@@ -397,8 +397,8 @@ pub mod tests {
         blockstore::tests::make_slot_entries_with_transactions, get_tmp_ledger_path_auto_delete,
     };
     use bincode::serialize;
-    use solana_entry::entry::next_entry_mut;
-    use solana_sdk::{
+    use analog_entry::entry::next_entry_mut;
+    use analog_sdk::{
         hash::{hash, Hash},
         message::Message,
         transaction::Transaction,

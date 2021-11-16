@@ -1,8 +1,8 @@
-use solana_gossip::cluster_info::{
+use analog_gossip::cluster_info::{
     ClusterInfo, MAX_INCREMENTAL_SNAPSHOT_HASHES, MAX_SNAPSHOT_HASHES,
 };
-use solana_perf::thread::renice_this_thread;
-use solana_runtime::{
+use analog_perf::thread::renice_this_thread;
+use analog_runtime::{
     snapshot_archive_info::SnapshotArchiveInfoGetter,
     snapshot_config::SnapshotConfig,
     snapshot_hash::{
@@ -12,7 +12,7 @@ use solana_runtime::{
     snapshot_package::{PendingSnapshotPackage, SnapshotType},
     snapshot_utils,
 };
-use solana_sdk::{clock::Slot, hash::Hash};
+use analog_sdk::{clock::Slot, hash::Hash};
 use std::{
     sync::{
         atomic::{AtomicBool, Ordering},
@@ -210,14 +210,14 @@ impl SnapshotGossipManager {
 mod tests {
     use super::*;
     use bincode::serialize_into;
-    use solana_runtime::{
+    use analog_runtime::{
         accounts_db::AccountStorageEntry,
         bank::BankSlotDelta,
         snapshot_archive_info::SnapshotArchiveInfo,
         snapshot_package::{SnapshotPackage, SnapshotType},
         snapshot_utils::{self, ArchiveFormat, SnapshotVersion, SNAPSHOT_STATUS_CACHE_FILE_NAME},
     };
-    use solana_sdk::hash::Hash;
+    use analog_sdk::hash::Hash;
     use std::{
         fs::{self, remove_dir_all, OpenOptions},
         io::Write,

@@ -12,17 +12,17 @@ use crate::{
 };
 use crossbeam_channel::{Receiver as CrossbeamReceiver, Sender as CrossbeamSender};
 use lru::LruCache;
-use solana_gossip::cluster_info::ClusterInfo;
-use solana_ledger::{
+use analog_gossip::cluster_info::ClusterInfo;
+use analog_ledger::{
     blockstore::{Blockstore, SlotMeta},
     shred::Nonce,
 };
-use solana_measure::measure::Measure;
-use solana_runtime::{bank_forks::BankForks, contains::Contains};
-use solana_sdk::{
+use analog_measure::measure::Measure;
+use analog_runtime::{bank_forks::BankForks, contains::Contains};
+use analog_sdk::{
     clock::Slot, epoch_schedule::EpochSchedule, hash::Hash, pubkey::Pubkey, timing::timestamp,
 };
-use solana_streamer::sendmmsg::{batch_send, SendPktsError};
+use analog_streamer::sendmmsg::{batch_send, SendPktsError};
 use std::{
     collections::{HashMap, HashSet},
     iter::Iterator,
@@ -168,7 +168,7 @@ impl RepairService {
             let exit = exit.clone();
             let repair_info = repair_info.clone();
             Builder::new()
-                .name("solana-repair-service".to_string())
+                .name("analog-repair-service".to_string())
                 .spawn(move || {
                     Self::run(
                         &blockstore,
@@ -622,14 +622,14 @@ impl RepairService {
 #[cfg(test)]
 mod test {
     use super::*;
-    use solana_gossip::{cluster_info::Node, contact_info::ContactInfo};
-    use solana_ledger::blockstore::{
+    use analog_gossip::{cluster_info::Node, contact_info::ContactInfo};
+    use analog_ledger::blockstore::{
         make_chaining_slot_entries, make_many_slot_entries, make_slot_entries,
     };
-    use solana_ledger::shred::max_ticks_per_n_shreds;
-    use solana_ledger::{blockstore::Blockstore, get_tmp_ledger_path};
-    use solana_sdk::signature::Keypair;
-    use solana_streamer::socket::SocketAddrSpace;
+    use analog_ledger::shred::max_ticks_per_n_shreds;
+    use analog_ledger::{blockstore::Blockstore, get_tmp_ledger_path};
+    use analog_sdk::signature::Keypair;
+    use analog_streamer::socket::SocketAddrSpace;
     use std::collections::HashSet;
 
     fn new_test_cluster_info(contact_info: ContactInfo) -> ClusterInfo {

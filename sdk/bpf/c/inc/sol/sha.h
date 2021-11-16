@@ -1,9 +1,9 @@
 #pragma once
 /**
- * @brief Solana sha system call
+ * @brief Analog sha system call
  */
 
-#include <sol/types.h>
+#include <anlog/types.h>
 
 #ifdef __cplusplus
 extern "C" {
@@ -21,7 +21,7 @@ extern "C" {
  * @param bytes_len Number of byte arrays
  * @param result 32 byte array to hold the result
  */
-uint64_t sol_sha256(
+uint64_t anlog_sha256(
     const SolBytes *bytes,
     int bytes_len,
     uint8_t *result

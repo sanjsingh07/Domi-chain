@@ -2,11 +2,11 @@ use {
     crate::accountsdb_repl_server::{
         self, ReplicaAccountData, ReplicaAccountInfo, ReplicaAccountMeta, ReplicaAccountsServer,
     },
-    solana_runtime::{
+    analog_runtime::{
         accounts_cache::CachedAccount, accounts_db::LoadedAccount, append_vec::StoredAccountMeta,
         bank_forks::BankForks,
     },
-    solana_sdk::account::Account,
+    analog_sdk::account::Account,
     std::{
         cmp::Eq,
         sync::{Arc, RwLock},
@@ -24,7 +24,7 @@ impl ReplicaAccountInfo {
     fn from_stored_account_meta(stored_account_meta: &StoredAccountMeta) -> Self {
         let account_meta = Some(ReplicaAccountMeta {
             pubkey: stored_account_meta.meta.pubkey.to_bytes().to_vec(),
-            lamports: stored_account_meta.account_meta.lamports,
+            tock: stored_account_meta.account_meta.tock,
             owner: stored_account_meta.account_meta.owner.to_bytes().to_vec(),
             executable: stored_account_meta.account_meta.executable,
             rent_epoch: stored_account_meta.account_meta.rent_epoch,
@@ -43,7 +43,7 @@ impl ReplicaAccountInfo {
         let account = Account::from(cached_account.account.clone());
         let account_meta = Some(ReplicaAccountMeta {
             pubkey: cached_account.pubkey().to_bytes().to_vec(),
-            lamports: account.lamports,
+            tock: account.tock,
             owner: account.owner.to_bytes().to_vec(),
             executable: account.executable,
             rent_epoch: account.rent_epoch,

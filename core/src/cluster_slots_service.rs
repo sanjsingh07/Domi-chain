@@ -1,10 +1,10 @@
 use crate::cluster_slots::ClusterSlots;
 use crossbeam_channel::{Receiver, RecvTimeoutError, Sender};
-use solana_gossip::cluster_info::ClusterInfo;
-use solana_ledger::blockstore::Blockstore;
-use solana_measure::measure::Measure;
-use solana_runtime::bank_forks::BankForks;
-use solana_sdk::clock::Slot;
+use analog_gossip::cluster_info::ClusterInfo;
+use analog_ledger::blockstore::Blockstore;
+use analog_measure::measure::Measure;
+use analog_runtime::bank_forks::BankForks;
+use analog_sdk::clock::Slot;
 use std::{
     sync::{
         atomic::{AtomicBool, Ordering},
@@ -46,7 +46,7 @@ impl ClusterSlotsService {
         Self::initialize_lowest_slot(&blockstore, &cluster_info);
         Self::initialize_epoch_slots(&bank_forks, &cluster_info);
         let t_cluster_slots_service = Builder::new()
-            .name("solana-cluster-slots-service".to_string())
+            .name("analog-cluster-slots-service".to_string())
             .spawn(move || {
                 Self::run(
                     blockstore,
@@ -179,9 +179,9 @@ impl ClusterSlotsService {
 mod test {
     use {
         super::*,
-        solana_gossip::{cluster_info::Node, crds_value::LowestSlot},
-        solana_sdk::{pubkey::Pubkey, signature::Keypair},
-        solana_streamer::socket::SocketAddrSpace,
+        analog_gossip::{cluster_info::Node, crds_value::LowestSlot},
+        analog_sdk::{pubkey::Pubkey, signature::Keypair},
+        analog_streamer::socket::SocketAddrSpace,
     };
 
     #[test]

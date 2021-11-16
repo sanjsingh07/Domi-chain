@@ -1,6 +1,6 @@
 use byteorder::{ByteOrder, LittleEndian, WriteBytesExt};
 use solana_rbpf::{aligned_memory::AlignedMemory, ebpf::HOST_ALIGN};
-use solana_sdk::{
+use analog_sdk::{
     account::{ReadableAccount, WritableAccount},
     bpf_loader_deprecated,
     entrypoint::MAX_PERMITTED_DATA_INCREASE,
@@ -66,7 +66,7 @@ pub fn get_serialized_account_size_unaligned(
         size_of::<u8>() // is_signer
             + size_of::<u8>() // is_writable
             + size_of::<Pubkey>() // key
-            + size_of::<u64>()  // lamports
+            + size_of::<u64>()  // tock
             + size_of::<u64>()  // data len
             + data_len // data
             + size_of::<Pubkey>() // owner
@@ -110,7 +110,7 @@ pub fn serialize_parameters_unaligned(
                 .map_err(|_| InstructionError::InvalidArgument)?;
             v.write_all(keyed_account.unsigned_key().as_ref())
                 .map_err(|_| InstructionError::InvalidArgument)?;
-            v.write_u64::<LittleEndian>(keyed_account.lamports()?)
+            v.write_u64::<LittleEndian>(keyed_account.tock()?)
                 .map_err(|_| InstructionError::InvalidArgument)?;
             v.write_u64::<LittleEndian>(keyed_account.data_len()? as u64)
                 .map_err(|_| InstructionError::InvalidArgument)?;
@@ -153,7 +153,7 @@ pub fn deserialize_parameters_unaligned(
             keyed_account
                 .try_account_ref_mut()?
                 .set_lamports(LittleEndian::read_u64(&buffer[start..]));
-            start += size_of::<u64>() // lamports
+            start += size_of::<u64>() // tock
                 + size_of::<u64>(); // data length
             let end = start + keyed_account.data_len()?;
             keyed_account
@@ -179,7 +179,7 @@ pub fn get_serialized_account_size_aligned(
             + 4 // padding to 128-bit aligned
             + size_of::<Pubkey>()  // key
             + size_of::<Pubkey>() // owner
-            + size_of::<u64>()  // lamports
+            + size_of::<u64>()  // tock
             + size_of::<u64>()  // data len
             + data_len
             + MAX_PERMITTED_DATA_INCREASE
@@ -234,7 +234,7 @@ pub fn serialize_parameters_aligned(
                 .map_err(|_| InstructionError::InvalidArgument)?;
             v.write_all(keyed_account.owner()?.as_ref())
                 .map_err(|_| InstructionError::InvalidArgument)?;
-            v.write_u64::<LittleEndian>(keyed_account.lamports()?)
+            v.write_u64::<LittleEndian>(keyed_account.tock()?)
                 .map_err(|_| InstructionError::InvalidArgument)?;
             v.write_u64::<LittleEndian>(keyed_account.data_len()? as u64)
                 .map_err(|_| InstructionError::InvalidArgument)?;
@@ -285,7 +285,7 @@ pub fn deserialize_parameters_aligned(
             account.copy_into_owner_from_slice(&buffer[start..start + size_of::<Pubkey>()]);
             start += size_of::<Pubkey>(); // owner
             account.set_lamports(LittleEndian::read_u64(&buffer[start..]));
-            start += size_of::<u64>(); // lamports
+            start += size_of::<u64>(); // tock
             let post_len = LittleEndian::read_u64(&buffer[start..]) as usize;
             start += size_of::<u64>(); // data length
             let data_end = if do_support_realloc {
@@ -317,7 +317,7 @@ pub fn deserialize_parameters_aligned(
 mod tests {
     use super::*;
     use solana_program_runtime::invoke_context::{prepare_mock_invoke_context, ThisInvokeContext};
-    use solana_sdk::{
+    use analog_sdk::{
         account::{Account, AccountSharedData},
         account_info::AccountInfo,
         bpf_loader,
@@ -333,16 +333,16 @@ mod tests {
 
     #[test]
     fn test_serialize_parameters() {
-        let program_id = solana_sdk::pubkey::new_rand();
-        let dup_key = solana_sdk::pubkey::new_rand();
-        let dup_key2 = solana_sdk::pubkey::new_rand();
+        let program_id = analog_sdk::pubkey::new_rand();
+        let dup_key = analog_sdk::pubkey::new_rand();
+        let dup_key2 = analog_sdk::pubkey::new_rand();
         let keyed_accounts = [
             (
                 false,
                 false,
                 program_id,
                 Rc::new(RefCell::new(AccountSharedData::from(Account {
-                    lamports: 0,
+                    tock: 0,
                     data: vec![],
                     owner: bpf_loader::id(),
                     executable: true,
@@ -354,7 +354,7 @@ mod tests {
                 false,
                 dup_key,
                 Rc::new(RefCell::new(AccountSharedData::from(Account {
-                    lamports: 1,
+                    tock: 1,
                     data: vec![1u8, 2, 3, 4, 5],
                     owner: bpf_loader::id(),
                     executable: false,
@@ -366,7 +366,7 @@ mod tests {
                 false,
                 dup_key,
                 Rc::new(RefCell::new(AccountSharedData::from(Account {
-                    lamports: 1,
+                    tock: 1,
                     data: vec![1u8, 2, 3, 4, 5],
                     owner: bpf_loader::id(),
                     executable: false,
@@ -376,9 +376,9 @@ mod tests {
             (
                 false,
                 false,
-                solana_sdk::pubkey::new_rand(),
+                analog_sdk::pubkey::new_rand(),
                 Rc::new(RefCell::new(AccountSharedData::from(Account {
-                    lamports: 2,
+                    tock: 2,
                     data: vec![11u8, 12, 13, 14, 15, 16, 17, 18, 19],
                     owner: bpf_loader::id(),
                     executable: true,
@@ -388,9 +388,9 @@ mod tests {
             (
                 false,
                 false,
-                solana_sdk::pubkey::new_rand(),
+                analog_sdk::pubkey::new_rand(),
                 Rc::new(RefCell::new(AccountSharedData::from(Account {
-                    lamports: 3,
+                    tock: 3,
                     data: vec![],
                     owner: bpf_loader::id(),
                     executable: false,
@@ -402,7 +402,7 @@ mod tests {
                 true,
                 dup_key2,
                 Rc::new(RefCell::new(AccountSharedData::from(Account {
-                    lamports: 4,
+                    tock: 4,
                     data: vec![1u8, 2, 3, 4, 5],
                     owner: bpf_loader::id(),
                     executable: false,
@@ -414,7 +414,7 @@ mod tests {
                 true,
                 dup_key2,
                 Rc::new(RefCell::new(AccountSharedData::from(Account {
-                    lamports: 4,
+                    tock: 4,
                     data: vec![1u8, 2, 3, 4, 5],
                     owner: bpf_loader::id(),
                     executable: false,
@@ -424,9 +424,9 @@ mod tests {
             (
                 false,
                 true,
-                solana_sdk::pubkey::new_rand(),
+                analog_sdk::pubkey::new_rand(),
                 Rc::new(RefCell::new(AccountSharedData::from(Account {
-                    lamports: 5,
+                    tock: 5,
                     data: vec![11u8, 12, 13, 14, 15, 16, 17, 18, 19],
                     owner: bpf_loader::id(),
                     executable: true,
@@ -436,9 +436,9 @@ mod tests {
             (
                 false,
                 true,
-                solana_sdk::pubkey::new_rand(),
+                analog_sdk::pubkey::new_rand(),
                 Rc::new(RefCell::new(AccountSharedData::from(Account {
-                    lamports: 6,
+                    tock: 6,
                     data: vec![],
                     owner: bpf_loader::id(),
                     executable: false,
@@ -483,14 +483,14 @@ mod tests {
         for ((_, _, key, account), account_info) in keyed_accounts.iter().skip(1).zip(de_accounts) {
             assert_eq!(key, account_info.key);
             let account = account.borrow();
-            assert_eq!(account.lamports(), account_info.lamports());
+            assert_eq!(account.tock(), account_info.tock());
             assert_eq!(account.data(), &account_info.data.borrow()[..]);
             assert_eq!(account.owner(), account_info.owner);
             assert_eq!(account.executable(), account_info.executable);
             assert_eq!(account.rent_epoch(), account_info.rent_epoch);
 
             assert_eq!(
-                (*account_info.lamports.borrow() as *const u64).align_offset(align_of::<u64>()),
+                (*account_info.tock.borrow() as *const u64).align_offset(align_of::<u64>()),
                 0
             );
             assert_eq!(
@@ -538,7 +538,7 @@ mod tests {
         for ((_, _, key, account), account_info) in keyed_accounts.iter().skip(1).zip(de_accounts) {
             assert_eq!(key, account_info.key);
             let account = account.borrow();
-            assert_eq!(account.lamports(), account_info.lamports());
+            assert_eq!(account.tock(), account_info.tock());
             assert_eq!(account.data(), &account_info.data.borrow()[..]);
             assert_eq!(account.owner(), account_info.owner);
             assert_eq!(account.executable(), account_info.executable);
@@ -558,7 +558,7 @@ mod tests {
         {
             assert_eq!(key, de_keyed_account.unsigned_key());
             let account = account.borrow();
-            assert_eq!(account.lamports(), de_keyed_account.lamports().unwrap());
+            assert_eq!(account.tock(), de_keyed_account.tock().unwrap());
             assert_eq!(
                 account.data(),
                 de_keyed_account.try_account_ref().unwrap().data()
@@ -601,7 +601,7 @@ mod tests {
                 offset += size_of::<Pubkey>();
 
                 #[allow(clippy::cast_ptr_alignment)]
-                let lamports = Rc::new(RefCell::new(&mut *(input.add(offset) as *mut u64)));
+                let tock = Rc::new(RefCell::new(&mut *(input.add(offset) as *mut u64)));
                 offset += size_of::<u64>();
 
                 #[allow(clippy::cast_ptr_alignment)]
@@ -628,7 +628,7 @@ mod tests {
                     key,
                     is_signer,
                     is_writable,
-                    lamports,
+                    tock,
                     data,
                     owner,
                     executable,

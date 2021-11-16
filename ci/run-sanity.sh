@@ -24,15 +24,15 @@ done
 snapshot_slot=1
 
 # wait a bit longer than snapshot_slot
-while [[ $($solana_cli --url http://localhost:8899 slot --commitment processed) -le $((snapshot_slot + 1)) ]]; do
+while [[ $($analog_cli --url http://localhost:8899 slot --commitment processed) -le $((snapshot_slot + 1)) ]]; do
   sleep 1
   echo "Checking slot"
 done
 
-$solana_validator --ledger config/ledger exit --force || true
+$analog_validator --ledger config/ledger exit --force || true
 
 wait $pid
 
-$solana_ledger_tool create-snapshot --ledger config/ledger "$snapshot_slot" config/snapshot-ledger
+$analog_ledger_tool create-snapshot --ledger config/ledger "$snapshot_slot" config/snapshot-ledger
 cp config/ledger/genesis.tar.bz2 config/snapshot-ledger
-$solana_ledger_tool verify --ledger config/snapshot-ledger
+$analog_ledger_tool verify --ledger config/snapshot-ledger

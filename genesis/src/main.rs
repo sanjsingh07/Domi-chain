@@ -2,22 +2,22 @@
 #![allow(clippy::integer_arithmetic)]
 
 use clap::{crate_description, crate_name, value_t, value_t_or_exit, App, Arg, ArgMatches};
-use solana_clap_utils::{
+use analog_clap_utils::{
     input_parsers::{cluster_type_of, pubkey_of, pubkeys_of, unix_timestamp_from_rfc3339_datetime},
     input_validators::{is_pubkey_or_keypair, is_rfc3339_datetime, is_slot, is_valid_percentage},
 };
-use solana_entry::poh::compute_hashes_per_tick;
-use solana_genesis::{genesis_accounts::add_genesis_accounts, Base64Account};
-use solana_ledger::{blockstore::create_new_ledger, blockstore_db::AccessType};
-use solana_runtime::hardened_unpack::MAX_GENESIS_ARCHIVE_UNPACKED_SIZE;
-use solana_sdk::{
+use analog_entry::poh::compute_hashes_per_tick;
+use analog_genesis::{genesis_accounts::add_genesis_accounts, Base64Account};
+use analog_ledger::{blockstore::create_new_ledger, blockstore_db::AccessType};
+use analog_runtime::hardened_unpack::MAX_GENESIS_ARCHIVE_UNPACKED_SIZE;
+use analog_sdk::{
     account::{Account, AccountSharedData, ReadableAccount, WritableAccount},
     clock,
     epoch_schedule::EpochSchedule,
     fee_calculator::FeeRateGovernor,
     genesis_config::{ClusterType, GenesisConfig},
     inflation::Inflation,
-    native_token::sol_to_lamports,
+    native_token::anlog_to_tock,
     poh_config::PohConfig,
     pubkey::Pubkey,
     rent::Rent,
@@ -25,8 +25,8 @@ use solana_sdk::{
     stake::state::StakeState,
     system_program, timing,
 };
-use solana_stake_program::stake_state;
-use solana_vote_program::vote_state::{self, VoteState};
+use analog_stake_program::stake_state;
+use analog_vote_program::vote_state::{self, VoteState};
 use std::{
     collections::HashMap,
     error,
@@ -53,7 +53,7 @@ fn pubkey_from_str(key_str: &str) -> Result<Pubkey, Box<dyn error::Error>> {
 }
 
 pub fn load_genesis_accounts(file: &str, genesis_config: &mut GenesisConfig) -> io::Result<u64> {
-    let mut lamports = 0;
+    let mut tock = 0;
     let accounts_file = File::open(file.to_string())?;
 
     let genesis_accounts: HashMap<String, Base64Account> =
@@ -87,16 +87,16 @@ pub fn load_genesis_accounts(file: &str, genesis_config: &mut GenesisConfig) -> 
             );
         }
         account.set_executable(account_details.executable);
-        lamports += account.lamports();
+        tock += account.tock();
         genesis_config.add_account(pubkey, account);
     }
 
-    Ok(lamports)
+    Ok(tock)
 }
 
 #[allow(clippy::cognitive_complexity)]
 fn main() -> Result<(), Box<dyn error::Error>> {
-    let default_faucet_pubkey = solana_cli_config::Config::default().keypair_path;
+    let default_faucet_pubkey = analog_cli_config::Config::default().keypair_path;
     let fee_rate_governor = FeeRateGovernor::default();
     let (
         default_target_lamports_per_signature,
@@ -124,11 +124,11 @@ fn main() -> Result<(), Box<dyn error::Error>> {
     };
 
     // vote account
-    let default_bootstrap_validator_lamports = &sol_to_lamports(500.0)
+    let default_bootstrap_validator_lamports = &anlog_to_tock(500.0)
         .max(VoteState::get_rent_exempt_reserve(&rent))
         .to_string();
     // stake account
-    let default_bootstrap_validator_stake_lamports = &sol_to_lamports(0.5)
+    let default_bootstrap_validator_stake_lamports = &anlog_to_tock(0.5)
         .max(StakeState::get_rent_exempt_reserve(&rent))
         .to_string();
 
@@ -140,7 +140,7 @@ fn main() -> Result<(), Box<dyn error::Error>> {
 
     let matches = App::new(crate_name!())
         .about(crate_description!())
-        .version(solana_version::version!())
+        .version(analog_version::version!())
         .arg(
             Arg::with_name("creation_time")
                 .long("creation-time")
@@ -173,10 +173,10 @@ fn main() -> Result<(), Box<dyn error::Error>> {
         .arg(
             Arg::with_name("faucet_lamports")
                 .short("t")
-                .long("faucet-lamports")
+                .long("faucet-tock")
                 .value_name("LAMPORTS")
                 .takes_value(true)
-                .help("Number of lamports to assign to the faucet"),
+                .help("Number of tock to assign to the faucet"),
         )
         .arg(
             Arg::with_name("faucet_pubkey")
@@ -202,39 +202,39 @@ fn main() -> Result<(), Box<dyn error::Error>> {
         )
         .arg(
             Arg::with_name("bootstrap_validator_lamports")
-                .long("bootstrap-validator-lamports")
+                .long("bootstrap-validator-tock")
                 .value_name("LAMPORTS")
                 .takes_value(true)
                 .default_value(default_bootstrap_validator_lamports)
-                .help("Number of lamports to assign to the bootstrap validator"),
+                .help("Number of tock to assign to the bootstrap validator"),
         )
         .arg(
             Arg::with_name("bootstrap_validator_stake_lamports")
-                .long("bootstrap-validator-stake-lamports")
+                .long("bootstrap-validator-stake-tock")
                 .value_name("LAMPORTS")
                 .takes_value(true)
                 .default_value(default_bootstrap_validator_stake_lamports)
-                .help("Number of lamports to assign to the bootstrap validator's stake account"),
+                .help("Number of tock to assign to the bootstrap validator's stake account"),
         )
         .arg(
             Arg::with_name("target_lamports_per_signature")
-                .long("target-lamports-per-signature")
+                .long("target-tock-per-signature")
                 .value_name("LAMPORTS")
                 .takes_value(true)
                 .default_value(default_target_lamports_per_signature)
                 .help(
-                    "The cost in lamports that the cluster will charge for signature \
+                    "The cost in tock that the cluster will charge for signature \
                      verification when the cluster is operating at target-signatures-per-slot",
                 ),
         )
         .arg(
             Arg::with_name("lamports_per_byte_year")
-                .long("lamports-per-byte-year")
+                .long("tock-per-byte-year")
                 .value_name("LAMPORTS")
                 .takes_value(true)
                 .default_value(default_lamports_per_byte_year)
                 .help(
-                    "The cost in lamports that the cluster will charge per byte per year \
+                    "The cost in tock that the cluster will charge per byte per year \
                      for accounts with data",
                 ),
         )
@@ -285,7 +285,7 @@ fn main() -> Result<(), Box<dyn error::Error>> {
                 .help(
                     "Used to estimate the desired processing capacity of the cluster. \
                     When the latest slot processes fewer/greater signatures than this \
-                    value, the lamports-per-signature fee will decrease/increase for \
+                    value, the tock-per-signature fee will decrease/increase for \
                     the next slot. A value of 0 disables signature-based fee adjustments",
                 ),
         )
@@ -389,18 +389,18 @@ fn main() -> Result<(), Box<dyn error::Error>> {
     };
 
     fn rent_exempt_check(matches: &ArgMatches<'_>, name: &str, exempt: u64) -> io::Result<u64> {
-        let lamports = value_t_or_exit!(matches, name, u64);
+        let tock = value_t_or_exit!(matches, name, u64);
 
-        if lamports < exempt {
+        if tock < exempt {
             Err(io::Error::new(
                 io::ErrorKind::Other,
                 format!(
                     "error: insufficient {}: {} for rent exemption, requires {}",
-                    name, lamports, exempt
+                    name, tock, exempt
                 ),
             ))
         } else {
-            Ok(lamports)
+            Ok(tock)
         }
     }
 
@@ -558,9 +558,9 @@ fn main() -> Result<(), Box<dyn error::Error>> {
         );
     }
 
-    solana_stake_program::add_genesis_accounts(&mut genesis_config);
+    analog_stake_program::add_genesis_accounts(&mut genesis_config);
     if genesis_config.cluster_type == ClusterType::Development {
-        solana_runtime::genesis_utils::activate_all_features(&mut genesis_config);
+        analog_runtime::genesis_utils::activate_all_features(&mut genesis_config);
     }
 
     if let Some(files) = matches.values_of("primordial_accounts_file") {
@@ -575,7 +575,7 @@ fn main() -> Result<(), Box<dyn error::Error>> {
     let issued_lamports = genesis_config
         .accounts
         .iter()
-        .map(|(_key, account)| account.lamports)
+        .map(|(_key, account)| account.tock)
         .sum::<u64>();
 
     add_genesis_accounts(&mut genesis_config, issued_lamports - faucet_lamports);
@@ -605,7 +605,7 @@ fn main() -> Result<(), Box<dyn error::Error>> {
                     genesis_config.add_account(
                         address,
                         AccountSharedData::from(Account {
-                            lamports: genesis_config.rent.minimum_balance(program_data.len()),
+                            tock: genesis_config.rent.minimum_balance(program_data.len()),
                             data: program_data,
                             executable: true,
                             owner: loader,
@@ -618,7 +618,7 @@ fn main() -> Result<(), Box<dyn error::Error>> {
         }
     }
 
-    solana_logger::setup();
+    analog_logger::setup();
     create_new_ledger(
         &ledger_path,
         &genesis_config,
@@ -633,7 +633,7 @@ fn main() -> Result<(), Box<dyn error::Error>> {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use solana_sdk::genesis_config::GenesisConfig;
+    use analog_sdk::genesis_config::GenesisConfig;
     use std::collections::HashMap;
     use std::fs::remove_file;
     use std::io::Write;
@@ -648,27 +648,27 @@ mod tests {
 
         let mut genesis_accounts = HashMap::new();
         genesis_accounts.insert(
-            solana_sdk::pubkey::new_rand().to_string(),
+            analog_sdk::pubkey::new_rand().to_string(),
             Base64Account {
-                owner: solana_sdk::pubkey::new_rand().to_string(),
+                owner: analog_sdk::pubkey::new_rand().to_string(),
                 balance: 2,
                 executable: false,
                 data: String::from("aGVsbG8="),
             },
         );
         genesis_accounts.insert(
-            solana_sdk::pubkey::new_rand().to_string(),
+            analog_sdk::pubkey::new_rand().to_string(),
             Base64Account {
-                owner: solana_sdk::pubkey::new_rand().to_string(),
+                owner: analog_sdk::pubkey::new_rand().to_string(),
                 balance: 1,
                 executable: true,
                 data: String::from("aGVsbG8gd29ybGQ="),
             },
         );
         genesis_accounts.insert(
-            solana_sdk::pubkey::new_rand().to_string(),
+            analog_sdk::pubkey::new_rand().to_string(),
             Base64Account {
-                owner: solana_sdk::pubkey::new_rand().to_string(),
+                owner: analog_sdk::pubkey::new_rand().to_string(),
                 balance: 3,
                 executable: true,
                 data: String::from("bWUgaGVsbG8gdG8gd29ybGQ="),
@@ -703,7 +703,7 @@ mod tests {
 
                 assert_eq!(
                     b64_account.balance,
-                    genesis_config.accounts[&pubkey].lamports
+                    genesis_config.accounts[&pubkey].tock
                 );
 
                 assert_eq!(
@@ -721,27 +721,27 @@ mod tests {
         // Test more accounts can be appended
         let mut genesis_accounts1 = HashMap::new();
         genesis_accounts1.insert(
-            solana_sdk::pubkey::new_rand().to_string(),
+            analog_sdk::pubkey::new_rand().to_string(),
             Base64Account {
-                owner: solana_sdk::pubkey::new_rand().to_string(),
+                owner: analog_sdk::pubkey::new_rand().to_string(),
                 balance: 6,
                 executable: true,
                 data: String::from("eW91IGFyZQ=="),
             },
         );
         genesis_accounts1.insert(
-            solana_sdk::pubkey::new_rand().to_string(),
+            analog_sdk::pubkey::new_rand().to_string(),
             Base64Account {
-                owner: solana_sdk::pubkey::new_rand().to_string(),
+                owner: analog_sdk::pubkey::new_rand().to_string(),
                 balance: 5,
                 executable: false,
                 data: String::from("bWV0YSBzdHJpbmc="),
             },
         );
         genesis_accounts1.insert(
-            solana_sdk::pubkey::new_rand().to_string(),
+            analog_sdk::pubkey::new_rand().to_string(),
             Base64Account {
-                owner: solana_sdk::pubkey::new_rand().to_string(),
+                owner: analog_sdk::pubkey::new_rand().to_string(),
                 balance: 10,
                 executable: false,
                 data: String::from("YmFzZTY0IHN0cmluZw=="),
@@ -772,7 +772,7 @@ mod tests {
             let pubkey = &pubkey_str.parse().unwrap();
             assert_eq!(
                 b64_account.balance,
-                genesis_config.accounts[pubkey].lamports,
+                genesis_config.accounts[pubkey].tock,
             );
         }
 
@@ -786,7 +786,7 @@ mod tests {
 
             assert_eq!(
                 b64_account.balance,
-                genesis_config.accounts[&pubkey].lamports,
+                genesis_config.accounts[&pubkey].tock,
             );
 
             assert_eq!(
@@ -806,7 +806,7 @@ mod tests {
         genesis_accounts2.insert(
             serde_json::to_string(&account_keypairs[0].to_bytes().to_vec()).unwrap(),
             Base64Account {
-                owner: solana_sdk::pubkey::new_rand().to_string(),
+                owner: analog_sdk::pubkey::new_rand().to_string(),
                 balance: 20,
                 executable: true,
                 data: String::from("Y2F0IGRvZw=="),
@@ -815,7 +815,7 @@ mod tests {
         genesis_accounts2.insert(
             serde_json::to_string(&account_keypairs[1].to_bytes().to_vec()).unwrap(),
             Base64Account {
-                owner: solana_sdk::pubkey::new_rand().to_string(),
+                owner: analog_sdk::pubkey::new_rand().to_string(),
                 balance: 15,
                 executable: false,
                 data: String::from("bW9ua2V5IGVsZXBoYW50"),
@@ -824,7 +824,7 @@ mod tests {
         genesis_accounts2.insert(
             serde_json::to_string(&account_keypairs[2].to_bytes().to_vec()).unwrap(),
             Base64Account {
-                owner: solana_sdk::pubkey::new_rand().to_string(),
+                owner: analog_sdk::pubkey::new_rand().to_string(),
                 balance: 30,
                 executable: true,
                 data: String::from("Y29tYSBtb2Nh"),
@@ -855,7 +855,7 @@ mod tests {
             let pubkey = pubkey_str.parse().unwrap();
             assert_eq!(
                 b64_account.balance,
-                genesis_config.accounts[&pubkey].lamports,
+                genesis_config.accounts[&pubkey].tock,
             );
         }
 
@@ -869,7 +869,7 @@ mod tests {
 
             assert_eq!(
                 b64_account.balance,
-                genesis_config.accounts[&pubkey].lamports,
+                genesis_config.accounts[&pubkey].tock,
             );
 
             assert_eq!(
@@ -894,7 +894,7 @@ mod tests {
 
             assert_eq!(
                 genesis_accounts2[&keypair_str].balance,
-                genesis_config.accounts[&pubkey].lamports,
+                genesis_config.accounts[&pubkey].tock,
             );
 
             assert_eq!(

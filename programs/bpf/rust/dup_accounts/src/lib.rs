@@ -33,20 +33,20 @@ fn process_instruction(
             accounts[3].data.borrow_mut()[0] += 2;
         }
         4 => {
-            msg!("modify account (1,2) lamports");
-            **accounts[1].lamports.borrow_mut() -= 1;
-            **accounts[2].lamports.borrow_mut() += 1;
+            msg!("modify account (1,2) tock");
+            **accounts[1].tock.borrow_mut() -= 1;
+            **accounts[2].tock.borrow_mut() += 1;
         }
         5 => {
-            msg!("modify account (1,3) lamports");
-            **accounts[1].lamports.borrow_mut() -= 2;
-            **accounts[3].lamports.borrow_mut() += 2;
+            msg!("modify account (1,3) tock");
+            **accounts[1].tock.borrow_mut() -= 2;
+            **accounts[3].tock.borrow_mut() += 2;
         }
         6 => {
-            msg!("modify account (1,2,3) lamports");
-            **accounts[1].lamports.borrow_mut() -= 3;
-            **accounts[2].lamports.borrow_mut() += 1;
-            **accounts[3].lamports.borrow_mut() += 2;
+            msg!("modify account (1,2,3) tock");
+            **accounts[1].tock.borrow_mut() -= 3;
+            **accounts[2].tock.borrow_mut() += 1;
+            **accounts[3].tock.borrow_mut() += 2;
         }
         7 => {
             msg!("check account (0,1,2,3) privs");

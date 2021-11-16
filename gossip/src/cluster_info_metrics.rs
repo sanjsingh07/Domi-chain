@@ -1,8 +1,8 @@
 use {
     crate::crds_gossip::CrdsGossip,
     itertools::Itertools,
-    solana_measure::measure::Measure,
-    solana_sdk::{clock::Slot, pubkey::Pubkey},
+    analog_measure::measure::Measure,
+    analog_sdk::{clock::Slot, pubkey::Pubkey},
     std::{
         collections::HashMap,
         ops::{Deref, DerefMut},

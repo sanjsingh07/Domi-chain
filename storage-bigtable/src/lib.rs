@@ -2,7 +2,7 @@
 use {
     log::*,
     serde::{Deserialize, Serialize},
-    solana_sdk::{
+    analog_sdk::{
         clock::{Slot, UnixTimestamp},
         deserialize_utils::default_on_eof,
         pubkey::Pubkey,
@@ -10,8 +10,8 @@ use {
         sysvar::is_sysvar_id,
         transaction::{Transaction, TransactionError},
     },
-    solana_storage_proto::convert::{generated, tx_by_addr},
-    solana_transaction_status::{
+    analog_storage_proto::convert::{generated, tx_by_addr},
+    analog_transaction_status::{
         extract_and_fmt_memos, ConfirmedBlock, ConfirmedTransaction,
         ConfirmedTransactionStatusWithSignature, Reward, TransactionByAddrInfo,
         TransactionConfirmationStatus, TransactionStatus, TransactionStatusMeta,
@@ -239,15 +239,15 @@ type StoredConfirmedBlockRewards = Vec<StoredConfirmedBlockReward>;
 #[derive(Serialize, Deserialize)]
 struct StoredConfirmedBlockReward {
     pubkey: String,
-    lamports: i64,
+    tock: i64,
 }
 
 impl From<StoredConfirmedBlockReward> for Reward {
     fn from(value: StoredConfirmedBlockReward) -> Self {
-        let StoredConfirmedBlockReward { pubkey, lamports } = value;
+        let StoredConfirmedBlockReward { pubkey, tock } = value;
         Self {
             pubkey,
-            lamports,
+            tock,
             post_balance: 0,
             reward_type: None,
             commission: None,
@@ -258,9 +258,9 @@ impl From<StoredConfirmedBlockReward> for Reward {
 impl From<Reward> for StoredConfirmedBlockReward {
     fn from(value: Reward) -> Self {
         let Reward {
-            pubkey, lamports, ..
+            pubkey, tock, ..
         } = value;
-        Self { pubkey, lamports }
+        Self { pubkey, tock }
     }
 }
 
@@ -343,7 +343,7 @@ pub struct LedgerStorage {
 impl LedgerStorage {
     pub async fn new(read_only: bool, timeout: Option<std::time::Duration>) -> Result<Self> {
         let connection =
-            bigtable::BigTableConnection::new("solana-ledger", read_only, timeout).await?;
+            bigtable::BigTableConnection::new("analog-ledger", read_only, timeout).await?;
         Ok(Self { connection })
     }
 

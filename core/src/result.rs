@@ -1,7 +1,7 @@
 //! The `result` module exposes a Result type that propagates one of many different Error types.
 
-use solana_gossip::{cluster_info, gossip_error::GossipError};
-use solana_ledger::blockstore;
+use analog_gossip::{cluster_info, gossip_error::GossipError};
+use analog_ledger::blockstore;
 
 #[derive(Debug)]
 pub enum Error {

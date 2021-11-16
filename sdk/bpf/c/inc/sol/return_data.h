@@ -1,10 +1,10 @@
 #pragma once
 /**
- * @brief Solana return data system calls
+ * @brief Analog return data system calls
 **/
 
-#include <sol/types.h>
-#include <sol/pubkey.h>
+#include <anlog/types.h>
+#include <anlog/pubkey.h>
 
 #ifdef __cplusplus
 extern "C"
@@ -22,7 +22,7 @@ extern "C"
  * @param bytes byte array to set
  * @param bytes_len length of byte array. This may not exceed MAX_RETURN_DATA.
  */
-void sol_set_return_data(const uint8_t *bytes, uint64_t bytes_len);
+void anlog_set_return_data(const uint8_t *bytes, uint64_t bytes_len);
 
 /**
  * Get the return data
@@ -32,7 +32,7 @@ void sol_set_return_data(const uint8_t *bytes, uint64_t bytes_len);
  * @param program_id the program_id which set the return data. Only set if there was some return data (the function returns non-zero).
  * @param result length of return data (may exceed bytes_len if the return data is longer)
  */
-uint64_t sol_get_return_data(const uint8_t *bytes, uint64_t bytes_len, SolPubkey *program_id);
+uint64_t anlog_get_return_data(const uint8_t *bytes, uint64_t bytes_len, SolPubkey *program_id);
 
 #ifdef __cplusplus
 }

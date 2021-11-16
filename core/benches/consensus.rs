@@ -1,15 +1,15 @@
 #![feature(test)]
 
-extern crate solana_core;
+extern crate analog_core;
 extern crate test;
 
 use {
-    solana_core::{
+    analog_core::{
         consensus::Tower, tower_storage::FileTowerStorage, vote_simulator::VoteSimulator,
     },
-    solana_runtime::bank::Bank,
-    solana_runtime::bank_forks::BankForks,
-    solana_sdk::{
+    analog_runtime::bank::Bank,
+    analog_runtime::bank_forks::BankForks,
+    analog_sdk::{
         pubkey::Pubkey,
         signature::{Keypair, Signer},
     },

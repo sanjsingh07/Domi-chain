@@ -1,12 +1,12 @@
 use crate::{cluster::Cluster, local_cluster::LocalCluster};
 use log::*;
-use solana_runtime::{
+use analog_runtime::{
     snapshot_archive_info::{
         FullSnapshotArchiveInfo, IncrementalSnapshotArchiveInfo, SnapshotArchiveInfoGetter,
     },
     snapshot_utils,
 };
-use solana_sdk::{client::SyncClient, commitment_config::CommitmentConfig};
+use analog_sdk::{client::SyncClient, commitment_config::CommitmentConfig};
 use std::{path::Path, thread::sleep, time::Duration};
 
 impl LocalCluster {

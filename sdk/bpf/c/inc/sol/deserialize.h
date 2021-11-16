@@ -1,13 +1,13 @@
 #pragma once
 /**
- * @brief Solana BPF loader deserializer to be used when deploying
+ * @brief Analog BPF loader deserializer to be used when deploying
  * a program with `BPFLoader2111111111111111111111111111111111` or
  * `BPFLoaderUpgradeab1e11111111111111111111111`
  */
 
-#include <sol/types.h>
-#include <sol/pubkey.h>
-#include <sol/entrypoint.h>
+#include <anlog/types.h>
+#include <anlog/pubkey.h>
+#include <anlog/entrypoint.h>
 
 #ifdef __cplusplus
 extern "C" {
@@ -24,7 +24,7 @@ extern "C" {
  * Use this function to deserialize the buffer passed to the program entrypoint
  * into usable types.  This function does not perform copy deserialization,
  * instead it populates the pointers and lengths in SolAccountInfo and data so
- * that any modification to lamports or account data take place on the original
+ * that any modification to tock or account data take place on the original
  * buffer.  Doing so also eliminates the need to serialize back into the buffer
  * at the end of the program.
  *
@@ -32,7 +32,7 @@ extern "C" {
  * @param params Pointer to a SolParameters structure
  * @return Boolean true if successful.
  */
-static bool sol_deserialize(
+static bool anlog_deserialize(
   const uint8_t *input,
   SolParameters *params,
   uint64_t ka_num
@@ -90,8 +90,8 @@ static bool sol_deserialize(
       params->ka[i].owner = (SolPubkey *) input;
       input += sizeof(SolPubkey);
 
-      // lamports
-      params->ka[i].lamports = (uint64_t *) input;
+      // tock
+      params->ka[i].tock = (uint64_t *) input;
       input += sizeof(uint64_t);
 
       // account data
@@ -111,7 +111,7 @@ static bool sol_deserialize(
       params->ka[i].executable = params->ka[dup_info].executable;
       params->ka[i].key = params->ka[dup_info].key;
       params->ka[i].owner = params->ka[dup_info].owner;
-      params->ka[i].lamports = params->ka[dup_info].lamports;
+      params->ka[i].tock = params->ka[dup_info].tock;
       params->ka[i].data_len = params->ka[dup_info].data_len;
       params->ka[i].data = params->ka[dup_info].data;
       params->ka[i].rent_epoch = params->ka[dup_info].rent_epoch;

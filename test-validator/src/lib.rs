@@ -1,24 +1,24 @@
 #![allow(clippy::integer_arithmetic)]
 use {
     log::*,
-    solana_client::rpc_client::RpcClient,
-    solana_core::{
+    analog_client::rpc_client::RpcClient,
+    analog_core::{
         tower_storage::TowerStorage,
         validator::{Validator, ValidatorConfig, ValidatorStartProgress},
     },
-    solana_gossip::{
+    analog_gossip::{
         cluster_info::{ClusterInfo, Node},
         gossip_service::discover_cluster,
         socketaddr,
     },
-    solana_ledger::{blockstore::create_new_ledger, create_new_tmp_ledger},
-    solana_net_utils::PortRange,
-    solana_rpc::rpc::JsonRpcConfig,
-    solana_runtime::{
+    analog_ledger::{blockstore::create_new_ledger, create_new_tmp_ledger},
+    analog_net_utils::PortRange,
+    analog_rpc::rpc::JsonRpcConfig,
+    analog_runtime::{
         genesis_utils::create_genesis_config_with_leader_ex,
         hardened_unpack::MAX_GENESIS_ARCHIVE_UNPACKED_SIZE, snapshot_config::SnapshotConfig,
     },
-    solana_sdk::{
+    analog_sdk::{
         account::{Account, AccountSharedData},
         clock::{Slot, DEFAULT_MS_PER_SLOT},
         commitment_config::CommitmentConfig,
@@ -28,12 +28,12 @@ use {
         hash::Hash,
         instruction::{AccountMeta, Instruction},
         message::Message,
-        native_token::sol_to_lamports,
+        native_token::anlog_to_tock,
         pubkey::Pubkey,
         rent::Rent,
         signature::{read_keypair_file, write_keypair_file, Keypair, Signer},
     },
-    solana_streamer::socket::SocketAddrSpace,
+    analog_streamer::socket::SocketAddrSpace,
     std::{
         collections::HashMap,
         fs::remove_dir_all,
@@ -195,7 +195,7 @@ impl TestValidatorGenesis {
             info!("Fetching {} over RPC...", address);
             let account = rpc_client.get_account(&address).unwrap_or_else(|err| {
                 error!("Failed to fetch {}: {}", address, err);
-                solana_core::validator::abort();
+                analog_core::validator::abort();
             });
             self.add_account(address, AccountSharedData::from(account));
         }
@@ -206,16 +206,16 @@ impl TestValidatorGenesis {
     pub fn add_account_with_file_data(
         &mut self,
         address: Pubkey,
-        lamports: u64,
+        tock: u64,
         owner: Pubkey,
         filename: &str,
     ) -> &mut Self {
         self.add_account(
             address,
             AccountSharedData::from(Account {
-                lamports,
-                data: solana_program_test::read_file(
-                    solana_program_test::find_file(filename).unwrap_or_else(|| {
+                tock,
+                data: analog_program_test::read_file(
+                    analog_program_test::find_file(filename).unwrap_or_else(|| {
                         panic!("Unable to locate {}", filename);
                     }),
                 ),
@@ -231,14 +231,14 @@ impl TestValidatorGenesis {
     pub fn add_account_with_base64_data(
         &mut self,
         address: Pubkey,
-        lamports: u64,
+        tock: u64,
         owner: Pubkey,
         data_base64: &str,
     ) -> &mut Self {
         self.add_account(
             address,
             AccountSharedData::from(Account {
-                lamports,
+                tock,
                 data: base64::decode(data_base64)
                     .unwrap_or_else(|err| panic!("Failed to base64 decode: {}", err)),
                 owner,
@@ -253,12 +253,12 @@ impl TestValidatorGenesis {
     /// `program_name` will also used to locate the BPF shared object in the current or fixtures
     /// directory.
     pub fn add_program(&mut self, program_name: &str, program_id: Pubkey) -> &mut Self {
-        let program_path = solana_program_test::find_file(&format!("{}.so", program_name))
+        let program_path = analog_program_test::find_file(&format!("{}.so", program_name))
             .unwrap_or_else(|| panic!("Unable to locate program {}", program_name));
 
         self.programs.push(ProgramInfo {
             program_id,
-            loader: solana_sdk::bpf_loader::id(),
+            loader: analog_sdk::bpf_loader::id(),
             program_path,
         });
         self
@@ -379,20 +379,20 @@ impl TestValidator {
         let validator_identity = Keypair::new();
         let validator_vote_account = Keypair::new();
         let validator_stake_account = Keypair::new();
-        let validator_identity_lamports = sol_to_lamports(500.);
-        let validator_stake_lamports = sol_to_lamports(1_000_000.);
-        let mint_lamports = sol_to_lamports(500_000_000.);
+        let validator_identity_lamports = anlog_to_tock(500.);
+        let validator_stake_lamports = anlog_to_tock(1_000_000.);
+        let mint_lamports = anlog_to_tock(500_000_000.);
 
         let mut accounts = config.accounts.clone();
-        for (address, account) in solana_program_test::programs::spl_programs(&config.rent) {
+        for (address, account) in analog_program_test::programs::spl_programs(&config.rent) {
             accounts.entry(address).or_insert(account);
         }
         for program in &config.programs {
-            let data = solana_program_test::read_file(&program.program_path);
+            let data = analog_program_test::read_file(&program.program_path);
             accounts.insert(
                 program.program_id,
                 AccountSharedData::from(Account {
-                    lamports: Rent::default().minimum_balance(data.len()).min(1),
+                    tock: Rent::default().minimum_balance(data.len()).min(1),
                     data,
                     owner: program.loader,
                     executable: true,
@@ -411,7 +411,7 @@ impl TestValidator {
             validator_identity_lamports,
             config.fee_rate_governor.clone(),
             config.rent,
-            solana_sdk::genesis_config::ClusterType::Development,
+            analog_sdk::genesis_config::ClusterType::Development,
             accounts.into_iter().collect(),
         );
         genesis_config.epoch_schedule = config
@@ -429,7 +429,7 @@ impl TestValidator {
                     ledger_path,
                     &genesis_config,
                     MAX_GENESIS_ARCHIVE_UNPACKED_SIZE,
-                    solana_ledger::blockstore_db::AccessType::PrimaryOnly,
+                    analog_ledger::blockstore_db::AccessType::PrimaryOnly,
                 )
                 .map_err(|err| {
                     format!(
@@ -551,7 +551,7 @@ impl TestValidator {
             socket_addr_space,
         ));
 
-        // Needed to avoid panics in `solana-responder-gossip` in tests that create a number of
+        // Needed to avoid panics in `analog-responder-gossip` in tests that create a number of
         // test validators concurrently...
         discover_cluster(&gossip, 1, socket_addr_space)
             .map_err(|err| format!("TestValidator startup failed: {:?}", err))?;

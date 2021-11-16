@@ -1,8 +1,8 @@
 use super::*;
-use solana_entry::entry::Entry;
-use solana_ledger::shred::Shredder;
-use solana_sdk::hash::Hash;
-use solana_sdk::signature::Keypair;
+use analog_entry::entry::Entry;
+use analog_ledger::shred::Shredder;
+use analog_sdk::hash::Hash;
+use analog_sdk::signature::Keypair;
 
 #[derive(Clone)]
 pub(super) struct BroadcastFakeShredsRun {
@@ -140,14 +140,14 @@ impl BroadcastRun for BroadcastFakeShredsRun {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use solana_gossip::contact_info::ContactInfo;
-    use solana_streamer::socket::SocketAddrSpace;
+    use analog_gossip::contact_info::ContactInfo;
+    use analog_streamer::socket::SocketAddrSpace;
     use std::net::{IpAddr, Ipv4Addr, SocketAddr};
 
     #[test]
     fn test_tvu_peers_ordering() {
         let cluster = ClusterInfo::new(
-            ContactInfo::new_localhost(&solana_sdk::pubkey::new_rand(), 0),
+            ContactInfo::new_localhost(&analog_sdk::pubkey::new_rand(), 0),
             Arc::new(Keypair::new()),
             SocketAddrSpace::Unspecified,
         );

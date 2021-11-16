@@ -1,19 +1,19 @@
 #![allow(clippy::integer_arithmetic)]
 use serial_test::serial;
-use solana_bench_tps::{
+use analog_bench_tps::{
     bench::{do_bench_tps, generate_and_fund_keypairs},
     cli::Config,
 };
-use solana_client::thin_client::create_client;
-use solana_core::validator::ValidatorConfig;
-use solana_faucet::faucet::run_local_faucet_with_port;
-use solana_gossip::cluster_info::VALIDATOR_PORT_RANGE;
-use solana_local_cluster::{
+use analog_client::thin_client::create_client;
+use analog_core::validator::ValidatorConfig;
+use analog_faucet::faucet::run_local_faucet_with_port;
+use analog_gossip::cluster_info::VALIDATOR_PORT_RANGE;
+use analog_local_cluster::{
     local_cluster::{ClusterConfig, LocalCluster},
     validator_configs::make_identical_validator_configs,
 };
-use solana_sdk::signature::{Keypair, Signer};
-use solana_streamer::socket::SocketAddrSpace;
+use analog_sdk::signature::{Keypair, Signer};
+use analog_streamer::socket::SocketAddrSpace;
 use std::{
     sync::{mpsc::channel, Arc},
     time::Duration,
@@ -22,7 +22,7 @@ use std::{
 fn test_bench_tps_local_cluster(config: Config) {
     let native_instruction_processors = vec![];
 
-    solana_logger::setup();
+    analog_logger::setup();
     const NUM_NODES: usize = 1;
     let cluster = LocalCluster::new(
         &mut ClusterConfig {
@@ -77,7 +77,7 @@ fn test_bench_tps_local_cluster(config: Config) {
 
 #[test]
 #[serial]
-fn test_bench_tps_local_cluster_solana() {
+fn test_bench_tps_local_cluster_analog() {
     test_bench_tps_local_cluster(Config {
         tx_count: 100,
         duration: Duration::from_secs(10),

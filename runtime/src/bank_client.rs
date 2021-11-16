@@ -1,5 +1,5 @@
 use crate::bank::Bank;
-use solana_sdk::{
+use analog_sdk::{
     account::Account,
     client::{AsyncClient, Client, SyncClient},
     commitment_config::CommitmentConfig,
@@ -65,16 +65,16 @@ impl AsyncClient for BankClient {
         self.async_send_message(&[keypair], message, recent_blockhash)
     }
 
-    /// Transfer `lamports` from `keypair` to `pubkey`
+    /// Transfer `tock` from `keypair` to `pubkey`
     fn async_transfer(
         &self,
-        lamports: u64,
+        tock: u64,
         keypair: &Keypair,
         pubkey: &Pubkey,
         recent_blockhash: Hash,
     ) -> Result<Signature> {
         let transfer_instruction =
-            system_instruction::transfer(&keypair.pubkey(), pubkey, lamports);
+            system_instruction::transfer(&keypair.pubkey(), pubkey, tock);
         self.async_send_instruction(keypair, transfer_instruction, recent_blockhash)
     }
 }
@@ -101,15 +101,15 @@ impl SyncClient for BankClient {
         self.send_and_confirm_message(&[keypair], message)
     }
 
-    /// Transfer `lamports` from `keypair` to `pubkey`
+    /// Transfer `tock` from `keypair` to `pubkey`
     fn transfer_and_confirm(
         &self,
-        lamports: u64,
+        tock: u64,
         keypair: &Keypair,
         pubkey: &Pubkey,
     ) -> Result<Signature> {
         let transfer_instruction =
-            system_instruction::transfer(&keypair.pubkey(), pubkey, lamports);
+            system_instruction::transfer(&keypair.pubkey(), pubkey, tock);
         self.send_and_confirm_instruction(keypair, transfer_instruction)
     }
 
@@ -223,7 +223,7 @@ impl SyncClient for BankClient {
         signature: &Signature,
         min_confirmed_blocks: usize,
     ) -> Result<usize> {
-        // https://github.com/solana-labs/solana/issues/7199
+        // https://github.com/analog-labs/solana/issues/7199
         assert_eq!(min_confirmed_blocks, 1, "BankClient cannot observe the passage of multiple blocks, so min_confirmed_blocks must be 1");
         let now = Instant::now();
         let confirmed_blocks;
@@ -343,7 +343,7 @@ impl BankClient {
         let thread_bank = bank.clone();
         let bank = bank.clone();
         Builder::new()
-            .name("solana-bank-client".to_string())
+            .name("analog-bank-client".to_string())
             .spawn(move || Self::run(&thread_bank, transaction_receiver))
             .unwrap();
         Self {
@@ -360,7 +360,7 @@ impl BankClient {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use solana_sdk::{genesis_config::create_genesis_config, instruction::AccountMeta};
+    use analog_sdk::{genesis_config::create_genesis_config, instruction::AccountMeta};
 
     #[test]
     fn test_bank_client_new_with_keypairs() {
@@ -373,7 +373,7 @@ mod tests {
         let bank_client = BankClient::new(bank);
 
         // Create 2-2 Multisig Transfer instruction.
-        let bob_pubkey = solana_sdk::pubkey::new_rand();
+        let bob_pubkey = analog_sdk::pubkey::new_rand();
         let mut transfer_instruction = system_instruction::transfer(&john_pubkey, &bob_pubkey, 42);
         transfer_instruction
             .accounts

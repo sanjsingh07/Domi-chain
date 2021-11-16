@@ -1,7 +1,7 @@
 //! Information about snapshot archives
 
 use crate::snapshot_utils::{self, ArchiveFormat, Result};
-use solana_sdk::{clock::Slot, hash::Hash};
+use analog_sdk::{clock::Slot, hash::Hash};
 use std::{cmp::Ordering, path::PathBuf};
 
 /// Trait to query the snapshot archive information

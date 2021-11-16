@@ -72,7 +72,7 @@ pub enum UpgradeableLoaderInstruction {
     ///      authority
     ///   4. `[]` Rent sysvar.
     ///   5. `[]` Clock sysvar.
-    ///   6. `[]` System program (`solana_sdk::system_program::id()`).
+    ///   6. `[]` System program (`analog_sdk::system_program::id()`).
     ///   7. `[signer]` The program's authority
     DeployWithMaxDataLen {
         /// Maximum length that the program can be upgraded to.
@@ -84,8 +84,8 @@ pub enum UpgradeableLoaderInstruction {
     /// A program can be updated as long as the program's authority has not been
     /// set to `None`.
     ///
-    /// The Buffer account must contain sufficient lamports to fund the
-    /// ProgramData account to be rent-exempt, any additional lamports left over
+    /// The Buffer account must contain sufficient tock to fund the
+    /// ProgramData account to be rent-exempt, any additional tock left over
     /// will be transferred to the spill account, leaving the Buffer account
     /// balance at zero.
     ///
@@ -113,13 +113,13 @@ pub enum UpgradeableLoaderInstruction {
     ///      not be upgradeable.
     SetAuthority,
 
-    /// Closes an account owned by the upgradeable loader of all lamports and
-    /// withdraws all the lamports
+    /// Closes an account owned by the upgradeable loader of all tock and
+    /// withdraws all the tock
     ///
     /// # Account references
     ///   0. `[writable]` The account to close, if closing a program must be the
     ///      ProgramData account.
-    ///   1. `[writable]` The account to deposit the closed account's lamports.
+    ///   1. `[writable]` The account to deposit the closed account's tock.
     ///   2. `[signer]` The account's authority, Optional, required for
     ///      initialized accounts.
     ///   3. `[writable]` The associated Program account if the account to close

@@ -4,9 +4,9 @@ use crate::{
 };
 use bincode::deserialize;
 use serde_json::Value;
-use solana_config_program::{get_config_data, ConfigKeys};
-use solana_sdk::pubkey::Pubkey;
-use solana_sdk::stake::config::{self as stake_config, Config as StakeConfig};
+use analog_config_program::{get_config_data, ConfigKeys};
+use analog_sdk::pubkey::Pubkey;
+use analog_sdk::stake::config::{self as stake_config, Config as StakeConfig};
 
 pub fn parse_config(data: &[u8], pubkey: &Pubkey) -> Result<ConfigAccountType, ParseAccountError> {
     let parsed_account = if pubkey == &stake_config::id() {
@@ -90,8 +90,8 @@ mod test {
     use super::*;
     use crate::validator_info::ValidatorInfo;
     use serde_json::json;
-    use solana_config_program::create_config_account;
-    use solana_sdk::account::ReadableAccount;
+    use analog_config_program::create_config_account;
+    use analog_sdk::account::ReadableAccount;
 
     #[test]
     fn test_parse_config() {
@@ -110,11 +110,11 @@ mod test {
 
         let validator_info = ValidatorInfo {
             info: serde_json::to_string(&json!({
-                "name": "Solana",
+                "name": "Analog",
             }))
             .unwrap(),
         };
-        let info_pubkey = solana_sdk::pubkey::new_rand();
+        let info_pubkey = analog_sdk::pubkey::new_rand();
         let validator_info_config_account = create_config_account(
             vec![(validator_info::id(), false), (info_pubkey, true)],
             &validator_info,
@@ -133,7 +133,7 @@ mod test {
                         signer: true,
                     }
                 ],
-                config_data: serde_json::from_str(r#"{"name":"Solana"}"#).unwrap(),
+                config_data: serde_json::from_str(r#"{"name":"Analog"}"#).unwrap(),
             }),
         );
 

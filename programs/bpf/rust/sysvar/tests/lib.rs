@@ -1,6 +1,6 @@
-use solana_bpf_rust_sysvar::process_instruction;
-use solana_program_test::*;
-use solana_sdk::{
+use analog_bpf_rust_sysvar::process_instruction;
+use analog_program_test::*;
+use analog_sdk::{
     instruction::{AccountMeta, Instruction},
     pubkey::Pubkey,
     signature::Signer,
@@ -15,7 +15,7 @@ use solana_sdk::{
 async fn test_sysvars() {
     let program_id = Pubkey::new_unique();
     let program_test = ProgramTest::new(
-        "solana_bpf_rust_sysvar",
+        "analog_bpf_rust_sysvar",
         program_id,
         processor!(process_instruction),
     );

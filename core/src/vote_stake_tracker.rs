@@ -1,4 +1,4 @@
-use solana_sdk::pubkey::Pubkey;
+use analog_sdk::pubkey::Pubkey;
 use std::collections::HashSet;
 
 #[derive(Default)]
@@ -50,14 +50,14 @@ impl VoteStakeTracker {
 #[cfg(test)]
 mod test {
     use super::*;
-    use solana_runtime::commitment::VOTE_THRESHOLD_SIZE;
+    use analog_runtime::commitment::VOTE_THRESHOLD_SIZE;
 
     #[test]
     fn test_add_vote_pubkey() {
         let total_epoch_stake = 10;
         let mut vote_stake_tracker = VoteStakeTracker::default();
         for i in 0..10 {
-            let pubkey = solana_sdk::pubkey::new_rand();
+            let pubkey = analog_sdk::pubkey::new_rand();
             let (is_confirmed_thresholds, is_new) = vote_stake_tracker.add_vote_pubkey(
                 pubkey,
                 1,

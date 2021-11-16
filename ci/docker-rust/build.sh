@@ -3,10 +3,10 @@ set -ex
 
 cd "$(dirname "$0")"
 
-docker build -t solanalabs/rust .
+docker build -t analoglabs/rust .
 
-read -r rustc version _ < <(docker run solanalabs/rust rustc --version)
+read -r rustc version _ < <(docker run analoglabs/rust rustc --version)
 [[ $rustc = rustc ]]
-docker tag solanalabs/rust:latest solanalabs/rust:"$version"
-docker push solanalabs/rust:"$version"
-docker push solanalabs/rust:latest
+docker tag analoglabs/rust:latest analoglabs/rust:"$version"
+docker push analoglabs/rust:"$version"
+docker push analoglabs/rust:latest

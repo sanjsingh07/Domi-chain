@@ -6,7 +6,7 @@ import {
   Connection,
   Transaction,
   SystemProgram,
-  LAMPORTS_PER_SOL,
+  TOCK_PER_ANLOG,
 } from '../src';
 import invariant from '../src/util/assert';
 import {MOCK_PORT, url} from './url';
@@ -40,7 +40,7 @@ describe('Transaction Payer', () => {
     await helpers.airdrop({
       connection,
       address: accountPayer.publicKey,
-      amount: LAMPORTS_PER_SOL,
+      amount: TOCK_PER_ANLOG,
     });
 
     await mockRpcResponse({
@@ -67,7 +67,7 @@ describe('Transaction Payer', () => {
       SystemProgram.transfer({
         fromPubkey: accountFrom.publicKey,
         toPubkey: accountTo.publicKey,
-        lamports: 10,
+        tock: 10,
       }),
     );
 
@@ -105,18 +105,18 @@ describe('Transaction Payer', () => {
     await mockRpcResponse({
       method: 'getBalance',
       params: [accountPayer.publicKey.toBase58(), {commitment: 'confirmed'}],
-      value: LAMPORTS_PER_SOL - 1,
+      value: TOCK_PER_ANLOG - 1,
       withContext: true,
     });
 
-    // accountPayer should be less than LAMPORTS_PER_SOL as it paid for the transaction
+    // accountPayer should be less than TOCK_PER_ANLOG as it paid for the transaction
     // (exact amount less depends on the current cluster fees)
     const balance = await connection.getBalance(
       accountPayer.publicKey,
       'confirmed',
     );
     expect(balance).to.be.greaterThan(0);
-    expect(balance).to.be.at.most(LAMPORTS_PER_SOL);
+    expect(balance).to.be.at.most(TOCK_PER_ANLOG);
 
     // accountFrom should have exactly 2, since it didn't pay for the transaction
     await mockRpcResponse({

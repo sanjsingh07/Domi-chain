@@ -1,33 +1,33 @@
 use serde_json::{json, Value};
 use serial_test::serial;
-use solana_client::{
+use analog_client::{
     pubsub_client::PubsubClient,
     rpc_client::RpcClient,
     rpc_config::{RpcAccountInfoConfig, RpcProgramAccountsConfig},
     rpc_response::SlotInfo,
 };
-use solana_rpc::{
+use analog_rpc::{
     optimistically_confirmed_bank_tracker::OptimisticallyConfirmedBank,
     rpc_pubsub_service::{PubSubConfig, PubSubService},
     rpc_subscriptions::RpcSubscriptions,
 };
-use solana_runtime::{
+use analog_runtime::{
     bank::Bank,
     bank_forks::BankForks,
     commitment::{BlockCommitmentCache, CommitmentSlots},
     genesis_utils::{create_genesis_config, GenesisConfigInfo},
 };
-use solana_sdk::{
+use analog_sdk::{
     clock::Slot,
     commitment_config::CommitmentConfig,
-    native_token::sol_to_lamports,
+    native_token::anlog_to_tock,
     pubkey::Pubkey,
     rpc_port,
     signature::{Keypair, Signer},
     system_program, system_transaction,
 };
-use solana_streamer::socket::SocketAddrSpace;
-use solana_test_validator::TestValidator;
+use analog_streamer::socket::SocketAddrSpace;
+use analog_test_validator::TestValidator;
 use std::{
     collections::HashSet,
     net::{IpAddr, SocketAddr},
@@ -42,19 +42,19 @@ use systemstat::Ipv4Addr;
 
 #[test]
 fn test_rpc_client() {
-    solana_logger::setup();
+    analog_logger::setup();
 
     let alice = Keypair::new();
     let test_validator =
         TestValidator::with_no_fees(alice.pubkey(), None, SocketAddrSpace::Unspecified);
 
-    let bob_pubkey = solana_sdk::pubkey::new_rand();
+    let bob_pubkey = analog_sdk::pubkey::new_rand();
 
     let client = RpcClient::new(test_validator.rpc_url());
 
     assert_eq!(
-        client.get_version().unwrap().solana_core,
-        solana_version::semver!()
+        client.get_version().unwrap().analog_core,
+        analog_version::semver!()
     );
 
     assert!(client.get_account(&bob_pubkey).is_err());
@@ -65,7 +65,7 @@ fn test_rpc_client() {
 
     let blockhash = client.get_latest_blockhash().unwrap();
 
-    let tx = system_transaction::transfer(&alice, &bob_pubkey, sol_to_lamports(20.0), blockhash);
+    let tx = system_transaction::transfer(&alice, &bob_pubkey, anlog_to_tock(20.0), blockhash);
     let signature = client.send_transaction(&tx).unwrap();
 
     let mut confirmed_tx = false;
@@ -88,11 +88,11 @@ fn test_rpc_client() {
 
     assert_eq!(
         client.get_balance(&bob_pubkey).unwrap(),
-        sol_to_lamports(20.0)
+        anlog_to_tock(20.0)
     );
     assert_eq!(
         client.get_balance(&alice.pubkey()).unwrap(),
-        original_alice_balance - sol_to_lamports(20.0)
+        original_alice_balance - anlog_to_tock(20.0)
     );
 }
 
@@ -139,7 +139,7 @@ fn test_account_subscription() {
     )
     .unwrap();
 
-    // Transfer 100 lamports from alice to bob
+    // Transfer 100 tock from alice to bob
     let tx = system_transaction::transfer(&alice, &bob.pubkey(), 100, blockhash);
     bank_forks
         .write()
@@ -165,7 +165,7 @@ fn test_account_subscription() {
     "context": { "slot": 1 },
         "value": {
             "owner": system_program::id().to_string(),
-            "lamports": 100,
+            "tock": 100,
             "data": "",
             "executable": false,
             "rentEpoch": 0,

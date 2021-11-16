@@ -1,21 +1,21 @@
-use solana_cli::{
+use analog_cli::{
     cli::{process_command, request_and_confirm_airdrop, CliCommand, CliConfig},
     spend_utils::SpendAmount,
     test_utils::check_recent_balance,
 };
-use solana_client::{
+use analog_client::{
     blockhash_query::{self, BlockhashQuery},
     rpc_client::RpcClient,
 };
-use solana_faucet::faucet::run_local_faucet;
-use solana_sdk::{
+use analog_faucet::faucet::run_local_faucet;
+use analog_sdk::{
     account_utils::StateMut,
     commitment_config::CommitmentConfig,
     signature::{Keypair, Signer},
 };
-use solana_streamer::socket::SocketAddrSpace;
-use solana_test_validator::TestValidator;
-use solana_vote_program::vote_state::{VoteAuthorize, VoteState, VoteStateVersions};
+use analog_streamer::socket::SocketAddrSpace;
+use analog_test_validator::TestValidator;
+use analog_vote_program::vote_state::{VoteAuthorize, VoteState, VoteStateVersions};
 
 #[test]
 fn test_vote_authorize_and_withdraw() {
@@ -62,7 +62,7 @@ fn test_vote_authorize_and_withdraw() {
         .max(1);
     check_recent_balance(expected_balance, &rpc_client, &vote_account_pubkey);
 
-    // Transfer in some more SOL
+    // Transfer in some more ANLOG
     config.signers = vec![&default_signer];
     config.command = CliCommand::Transfer {
         amount: SpendAmount::Some(1_000),
@@ -137,7 +137,7 @@ fn test_vote_authorize_and_withdraw() {
     assert_eq!(authorized_withdrawer, withdraw_authority.pubkey());
 
     // Withdraw from vote account
-    let destination_account = solana_sdk::pubkey::new_rand(); // Send withdrawal to new account to make balance check easy
+    let destination_account = analog_sdk::pubkey::new_rand(); // Send withdrawal to new account to make balance check easy
     config.signers = vec![&default_signer, &withdraw_authority];
     config.command = CliCommand::WithdrawFromVoteAccount {
         vote_account_pubkey,
@@ -163,7 +163,7 @@ fn test_vote_authorize_and_withdraw() {
     process_command(&config).unwrap();
 
     // Close vote account
-    let destination_account = solana_sdk::pubkey::new_rand(); // Send withdrawal to new account to make balance check easy
+    let destination_account = analog_sdk::pubkey::new_rand(); // Send withdrawal to new account to make balance check easy
     config.signers = vec![&default_signer, &withdraw_authority];
     config.command = CliCommand::CloseVoteAccount {
         vote_account_pubkey,

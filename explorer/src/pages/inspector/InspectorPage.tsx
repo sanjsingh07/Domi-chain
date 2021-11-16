@@ -336,9 +336,9 @@ function OverviewCard({
             <td>Fees</td>
             <td className="text-lg-right">
               <div className="d-flex align-items-end flex-column">
-                <SolBalance lamports={fee} />
+                <SolBalance tock={fee} />
                 <span className="text-muted">
-                  {`Each signature costs ${DEFAULT_FEES.lamportsPerSignature} lamports`}
+                  {`Each signature costs ${DEFAULT_FEES.lamportsPerSignature} tock`}
                 </span>
               </div>
             </td>

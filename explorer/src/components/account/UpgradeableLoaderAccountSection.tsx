@@ -100,9 +100,9 @@ export function UpgradeableProgramSection({
           </tr>
         )}
         <tr>
-          <td>Balance (SOL)</td>
+          <td>Balance (ANLOG)</td>
           <td className="text-lg-right text-uppercase">
-            <SolBalance lamports={account.lamports || 0} />
+            <SolBalance tock={account.tock || 0} />
           </td>
         </tr>
         <tr>
@@ -171,9 +171,9 @@ export function UpgradeableProgramDataSection({
           </td>
         </tr>
         <tr>
-          <td>Balance (SOL)</td>
+          <td>Balance (ANLOG)</td>
           <td className="text-lg-right text-uppercase">
-            <SolBalance lamports={account.lamports || 0} />
+            <SolBalance tock={account.tock || 0} />
           </td>
         </tr>
         {account.details?.space !== undefined && (
@@ -238,9 +238,9 @@ export function UpgradeableProgramBufferSection({
           </td>
         </tr>
         <tr>
-          <td>Balance (SOL)</td>
+          <td>Balance (ANLOG)</td>
           <td className="text-lg-right text-uppercase">
-            <SolBalance lamports={account.lamports || 0} />
+            <SolBalance tock={account.tock || 0} />
           </td>
         </tr>
         {account.details?.space !== undefined && (

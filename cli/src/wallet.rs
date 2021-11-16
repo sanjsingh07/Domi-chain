@@ -8,8 +8,8 @@ use crate::{
     spend_utils::{resolve_spend_tx_and_check_account_balances, SpendAmount},
 };
 use clap::{value_t_or_exit, App, Arg, ArgMatches, SubCommand};
-use solana_account_decoder::{UiAccount, UiAccountEncoding};
-use solana_clap_utils::{
+use analog_account_decoder::{UiAccount, UiAccountEncoding};
+use analog_clap_utils::{
     fee_payer::*,
     input_parsers::*,
     input_validators::*,
@@ -18,17 +18,17 @@ use solana_clap_utils::{
     nonce::*,
     offline::*,
 };
-use solana_cli_output::{
+use analog_cli_output::{
     display::build_balance_message, return_signers_with_config, CliAccount,
     CliSignatureVerificationStatus, CliTransaction, CliTransactionConfirmation, OutputFormat,
     ReturnSignersConfig,
 };
-use solana_client::{
+use analog_client::{
     blockhash_query::BlockhashQuery, nonce_utils, rpc_client::RpcClient,
     rpc_config::RpcTransactionConfig, rpc_response::RpcKeyedAccount,
 };
-use solana_remote_wallet::remote_wallet::RemoteWalletManager;
-use solana_sdk::{
+use analog_remote_wallet::remote_wallet::RemoteWalletManager;
+use analog_sdk::{
     commitment_config::CommitmentConfig,
     message::Message,
     pubkey::Pubkey,
@@ -38,7 +38,7 @@ use solana_sdk::{
     system_program,
     transaction::Transaction,
 };
-use solana_transaction_status::{EncodedTransaction, UiTransactionEncoding};
+use analog_transaction_status::{EncodedTransaction, UiTransactionEncoding};
 use std::{fmt::Write as FmtWrite, fs::File, io::Write, sync::Arc};
 
 pub trait WalletSubCommands {
@@ -67,10 +67,10 @@ impl WalletSubCommands for App<'_, '_> {
                         .help("Write the account data to this file"),
                 )
                 .arg(
-                    Arg::with_name("lamports")
-                        .long("lamports")
+                    Arg::with_name("tock")
+                        .long("tock")
                         .takes_value(false)
-                        .help("Display balance in lamports instead of SOL"),
+                        .help("Display balance in tock instead of ANLOG"),
                 ),
         )
         .subcommand(
@@ -85,7 +85,7 @@ impl WalletSubCommands for App<'_, '_> {
         )
         .subcommand(
             SubCommand::with_name("airdrop")
-                .about("Request SOL from a faucet")
+                .about("Request ANLOG from a faucet")
                 .arg(
                     Arg::with_name("amount")
                         .index(1)
@@ -93,7 +93,7 @@ impl WalletSubCommands for App<'_, '_> {
                         .takes_value(true)
                         .validator(is_amount)
                         .required(true)
-                        .help("The airdrop amount to request, in SOL"),
+                        .help("The airdrop amount to request, in ANLOG"),
                 )
                 .arg(
                     pubkey!(Arg::with_name("to")
@@ -112,10 +112,10 @@ impl WalletSubCommands for App<'_, '_> {
                         "The account address of the balance to check. ")
                 )
                 .arg(
-                    Arg::with_name("lamports")
-                        .long("lamports")
+                    Arg::with_name("tock")
+                        .long("tock")
                         .takes_value(false)
-                        .help("Display balance in lamports instead of SOL"),
+                        .help("Display balance in tock instead of ANLOG"),
                 ),
         )
         .subcommand(
@@ -225,7 +225,7 @@ impl WalletSubCommands for App<'_, '_> {
                         .takes_value(true)
                         .validator(is_amount_or_all)
                         .required(true)
-                        .help("The amount to send, in SOL; accepts keyword ALL"),
+                        .help("The amount to send, in ANLOG; accepts keyword ALL"),
                 )
                 .arg(
                     pubkey!(Arg::with_name("from")
@@ -274,7 +274,7 @@ fn resolve_derived_address_program_id(matches: &ArgMatches<'_>, arg_name: &str) 
     matches.value_of(arg_name).and_then(|v| match v {
         "NONCE" => Some(system_program::id()),
         "STAKE" => Some(stake::program::id()),
-        "VOTE" => Some(solana_vote_program::id()),
+        "VOTE" => Some(analog_vote_program::id()),
         _ => pubkey_of(matches, arg_name),
     })
 }
@@ -285,7 +285,7 @@ pub fn parse_account(
 ) -> Result<CliCommandInfo, CliError> {
     let account_pubkey = pubkey_of_signer(matches, "account_pubkey", wallet_manager)?.unwrap();
     let output_file = matches.value_of("output_file");
-    let use_lamports_unit = matches.is_present("lamports");
+    let use_lamports_unit = matches.is_present("tock");
     Ok(CliCommandInfo {
         command: CliCommand::ShowAccount {
             pubkey: account_pubkey,
@@ -307,9 +307,9 @@ pub fn parse_airdrop(
     } else {
         vec![default_signer.signer_from_path(matches, wallet_manager)?]
     };
-    let lamports = lamports_of_sol(matches, "amount").unwrap();
+    let tock = lamports_of_anlog(matches, "amount").unwrap();
     Ok(CliCommandInfo {
-        command: CliCommand::Airdrop { pubkey, lamports },
+        command: CliCommand::Airdrop { pubkey, tock },
         signers,
     })
 }
@@ -328,7 +328,7 @@ pub fn parse_balance(
     Ok(CliCommandInfo {
         command: CliCommand::Balance {
             pubkey,
-            use_lamports_unit: matches.is_present("lamports"),
+            use_lamports_unit: matches.is_present("tock"),
         },
         signers,
     })
@@ -481,7 +481,7 @@ pub fn process_airdrop(
     rpc_client: &RpcClient,
     config: &CliConfig,
     pubkey: &Option<Pubkey>,
-    lamports: u64,
+    tock: u64,
 ) -> ProcessResult {
     let pubkey = if let Some(pubkey) = pubkey {
         *pubkey
@@ -490,19 +490,19 @@ pub fn process_airdrop(
     };
     println!(
         "Requesting airdrop of {}",
-        build_balance_message(lamports, false, true),
+        build_balance_message(tock, false, true),
     );
 
     let pre_balance = rpc_client.get_balance(&pubkey)?;
 
-    let result = request_and_confirm_airdrop(rpc_client, config, &pubkey, lamports);
+    let result = request_and_confirm_airdrop(rpc_client, config, &pubkey, tock);
     if let Ok(signature) = result {
         let signature_cli_message = log_instruction_custom_error::<SystemError>(result, config)?;
         println!("{}", signature_cli_message);
 
         let current_balance = rpc_client.get_balance(&pubkey)?;
 
-        if current_balance < pre_balance.saturating_add(lamports) {
+        if current_balance < pre_balance.saturating_add(tock) {
             println!("Balance unchanged");
             println!("Run `solana confirm -v {:?}` for more info", signature);
             Ok("".to_string())
@@ -674,7 +674,7 @@ pub fn process_transfer(
         None
     };
 
-    let build_message = |lamports| {
+    let build_message = |tock| {
         let ixs = if let Some((base_pubkey, seed, program_id, from_pubkey)) = with_seed.as_ref() {
             vec![system_instruction::transfer_with_seed(
                 from_pubkey,
@@ -682,11 +682,11 @@ pub fn process_transfer(
                 seed.clone(),
                 program_id,
                 to,
-                lamports,
+                tock,
             )]
             .with_memo(memo)
         } else {
-            vec![system_instruction::transfer(&from_pubkey, to, lamports)].with_memo(memo)
+            vec![system_instruction::transfer(&from_pubkey, to, tock)].with_memo(memo)
         };
 
         if let Some(nonce_account) = &nonce_account {

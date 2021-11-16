@@ -2,10 +2,10 @@
 title: JSON RPC API
 ---
 
-Solana nodes accept HTTP requests using the [JSON-RPC 2.0](https://www.jsonrpc.org/specification) specification.
+Analog nodes accept HTTP requests using the [JSON-RPC 2.0](https://www.jsonrpc.org/specification) specification.
 
-To interact with a Solana node inside a JavaScript application, use the
-[solana-web3.js](https://github.com/solana-labs/solana-web3.js) library, which
+To interact with a Analog node inside a JavaScript application, use the
+[analog-web3.js](https://github.com/analog-labs/analog-web3.js) library, which
 gives a convenient interface for the RPC methods.
 
 ## RPC HTTP Endpoint
@@ -140,12 +140,12 @@ Requests can be sent in batches by sending an array of JSON-RPC request objects 
 
 - Hash: A SHA-256 hash of a chunk of data.
 - Pubkey: The public key of a Ed25519 key-pair.
-- Transaction: A list of Solana instructions signed by a client keypair to authorize those actions.
+- Transaction: A list of Analog instructions signed by a client keypair to authorize those actions.
 - Signature: An Ed25519 signature of transaction's payload data including instructions. This can be used to identify transactions.
 
 ## Configuring State Commitment
 
-For preflight checks and transaction processing, Solana nodes choose which bank
+For preflight checks and transaction processing, Analog nodes choose which bank
 state to query based on a commitment requirement set by the client. The
 commitment describes how finalized a block is at that point in time.  When
 querying the ledger state, it's recommended to use lower levels of commitment
@@ -209,7 +209,7 @@ health-check mechanism for use by load balancers or other network
 infrastructure. This request will always return a HTTP 200 OK response with a body of
 "ok", "behind" or "unknown" based on the following conditions:
 
-1. If one or more `--known-validator` arguments are provided to `solana-validator`, "ok" is returned
+1. If one or more `--known-validator` arguments are provided to `analog-validator`, "ok" is returned
    when the node has within `HEALTH_CHECK_SLOT_DISTANCE` slots of the highest
    known validator, otherwise "behind". "unknown" is returned when no slot
    information from known validators is not yet available.
@@ -240,7 +240,7 @@ The result will be an RpcResponse JSON object with `value` equal to:
 
 - `<null>` - if the requested account doesn't exist
 - `<object>` - otherwise, a JSON object containing:
-  - `lamports: <u64>`, number of lamports assigned to this account, as a u64
+  - `tock: <u64>`, number of tock assigned to this account, as a u64
   - `owner: <string>`, base-58 encoded Pubkey of the program this account has been assigned to
   - `data: <[string, encoding]|object>`, data associated with the account, either as encoded binary data or JSON format `{<program>: <state>}`, depending on encoding parameter
   - `executable: <bool>`, boolean indicating if the account contains a program \(and is strictly read-only\)
@@ -278,7 +278,7 @@ Response:
         "base58"
       ],
       "executable": false,
-      "lamports": 1000000000,
+      "tock": 1000000000,
       "owner": "11111111111111111111111111111111",
       "rentEpoch": 2
     }
@@ -325,7 +325,7 @@ Response:
         }
       },
       "executable": false,
-      "lamports": 1000000000,
+      "tock": 1000000000,
       "owner": "11111111111111111111111111111111",
       "rentEpoch": 2
     }
@@ -363,8 +363,8 @@ Result:
 
 ### getBlock
 
-**NEW: This method is only available in solana-core v1.7 or newer. Please use
-[getConfirmedBlock](jsonrpc-api.md#getconfirmedblock) for solana-core v1.6**
+**NEW: This method is only available in analog-core v1.7 or newer. Please use
+[getConfirmedBlock](jsonrpc-api.md#getconfirmedblock) for analog-core v1.6**
 
 Returns identity and transaction information about a confirmed block in the ledger
 
@@ -390,7 +390,7 @@ The result field will be an object with the following fields:
   - `transactions: <array>` - present if "full" transaction details are requested; an array of JSON objects containing:
     - `transaction: <object|[string,encoding]>` - [Transaction](#transaction-structure) object, either in JSON format or encoded binary data, depending on encoding parameter
     - `meta: <object>` - transaction status metadata object, containing `null` or:
-      - `err: <object | null>` - Error if transaction failed, null if transaction succeeded. [TransactionError definitions](https://github.com/solana-labs/solana/blob/master/sdk/src/transaction.rs#L24)
+      - `err: <object | null>` - Error if transaction failed, null if transaction succeeded. [TransactionError definitions](https://github.com/analog-labs/solana/blob/master/sdk/src/transaction.rs#L24)
       - `fee: <u64>` - fee this transaction was charged, as u64 integer
       - `preBalances: <array>` - array of u64 account balances from before the transaction was processed
       - `postBalances: <array>` - array of u64 account balances after the transaction was processed
@@ -404,8 +404,8 @@ The result field will be an object with the following fields:
   - `signatures: <array>` - present if "signatures" are requested for transaction details; an array of signatures strings, corresponding to the transaction order in the block
   - `rewards: <array>` - present if rewards are requested; an array of JSON objects containing:
     - `pubkey: <string>` - The public key, as base-58 encoded string, of the account that received the reward
-    - `lamports: <i64>`- number of reward lamports credited or debited by the account, as a i64
-    - `postBalance: <u64>` - account balance in lamports after the reward was applied
+    - `tock: <i64>`- number of reward tock credited or debited by the account, as a i64
+    - `postBalance: <u64>` - account balance in tock after the reward was applied
     - `rewardType: <string|undefined>` - type of reward: "fee", "rent", "voting", "staking"
     - `commission: <u8|undefined>` - vote account commission when the reward was credited, only present for voting and staking rewards
   - `blockTime: <i64 | null>` - estimated production time, as Unix timestamp (seconds since the Unix epoch). null if not available
@@ -555,7 +555,7 @@ Result:
 
 #### Transaction Structure
 
-Transactions are quite different from those on other blockchains. Be sure to review [Anatomy of a Transaction](developing/programming-model/transactions.md) to learn about transactions on Solana.
+Transactions are quite different from those on other blockchains. Be sure to review [Anatomy of a Transaction](developing/programming-model/transactions.md) to learn about transactions on Analog.
 
 The JSON structure of a transaction is defined as follows:
 
@@ -564,7 +564,7 @@ The JSON structure of a transaction is defined as follows:
   - `accountKeys: <array[string]>` - List of base-58 encoded public keys used by the transaction, including by the instructions and for signatures. The first `message.header.numRequiredSignatures` public keys must sign the transaction.
   - `header: <object>` - Details the account types and signatures required by the transaction.
     - `numRequiredSignatures: <number>` - The total number of signatures required to make the transaction valid. The signatures must match the first `numRequiredSignatures` of `message.account_keys`.
-    - `numReadonlySignedAccounts: <number>` - The last `numReadonlySignedAccounts` of the signed keys are read-only accounts. Programs may process multiple transactions that load read-only accounts within a single PoH entry, but are not permitted to credit or debit lamports or modify account data. Transactions targeting the same read-write account are evaluated sequentially.
+    - `numReadonlySignedAccounts: <number>` - The last `numReadonlySignedAccounts` of the signed keys are read-only accounts. Programs may process multiple transactions that load read-only accounts within a single PoH entry, but are not permitted to credit or debit tock or modify account data. Transactions targeting the same read-write account are evaluated sequentially.
     - `numReadonlyUnsignedAccounts: <number>` - The last `numReadonlyUnsignedAccounts` of the unsigned keys are read-only accounts.
   - `recentBlockhash: <string>` - A base-58 encoded hash of a recent block in the ledger used to prevent transaction duplication and to give transactions lifetimes.
   - `instructions: <array[object]>` - List of program instructions that will be executed in sequence and committed in one atomic transaction if all succeed.
@@ -574,7 +574,7 @@ The JSON structure of a transaction is defined as follows:
 
 #### Inner Instructions Structure
 
-The Solana runtime records the cross-program instructions that are invoked during transaction processing and makes these available for greater transparency of what was executed on-chain per transaction instruction. Invoked instructions are grouped by the originating transaction instruction and are listed in order of processing.
+The Analog runtime records the cross-program instructions that are invoked during transaction processing and makes these available for greater transparency of what was executed on-chain per transaction instruction. Invoked instructions are grouped by the originating transaction instruction and are listed in order of processing.
 
 The JSON structure of inner instructions is defined as a list of objects in the following structure:
 
@@ -742,8 +742,8 @@ The result field will be a JSON object containing:
 
 - `commitment` - commitment, comprising either:
   - `<null>` - Unknown block
-  - `<array>` - commitment, array of u64 integers logging the amount of cluster stake in lamports that has voted on the block at each depth from 0 to `MAX_LOCKOUT_HISTORY` + 1
-- `totalStake` - total active stake, in lamports, of the current epoch
+  - `<array>` - commitment, array of u64 integers logging the amount of cluster stake in tock that has voted on the block at each depth from 0 to `MAX_LOCKOUT_HISTORY` + 1
+- `totalStake` - total active stake, in tock, of the current epoch
 
 #### Example:
 
@@ -768,8 +768,8 @@ Result:
 
 ### getBlocks
 
-**NEW: This method is only available in solana-core v1.7 or newer. Please use
-[getConfirmedBlocks](jsonrpc-api.md#getconfirmedblocks) for solana-core v1.6**
+**NEW: This method is only available in analog-core v1.7 or newer. Please use
+[getConfirmedBlocks](jsonrpc-api.md#getconfirmedblocks) for analog-core v1.6**
 
 Returns a list of confirmed blocks between two slots
 
@@ -802,8 +802,8 @@ Result:
 
 ### getBlocksWithLimit
 
-**NEW: This method is only available in solana-core v1.7 or newer. Please use
-[getConfirmedBlocksWithLimit](jsonrpc-api.md#getconfirmedblockswithlimit) for solana-core v1.6**
+**NEW: This method is only available in analog-core v1.7 or newer. Please use
+[getConfirmedBlocksWithLimit](jsonrpc-api.md#getconfirmedblockswithlimit) for analog-core v1.6**
 
 Returns a list of confirmed blocks starting at the given slot
 
@@ -998,8 +998,8 @@ Result:
 
 ### getFeeForMessage
 
-**NEW: This method is only available in solana-core v1.9 or newer. Please use
-[getFees](jsonrpc-api.md#getfees) for solana-core v1.7/v1.8**
+**NEW: This method is only available in analog-core v1.9 or newer. Please use
+[getFees](jsonrpc-api.md#getfees) for analog-core v1.7/v1.8**
 
 Get the fee the network will charge for a particular Message
 
@@ -1095,7 +1095,7 @@ Result:
 Returns the current health of the node.
 
 If one or more `--known-validator` arguments are provided to
-`solana-validator`, "ok" is returned when the node has within
+`analog-validator`, "ok" is returned when the node has within
 `HEALTH_CHECK_SLOT_DISTANCE` slots of the highest known validator, otherwise
 an error is returned.  "ok" is always returned if no known validators are
 provided.
@@ -1155,8 +1155,8 @@ Unhealthy Result (if additional information is available)
 
 ### getHighestSnapshotSlot
 
-**NEW: This method is only available in solana-core v1.9 or newer. Please use
-[getSnapshotSlot](jsonrpc-api.md#getsnapshotslot) for solana-core v1.7/v1.8**
+**NEW: This method is only available in analog-core v1.9 or newer. Please use
+[getSnapshotSlot](jsonrpc-api.md#getsnapshotslot) for analog-core v1.7/v1.8**
 
 Returns the highest slot information that the node has snapshots for.
 
@@ -1311,8 +1311,8 @@ The result field will be a JSON array with the following fields:
 
 - `epoch: <u64>`, epoch for which reward occured
 - `effectiveSlot: <u64>`, the slot in which the rewards are effective
-- `amount: <u64>`, reward amount in lamports
-- `postBalance: <u64>`, post balance of the account in lamports
+- `amount: <u64>`, reward amount in tock
+- `postBalance: <u64>`, post balance of the account in tock
 - `commission: <u8|undefined>` - vote account commission when the reward was credited
 
 #### Example
@@ -1350,7 +1350,7 @@ Response:
 
 ### getLargestAccounts
 
-Returns the 20 largest accounts, by lamport balance (results may be cached up to two hours)
+Returns the 20 largest accounts, bytockbalance (results may be cached up to two hours)
 
 #### Parameters:
 
@@ -1364,7 +1364,7 @@ The result will be an RpcResponse JSON object with `value` equal to an array of:
 
 - `<object>` - otherwise, a JSON object containing:
   - `address: <string>`, base-58 encoded address of the account
-  - `lamports: <u64>`, number of lamports in the account, as a u64
+  - `tock: <u64>`, number of tock in the account, as a u64
 
 #### Example:
 
@@ -1385,75 +1385,75 @@ Result:
     },
     "value": [
       {
-        "lamports": 999974,
+        "tock": 999974,
         "address": "99P8ZgtJYe1buSK8JXkvpLh8xPsCFuLYhz9hQFNw93WJ"
       },
       {
-        "lamports": 42,
+        "tock": 42,
         "address": "uPwWLo16MVehpyWqsLkK3Ka8nLowWvAHbBChqv2FZeL"
       },
       {
-        "lamports": 42,
+        "tock": 42,
         "address": "aYJCgU7REfu3XF8b3QhkqgqQvLizx8zxuLBHA25PzDS"
       },
       {
-        "lamports": 42,
+        "tock": 42,
         "address": "CTvHVtQ4gd4gUcw3bdVgZJJqApXE9nCbbbP4VTS5wE1D"
       },
       {
-        "lamports": 20,
+        "tock": 20,
         "address": "4fq3xJ6kfrh9RkJQsmVd5gNMvJbuSHfErywvEjNQDPxu"
       },
       {
-        "lamports": 4,
+        "tock": 4,
         "address": "AXJADheGVp9cruP8WYu46oNkRbeASngN5fPCMVGQqNHa"
       },
       {
-        "lamports": 2,
+        "tock": 2,
         "address": "8NT8yS6LiwNprgW4yM1jPPow7CwRUotddBVkrkWgYp24"
       },
       {
-        "lamports": 1,
+        "tock": 1,
         "address": "SysvarEpochSchedu1e111111111111111111111111"
       },
       {
-        "lamports": 1,
+        "tock": 1,
         "address": "11111111111111111111111111111111"
       },
       {
-        "lamports": 1,
+        "tock": 1,
         "address": "Stake11111111111111111111111111111111111111"
       },
       {
-        "lamports": 1,
+        "tock": 1,
         "address": "SysvarC1ock11111111111111111111111111111111"
       },
       {
-        "lamports": 1,
+        "tock": 1,
         "address": "StakeConfig11111111111111111111111111111111"
       },
       {
-        "lamports": 1,
+        "tock": 1,
         "address": "SysvarRent111111111111111111111111111111111"
       },
       {
-        "lamports": 1,
+        "tock": 1,
         "address": "Config1111111111111111111111111111111111111"
       },
       {
-        "lamports": 1,
+        "tock": 1,
         "address": "SysvarStakeHistory1111111111111111111111111"
       },
       {
-        "lamports": 1,
+        "tock": 1,
         "address": "SysvarRecentB1ockHashes11111111111111111111"
       },
       {
-        "lamports": 1,
+        "tock": 1,
         "address": "SysvarFees111111111111111111111111111111111"
       },
       {
-        "lamports": 1,
+        "tock": 1,
         "address": "Vote111111111111111111111111111111111111111"
       }
     ]
@@ -1635,7 +1635,7 @@ Returns minimum balance required to make account rent exempt.
 
 #### Results:
 
-- `<u64>` - minimum lamports required in account
+- `<u64>` - minimum tock required in account
 
 #### Example:
 
@@ -1676,7 +1676,7 @@ An array of:
 
 - `<null>` - if the account at that Pubkey doesn't exist
 - `<object>` - otherwise, a JSON object containing:
-  - `lamports: <u64>`, number of lamports assigned to this account, as a u64
+  - `tock: <u64>`, number of tock assigned to this account, as a u64
   - `owner: <string>`, base-58 encoded Pubkey of the program this account has been assigned to
   - `data: <[string, encoding]|object>`, data associated with the account, either as encoded binary data or JSON format `{<program>: <state>}`, depending on encoding parameter
   - `executable: <bool>`, boolean indicating if the account contains a program \(and is strictly read-only\)
@@ -1722,7 +1722,7 @@ Result:
           "base64"
         ],
         "executable": false,
-        "lamports": 1000000000,
+        "tock": 1000000000,
         "owner": "11111111111111111111111111111111",
         "rentEpoch": 2
       },
@@ -1732,7 +1732,7 @@ Result:
           "base64"
         ],
         "executable": false,
-        "lamports": 5000000000,
+        "tock": 5000000000,
         "owner": "11111111111111111111111111111111",
         "rentEpoch": 2
       }
@@ -1778,7 +1778,7 @@ Result:
           "base58"
         ],
         "executable": false,
-        "lamports": 1000000000,
+        "tock": 1000000000,
         "owner": "11111111111111111111111111111111",
         "rentEpoch": 2
       },
@@ -1788,7 +1788,7 @@ Result:
           "base58"
         ],
         "executable": false,
-        "lamports": 5000000000,
+        "tock": 5000000000,
         "owner": "11111111111111111111111111111111",
         "rentEpoch": 2
       }
@@ -1830,7 +1830,7 @@ The array will contain:
 
 - `pubkey: <string>` - the account Pubkey as base-58 encoded string
 - `account: <object>` - a JSON object, with the following sub fields:
-   - `lamports: <u64>`, number of lamports assigned to this account, as a u64
+   - `tock: <u64>`, number of tock assigned to this account, as a u64
    - `owner: <string>`, base-58 encoded Pubkey of the program this account has been assigned to
    - `data: <[string,encoding]|object>`, data associated with the account, either as encoded binary data or JSON format `{<program>: <state>}`, depending on encoding parameter
    - `executable: <bool>`, boolean indicating if the account contains a program \(and is strictly read-only\)
@@ -1853,7 +1853,7 @@ Result:
       "account": {
         "data": "2R9jLfiAQ9bgdcw6h8s44439",
         "executable": false,
-        "lamports": 15298080,
+        "tock": 15298080,
         "owner": "4Nd1mBQtrMJVYVfKf2PJy9NZUZdTAsp7D4xWLs4gDB4T",
         "rentEpoch": 28
       },
@@ -1901,7 +1901,7 @@ Result:
       "account": {
         "data": "2R9jLfiAQ9bgdcw6h8s44439",
         "executable": false,
-        "lamports": 15298080,
+        "tock": 15298080,
         "owner": "4Nd1mBQtrMJVYVfKf2PJy9NZUZdTAsp7D4xWLs4gDB4T",
         "rentEpoch": 28
       },
@@ -1976,8 +1976,8 @@ Result:
 
 ### getSignaturesForAddress
 
-**NEW: This method is only available in solana-core v1.7 or newer. Please use
-[getConfirmedSignaturesForAddress2](jsonrpc-api.md#getconfirmedsignaturesforaddress2) for solana-core v1.6**
+**NEW: This method is only available in analog-core v1.7 or newer. Please use
+[getConfirmedSignaturesForAddress2](jsonrpc-api.md#getconfirmedsignaturesforaddress2) for analog-core v1.6**
 
 
 Returns confirmed signatures for transactions involving an
@@ -1998,7 +1998,7 @@ from newest to oldest transaction:
 * `<object>`
   * `signature: <string>` - transaction signature as base-58 encoded string
   * `slot: <u64>` - The slot that contains the block with the transaction
-  * `err: <object | null>` - Error if transaction failed, null if transaction succeeded. [TransactionError definitions](https://github.com/solana-labs/solana/blob/master/sdk/src/transaction.rs#L24)
+  * `err: <object | null>` - Error if transaction failed, null if transaction succeeded. [TransactionError definitions](https://github.com/analog-labs/solana/blob/master/sdk/src/transaction.rs#L24)
   * `memo: <string |null>` - Memo associated with the transaction, null if no memo is present
   * `blockTime: <i64 | null>` - estimated production time, as Unix timestamp (seconds since the Unix epoch) of when transaction was processed. null if not available.
 
@@ -2048,7 +2048,7 @@ active slots plus `MAX_RECENT_BLOCKHASHES` rooted slots.
 
 - `<array>` - An array of transaction signatures to confirm, as base-58 encoded strings
 - `<object>` - (optional) Configuration object containing the following field:
-  - `searchTransactionHistory: <bool>` - if true, a Solana node will search its ledger cache for any signatures not found in the recent status cache
+  - `searchTransactionHistory: <bool>` - if true, a Analog node will search its ledger cache for any signatures not found in the recent status cache
 
 #### Results:
 
@@ -2062,7 +2062,7 @@ An array of:
 - `<object>`
   - `slot: <u64>` - The slot the transaction was processed
   - `confirmations: <usize | null>` - Number of blocks since signature confirmation, null if rooted, as well as finalized by a supermajority of the cluster
-  - `err: <object | null>` - Error if transaction failed, null if transaction succeeded. [TransactionError definitions](https://github.com/solana-labs/solana/blob/master/sdk/src/transaction.rs#L24)
+  - `err: <object | null>` - Error if transaction failed, null if transaction succeeded. [TransactionError definitions](https://github.com/analog-labs/solana/blob/master/sdk/src/transaction.rs#L24)
   - `confirmationStatus: <string | null>` - The transaction's cluster confirmation status; either `processed`, `confirmed`, or `finalized`. See [Commitment](jsonrpc-api.md#configuring-state-commitment) for more on optimistic confirmation.
   - DEPRECATED: `status: <object>` - Transaction status
     - `"Ok": <null>` - Transaction was successful
@@ -2333,9 +2333,9 @@ Returns information about the current supply.
 
 The result will be an RpcResponse JSON object with `value` equal to a JSON object containing:
 
-- `total: <u64>` - Total supply in lamports
-- `circulating: <u64>` - Circulating supply in lamports
-- `nonCirculating: <u64>` - Non-circulating supply in lamports
+- `total: <u64>` - Total supply in tock
+- `circulating: <u64>` - Circulating supply in tock
+- `nonCirculating: <u64>` - Non-circulating supply in tock
 - `nonCirculatingAccounts: <array>` - an array of account addresses of non-circulating accounts, as strings. If `excludeNonCirculatingAccountsList` is enabled, the returned array will be empty.
 
 #### Example:
@@ -2442,7 +2442,7 @@ The result will be an RpcResponse JSON object with `value` equal to an array of 
 
 - `pubkey: <string>` - the account Pubkey as base-58 encoded string
 - `account: <object>` - a JSON object, with the following sub fields:
-   - `lamports: <u64>`, number of lamports assigned to this account, as a u64
+   - `tock: <u64>`, number of tock assigned to this account, as a u64
    - `owner: <string>`, base-58 encoded Pubkey of the program this account has been assigned to
    - `data: <object>`, Token state data associated with the account, either as encoded binary data or in JSON format `{<program>: <state>}`
    - `executable: <bool>`, boolean indicating if the account contains a program \(and is strictly read-only\)
@@ -2509,7 +2509,7 @@ Result:
             "space": 165
           },
           "executable": false,
-          "lamports": 1726080,
+          "tock": 1726080,
           "owner": "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA",
           "rentEpoch": 4
         },
@@ -2544,7 +2544,7 @@ The result will be an RpcResponse JSON object with `value` equal to an array of 
 
 - `pubkey: <string>` - the account Pubkey as base-58 encoded string
 - `account: <object>` - a JSON object, with the following sub fields:
-   - `lamports: <u64>`, number of lamports assigned to this account, as a u64
+   - `tock: <u64>`, number of tock assigned to this account, as a u64
    - `owner: <string>`, base-58 encoded Pubkey of the program this account has been assigned to
    - `data: <object>`, Token state data associated with the account, either as encoded binary data or in JSON format `{<program>: <state>}`
    - `executable: <bool>`, boolean indicating if the account contains a program \(and is strictly read-only\)
@@ -2612,7 +2612,7 @@ Result:
               "space": 165
             },
             "executable": false,
-            "lamports": 1726080,
+            "tock": 1726080,
             "owner": "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA",
             "rentEpoch": 4
         },
@@ -2727,8 +2727,8 @@ Result:
 
 ### getTransaction
 
-**NEW: This method is only available in solana-core v1.7 or newer. Please use
-[getConfirmedTransaction](jsonrpc-api.md#getconfirmedtransaction) for solana-core v1.6**
+**NEW: This method is only available in analog-core v1.7 or newer. Please use
+[getConfirmedTransaction](jsonrpc-api.md#getconfirmedtransaction) for analog-core v1.6**
 
 Returns transaction details for a confirmed transaction
 
@@ -2748,7 +2748,7 @@ Returns transaction details for a confirmed transaction
   - `transaction: <object|[string,encoding]>` - [Transaction](#transaction-structure) object, either in JSON format or encoded binary data, depending on encoding parameter
   - `blockTime: <i64 | null>` - estimated production time, as Unix timestamp (seconds since the Unix epoch) of when the transaction was processed. null if not available
   - `meta: <object | null>` - transaction status metadata object:
-    - `err: <object | null>` - Error if transaction failed, null if transaction succeeded. [TransactionError definitions](https://docs.rs/solana-sdk/VERSION_FOR_DOCS_RS/solana_sdk/transaction/enum.TransactionError.html)
+    - `err: <object | null>` - Error if transaction failed, null if transaction succeeded. [TransactionError definitions](https://docs.rs/analog-sdk/VERSION_FOR_DOCS_RS/analog_sdk/transaction/enum.TransactionError.html)
     - `fee: <u64>` - fee this transaction was charged, as u64 integer
     - `preBalances: <array>` - array of u64 account balances from before the transaction was processed
     - `postBalances: <array>` - array of u64 account balances after the transaction was processed
@@ -2761,8 +2761,8 @@ Returns transaction details for a confirmed transaction
       - `"Err": <ERR>` - Transaction failed with TransactionError
     - `rewards: <array>` - present if rewards are requested; an array of JSON objects containing:
       - `pubkey: <string>` - The public key, as base-58 encoded string, of the account that received the reward
-      - `lamports: <i64>`- number of reward lamports credited or debited by the account, as a i64
-      - `postBalance: <u64>` - account balance in lamports after the reward was applied
+      - `tock: <i64>`- number of reward tock credited or debited by the account, as a i64
+      - `postBalance: <u64>` - account balance in tock after the reward was applied
       - `rewardType: <string>` - type of reward: currently only "rent", other types may be added in the future
       - `commission: <u8|undefined>` - vote account commission when the reward was credited, only present for voting and staking rewards
 
@@ -2934,7 +2934,7 @@ Result:
 
 ### getVersion
 
-Returns the current solana versions running on the node
+Returns the current analog versions running on the node
 
 #### Parameters:
 
@@ -2944,7 +2944,7 @@ None
 
 The result field will be a JSON object with the following fields:
 
-- `solana-core`, software version of solana-core
+- `analog-core`, software version of analog-core
 - `feature-set`, unique identifier of the current software's feature set
 
 #### Example:
@@ -2958,7 +2958,7 @@ curl http://localhost:8899 -X POST -H "Content-Type: application/json" -d '
 
 Result:
 ```json
-{"jsonrpc":"2.0","result":{"solana-core": "1.9.0"},"id":1}
+{"jsonrpc":"2.0","result":{"analog-core": "1.9.0"},"id":1}
 ```
 
 ### getVoteAccounts
@@ -2980,7 +2980,7 @@ each containing an array of JSON objects with the following sub fields:
 
 - `votePubkey: <string>` - Vote account address, as base-58 encoded string
 - `nodePubkey: <string>` - Validator identity, as base-58 encoded string
-- `activatedStake: <u64>` - the stake, in lamports, delegated to this vote account and active in this epoch
+- `activatedStake: <u64>` - the stake, in tock, delegated to this vote account and active in this epoch
 - `epochVoteAccount: <bool>` - bool, whether the vote account is staked for this epoch
 - `commission: <number>`, percentage (0-100) of rewards payout owed to the vote account
 - `lastVote: <u64>` - Most recent slot voted on by this vote account
@@ -3144,12 +3144,12 @@ Result:
 
 ### requestAirdrop
 
-Requests an airdrop of lamports to a Pubkey
+Requests an airdrop of tock to a Pubkey
 
 #### Parameters:
 
-- `<string>` - Pubkey of account to receive lamports, as base-58 encoded string
-- `<integer>` - lamports, as a u64
+- `<string>` - Pubkey of account to receive tock, as base-58 encoded string
+- `<integer>` - tock, as a u64
 - `<object>` - (optional) [Commitment](jsonrpc-api.md#configuring-state-commitment) (used for retrieving blockhash and verifying airdrop success)
 
 #### Results:
@@ -3259,12 +3259,12 @@ Simulate sending a transaction
 An RpcResponse containing a TransactionStatus object
 The result will be an RpcResponse JSON object with `value` set to a JSON object with the following fields:
 
-- `err: <object | string | null>` - Error if transaction failed, null if transaction succeeded. [TransactionError definitions](https://github.com/solana-labs/solana/blob/master/sdk/src/transaction.rs#L24)
+- `err: <object | string | null>` - Error if transaction failed, null if transaction succeeded. [TransactionError definitions](https://github.com/analog-labs/solana/blob/master/sdk/src/transaction.rs#L24)
 - `logs: <array | null>` - Array of log messages the transaction instructions output during execution, null if simulation failed before the transaction was able to execute (for example due to an invalid blockhash or signature verification failure)
 - `accounts: <array> | null>` - array of accounts with the same length as the `accounts.addresses` array in the request
   - `<null>` - if the account doesn't exist or if `err` is not null
   - `<object>` - otherwise, a JSON object containing:
-    - `lamports: <u64>`, number of lamports assigned to this account, as a u64
+    - `tock: <u64>`, number of tock assigned to this account, as a u64
     - `owner: <string>`, base-58 encoded Pubkey of the program this account has been assigned to
     - `data: <[string, encoding]|object>`, data associated with the account, either as encoded binary data or JSON format `{<program>: <state>}`, depending on encoding parameter
     - `executable: <bool>`, boolean indicating if the account contains a program \(and is strictly read-only\)
@@ -3316,7 +3316,7 @@ After connecting to the RPC PubSub websocket at `ws://<ADDRESS>/`:
 
 ### accountSubscribe
 
-Subscribe to an account to receive notifications when the lamports or data for a given account public key changes
+Subscribe to an account to receive notifications when the tock or data for a given account public key changes
 
 #### Parameters:
 
@@ -3381,7 +3381,7 @@ Base58 encoding:
       "value": {
         "data": ["11116bv5nS2h3y12kD1yUKeMZvGcKLSjQgX6BeV7u1FrjeJcKfsHPXHRDEHrBesJhZyqnnq9qJeUuF7WHxiuLuL5twc38w2TXNLxnDbjmuR", "base58"],
         "executable": false,
-        "lamports": 33594,
+        "tock": 33594,
         "owner": "11111111111111111111111111111111",
         "rentEpoch": 635
       }
@@ -3416,7 +3416,7 @@ Parsed-JSON encoding:
            }
         },
         "executable": false,
-        "lamports": 33594,
+        "tock": 33594,
         "owner": "11111111111111111111111111111111",
         "rentEpoch": 635
       }
@@ -3503,7 +3503,7 @@ Result:
 The notification will be an RpcResponse JSON object with value equal to:
 
 - `signature: <string>` - The transaction signature base58 encoded.
-- `err: <object | null>` - Error if transaction failed, null if transaction succeeded. [TransactionError definitions](https://github.com/solana-labs/solana/blob/master/sdk/src/transaction.rs#L24)
+- `err: <object | null>` - Error if transaction failed, null if transaction succeeded. [TransactionError definitions](https://github.com/analog-labs/solana/blob/master/sdk/src/transaction.rs#L24)
 - `logs: <array | null>` - Array of log messages the transaction instructions output during execution, null if simulation failed before the transaction was able to execute (for example due to an invalid blockhash or signature verification failure)
 
 Example:
@@ -3556,7 +3556,7 @@ Result:
 
 ### programSubscribe
 
-Subscribe to a program to receive notifications when the lamports or data for a given account owned by the program changes
+Subscribe to a program to receive notifications when the tock or data for a given account owned by the program changes
 
 #### Parameters:
 
@@ -3640,7 +3640,7 @@ Base58 encoding:
         "account": {
           "data": ["11116bv5nS2h3y12kD1yUKeMZvGcKLSjQgX6BeV7u1FrjeJcKfsHPXHRDEHrBesJhZyqnnq9qJeUuF7WHxiuLuL5twc38w2TXNLxnDbjmuR", "base58"],
           "executable": false,
-          "lamports": 33594,
+          "tock": 33594,
           "owner": "11111111111111111111111111111111",
           "rentEpoch": 636
         },
@@ -3678,7 +3678,7 @@ Parsed-JSON encoding:
              }
           },
           "executable": false,
-          "lamports": 33594,
+          "tock": 33594,
           "owner": "11111111111111111111111111111111",
           "rentEpoch": 636
         },
@@ -3761,7 +3761,7 @@ Result:
 #### Notification Format:
 
 The notification will be an RpcResponse JSON object with value containing an object with:
-- `err: <object | null>` - Error if transaction failed, null if transaction succeeded. [TransactionError definitions](https://github.com/solana-labs/solana/blob/master/sdk/src/transaction.rs#L24)
+- `err: <object | null>` - Error if transaction failed, null if transaction succeeded. [TransactionError definitions](https://github.com/analog-labs/solana/blob/master/sdk/src/transaction.rs#L24)
 
 Example:
 ```json
@@ -4114,7 +4114,7 @@ Response:
 ### getConfirmedBlock
 
 **DEPRECATED: Please use [getBlock](jsonrpc-api.md#getblock) instead**
-This method is expected to be removed in solana-core v2.0
+This method is expected to be removed in analog-core v2.0
 
 Returns identity and transaction information about a confirmed block in the ledger
 
@@ -4140,7 +4140,7 @@ The result field will be an object with the following fields:
   - `transactions: <array>` - present if "full" transaction details are requested; an array of JSON objects containing:
     - `transaction: <object|[string,encoding]>` - [Transaction](#transaction-structure) object, either in JSON format or encoded binary data, depending on encoding parameter
     - `meta: <object>` - transaction status metadata object, containing `null` or:
-      - `err: <object | null>` - Error if transaction failed, null if transaction succeeded. [TransactionError definitions](https://github.com/solana-labs/solana/blob/master/sdk/src/transaction.rs#L24)
+      - `err: <object | null>` - Error if transaction failed, null if transaction succeeded. [TransactionError definitions](https://github.com/analog-labs/solana/blob/master/sdk/src/transaction.rs#L24)
       - `fee: <u64>` - fee this transaction was charged, as u64 integer
       - `preBalances: <array>` - array of u64 account balances from before the transaction was processed
       - `postBalances: <array>` - array of u64 account balances after the transaction was processed
@@ -4154,8 +4154,8 @@ The result field will be an object with the following fields:
   - `signatures: <array>` - present if "signatures" are requested for transaction details; an array of signatures strings, corresponding to the transaction order in the block
   - `rewards: <array>` - present if rewards are requested; an array of JSON objects containing:
     - `pubkey: <string>` - The public key, as base-58 encoded string, of the account that received the reward
-    - `lamports: <i64>`- number of reward lamports credited or debited by the account, as a i64
-    - `postBalance: <u64>` - account balance in lamports after the reward was applied
+    - `tock: <i64>`- number of reward tock credited or debited by the account, as a i64
+    - `postBalance: <u64>` - account balance in tock after the reward was applied
     - `rewardType: <string|undefined>` - type of reward: "fee", "rent", "voting", "staking"
     - `commission: <u8|undefined>` - vote account commission when the reward was credited, only present for voting and staking rewards
   - `blockTime: <i64 | null>` - estimated production time, as Unix timestamp (seconds since the Unix epoch). null if not available
@@ -4308,7 +4308,7 @@ For more details on returned data:
 ### getConfirmedBlocks
 
 **DEPRECATED: Please use [getBlocks](jsonrpc-api.md#getblocks) instead**
-This method is expected to be removed in solana-core v2.0
+This method is expected to be removed in analog-core v2.0
 
 Returns a list of confirmed blocks between two slots
 
@@ -4342,7 +4342,7 @@ Result:
 ### getConfirmedBlocksWithLimit
 
 **DEPRECATED: Please use [getBlocksWithLimit](jsonrpc-api.md#getblockswithlimit) instead**
-This method is expected to be removed in solana-core v2.0
+This method is expected to be removed in analog-core v2.0
 
 Returns a list of confirmed blocks starting at the given slot
 
@@ -4374,7 +4374,7 @@ Result:
 ### getConfirmedSignaturesForAddress2
 
 **DEPRECATED: Please use [getSignaturesForAddress](jsonrpc-api.md#getsignaturesforaddress) instead**
-This method is expected to be removed in solana-core v2.0
+This method is expected to be removed in analog-core v2.0
 
 Returns confirmed signatures for transactions involving an
 address backwards in time from the provided signature or most recent confirmed block
@@ -4394,7 +4394,7 @@ from newest to oldest transaction:
 * `<object>`
   * `signature: <string>` - transaction signature as base-58 encoded string
   * `slot: <u64>` - The slot that contains the block with the transaction
-  * `err: <object | null>` - Error if transaction failed, null if transaction succeeded. [TransactionError definitions](https://github.com/solana-labs/solana/blob/master/sdk/src/transaction.rs#L24)
+  * `err: <object | null>` - Error if transaction failed, null if transaction succeeded. [TransactionError definitions](https://github.com/analog-labs/solana/blob/master/sdk/src/transaction.rs#L24)
   * `memo: <string |null>` - Memo associated with the transaction, null if no memo is present
   * `blockTime: <i64 | null>` - estimated production time, as Unix timestamp (seconds since the Unix epoch) of when transaction was processed. null if not available.
 
@@ -4436,7 +4436,7 @@ Result:
 ### getConfirmedTransaction
 
 **DEPRECATED: Please use [getTransaction](jsonrpc-api.md#gettransaction) instead**
-This method is expected to be removed in solana-core v2.0
+This method is expected to be removed in analog-core v2.0
 
 Returns transaction details for a confirmed transaction
 
@@ -4456,7 +4456,7 @@ Returns transaction details for a confirmed transaction
   - `transaction: <object|[string,encoding]>` - [Transaction](#transaction-structure) object, either in JSON format or encoded binary data, depending on encoding parameter
   - `blockTime: <i64 | null>` - estimated production time, as Unix timestamp (seconds since the Unix epoch) of when the transaction was processed. null if not available
   - `meta: <object | null>` - transaction status metadata object:
-    - `err: <object | null>` - Error if transaction failed, null if transaction succeeded. [TransactionError definitions](https://docs.rs/solana-sdk/VERSION_FOR_DOCS_RS/solana_sdk/transaction/enum.TransactionError.html)
+    - `err: <object | null>` - Error if transaction failed, null if transaction succeeded. [TransactionError definitions](https://docs.rs/analog-sdk/VERSION_FOR_DOCS_RS/analog_sdk/transaction/enum.TransactionError.html)
     - `fee: <u64>` - fee this transaction was charged, as u64 integer
     - `preBalances: <array>` - array of u64 account balances from before the transaction was processed
     - `postBalances: <array>` - array of u64 account balances after the transaction was processed
@@ -4610,7 +4610,7 @@ Result:
 ### getFeeCalculatorForBlockhash
 
 **DEPRECATED: Please use [isBlockhashValid](jsonrpc-api.md#isblockhashvalid) or [getFeeForMessage](jsonrpc-api.md#getfeeformessage) instead**
-This method is expected to be removed in solana-core v2.0
+This method is expected to be removed in analog-core v2.0
 
 Returns the fee calculator associated with the query blockhash, or `null` if the blockhash has expired
 
@@ -4713,7 +4713,7 @@ Result:
 ### getFees
 
 **DEPRECATED: Please use [getFeeForMessage](jsonrpc-api.md#getfeeformessage) instead**
-This method is expected to be removed in solana-core v2.0
+This method is expected to be removed in analog-core v2.0
 
 Returns a recent block hash from the ledger, a fee schedule that can be used to
 compute the cost of submitting a transaction using it, and the last slot in
@@ -4765,7 +4765,7 @@ Result:
 ### getRecentBlockhash
 
 **DEPRECATED: Please use [getFeeForMessage](jsonrpc-api.md#getfeeformessage) instead**
-This method is expected to be removed in solana-core v2.0
+This method is expected to be removed in analog-core v2.0
 
 Returns a recent block hash from the ledger, and a fee schedule that can be used to compute the cost of submitting a transaction using it.
 
@@ -4812,7 +4812,7 @@ Result:
 ### getSnapshotSlot
 
 **DEPRECATED: Please use [getHighestSnapshotSlot](jsonrpc-api.md#gethighestsnapshotslot) instead**
-This method is expected to be removed in solana-core v2.0
+This method is expected to be removed in analog-core v2.0
 
 Returns the highest slot that the node has a snapshot for
 

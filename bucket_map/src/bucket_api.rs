@@ -3,7 +3,7 @@ use crate::bucket_item::BucketItem;
 use crate::bucket_map::BucketMapError;
 use crate::bucket_stats::BucketMapStats;
 use crate::{MaxSearch, RefCount};
-use solana_sdk::pubkey::Pubkey;
+use analog_sdk::pubkey::Pubkey;
 use std::ops::RangeBounds;
 use std::path::PathBuf;
 

@@ -1,6 +1,6 @@
 use {
     crate::{bigtable_upload, blockstore::Blockstore},
-    solana_runtime::commitment::BlockCommitmentCache,
+    analog_runtime::commitment::BlockCommitmentCache,
     std::{
         sync::atomic::{AtomicBool, Ordering},
         sync::{Arc, RwLock},
@@ -24,7 +24,7 @@ pub struct BigTableUploadService {
 impl BigTableUploadService {
     pub fn new(
         runtime: Arc<Runtime>,
-        bigtable_ledger_storage: solana_storage_bigtable::LedgerStorage,
+        bigtable_ledger_storage: analog_storage_bigtable::LedgerStorage,
         blockstore: Arc<Blockstore>,
         block_commitment_cache: Arc<RwLock<BlockCommitmentCache>>,
         exit: Arc<AtomicBool>,
@@ -48,7 +48,7 @@ impl BigTableUploadService {
 
     fn run(
         runtime: Arc<Runtime>,
-        bigtable_ledger_storage: solana_storage_bigtable::LedgerStorage,
+        bigtable_ledger_storage: analog_storage_bigtable::LedgerStorage,
         blockstore: Arc<Blockstore>,
         block_commitment_cache: Arc<RwLock<BlockCommitmentCache>>,
         exit: Arc<AtomicBool>,

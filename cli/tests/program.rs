@@ -1,12 +1,12 @@
 use serde_json::Value;
-use solana_cli::{
+use analog_cli::{
     cli::{process_command, CliCommand, CliConfig},
     program::ProgramCliCommand,
 };
-use solana_cli_output::OutputFormat;
-use solana_client::rpc_client::RpcClient;
-use solana_faucet::faucet::run_local_faucet;
-use solana_sdk::{
+use analog_cli_output::OutputFormat;
+use analog_client::rpc_client::RpcClient;
+use analog_faucet::faucet::run_local_faucet;
+use analog_sdk::{
     account_utils::StateMut,
     bpf_loader,
     bpf_loader_upgradeable::{self, UpgradeableLoaderState},
@@ -14,13 +14,13 @@ use solana_sdk::{
     pubkey::Pubkey,
     signature::{Keypair, Signer},
 };
-use solana_streamer::socket::SocketAddrSpace;
-use solana_test_validator::TestValidator;
+use analog_streamer::socket::SocketAddrSpace;
+use analog_test_validator::TestValidator;
 use std::{env, fs::File, io::Read, path::PathBuf, str::FromStr};
 
 #[test]
 fn test_cli_program_deploy_non_upgradeable() {
-    solana_logger::setup();
+    analog_logger::setup();
 
     let mut noop_path = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
     noop_path.push("tests");
@@ -50,7 +50,7 @@ fn test_cli_program_deploy_non_upgradeable() {
     config.signers = vec![&keypair];
     config.command = CliCommand::Airdrop {
         pubkey: None,
-        lamports: 4 * minimum_balance_for_rent_exemption, // min balance for rent exemption for three programs + leftover for tx processing
+        tock: 4 * minimum_balance_for_rent_exemption, // min balance for rent exemption for three programs + leftover for tx processing
     };
     process_command(&config).unwrap();
 
@@ -72,7 +72,7 @@ fn test_cli_program_deploy_non_upgradeable() {
         .unwrap();
     let program_id = Pubkey::from_str(program_id_str).unwrap();
     let account0 = rpc_client.get_account(&program_id).unwrap();
-    assert_eq!(account0.lamports, minimum_balance_for_rent_exemption);
+    assert_eq!(account0.tock, minimum_balance_for_rent_exemption);
     assert_eq!(account0.owner, bpf_loader::id());
     assert!(account0.executable);
     let mut file = File::open(noop_path.to_str().unwrap().to_string()).unwrap();
@@ -93,7 +93,7 @@ fn test_cli_program_deploy_non_upgradeable() {
     let account1 = rpc_client
         .get_account(&custom_address_keypair.pubkey())
         .unwrap();
-    assert_eq!(account1.lamports, minimum_balance_for_rent_exemption);
+    assert_eq!(account1.tock, minimum_balance_for_rent_exemption);
     assert_eq!(account1.owner, bpf_loader::id());
     assert!(account1.executable);
     assert_eq!(account1.data, account0.data);
@@ -106,7 +106,7 @@ fn test_cli_program_deploy_non_upgradeable() {
     config.signers = vec![&custom_address_keypair];
     config.command = CliCommand::Airdrop {
         pubkey: None,
-        lamports: 2 * minimum_balance_for_rent_exemption, // Anything over minimum_balance_for_rent_exemption should trigger err
+        tock: 2 * minimum_balance_for_rent_exemption, // Anything over minimum_balance_for_rent_exemption should trigger err
     };
     process_command(&config).unwrap();
     config.signers = vec![&keypair, &custom_address_keypair];
@@ -129,7 +129,7 @@ fn test_cli_program_deploy_non_upgradeable() {
     let account2 = rpc_client
         .get_account(&custom_address_keypair.pubkey())
         .unwrap();
-    assert_eq!(account2.lamports, 2 * minimum_balance_for_rent_exemption);
+    assert_eq!(account2.tock, 2 * minimum_balance_for_rent_exemption);
     assert_eq!(account2.owner, bpf_loader::id());
     assert!(account2.executable);
     assert_eq!(account2.data, account0.data);
@@ -137,7 +137,7 @@ fn test_cli_program_deploy_non_upgradeable() {
 
 #[test]
 fn test_cli_program_deploy_no_authority() {
-    solana_logger::setup();
+    analog_logger::setup();
 
     let mut noop_path = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
     noop_path.push("tests");
@@ -173,7 +173,7 @@ fn test_cli_program_deploy_no_authority() {
     config.json_rpc_url = test_validator.rpc_url();
     config.command = CliCommand::Airdrop {
         pubkey: None,
-        lamports: 100 * minimum_balance_for_programdata + minimum_balance_for_program,
+        tock: 100 * minimum_balance_for_programdata + minimum_balance_for_program,
     };
     config.signers = vec![&keypair];
     process_command(&config).unwrap();
@@ -221,7 +221,7 @@ fn test_cli_program_deploy_no_authority() {
 
 #[test]
 fn test_cli_program_deploy_with_authority() {
-    solana_logger::setup();
+    analog_logger::setup();
 
     let mut noop_path = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
     noop_path.push("tests");
@@ -258,7 +258,7 @@ fn test_cli_program_deploy_with_authority() {
     config.signers = vec![&keypair];
     config.command = CliCommand::Airdrop {
         pubkey: None,
-        lamports: 100 * minimum_balance_for_programdata + minimum_balance_for_program,
+        tock: 100 * minimum_balance_for_programdata + minimum_balance_for_program,
     };
     process_command(&config).unwrap();
 
@@ -291,7 +291,7 @@ fn test_cli_program_deploy_with_authority() {
         Pubkey::from_str(program_pubkey_str).unwrap()
     );
     let program_account = rpc_client.get_account(&program_keypair.pubkey()).unwrap();
-    assert_eq!(program_account.lamports, minimum_balance_for_program);
+    assert_eq!(program_account.tock, minimum_balance_for_program);
     assert_eq!(program_account.owner, bpf_loader_upgradeable::id());
     assert!(program_account.executable);
     let (programdata_pubkey, _) = Pubkey::find_program_address(
@@ -300,7 +300,7 @@ fn test_cli_program_deploy_with_authority() {
     );
     let programdata_account = rpc_client.get_account(&programdata_pubkey).unwrap();
     assert_eq!(
-        programdata_account.lamports,
+        programdata_account.tock,
         minimum_balance_for_programdata
     );
     assert_eq!(programdata_account.owner, bpf_loader_upgradeable::id());
@@ -334,14 +334,14 @@ fn test_cli_program_deploy_with_authority() {
         .unwrap();
     let program_pubkey = Pubkey::from_str(program_pubkey_str).unwrap();
     let program_account = rpc_client.get_account(&program_pubkey).unwrap();
-    assert_eq!(program_account.lamports, minimum_balance_for_program);
+    assert_eq!(program_account.tock, minimum_balance_for_program);
     assert_eq!(program_account.owner, bpf_loader_upgradeable::id());
     assert!(program_account.executable);
     let (programdata_pubkey, _) =
         Pubkey::find_program_address(&[program_pubkey.as_ref()], &bpf_loader_upgradeable::id());
     let programdata_account = rpc_client.get_account(&programdata_pubkey).unwrap();
     assert_eq!(
-        programdata_account.lamports,
+        programdata_account.tock,
         minimum_balance_for_programdata
     );
     assert_eq!(programdata_account.owner, bpf_loader_upgradeable::id());
@@ -366,14 +366,14 @@ fn test_cli_program_deploy_with_authority() {
     });
     process_command(&config).unwrap();
     let program_account = rpc_client.get_account(&program_pubkey).unwrap();
-    assert_eq!(program_account.lamports, minimum_balance_for_program);
+    assert_eq!(program_account.tock, minimum_balance_for_program);
     assert_eq!(program_account.owner, bpf_loader_upgradeable::id());
     assert!(program_account.executable);
     let (programdata_pubkey, _) =
         Pubkey::find_program_address(&[program_pubkey.as_ref()], &bpf_loader_upgradeable::id());
     let programdata_account = rpc_client.get_account(&programdata_pubkey).unwrap();
     assert_eq!(
-        programdata_account.lamports,
+        programdata_account.tock,
         minimum_balance_for_programdata
     );
     assert_eq!(programdata_account.owner, bpf_loader_upgradeable::id());
@@ -420,14 +420,14 @@ fn test_cli_program_deploy_with_authority() {
     });
     process_command(&config).unwrap();
     let program_account = rpc_client.get_account(&program_pubkey).unwrap();
-    assert_eq!(program_account.lamports, minimum_balance_for_program);
+    assert_eq!(program_account.tock, minimum_balance_for_program);
     assert_eq!(program_account.owner, bpf_loader_upgradeable::id());
     assert!(program_account.executable);
     let (programdata_pubkey, _) =
         Pubkey::find_program_address(&[program_pubkey.as_ref()], &bpf_loader_upgradeable::id());
     let programdata_account = rpc_client.get_account(&programdata_pubkey).unwrap();
     assert_eq!(
-        programdata_account.lamports,
+        programdata_account.tock,
         minimum_balance_for_programdata
     );
     assert_eq!(programdata_account.owner, bpf_loader_upgradeable::id());
@@ -554,7 +554,7 @@ fn test_cli_program_deploy_with_authority() {
 
 #[test]
 fn test_cli_program_close_program() {
-    solana_logger::setup();
+    analog_logger::setup();
 
     let mut noop_path = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
     noop_path.push("tests");
@@ -591,7 +591,7 @@ fn test_cli_program_close_program() {
     config.signers = vec![&keypair];
     config.command = CliCommand::Airdrop {
         pubkey: None,
-        lamports: 100 * minimum_balance_for_programdata + minimum_balance_for_program,
+        tock: 100 * minimum_balance_for_programdata + minimum_balance_for_program,
     };
     process_command(&config).unwrap();
 
@@ -619,7 +619,7 @@ fn test_cli_program_close_program() {
 
     // Close program
     let close_account = rpc_client.get_account(&programdata_pubkey).unwrap();
-    let programdata_lamports = close_account.lamports;
+    let programdata_lamports = close_account.tock;
     let recipient_pubkey = Pubkey::new_unique();
     config.signers = vec![&keypair, &upgrade_authority];
     config.command = CliCommand::Program(ProgramCliCommand::Close {
@@ -631,12 +631,12 @@ fn test_cli_program_close_program() {
     process_command(&config).unwrap();
     rpc_client.get_account(&programdata_pubkey).unwrap_err();
     let recipient_account = rpc_client.get_account(&recipient_pubkey).unwrap();
-    assert_eq!(programdata_lamports, recipient_account.lamports);
+    assert_eq!(programdata_lamports, recipient_account.tock);
 }
 
 #[test]
 fn test_cli_program_write_buffer() {
-    solana_logger::setup();
+    analog_logger::setup();
 
     let mut noop_path = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
     noop_path.push("tests");
@@ -680,7 +680,7 @@ fn test_cli_program_write_buffer() {
     config.signers = vec![&keypair];
     config.command = CliCommand::Airdrop {
         pubkey: None,
-        lamports: 100 * minimum_balance_for_buffer,
+        tock: 100 * minimum_balance_for_buffer,
     };
     process_command(&config).unwrap();
 
@@ -705,7 +705,7 @@ fn test_cli_program_write_buffer() {
         .unwrap();
     let new_buffer_pubkey = Pubkey::from_str(buffer_pubkey_str).unwrap();
     let buffer_account = rpc_client.get_account(&new_buffer_pubkey).unwrap();
-    assert_eq!(buffer_account.lamports, minimum_balance_for_buffer_default);
+    assert_eq!(buffer_account.tock, minimum_balance_for_buffer_default);
     assert_eq!(buffer_account.owner, bpf_loader_upgradeable::id());
     if let UpgradeableLoaderState::Buffer { authority_address } = buffer_account.state().unwrap() {
         assert_eq!(authority_address, Some(keypair.pubkey()));
@@ -741,7 +741,7 @@ fn test_cli_program_write_buffer() {
         Pubkey::from_str(buffer_pubkey_str).unwrap()
     );
     let buffer_account = rpc_client.get_account(&buffer_keypair.pubkey()).unwrap();
-    assert_eq!(buffer_account.lamports, minimum_balance_for_buffer);
+    assert_eq!(buffer_account.tock, minimum_balance_for_buffer);
     assert_eq!(buffer_account.owner, bpf_loader_upgradeable::id());
     if let UpgradeableLoaderState::Buffer { authority_address } = buffer_account.state().unwrap() {
         assert_eq!(authority_address, Some(keypair.pubkey()));
@@ -802,7 +802,7 @@ fn test_cli_program_write_buffer() {
         Pubkey::from_str(buffer_pubkey_str).unwrap()
     );
     let buffer_account = rpc_client.get_account(&buffer_keypair.pubkey()).unwrap();
-    assert_eq!(buffer_account.lamports, minimum_balance_for_buffer_default);
+    assert_eq!(buffer_account.tock, minimum_balance_for_buffer_default);
     assert_eq!(buffer_account.owner, bpf_loader_upgradeable::id());
     if let UpgradeableLoaderState::Buffer { authority_address } = buffer_account.state().unwrap() {
         assert_eq!(authority_address, Some(authority_keypair.pubkey()));
@@ -836,7 +836,7 @@ fn test_cli_program_write_buffer() {
         .unwrap();
     let buffer_pubkey = Pubkey::from_str(buffer_pubkey_str).unwrap();
     let buffer_account = rpc_client.get_account(&buffer_pubkey).unwrap();
-    assert_eq!(buffer_account.lamports, minimum_balance_for_buffer_default);
+    assert_eq!(buffer_account.tock, minimum_balance_for_buffer_default);
     assert_eq!(buffer_account.owner, bpf_loader_upgradeable::id());
     if let UpgradeableLoaderState::Buffer { authority_address } = buffer_account.state().unwrap() {
         assert_eq!(authority_address, Some(authority_keypair.pubkey()));
@@ -874,7 +874,7 @@ fn test_cli_program_write_buffer() {
 
     // Close buffer
     let close_account = rpc_client.get_account(&buffer_pubkey).unwrap();
-    assert_eq!(minimum_balance_for_buffer, close_account.lamports);
+    assert_eq!(minimum_balance_for_buffer, close_account.tock);
     let recipient_pubkey = Pubkey::new_unique();
     config.signers = vec![&keypair, &authority_keypair];
     config.command = CliCommand::Program(ProgramCliCommand::Close {
@@ -886,7 +886,7 @@ fn test_cli_program_write_buffer() {
     process_command(&config).unwrap();
     rpc_client.get_account(&buffer_pubkey).unwrap_err();
     let recipient_account = rpc_client.get_account(&recipient_pubkey).unwrap();
-    assert_eq!(minimum_balance_for_buffer, recipient_account.lamports);
+    assert_eq!(minimum_balance_for_buffer, recipient_account.tock);
 
     // Write a buffer with default params
     config.signers = vec![&keypair];
@@ -910,7 +910,7 @@ fn test_cli_program_write_buffer() {
     let new_buffer_pubkey = Pubkey::from_str(buffer_pubkey_str).unwrap();
 
     // Close buffers and deposit default keypair
-    let pre_lamports = rpc_client.get_account(&keypair.pubkey()).unwrap().lamports;
+    let pre_lamports = rpc_client.get_account(&keypair.pubkey()).unwrap().tock;
     config.signers = vec![&keypair];
     config.command = CliCommand::Program(ProgramCliCommand::Close {
         account_pubkey: Some(new_buffer_pubkey),
@@ -923,7 +923,7 @@ fn test_cli_program_write_buffer() {
     let recipient_account = rpc_client.get_account(&keypair.pubkey()).unwrap();
     assert_eq!(
         pre_lamports + minimum_balance_for_buffer,
-        recipient_account.lamports
+        recipient_account.tock
     );
 
     // write small buffer then attempt to deploy larger program
@@ -959,7 +959,7 @@ fn test_cli_program_write_buffer() {
 
 #[test]
 fn test_cli_program_set_buffer_authority() {
-    solana_logger::setup();
+    analog_logger::setup();
 
     let mut noop_path = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
     noop_path.push("tests");
@@ -992,7 +992,7 @@ fn test_cli_program_set_buffer_authority() {
     config.signers = vec![&keypair];
     config.command = CliCommand::Airdrop {
         pubkey: None,
-        lamports: 100 * minimum_balance_for_buffer,
+        tock: 100 * minimum_balance_for_buffer,
     };
     process_command(&config).unwrap();
 
@@ -1073,7 +1073,7 @@ fn test_cli_program_set_buffer_authority() {
 
 #[test]
 fn test_cli_program_mismatch_buffer_authority() {
-    solana_logger::setup();
+    analog_logger::setup();
 
     let mut noop_path = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
     noop_path.push("tests");
@@ -1106,7 +1106,7 @@ fn test_cli_program_mismatch_buffer_authority() {
     config.signers = vec![&keypair];
     config.command = CliCommand::Airdrop {
         pubkey: None,
-        lamports: 100 * minimum_balance_for_buffer,
+        tock: 100 * minimum_balance_for_buffer,
     };
     process_command(&config).unwrap();
 
@@ -1163,7 +1163,7 @@ fn test_cli_program_mismatch_buffer_authority() {
 
 #[test]
 fn test_cli_program_show() {
-    solana_logger::setup();
+    analog_logger::setup();
 
     let mut noop_path = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
     noop_path.push("tests");
@@ -1199,7 +1199,7 @@ fn test_cli_program_show() {
     config.signers = vec![&keypair];
     config.command = CliCommand::Airdrop {
         pubkey: None,
-        lamports: 100 * minimum_balance_for_buffer,
+        tock: 100 * minimum_balance_for_buffer,
     };
     process_command(&config).unwrap();
 
@@ -1348,7 +1348,7 @@ fn test_cli_program_show() {
 
 #[test]
 fn test_cli_program_dump() {
-    solana_logger::setup();
+    analog_logger::setup();
 
     let mut noop_path = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
     noop_path.push("tests");
@@ -1384,7 +1384,7 @@ fn test_cli_program_dump() {
     config.signers = vec![&keypair];
     config.command = CliCommand::Airdrop {
         pubkey: None,
-        lamports: 100 * minimum_balance_for_buffer,
+        tock: 100 * minimum_balance_for_buffer,
     };
     process_command(&config).unwrap();
 

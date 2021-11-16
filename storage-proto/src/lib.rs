@@ -1,11 +1,11 @@
 use {
     serde::{Deserialize, Serialize},
-    solana_account_decoder::{
+    analog_account_decoder::{
         parse_token::{real_number_string_trimmed, UiTokenAmount},
         StringAmount,
     },
-    solana_sdk::{deserialize_utils::default_on_eof, transaction::Result},
-    solana_transaction_status::{
+    analog_sdk::{deserialize_utils::default_on_eof, transaction::Result},
+    analog_transaction_status::{
         InnerInstructions, Reward, RewardType, TransactionStatusMeta, TransactionTokenBalance,
     },
     std::str::FromStr,
@@ -18,7 +18,7 @@ pub type StoredExtendedRewards = Vec<StoredExtendedReward>;
 #[derive(Serialize, Deserialize)]
 pub struct StoredExtendedReward {
     pubkey: String,
-    lamports: i64,
+    tock: i64,
     #[serde(deserialize_with = "default_on_eof")]
     post_balance: u64,
     #[serde(deserialize_with = "default_on_eof")]
@@ -31,14 +31,14 @@ impl From<StoredExtendedReward> for Reward {
     fn from(value: StoredExtendedReward) -> Self {
         let StoredExtendedReward {
             pubkey,
-            lamports,
+            tock,
             post_balance,
             reward_type,
             commission,
         } = value;
         Self {
             pubkey,
-            lamports,
+            tock,
             post_balance,
             reward_type,
             commission,
@@ -50,14 +50,14 @@ impl From<Reward> for StoredExtendedReward {
     fn from(value: Reward) -> Self {
         let Reward {
             pubkey,
-            lamports,
+            tock,
             post_balance,
             reward_type,
             commission,
         } = value;
         Self {
             pubkey,
-            lamports,
+            tock,
             post_balance,
             reward_type,
             commission,

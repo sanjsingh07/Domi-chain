@@ -1,18 +1,18 @@
 #![allow(clippy::redundant_closure)]
-use solana_cli::{
+use analog_cli::{
     cli::{process_command, request_and_confirm_airdrop, CliCommand, CliConfig},
     spend_utils::SpendAmount,
     stake::StakeAuthorizationIndexed,
     test_utils::{check_ready, check_recent_balance},
 };
-use solana_cli_output::{parse_sign_only_reply_string, OutputFormat};
-use solana_client::{
+use analog_cli_output::{parse_sign_only_reply_string, OutputFormat};
+use analog_client::{
     blockhash_query::{self, BlockhashQuery},
     nonce_utils,
     rpc_client::RpcClient,
 };
-use solana_faucet::faucet::run_local_faucet;
-use solana_sdk::{
+use analog_faucet::faucet::run_local_faucet;
+use analog_sdk::{
     account_utils::StateMut,
     commitment_config::CommitmentConfig,
     nonce::State as NonceState,
@@ -24,8 +24,8 @@ use solana_sdk::{
         state::{Lockup, StakeAuthorize, StakeState},
     },
 };
-use solana_streamer::socket::SocketAddrSpace;
-use solana_test_validator::TestValidator;
+use analog_streamer::socket::SocketAddrSpace;
+use analog_test_validator::TestValidator;
 
 #[test]
 fn test_stake_delegation_force() {
@@ -119,7 +119,7 @@ fn test_stake_delegation_force() {
 
 #[test]
 fn test_seed_stake_delegation_and_deactivation() {
-    solana_logger::setup();
+    analog_logger::setup();
 
     let mint_keypair = Keypair::new();
     let mint_pubkey = mint_keypair.pubkey();
@@ -206,7 +206,7 @@ fn test_seed_stake_delegation_and_deactivation() {
 
 #[test]
 fn test_stake_delegation_and_deactivation() {
-    solana_logger::setup();
+    analog_logger::setup();
 
     let mint_keypair = Keypair::new();
     let mint_pubkey = mint_keypair.pubkey();
@@ -289,7 +289,7 @@ fn test_stake_delegation_and_deactivation() {
 
 #[test]
 fn test_offline_stake_delegation_and_deactivation() {
-    solana_logger::setup();
+    analog_logger::setup();
 
     let mint_keypair = Keypair::new();
     let mint_pubkey = mint_keypair.pubkey();
@@ -433,7 +433,7 @@ fn test_offline_stake_delegation_and_deactivation() {
 
 #[test]
 fn test_nonced_stake_delegation_and_deactivation() {
-    solana_logger::setup();
+    analog_logger::setup();
 
     let mint_keypair = Keypair::new();
     let mint_pubkey = mint_keypair.pubkey();
@@ -551,7 +551,7 @@ fn test_nonced_stake_delegation_and_deactivation() {
 
 #[test]
 fn test_stake_authorize() {
-    solana_logger::setup();
+    analog_logger::setup();
 
     let mint_keypair = Keypair::new();
     let mint_pubkey = mint_keypair.pubkey();
@@ -865,7 +865,7 @@ fn test_stake_authorize() {
 
 #[test]
 fn test_stake_authorize_with_fee_payer() {
-    solana_logger::setup();
+    analog_logger::setup();
     const SIG_FEE: u64 = 42;
 
     let mint_keypair = Keypair::new();
@@ -1019,7 +1019,7 @@ fn test_stake_authorize_with_fee_payer() {
 
 #[test]
 fn test_stake_split() {
-    solana_logger::setup();
+    analog_logger::setup();
 
     let mint_keypair = Keypair::new();
     let mint_pubkey = mint_keypair.pubkey();
@@ -1127,7 +1127,7 @@ fn test_stake_split() {
         memo: None,
         split_stake_account: 1,
         seed: None,
-        lamports: 2 * minimum_stake_balance,
+        tock: 2 * minimum_stake_balance,
         fee_payer: 0,
     };
     config_offline.output_format = OutputFormat::JsonCompact;
@@ -1150,7 +1150,7 @@ fn test_stake_split() {
         memo: None,
         split_stake_account: 1,
         seed: None,
-        lamports: 2 * minimum_stake_balance,
+        tock: 2 * minimum_stake_balance,
         fee_payer: 0,
     };
     process_command(&config).unwrap();
@@ -1168,7 +1168,7 @@ fn test_stake_split() {
 
 #[test]
 fn test_stake_set_lockup() {
-    solana_logger::setup();
+    analog_logger::setup();
 
     let mint_keypair = Keypair::new();
     let mint_pubkey = mint_keypair.pubkey();
@@ -1439,7 +1439,7 @@ fn test_stake_set_lockup() {
 
 #[test]
 fn test_offline_nonced_create_stake_account_and_withdraw() {
-    solana_logger::setup();
+    analog_logger::setup();
 
     let mint_keypair = Keypair::new();
     let mint_pubkey = mint_keypair.pubkey();
@@ -1664,7 +1664,7 @@ fn test_offline_nonced_create_stake_account_and_withdraw() {
 
 #[test]
 fn test_stake_checked_instructions() {
-    solana_logger::setup();
+    analog_logger::setup();
 
     let mint_keypair = Keypair::new();
     let mint_pubkey = mint_keypair.pubkey();

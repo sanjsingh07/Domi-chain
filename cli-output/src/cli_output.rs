@@ -13,28 +13,28 @@ use {
     inflector::cases::titlecase::to_title_case,
     serde::{Deserialize, Serialize},
     serde_json::{Map, Value},
-    solana_account_decoder::parse_token::UiTokenAccount,
-    solana_clap_utils::keypair::SignOnly,
-    solana_client::rpc_response::{
+    analog_account_decoder::parse_token::UiTokenAccount,
+    analog_clap_utils::keypair::SignOnly,
+    analog_client::rpc_response::{
         RpcAccountBalance, RpcContactInfo, RpcInflationGovernor, RpcInflationRate, RpcKeyedAccount,
         RpcSupply, RpcVoteAccountInfo,
     },
-    solana_sdk::{
+    analog_sdk::{
         clock::{Epoch, Slot, UnixTimestamp},
         epoch_info::EpochInfo,
         hash::Hash,
-        native_token::lamports_to_sol,
+        native_token::tock_to_anlog,
         pubkey::Pubkey,
         signature::Signature,
         stake::state::{Authorized, Lockup},
         stake_history::StakeHistoryEntry,
         transaction::{Transaction, TransactionError},
     },
-    solana_transaction_status::{
+    analog_transaction_status::{
         EncodedConfirmedBlock, EncodedTransaction, TransactionConfirmationStatus,
         UiTransactionStatusMeta,
     },
-    solana_vote_program::{
+    analog_vote_program::{
         authorized_voters::AuthorizedVoters,
         vote_state::{BlockTimestamp, Lockout, MAX_EPOCH_CREDITS_HISTORY, MAX_LOCKOUT_HISTORY},
     },
@@ -114,7 +114,7 @@ impl fmt::Display for CliAccount {
             f,
             "Balance:",
             &build_balance_message(
-                self.keyed_account.account.lamports,
+                self.keyed_account.account.tock,
                 self.use_lamports_unit,
                 true,
             ),
@@ -716,7 +716,7 @@ impl fmt::Display for CliNonceAccount {
         let nonce = self.nonce.as_deref().unwrap_or("uninitialized");
         writeln!(f, "Nonce blockhash: {}", nonce)?;
         if let Some(fees) = self.lamports_per_signature {
-            writeln!(f, "Fee: {} lamports per signature", fees)?;
+            writeln!(f, "Fee: {} tock per signature", fees)?;
         } else {
             writeln!(f, "Fees: uninitialized")?;
         }
@@ -783,8 +783,8 @@ impl fmt::Display for CliKeyedStakeState {
 pub struct CliEpochReward {
     pub epoch: Epoch,
     pub effective_slot: Slot,
-    pub amount: u64,       // lamports
-    pub post_balance: u64, // lamports
+    pub amount: u64,       // tock
+    pub post_balance: u64, // tock
     pub percent_change: f64,
     pub apr: Option<f64>,
     pub commission: Option<u8>,
@@ -842,8 +842,8 @@ impl fmt::Display for CliKeyedEpochRewards {
                         f,
                         "  {:<44}  ◎{:<17.9}  ◎{:<17.9}  {:>13.9}%  {:>14}  {:>10}",
                         keyed_reward.address,
-                        lamports_to_sol(reward.amount),
-                        lamports_to_sol(reward.post_balance),
+                       tock_to_anlog(reward.amount),
+                       tock_to_anlog(reward.post_balance),
                         reward.percent_change,
                         reward
                             .apr
@@ -978,8 +978,8 @@ fn show_epoch_rewards(
                 "  {:<6}  {:<11}  ◎{:<17.9}  ◎{:<17.9}  {:>13.9}%  {:>14}  {:>10}",
                 reward.epoch,
                 reward.effective_slot,
-                lamports_to_sol(reward.amount),
-                lamports_to_sol(reward.post_balance),
+               tock_to_anlog(reward.amount),
+               tock_to_anlog(reward.post_balance),
                 reward.percent_change,
                 reward
                     .apr
@@ -1242,9 +1242,9 @@ impl fmt::Display for CliStakeHistory {
                 build_balance_message_with_config(entry.activating_stake, &config),
                 build_balance_message_with_config(entry.deactivating_stake, &config),
                 if self.use_lamports_unit {
-                    "lamports"
+                    "tock"
                 } else {
-                    "SOL"
+                    "ANLOG"
                 }
             )?;
         }
@@ -1672,7 +1672,7 @@ impl fmt::Display for CliAccountBalances {
                 f,
                 "{:<44}  {}",
                 account.address,
-                &format!("{} SOL", lamports_to_sol(account.lamports))
+                &format!("{} ANLOG",tock_to_anlog(account.tock))
             )?;
         }
         Ok(())
@@ -1707,16 +1707,16 @@ impl VerboseDisplay for CliSupply {}
 
 impl fmt::Display for CliSupply {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        writeln_name_value(f, "Total:", &format!("{} SOL", lamports_to_sol(self.total)))?;
+        writeln_name_value(f, "Total:", &format!("{} ANLOG",tock_to_anlog(self.total)))?;
         writeln_name_value(
             f,
             "Circulating:",
-            &format!("{} SOL", lamports_to_sol(self.circulating)),
+            &format!("{} ANLOG",tock_to_anlog(self.circulating)),
         )?;
         writeln_name_value(
             f,
             "Non-Circulating:",
-            &format!("{} SOL", lamports_to_sol(self.non_circulating)),
+            &format!("{} ANLOG",tock_to_anlog(self.non_circulating)),
         )?;
         if self.print_accounts {
             writeln!(f)?;
@@ -1930,7 +1930,7 @@ pub struct CliUpgradeableProgram {
     pub authority: String,
     pub last_deploy_slot: u64,
     pub data_len: usize,
-    pub lamports: u64,
+    pub tock: u64,
     #[serde(skip_serializing)]
     pub use_lamports_unit: bool,
 }
@@ -1956,7 +1956,7 @@ impl fmt::Display for CliUpgradeableProgram {
         writeln_name_value(
             f,
             "Balance:",
-            &build_balance_message(self.lamports, self.use_lamports_unit, true),
+            &build_balance_message(self.tock, self.use_lamports_unit, true),
         )?;
         Ok(())
     }
@@ -1992,7 +1992,7 @@ impl fmt::Display for CliUpgradeablePrograms {
                     program.program_id,
                     program.last_deploy_slot,
                     program.authority,
-                    build_balance_message(program.lamports, self.use_lamports_unit, true)
+                    build_balance_message(program.tock, self.use_lamports_unit, true)
                 )
             )?;
         }
@@ -2004,7 +2004,7 @@ impl fmt::Display for CliUpgradeablePrograms {
 #[serde(rename_all = "camelCase")]
 pub struct CliUpgradeableProgramClosed {
     pub program_id: String,
-    pub lamports: u64,
+    pub tock: u64,
     #[serde(skip_serializing)]
     pub use_lamports_unit: bool,
 }
@@ -2017,7 +2017,7 @@ impl fmt::Display for CliUpgradeableProgramClosed {
             f,
             "Closed Program Id {}, {} reclaimed",
             &self.program_id,
-            &build_balance_message(self.lamports, self.use_lamports_unit, true)
+            &build_balance_message(self.tock, self.use_lamports_unit, true)
         )?;
         Ok(())
     }
@@ -2029,7 +2029,7 @@ pub struct CliUpgradeableBuffer {
     pub address: String,
     pub authority: String,
     pub data_len: usize,
-    pub lamports: u64,
+    pub tock: u64,
     #[serde(skip_serializing)]
     pub use_lamports_unit: bool,
 }
@@ -2043,7 +2043,7 @@ impl fmt::Display for CliUpgradeableBuffer {
         writeln_name_value(
             f,
             "Balance:",
-            &build_balance_message(self.lamports, self.use_lamports_unit, true),
+            &build_balance_message(self.tock, self.use_lamports_unit, true),
         )?;
         writeln_name_value(
             f,
@@ -2084,7 +2084,7 @@ impl fmt::Display for CliUpgradeableBuffers {
                     "{:<44} | {:<44} | {}",
                     buffer.address,
                     buffer.authority,
-                    build_balance_message(buffer.lamports, self.use_lamports_unit, true)
+                    build_balance_message(buffer.tock, self.use_lamports_unit, true)
                 )
             )?;
         }
@@ -2282,9 +2282,9 @@ impl fmt::Display for CliBlock {
                 "Address", "Type", "Amount", "New Balance", "Percent Change", "Commission"
             )?;
             for reward in rewards {
-                let sign = if reward.lamports < 0 { "-" } else { "" };
+                let sign = if reward.tock < 0 { "-" } else { "" };
 
-                total_rewards += reward.lamports;
+                total_rewards += reward.tock;
                 writeln!(
                     f,
                     "  {:<44}  {:^15}  {:>15}  {}  {}",
@@ -2297,16 +2297,16 @@ impl fmt::Display for CliBlock {
                     format!(
                         "{}◎{:<14.9}",
                         sign,
-                        lamports_to_sol(reward.lamports.abs() as u64)
+                       tock_to_anlog(reward.tock.abs() as u64)
                     ),
                     if reward.post_balance == 0 {
                         "          -                 -".to_string()
                     } else {
                         format!(
                             "◎{:<19.9}  {:>13.9}%",
-                            lamports_to_sol(reward.post_balance),
-                            (reward.lamports.abs() as f64
-                                / (reward.post_balance as f64 - reward.lamports as f64))
+                           tock_to_anlog(reward.post_balance),
+                            (reward.tock.abs() as f64
+                                / (reward.post_balance as f64 - reward.tock as f64))
                                 * 100.0
                         )
                     },
@@ -2322,7 +2322,7 @@ impl fmt::Display for CliBlock {
                 f,
                 "Total Rewards: {}◎{:<12.9}",
                 sign,
-                lamports_to_sol(total_rewards.abs() as u64)
+               tock_to_anlog(total_rewards.abs() as u64)
             )?;
         }
         for (index, transaction_with_meta) in
@@ -2527,7 +2527,7 @@ impl VerboseDisplay for CliGossipNodes {}
 mod tests {
     use super::*;
     use clap::{App, Arg};
-    use solana_sdk::{
+    use analog_sdk::{
         message::Message,
         pubkey::Pubkey,
         signature::{keypair_from_seed, NullSigner, Signature, Signer, SignerError},

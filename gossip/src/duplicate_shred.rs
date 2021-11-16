@@ -1,11 +1,11 @@
 use {
     crate::crds_value::sanitize_wallclock,
     itertools::Itertools,
-    solana_ledger::{
+    analog_ledger::{
         blockstore_meta::DuplicateSlotProof,
         shred::{Shred, ShredError, ShredType},
     },
-    solana_sdk::{
+    analog_sdk::{
         clock::Slot,
         pubkey::Pubkey,
         sanitize::{Sanitize, SanitizeError},
@@ -287,9 +287,9 @@ impl Sanitize for DuplicateShred {
 pub(crate) mod tests {
     use super::*;
     use rand::Rng;
-    use solana_entry::entry::Entry;
-    use solana_ledger::shred::Shredder;
-    use solana_sdk::{hash, signature::Keypair, signature::Signer, system_transaction};
+    use analog_entry::entry::Entry;
+    use analog_ledger::shred::Shredder;
+    use analog_sdk::{hash, signature::Keypair, signature::Signer, system_transaction};
     use std::sync::Arc;
 
     #[test]
@@ -324,7 +324,7 @@ pub(crate) mod tests {
             let tx = system_transaction::transfer(
                 &Keypair::new(),       // from
                 &Pubkey::new_unique(), // to
-                rng.gen(),             // lamports
+                rng.gen(),             // tock
                 hash::new_rand(rng),   // recent blockhash
             );
             Entry::new(

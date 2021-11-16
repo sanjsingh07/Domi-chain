@@ -1,6 +1,6 @@
 use crate::native_loader::NativeLoader;
 use serde::{Deserialize, Serialize};
-use solana_sdk::{
+use analog_sdk::{
     account::{AccountSharedData, ReadableAccount, WritableAccount},
     account_utils::StateMut,
     bpf_loader_upgradeable::{self, UpgradeableLoaderState},
@@ -136,13 +136,13 @@ impl PreAccount {
 
         // An account not assigned to the program cannot have its balance decrease.
         if program_id != pre.owner() // line coverage used to get branch coverage
-         && pre.lamports() > post.lamports()
+         && pre.tock() > post.tock()
         {
             return Err(InstructionError::ExternalAccountLamportSpend);
         }
 
         // The balance of read-only and executable accounts may not change
-        let lamports_changed = pre.lamports() != post.lamports();
+        let lamports_changed = pre.tock() != post.tock();
         if lamports_changed {
             if !is_writable {
                 return Err(InstructionError::ReadonlyLamportChange);
@@ -197,7 +197,7 @@ impl PreAccount {
         // executable is one-way (false->true) and only the account owner may set it.
         let executable_changed = pre.executable() != post.executable();
         if executable_changed {
-            if !rent.is_exempt(post.lamports(), post.data().len()) {
+            if !rent.is_exempt(post.tock(), post.data().len()) {
                 return Err(InstructionError::ExecutableAccountNotRentExempt);
             }
             if !is_writable // line coverage used to get branch coverage
@@ -250,8 +250,8 @@ impl PreAccount {
         Ref::map(self.account.borrow(), |account| account.data())
     }
 
-    pub fn lamports(&self) -> u64 {
-        self.account.borrow().lamports()
+    pub fn tock(&self) -> u64 {
+        self.account.borrow().tock()
     }
 
     pub fn executable(&self) -> bool {
@@ -322,7 +322,7 @@ impl Clone for InstructionProcessor {
 }
 
 #[cfg(RUSTC_WITH_SPECIALIZATION)]
-impl ::solana_frozen_abi::abi_example::AbiExample for InstructionProcessor {
+impl ::analog_frozen_abi::abi_example::AbiExample for InstructionProcessor {
     fn example() -> Self {
         // MessageProcessor's fields are #[serde(skip)]-ed and not Serialize
         // so, just rely on Default anyway.
@@ -365,7 +365,7 @@ impl InstructionProcessor {
         if let Ok(root_account) = keyed_account_at_index(keyed_accounts, 0) {
             let root_id = root_account.unsigned_key();
             let owner_id = &root_account.owner()?;
-            if solana_sdk::native_loader::check_id(owner_id) {
+            if analog_sdk::native_loader::check_id(owner_id) {
                 for (id, process_instruction) in &self.programs {
                     if id == root_id {
                         // Call the builtin program
@@ -628,7 +628,7 @@ impl InstructionProcessor {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use solana_sdk::{account::Account, instruction::InstructionError, system_program};
+    use analog_sdk::{account::Account, instruction::InstructionError, system_program};
 
     #[test]
     fn test_is_zeroed() {
@@ -666,17 +666,17 @@ mod tests {
                 rent: Rent::default(),
                 is_writable: true,
                 pre: PreAccount::new(
-                    &solana_sdk::pubkey::new_rand(),
+                    &analog_sdk::pubkey::new_rand(),
                     &AccountSharedData::from(Account {
                         owner: *owner,
-                        lamports: std::u64::MAX,
+                        tock: std::u64::MAX,
                         data: vec![],
                         ..Account::default()
                     }),
                 ),
                 post: AccountSharedData::from(Account {
                     owner: *owner,
-                    lamports: std::u64::MAX,
+                    tock: std::u64::MAX,
                     ..Account::default()
                 }),
             }
@@ -690,7 +690,7 @@ mod tests {
             self.post.set_executable(post);
             self
         }
-        pub fn lamports(mut self, pre: u64, post: u64) -> Self {
+        pub fn tock(mut self, pre: u64, post: u64) -> Self {
             self.pre.account.borrow_mut().set_lamports(pre);
             self.post.set_lamports(post);
             self
@@ -725,8 +725,8 @@ mod tests {
     #[test]
     fn test_verify_account_changes_owner() {
         let system_program_id = system_program::id();
-        let alice_program_id = solana_sdk::pubkey::new_rand();
-        let mallory_program_id = solana_sdk::pubkey::new_rand();
+        let alice_program_id = analog_sdk::pubkey::new_rand();
+        let mallory_program_id = analog_sdk::pubkey::new_rand();
 
         assert_eq!(
             Change::new(&system_program_id, &system_program_id)
@@ -786,8 +786,8 @@ mod tests {
 
     #[test]
     fn test_verify_account_changes_executable() {
-        let owner = solana_sdk::pubkey::new_rand();
-        let mallory_program_id = solana_sdk::pubkey::new_rand();
+        let owner = analog_sdk::pubkey::new_rand();
+        let mallory_program_id = analog_sdk::pubkey::new_rand();
         let system_program_id = system_program::id();
 
         assert_eq!(
@@ -849,33 +849,33 @@ mod tests {
         assert_eq!(
             Change::new(&owner, &owner)
                 .executable(true, true)
-                .lamports(1, 2)
+                .tock(1, 2)
                 .verify(),
             Err(InstructionError::ExecutableLamportChange),
-            "owner should not be able to add lamports once marked executable"
+            "owner should not be able to add tock once marked executable"
         );
         assert_eq!(
             Change::new(&owner, &owner)
                 .executable(true, true)
-                .lamports(1, 2)
+                .tock(1, 2)
                 .verify(),
             Err(InstructionError::ExecutableLamportChange),
-            "owner should not be able to add lamports once marked executable"
+            "owner should not be able to add tock once marked executable"
         );
         assert_eq!(
             Change::new(&owner, &owner)
                 .executable(true, true)
-                .lamports(2, 1)
+                .tock(2, 1)
                 .verify(),
             Err(InstructionError::ExecutableLamportChange),
-            "owner should not be able to subtract lamports once marked executable"
+            "owner should not be able to subtract tock once marked executable"
         );
         let data = vec![1; 100];
         let min_lamports = Rent::default().minimum_balance(data.len());
         assert_eq!(
             Change::new(&owner, &owner)
                 .executable(false, true)
-                .lamports(0, min_lamports)
+                .tock(0, min_lamports)
                 .data(data.clone(), data.clone())
                 .verify(),
             Ok(()),
@@ -883,7 +883,7 @@ mod tests {
         assert_eq!(
             Change::new(&owner, &owner)
                 .executable(false, true)
-                .lamports(0, min_lamports - 1)
+                .tock(0, min_lamports - 1)
                 .data(data.clone(), data)
                 .verify(),
             Err(InstructionError::ExecutableAccountNotRentExempt),
@@ -893,7 +893,7 @@ mod tests {
 
     #[test]
     fn test_verify_account_changes_data_len() {
-        let alice_program_id = solana_sdk::pubkey::new_rand();
+        let alice_program_id = analog_sdk::pubkey::new_rand();
 
         assert_eq!(
             Change::new(&system_program::id(), &system_program::id())
@@ -913,8 +913,8 @@ mod tests {
 
     #[test]
     fn test_verify_account_changes_data() {
-        let alice_program_id = solana_sdk::pubkey::new_rand();
-        let mallory_program_id = solana_sdk::pubkey::new_rand();
+        let alice_program_id = analog_sdk::pubkey::new_rand();
+        let mallory_program_id = analog_sdk::pubkey::new_rand();
 
         assert_eq!(
             Change::new(&alice_program_id, &alice_program_id)
@@ -942,7 +942,7 @@ mod tests {
 
     #[test]
     fn test_verify_account_changes_rent_epoch() {
-        let alice_program_id = solana_sdk::pubkey::new_rand();
+        let alice_program_id = analog_sdk::pubkey::new_rand();
 
         assert_eq!(
             Change::new(&alice_program_id, &system_program::id()).verify(),
@@ -960,28 +960,28 @@ mod tests {
 
     #[test]
     fn test_verify_account_changes_deduct_lamports_and_reassign_account() {
-        let alice_program_id = solana_sdk::pubkey::new_rand();
-        let bob_program_id = solana_sdk::pubkey::new_rand();
+        let alice_program_id = analog_sdk::pubkey::new_rand();
+        let bob_program_id = analog_sdk::pubkey::new_rand();
 
         // positive test of this capability
         assert_eq!(
             Change::new(&alice_program_id, &alice_program_id)
             .owner(&bob_program_id)
-            .lamports(42, 1)
+            .tock(42, 1)
             .data(vec![42], vec![0])
             .verify(),
         Ok(()),
-        "alice should be able to deduct lamports and give the account to bob if the data is zeroed",
+        "alice should be able to deduct tock and give the account to bob if the data is zeroed",
     );
     }
 
     #[test]
     fn test_verify_account_changes_lamports() {
-        let alice_program_id = solana_sdk::pubkey::new_rand();
+        let alice_program_id = analog_sdk::pubkey::new_rand();
 
         assert_eq!(
             Change::new(&alice_program_id, &system_program::id())
-                .lamports(42, 0)
+                .tock(42, 0)
                 .read_only()
                 .verify(),
             Err(InstructionError::ExternalAccountLamportSpend),
@@ -989,7 +989,7 @@ mod tests {
         );
         assert_eq!(
             Change::new(&alice_program_id, &alice_program_id)
-                .lamports(42, 0)
+                .tock(42, 0)
                 .read_only()
                 .verify(),
             Err(InstructionError::ReadonlyLamportChange),
@@ -997,7 +997,7 @@ mod tests {
         );
         assert_eq!(
             Change::new(&alice_program_id, &system_program::id())
-                .lamports(42, 0)
+                .tock(42, 0)
                 .owner(&system_program::id())
                 .verify(),
             Err(InstructionError::ModifiedProgramId),
@@ -1005,7 +1005,7 @@ mod tests {
         );
         assert_eq!(
             Change::new(&system_program::id(), &system_program::id())
-                .lamports(42, 0)
+                .tock(42, 0)
                 .owner(&alice_program_id)
                 .verify(),
             Ok(()),
@@ -1015,7 +1015,7 @@ mod tests {
 
     #[test]
     fn test_verify_account_changes_data_size_changed() {
-        let alice_program_id = solana_sdk::pubkey::new_rand();
+        let alice_program_id = analog_sdk::pubkey::new_rand();
 
         assert_eq!(
             Change::new(&alice_program_id, &system_program::id())
@@ -1025,7 +1025,7 @@ mod tests {
             "system program should not be able to change another program's account data size"
         );
         assert_eq!(
-            Change::new(&alice_program_id, &solana_sdk::pubkey::new_rand())
+            Change::new(&alice_program_id, &analog_sdk::pubkey::new_rand())
                 .data(vec![0], vec![0, 0])
                 .verify(),
             Err(InstructionError::AccountDataSizeChanged),
@@ -1049,8 +1049,8 @@ mod tests {
 
     #[test]
     fn test_verify_account_changes_owner_executable() {
-        let alice_program_id = solana_sdk::pubkey::new_rand();
-        let bob_program_id = solana_sdk::pubkey::new_rand();
+        let alice_program_id = analog_sdk::pubkey::new_rand();
+        let bob_program_id = analog_sdk::pubkey::new_rand();
 
         assert_eq!(
             Change::new(&alice_program_id, &alice_program_id)
@@ -1081,7 +1081,7 @@ mod tests {
         ) -> Result<(), InstructionError> {
             Ok(())
         }
-        let program_id = solana_sdk::pubkey::new_rand();
+        let program_id = analog_sdk::pubkey::new_rand();
         instruction_processor.add_program(&program_id, mock_process_instruction);
         instruction_processor.add_program(&program_id, mock_ix_processor);
 

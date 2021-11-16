@@ -1,5 +1,5 @@
 use crate::heaviest_subtree_fork_choice::SlotHashKey;
-use solana_sdk::{clock::Slot, hash::Hash, pubkey::Pubkey};
+use analog_sdk::{clock::Slot, hash::Hash, pubkey::Pubkey};
 use std::collections::{hash_map::Entry, HashMap};
 
 #[derive(Default)]

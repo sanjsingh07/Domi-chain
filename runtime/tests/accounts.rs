@@ -1,12 +1,12 @@
 use log::*;
 use rand::{thread_rng, Rng};
 use rayon::prelude::*;
-use solana_runtime::{
+use analog_runtime::{
     accounts_db::{AccountsDb, LoadHint},
     ancestors::Ancestors,
 };
-use solana_sdk::genesis_config::ClusterType;
-use solana_sdk::{
+use analog_sdk::genesis_config::ClusterType;
+use analog_sdk::{
     account::{AccountSharedData, ReadableAccount, WritableAccount},
     clock::Slot,
     pubkey::Pubkey,
@@ -18,7 +18,7 @@ use std::time::Instant;
 
 #[test]
 fn test_shrink_and_clean() {
-    solana_logger::setup();
+    analog_logger::setup();
 
     // repeat the whole test scenario
     for _ in 0..5 {
@@ -43,12 +43,12 @@ fn test_shrink_and_clean() {
         for current_slot in 0..100 {
             while alive_accounts.len() <= 10 {
                 alive_accounts.push((
-                    solana_sdk::pubkey::new_rand(),
+                    analog_sdk::pubkey::new_rand(),
                     AccountSharedData::new(thread_rng().gen_range(0, 50), 0, &owner),
                 ));
             }
 
-            alive_accounts.retain(|(_pubkey, account)| account.lamports() >= 1);
+            alive_accounts.retain(|(_pubkey, account)| account.tock() >= 1);
 
             for (pubkey, account) in alive_accounts.iter_mut() {
                 account.checked_sub_lamports(1).unwrap();
@@ -71,8 +71,8 @@ fn test_shrink_and_clean() {
 
 #[test]
 fn test_bad_bank_hash() {
-    solana_logger::setup();
-    use solana_sdk::signature::{Keypair, Signer};
+    analog_logger::setup();
+    use analog_sdk::signature::{Keypair, Signer};
     let db = AccountsDb::new_for_tests(Vec::new(), &ClusterType::Development);
 
     let some_slot: Slot = 0;
@@ -83,9 +83,9 @@ fn test_bad_bank_hash() {
         .into_par_iter()
         .map(|_| {
             let key = Keypair::new().pubkey();
-            let lamports = thread_rng().gen_range(0, 100);
+            let tock = thread_rng().gen_range(0, 100);
             let some_data_len = thread_rng().gen_range(0, 1000);
-            let account = AccountSharedData::new(lamports, some_data_len, &key);
+            let account = AccountSharedData::new(tock, some_data_len, &key);
             (key, account)
         })
         .collect();

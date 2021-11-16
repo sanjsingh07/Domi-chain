@@ -1,6 +1,6 @@
 # Docs Readme
 
-Solana's Docs are built using [Docusaurus 2](https://v2.docusaurus.io/) with `npm`.
+Analog's Docs are built using [Docusaurus 2](https://v2.docusaurus.io/) with `npm`.
 Static content delivery is handled using `vercel`.
 
 ### Installing Docusaurus
@@ -54,6 +54,6 @@ On each PR, the docs are built, but not published.
 In each post-commit build, docs are built and published using `vercel` to their
 respective domain depending on the build branch.
 
-- Master branch docs are published to `edge.docs.solana.com`
-- Beta branch docs are published to `beta.docs.solana.com`
-- Latest release tag docs are published to `docs.solana.com`
+- Master branch docs are published to `edge.docs.analog.com`
+- Beta branch docs are published to `beta.docs.analog.com`
+- Latest release tag docs are published to `docs.analog.com`

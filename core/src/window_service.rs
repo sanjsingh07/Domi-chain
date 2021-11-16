@@ -14,18 +14,18 @@ use {
         unbounded, Receiver as CrossbeamReceiver, RecvTimeoutError, Sender as CrossbeamSender,
     },
     rayon::{prelude::*, ThreadPool},
-    solana_gossip::cluster_info::ClusterInfo,
-    solana_ledger::{
+    analog_gossip::cluster_info::ClusterInfo,
+    analog_ledger::{
         blockstore::{self, Blockstore, BlockstoreInsertionMetrics, MAX_DATA_SHREDS_PER_SLOT},
         leader_schedule_cache::LeaderScheduleCache,
         shred::{Nonce, Shred},
     },
-    solana_measure::measure::Measure,
-    solana_metrics::{inc_new_counter_debug, inc_new_counter_error},
-    solana_perf::packet::{Packet, Packets},
-    solana_rayon_threadlimit::get_thread_count,
-    solana_runtime::{bank::Bank, bank_forks::BankForks},
-    solana_sdk::{clock::Slot, packet::PACKET_DATA_SIZE, pubkey::Pubkey},
+    analog_measure::measure::Measure,
+    analog_metrics::{inc_new_counter_debug, inc_new_counter_error},
+    analog_perf::packet::{Packet, Packets},
+    analog_rayon_threadlimit::get_thread_count,
+    analog_runtime::{bank::Bank, bank_forks::BankForks},
+    analog_sdk::{clock::Slot, packet::PACKET_DATA_SIZE, pubkey::Pubkey},
     std::collections::HashSet,
     std::{
         cmp::Reverse,
@@ -257,7 +257,7 @@ fn verify_repair(
                 .register_response(
                     repair_meta.nonce,
                     shred,
-                    solana_sdk::timing::timestamp(),
+                    analog_sdk::timing::timestamp(),
                     |_| (),
                 )
                 .is_some()
@@ -540,10 +540,10 @@ impl WindowService {
         duplicate_slot_sender: DuplicateSlotSender,
     ) -> JoinHandle<()> {
         let handle_error = || {
-            inc_new_counter_error!("solana-check-duplicate-error", 1, 1);
+            inc_new_counter_error!("analog-check-duplicate-error", 1, 1);
         };
         Builder::new()
-            .name("solana-check-duplicate".to_string())
+            .name("analog-check-duplicate".to_string())
             .spawn(move || loop {
                 if exit.load(Ordering::Relaxed) {
                     break;
@@ -576,11 +576,11 @@ impl WindowService {
     ) -> JoinHandle<()> {
         let mut handle_timeout = || {};
         let handle_error = || {
-            inc_new_counter_error!("solana-window-insert-error", 1, 1);
+            inc_new_counter_error!("analog-window-insert-error", 1, 1);
         };
 
         Builder::new()
-            .name("solana-window-insert".to_string())
+            .name("analog-window-insert".to_string())
             .spawn(move || {
                 let handle_duplicate = |shred| {
                     let _ = check_duplicate_sender.send(shred);
@@ -641,7 +641,7 @@ impl WindowService {
     {
         let mut stats = ReceiveWindowStats::default();
         Builder::new()
-            .name("solana-window".to_string())
+            .name("analog-window".to_string())
             .spawn(move || {
                 let _exit = Finalizer::new(exit.clone());
                 trace!("{}: RECV_WINDOW started", id);
@@ -651,7 +651,7 @@ impl WindowService {
                     .unwrap();
                 let mut now = Instant::now();
                 let handle_error = || {
-                    inc_new_counter_error!("solana-window-error", 1, 1);
+                    inc_new_counter_error!("analog-window-error", 1, 1);
                 };
 
                 while !exit.load(Ordering::Relaxed) {
@@ -718,21 +718,21 @@ impl WindowService {
 mod test {
     use {
         super::*,
-        solana_entry::entry::{create_ticks, Entry},
-        solana_gossip::contact_info::ContactInfo,
-        solana_ledger::{
+        analog_entry::entry::{create_ticks, Entry},
+        analog_gossip::contact_info::ContactInfo,
+        analog_ledger::{
             blockstore::{make_many_slot_entries, Blockstore},
             genesis_utils::create_genesis_config_with_leader,
             get_tmp_ledger_path,
             shred::{DataShredHeader, Shredder},
         },
-        solana_sdk::{
+        analog_sdk::{
             epoch_schedule::MINIMUM_SLOTS_PER_EPOCH,
             hash::Hash,
             signature::{Keypair, Signer},
             timing::timestamp,
         },
-        solana_streamer::socket::SocketAddrSpace,
+        analog_streamer::socket::SocketAddrSpace,
     };
 
     fn local_entries_to_shred(
@@ -765,7 +765,7 @@ mod test {
 
     #[test]
     fn test_should_retransmit_and_persist() {
-        let me_id = solana_sdk::pubkey::new_rand();
+        let me_id = analog_sdk::pubkey::new_rand();
         let leader_keypair = Arc::new(Keypair::new());
         let leader_pubkey = leader_keypair.pubkey();
         let bank = Arc::new(Bank::new_for_tests(
@@ -950,7 +950,7 @@ mod test {
     fn test_prune_shreds() {
         use crate::serve_repair::ShredRepairType;
         use std::net::{IpAddr, Ipv4Addr};
-        solana_logger::setup();
+        analog_logger::setup();
         let (common, coding) = Shredder::new_coding_shred_header(5, 5, 5, 6, 6, 0);
         let shred = Shred::new_empty_from_header(common, DataShredHeader::default(), coding);
         let mut shreds = vec![shred.clone(), shred.clone(), shred];

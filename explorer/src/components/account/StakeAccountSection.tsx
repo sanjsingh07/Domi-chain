@@ -124,15 +124,15 @@ function OverviewCard({
           </td>
         </tr>
         <tr>
-          <td>Balance (SOL)</td>
+          <td>Balance (ANLOG)</td>
           <td className="text-lg-right text-uppercase">
-            <SolBalance lamports={account.lamports || 0} />
+            <SolBalance tock={account.tock || 0} />
           </td>
         </tr>
         <tr>
-          <td>Rent Reserve (SOL)</td>
+          <td>Rent Reserve (ANLOG)</td>
           <td className="text-lg-right">
-            <SolBalance lamports={stakeAccount.meta.rentExemptReserve} />
+            <SolBalance tock={stakeAccount.meta.rentExemptReserve} />
           </td>
         </tr>
         {hideDelegation && (
@@ -189,25 +189,25 @@ function DelegationCard({
         {stake && (
           <>
             <tr>
-              <td>Delegated Stake (SOL)</td>
+              <td>Delegated Stake (ANLOG)</td>
               <td className="text-lg-right">
-                <SolBalance lamports={stake.delegation.stake} />
+                <SolBalance tock={stake.delegation.stake} />
               </td>
             </tr>
 
             {activation && (
               <>
                 <tr>
-                  <td>Active Stake (SOL)</td>
+                  <td>Active Stake (ANLOG)</td>
                   <td className="text-lg-right">
-                    <SolBalance lamports={activation.active} />
+                    <SolBalance tock={activation.active} />
                   </td>
                 </tr>
 
                 <tr>
-                  <td>Inactive Stake (SOL)</td>
+                  <td>Inactive Stake (ANLOG)</td>
                   <td className="text-lg-right">
-                    <SolBalance lamports={activation.inactive} />
+                    <SolBalance tock={activation.inactive} />
                   </td>
                 </tr>
               </>

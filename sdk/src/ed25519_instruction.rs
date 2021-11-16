@@ -71,7 +71,7 @@ pub fn new_ed25519_instruction(keypair: &ed25519_dalek::Keypair, message: &[u8])
     instruction_data.extend_from_slice(message);
 
     Instruction {
-        program_id: solana_sdk::ed25519_program::id(),
+        program_id: analog_sdk::ed25519_program::id(),
         accounts: vec![],
         data: instruction_data,
     }
@@ -206,7 +206,7 @@ pub mod test {
 
     #[test]
     fn test_invalid_offsets() {
-        solana_logger::setup();
+        analog_logger::setup();
 
         let mut instruction_data = vec![0u8; DATA_START];
         let offsets = Ed25519SignatureOffsets::default();
@@ -338,7 +338,7 @@ pub mod test {
 
     #[test]
     fn test_ed25519() {
-        solana_logger::setup();
+        analog_logger::setup();
 
         let privkey = ed25519_dalek::Keypair::generate(&mut thread_rng());
         let message_arr = b"hello";

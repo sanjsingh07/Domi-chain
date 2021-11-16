@@ -6,7 +6,7 @@ import {
 import { PublicKey } from "@solana/web3.js";
 
 // Switch to web3 constant when web3 updates superstruct
-export const LAMPORTS_PER_SOL = 1000000000;
+export const TOCK_PER_ANLOG = 1000000000;
 
 export const NUM_TICKS_PER_SECOND = 160;
 export const DEFAULT_TICKS_PER_SLOT = 64;
@@ -28,17 +28,17 @@ export function normalizeTokenAmount(
   return rawTokens / Math.pow(10, decimals);
 }
 
-export function lamportsToSol(lamports: number | BN): number {
-  if (typeof lamports === "number") {
-    return Math.abs(lamports) / LAMPORTS_PER_SOL;
+export function lamportsToSol(tock: number | BN): number {
+  if (typeof tock === "number") {
+    return Math.abs(tock) / TOCK_PER_ANLOG;
   }
 
   let signMultiplier = 1;
-  if (lamports.isNeg()) {
+  if (tock.isNeg()) {
     signMultiplier = -1;
   }
 
-  const absLamports = lamports.abs();
+  const absLamports = tock.abs();
   const lamportsString = absLamports.toString(10).padStart(10, "0");
   const splitIndex = lamportsString.length - 9;
   const solString =
@@ -49,25 +49,25 @@ export function lamportsToSol(lamports: number | BN): number {
 }
 
 export function lamportsToSolString(
-  lamports: number | BN,
+  tock: number | BN,
   maximumFractionDigits: number = 9
 ): string {
-  const sol = lamportsToSol(lamports);
-  return new Intl.NumberFormat("en-US", { maximumFractionDigits }).format(sol);
+  const anlog = lamportsToSol(tock);
+  return new Intl.NumberFormat("en-US", { maximumFractionDigits }).format(anlog);
 }
 
 export function SolBalance({
-  lamports,
+  tock,
   maximumFractionDigits = 9,
 }: {
-  lamports: number | BN;
+  tock: number | BN;
   maximumFractionDigits?: number;
 }) {
   return (
     <span>
       ◎
       <span className="text-monospace">
-        {lamportsToSolString(lamports, maximumFractionDigits)}
+        {lamportsToSolString(tock, maximumFractionDigits)}
       </span>
     </span>
   );

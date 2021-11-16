@@ -1,13 +1,13 @@
 use {
     jsonrpc_core::{Error, Result},
-    solana_account_decoder::{
+    analog_account_decoder::{
         parse_account_data::AccountAdditionalData,
         parse_token::{get_token_account_mint, spl_token_id_v2_0, spl_token_v2_0_native_mint},
         UiAccount, UiAccountData, UiAccountEncoding,
     },
-    solana_client::rpc_response::RpcKeyedAccount,
-    solana_runtime::bank::Bank,
-    solana_sdk::{
+    analog_client::rpc_response::RpcKeyedAccount,
+    analog_runtime::bank::Bank,
+    analog_sdk::{
         account::{AccountSharedData, ReadableAccount},
         pubkey::Pubkey,
     },

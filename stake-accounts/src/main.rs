@@ -7,19 +7,19 @@ use crate::arg_parser::parse_args;
 use crate::args::{
     resolve_command, AuthorizeArgs, Command, MoveArgs, NewArgs, RebaseArgs, SetLockupArgs,
 };
-use solana_cli_config::Config;
-use solana_client::client_error::ClientError;
-use solana_client::rpc_client::RpcClient;
-use solana_sdk::{
+use analog_cli_config::Config;
+use analog_client::client_error::ClientError;
+use analog_client::rpc_client::RpcClient;
+use analog_sdk::{
     message::Message,
-    native_token::lamports_to_sol,
+    native_token::tock_to_anlog,
     pubkey::Pubkey,
     signature::{unique_signers, Signature, Signer},
     signers::Signers,
     stake::{instruction::LockupArgs, state::Lockup},
     transaction::Transaction,
 };
-use solana_stake_program::stake_state;
+use analog_stake_program::stake_state;
 use std::env;
 use std::error::Error;
 
@@ -71,7 +71,7 @@ fn process_new_stake_account(
         &args.fee_payer.pubkey(),
         &args.funding_keypair.pubkey(),
         &args.base_keypair.pubkey(),
-        args.lamports,
+        args.tock,
         &args.stake_authority,
         &args.withdraw_authority,
         &Pubkey::default(),
@@ -259,9 +259,9 @@ fn main() -> Result<(), Box<dyn Error>> {
                 args.num_accounts,
             );
             let balances = get_balances(&client, addresses)?;
-            let lamports: u64 = balances.into_iter().map(|(_, bal)| bal).sum();
-            let sol = lamports_to_sol(lamports);
-            println!("{} SOL", sol);
+            let tock: u64 = balances.into_iter().map(|(_, bal)| bal).sum();
+            let anlog =tock_to_anlog(tock);
+            println!("{} ANLOG", anlog);
         }
         Command::Authorize(args) => {
             process_authorize_stake_accounts(&client, &args)?;

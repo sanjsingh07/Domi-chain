@@ -1,6 +1,6 @@
 use assert_cmd::prelude::*;
-use solana_ledger::create_new_tmp_ledger;
-use solana_ledger::genesis_utils::create_genesis_config;
+use analog_ledger::create_new_tmp_ledger;
+use analog_ledger::genesis_utils::create_genesis_config;
 use std::process::Command;
 use std::process::Output;
 

@@ -1,6 +1,6 @@
 use {
     crate::bank::Bank,
-    solana_sdk::transaction::{Result, SanitizedTransaction},
+    analog_sdk::transaction::{Result, SanitizedTransaction},
     std::borrow::Cow,
 };
 
@@ -51,7 +51,7 @@ impl<'a, 'b> Drop for TransactionBatch<'a, 'b> {
 mod tests {
     use super::*;
     use crate::genesis_utils::{create_genesis_config_with_leader, GenesisConfigInfo};
-    use solana_sdk::{signature::Keypair, system_transaction};
+    use analog_sdk::{signature::Keypair, system_transaction};
 
     #[test]
     fn test_transaction_batch() {
@@ -93,7 +93,7 @@ mod tests {
     }
 
     fn setup() -> (Bank, Vec<SanitizedTransaction>) {
-        let dummy_leader_pubkey = solana_sdk::pubkey::new_rand();
+        let dummy_leader_pubkey = analog_sdk::pubkey::new_rand();
         let GenesisConfigInfo {
             genesis_config,
             mint_keypair,
@@ -101,9 +101,9 @@ mod tests {
         } = create_genesis_config_with_leader(500, &dummy_leader_pubkey, 100);
         let bank = Bank::new_for_tests(&genesis_config);
 
-        let pubkey = solana_sdk::pubkey::new_rand();
+        let pubkey = analog_sdk::pubkey::new_rand();
         let keypair2 = Keypair::new();
-        let pubkey2 = solana_sdk::pubkey::new_rand();
+        let pubkey2 = analog_sdk::pubkey::new_rand();
 
         let txs = vec![
             SanitizedTransaction::from_transaction_for_tests(system_transaction::transfer(

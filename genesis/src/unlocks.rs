@@ -1,5 +1,5 @@
 //! lockups generator
-use solana_sdk::{clock::Epoch, epoch_schedule::EpochSchedule, timing::years_as_slots};
+use analog_sdk::{clock::Epoch, epoch_schedule::EpochSchedule, timing::years_as_slots};
 use std::time::Duration;
 
 #[derive(Debug)]
@@ -127,7 +127,7 @@ pub struct Unlock {
 }
 
 impl Unlock {
-    /// the number of lamports unlocked at this event
+    /// the number of tock unlocked at this event
     #[allow(clippy::float_cmp)]
     pub fn amount(&self, total: u64) -> u64 {
         if self.fraction == 1.0 {

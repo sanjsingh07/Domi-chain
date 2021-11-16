@@ -3,10 +3,10 @@
 //! packing transactions into block; it also triggers persisting cost
 //! table to blockstore.
 
-use solana_ledger::blockstore::Blockstore;
-use solana_measure::measure::Measure;
-use solana_runtime::{bank::Bank, bank::ExecuteTimings, cost_model::CostModel};
-use solana_sdk::timing::timestamp;
+use analog_ledger::blockstore::Blockstore;
+use analog_measure::measure::Measure;
+use analog_runtime::{bank::Bank, bank::ExecuteTimings, cost_model::CostModel};
+use analog_sdk::timing::timestamp;
 use std::{
     sync::{
         atomic::{AtomicBool, Ordering},
@@ -85,7 +85,7 @@ impl CostUpdateService {
         cost_update_receiver: CostUpdateReceiver,
     ) -> Self {
         let thread_hdl = Builder::new()
-            .name("solana-cost-update-service".to_string())
+            .name("analog-cost-update-service".to_string())
             .spawn(move || {
                 Self::service_loop(exit, blockstore, cost_model, cost_update_receiver);
             })
@@ -205,7 +205,7 @@ impl CostUpdateService {
 mod tests {
     use super::*;
     use solana_program_runtime::instruction_processor::ProgramTiming;
-    use solana_sdk::pubkey::Pubkey;
+    use analog_sdk::pubkey::Pubkey;
 
     #[test]
     fn test_update_cost_model_with_empty_execute_timings() {

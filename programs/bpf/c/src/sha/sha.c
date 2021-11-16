@@ -1,11 +1,11 @@
 /**
  * @brief SHA256 Syscall test
  */
-#include <sol/sha.h>
-#include <sol/keccak.h>
-#include <sol/blake3.h>
-#include <sol/string.h>
-#include <sol/assert.h>
+#include <anlog/sha.h>
+#include <anlog/keccak.h>
+#include <anlog/blake3.h>
+#include <anlog/string.h>
+#include <anlog/assert.h>
 
 extern uint64_t entrypoint(const uint8_t *input) {
 
@@ -20,12 +20,12 @@ extern uint64_t entrypoint(const uint8_t *input) {
     uint8_t bytes1[] = {'G', 'a', 'g', 'g', 'a', 'b', 'l', 'a',
                         'g', 'h', 'b', 'l', 'a', 'g', 'h', '!'};
     uint8_t bytes2[] = {'f', 'l', 'u', 'r', 'b', 'o', 's'};
-    const SolBytes bytes[] = {{bytes1, SOL_ARRAY_SIZE(bytes1)},
-                              {bytes2, SOL_ARRAY_SIZE(bytes2)}};
+    const SolBytes bytes[] = {{bytes1, ANLOG_ARRAY_SIZE(bytes1)},
+                              {bytes2, ANLOG_ARRAY_SIZE(bytes2)}};
 
-    sol_sha256(bytes, SOL_ARRAY_SIZE(bytes), result);
+    anlog_sha256(bytes, ANLOG_ARRAY_SIZE(bytes), result);
 
-    sol_assert(0 == sol_memcmp(result, expected, SHA256_RESULT_LENGTH));
+    anlog_assert(0 == anlog_memcmp(result, expected, SHA256_RESULT_LENGTH));
   }
 
   // Keccak
@@ -39,12 +39,12 @@ extern uint64_t entrypoint(const uint8_t *input) {
     uint8_t bytes1[] = {'G', 'a', 'g', 'g', 'a', 'b', 'l', 'a',
                         'g', 'h', 'b', 'l', 'a', 'g', 'h', '!'};
     uint8_t bytes2[] = {'f', 'l', 'u', 'r', 'b', 'o', 's'};
-    const SolBytes bytes[] = {{bytes1, SOL_ARRAY_SIZE(bytes1)},
-                              {bytes2, SOL_ARRAY_SIZE(bytes2)}};
+    const SolBytes bytes[] = {{bytes1, ANLOG_ARRAY_SIZE(bytes1)},
+                              {bytes2, ANLOG_ARRAY_SIZE(bytes2)}};
 
-    sol_keccak256(bytes, SOL_ARRAY_SIZE(bytes), result);
+    anlog_keccak256(bytes, ANLOG_ARRAY_SIZE(bytes), result);
 
-    sol_assert(0 == sol_memcmp(result, expected, KECCAK_RESULT_LENGTH));
+    anlog_assert(0 == anlog_memcmp(result, expected, KECCAK_RESULT_LENGTH));
   }
 
   // Blake3
@@ -58,12 +58,12 @@ extern uint64_t entrypoint(const uint8_t *input) {
     uint8_t bytes1[] = {'G', 'a', 'g', 'g', 'a', 'b', 'l', 'a',
                         'g', 'h', 'b', 'l', 'a', 'g', 'h', '!'};
     uint8_t bytes2[] = {'f', 'l', 'u', 'r', 'b', 'o', 's'};
-    const SolBytes bytes[] = {{bytes1, SOL_ARRAY_SIZE(bytes1)},
-                              {bytes2, SOL_ARRAY_SIZE(bytes2)}};
+    const SolBytes bytes[] = {{bytes1, ANLOG_ARRAY_SIZE(bytes1)},
+                              {bytes2, ANLOG_ARRAY_SIZE(bytes2)}};
 
-    sol_blake3(bytes, SOL_ARRAY_SIZE(bytes), result);
+    anlog_blake3(bytes, ANLOG_ARRAY_SIZE(bytes), result);
 
-    sol_assert(0 == sol_memcmp(result, expected, BLAKE3_RESULT_LENGTH));
+    anlog_assert(0 == anlog_memcmp(result, expected, BLAKE3_RESULT_LENGTH));
   }
 
   return SUCCESS;

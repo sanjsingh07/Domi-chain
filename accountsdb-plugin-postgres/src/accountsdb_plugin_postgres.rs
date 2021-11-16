@@ -1,4 +1,4 @@
-use solana_measure::measure::Measure;
+use analog_measure::measure::Measure;
 
 /// Main entry for the PostgreSQL plugin
 use {
@@ -10,10 +10,10 @@ use {
     log::*,
     serde_derive::{Deserialize, Serialize},
     serde_json,
-    solana_accountsdb_plugin_interface::accountsdb_plugin_interface::{
+    analog_accountsdb_plugin_interface::accountsdb_plugin_interface::{
         AccountsDbPlugin, AccountsDbPluginError, ReplicaAccountInfoVersions, Result, SlotStatus,
     },
-    solana_metrics::*,
+    analog_metrics::*,
     std::{fs::File, io::Read},
     thiserror::Error,
 };
@@ -92,7 +92,7 @@ impl AccountsDbPlugin for AccountsDbPluginPostgres {
     /// # Examples
     ///
     /// {
-    ///    "libpath": "/home/solana/target/release/libsolana_accountsdb_plugin_postgres.so",
+    ///    "libpath": "/home/solana/target/release/libanalog_accountsdb_plugin_postgres.so",
     ///    "host": "host_foo",
     ///    "user": "solana",
     ///    "threads": 10,
@@ -102,7 +102,7 @@ impl AccountsDbPlugin for AccountsDbPluginPostgres {
     /// }
 
     fn on_load(&mut self, config_file: &str) -> Result<()> {
-        solana_logger::setup_with_default("info");
+        analog_logger::setup_with_default("info");
         info!(
             "Loading plugin {:?} from config_file {:?}",
             self.name(),

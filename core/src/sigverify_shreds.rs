@@ -1,11 +1,11 @@
 #![allow(clippy::implicit_hasher)]
 use crate::sigverify;
 use crate::sigverify_stage::SigVerifier;
-use solana_ledger::leader_schedule_cache::LeaderScheduleCache;
-use solana_ledger::shred::Shred;
-use solana_ledger::sigverify_shreds::verify_shreds_gpu;
-use solana_perf::{self, packet::Packets, recycler_cache::RecyclerCache};
-use solana_runtime::bank_forks::BankForks;
+use analog_ledger::leader_schedule_cache::LeaderScheduleCache;
+use analog_ledger::shred::Shred;
+use analog_ledger::sigverify_shreds::verify_shreds_gpu;
+use analog_perf::{self, packet::Packets, recycler_cache::RecyclerCache};
+use analog_runtime::bank_forks::BankForks;
 use std::collections::{HashMap, HashSet};
 use std::sync::{Arc, RwLock};
 
@@ -52,7 +52,7 @@ impl SigVerifier for ShredSigVerifier {
         leader_slots.insert(std::u64::MAX, [0u8; 32]);
 
         let r = verify_shreds_gpu(&batches, &leader_slots, &self.recycler_cache);
-        solana_perf::sigverify::mark_disabled(&mut batches, &r);
+        analog_perf::sigverify::mark_disabled(&mut batches, &r);
         batches
     }
 }
@@ -60,15 +60,15 @@ impl SigVerifier for ShredSigVerifier {
 #[cfg(test)]
 pub mod tests {
     use super::*;
-    use solana_ledger::genesis_utils::create_genesis_config_with_leader;
-    use solana_ledger::shred::{Shred, Shredder};
-    use solana_perf::packet::Packet;
-    use solana_runtime::bank::Bank;
-    use solana_sdk::signature::{Keypair, Signer};
+    use analog_ledger::genesis_utils::create_genesis_config_with_leader;
+    use analog_ledger::shred::{Shred, Shredder};
+    use analog_perf::packet::Packet;
+    use analog_runtime::bank::Bank;
+    use analog_sdk::signature::{Keypair, Signer};
 
     #[test]
     fn test_sigverify_shreds_read_slots() {
-        solana_logger::setup();
+        analog_logger::setup();
         let mut shred = Shred::new_from_data(
             0xdead_c0de,
             0xc0de,

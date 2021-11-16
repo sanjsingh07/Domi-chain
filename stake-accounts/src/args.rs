@@ -1,7 +1,7 @@
 use clap::ArgMatches;
-use solana_clap_utils::keypair::{pubkey_from_path, signer_from_path};
-use solana_remote_wallet::remote_wallet::RemoteWalletManager;
-use solana_sdk::{
+use analog_clap_utils::keypair::{pubkey_from_path, signer_from_path};
+use analog_remote_wallet::remote_wallet::RemoteWalletManager;
+use analog_sdk::{
     clock::{Epoch, UnixTimestamp},
     pubkey::Pubkey,
     signature::Signer,
@@ -13,7 +13,7 @@ pub(crate) struct NewArgs<P, K> {
     pub fee_payer: K,
     pub funding_keypair: K,
     pub base_keypair: K,
-    pub lamports: u64,
+    pub tock: u64,
     pub stake_authority: P,
     pub withdraw_authority: P,
     pub index: usize,
@@ -246,7 +246,7 @@ pub(crate) fn resolve_command(
                     "withdraw authority",
                     &mut wallet_manager,
                 )?,
-                lamports: args.lamports,
+                tock: args.tock,
                 index: args.index,
             };
             Ok(Command::New(resolved_args))

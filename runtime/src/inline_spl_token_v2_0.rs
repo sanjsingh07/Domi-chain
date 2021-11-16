@@ -1,8 +1,8 @@
 // Partial SPL Token v2.0.x declarations inlined to avoid an external dependency on the spl-token crate
-solana_sdk::declare_id!("TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA");
+analog_sdk::declare_id!("TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA");
 
 pub(crate) mod new_token_program {
-    solana_sdk::declare_id!("nTokHfnBtpt4V6xiEbBSduiGCrQ6wSF3rxC8WeWAQ9F");
+    analog_sdk::declare_id!("nTokHfnBtpt4V6xiEbBSduiGCrQ6wSF3rxC8WeWAQ9F");
 }
 
 /*
@@ -31,7 +31,7 @@ pub mod state {
 }
 
 pub mod native_mint {
-    solana_sdk::declare_id!("So11111111111111111111111111111111111111112");
+    analog_sdk::declare_id!("So11111111111111111111111111111111111111112");
 
     /*
         Mint {

@@ -2,10 +2,10 @@ use {
     itertools::Itertools,
     serde::de::{Deserialize, Deserializer},
     serde::ser::{Serialize, Serializer},
-    solana_sdk::{
+    analog_sdk::{
         account::Account, account::AccountSharedData, instruction::InstructionError, pubkey::Pubkey,
     },
-    solana_vote_program::vote_state::VoteState,
+    analog_vote_program::vote_state::VoteState,
     std::{
         cmp::Ordering,
         collections::{hash_map::Entry, HashMap},
@@ -52,8 +52,8 @@ impl VoteAccount {
         &self.0.account
     }
 
-    pub(crate) fn lamports(&self) -> u64 {
-        self.account().lamports
+    pub(crate) fn tock(&self) -> u64 {
+        self.account().tock
     }
 
     pub fn vote_state(&self) -> RwLockReadGuard<Result<VoteState, InstructionError>> {
@@ -328,8 +328,8 @@ mod tests {
     use super::*;
     use bincode::Options;
     use rand::Rng;
-    use solana_sdk::{pubkey::Pubkey, sysvar::clock::Clock};
-    use solana_vote_program::vote_state::{VoteInit, VoteStateVersions};
+    use analog_sdk::{pubkey::Pubkey, sysvar::clock::Clock};
+    use analog_vote_program::vote_state::{VoteInit, VoteStateVersions};
     use std::iter::repeat_with;
 
     fn new_rand_vote_account<R: Rng>(
@@ -351,7 +351,7 @@ mod tests {
         };
         let vote_state = VoteState::new(&vote_init, &clock);
         let account = Account::new_data(
-            rng.gen(), // lamports
+            rng.gen(), // tock
             &VoteStateVersions::new_current(vote_state.clone()),
             &Pubkey::new_unique(), // owner
         )
@@ -395,9 +395,9 @@ mod tests {
     fn test_vote_account() {
         let mut rng = rand::thread_rng();
         let (account, vote_state) = new_rand_vote_account(&mut rng, None);
-        let lamports = account.lamports;
+        let tock = account.tock;
         let vote_account = VoteAccount::from(account);
-        assert_eq!(lamports, vote_account.lamports());
+        assert_eq!(tock, vote_account.tock());
         assert_eq!(vote_state, *vote_account.vote_state().as_ref().unwrap());
         // 2nd call to .vote_state() should return the cached value.
         assert_eq!(vote_state, *vote_account.vote_state().as_ref().unwrap());

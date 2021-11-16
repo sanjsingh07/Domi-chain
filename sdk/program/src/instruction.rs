@@ -62,7 +62,7 @@ pub enum InstructionError {
     #[error("instruction requires an initialized account")]
     UninitializedAccount,
 
-    /// Program's instruction lamport balance does not equal the balance after the instruction
+    /// Program's instructiontockbalance does not equal the balance after the instruction
     #[error("sum of account balances before and after instruction do not match")]
     UnbalancedInstruction,
 
@@ -70,7 +70,7 @@ pub enum InstructionError {
     #[error("instruction illegally modified the program id of an account")]
     ModifiedProgramId,
 
-    /// Program spent the lamports of an account that doesn't belong to it
+    /// Program spent the tock of an account that doesn't belong to it
     #[error("instruction spent from the balance of an account it does not own")]
     ExternalAccountLamportSpend,
 
@@ -78,7 +78,7 @@ pub enum InstructionError {
     #[error("instruction modified data of an account it does not own")]
     ExternalAccountDataModified,
 
-    /// Read-only account's lamports modified
+    /// Read-only account's tock modified
     #[error("instruction changed the balance of a read-only account")]
     ReadonlyLamportChange,
 
@@ -126,7 +126,7 @@ pub enum InstructionError {
     DuplicateAccountOutOfSync,
 
     /// Allows on-chain programs to implement program-specific error types and see them returned
-    /// by the Solana runtime. A program-specific error may be any type that is represented as
+    /// by the Analog runtime. A program-specific error may be any type that is represented as
     /// or serialized to a u32 integer.
     #[error("custom program error: {0:#x}")]
     Custom(u32),
@@ -140,7 +140,7 @@ pub enum InstructionError {
     #[error("instruction changed executable accounts data")]
     ExecutableDataModified,
 
-    /// Executable account's lamports modified
+    /// Executable account's tock modified
     #[error("instruction changed the balance of a executable account")]
     ExecutableLamportChange,
 
@@ -211,13 +211,13 @@ pub enum InstructionError {
     /// This error includes strings from the underlying 3rd party Borsh crate
     /// which can be dangerous because the error strings could change across
     /// Borsh versions. Only programs can use this error because they are
-    /// consistent across Solana software versions.
+    /// consistent across Analog software versions.
     ///
     #[error("Failed to serialize or deserialize account data: {0}")]
     BorshIoError(String),
 
-    /// An account does not have enough lamports to be rent-exempt
-    #[error("An account does not have enough lamports to be rent-exempt")]
+    /// An account does not have enough tock to be rent-exempt
+    #[error("An account does not have enough tock to be rent-exempt")]
     AccountNotRentExempt,
 
     /// Invalid account owner

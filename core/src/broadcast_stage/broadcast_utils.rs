@@ -1,9 +1,9 @@
 use crate::result::Result;
-use solana_entry::entry::Entry;
-use solana_ledger::shred::Shred;
-use solana_poh::poh_recorder::WorkingBankEntry;
-use solana_runtime::bank::Bank;
-use solana_sdk::clock::Slot;
+use analog_entry::entry::Entry;
+use analog_ledger::shred::Shred;
+use analog_poh::poh_recorder::WorkingBankEntry;
+use analog_runtime::bank::Bank;
+use analog_sdk::clock::Slot;
 use std::{
     sync::mpsc::Receiver,
     sync::Arc,
@@ -81,11 +81,11 @@ pub(super) fn recv_slot_entries(receiver: &Receiver<WorkingBankEntry>) -> Result
 #[cfg(test)]
 mod tests {
     use super::*;
-    use solana_ledger::genesis_utils::{create_genesis_config, GenesisConfigInfo};
-    use solana_sdk::genesis_config::GenesisConfig;
-    use solana_sdk::pubkey::Pubkey;
-    use solana_sdk::system_transaction;
-    use solana_sdk::transaction::Transaction;
+    use analog_ledger::genesis_utils::{create_genesis_config, GenesisConfigInfo};
+    use analog_sdk::genesis_config::GenesisConfig;
+    use analog_sdk::pubkey::Pubkey;
+    use analog_sdk::system_transaction;
+    use analog_sdk::transaction::Transaction;
     use std::sync::mpsc::channel;
 
     fn setup_test() -> (GenesisConfig, Arc<Bank>, Transaction) {
@@ -97,7 +97,7 @@ mod tests {
         let bank0 = Arc::new(Bank::new_for_tests(&genesis_config));
         let tx = system_transaction::transfer(
             &mint_keypair,
-            &solana_sdk::pubkey::new_rand(),
+            &analog_sdk::pubkey::new_rand(),
             1,
             genesis_config.hash(),
         );

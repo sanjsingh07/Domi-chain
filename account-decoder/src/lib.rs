@@ -16,7 +16,7 @@ pub mod validator_info;
 
 use {
     crate::parse_account_data::{parse_account_data, AccountAdditionalData, ParsedAccount},
-    solana_sdk::{
+    analog_sdk::{
         account::ReadableAccount, account::WritableAccount, clock::Epoch,
         fee_calculator::FeeCalculator, pubkey::Pubkey,
     },
@@ -34,7 +34,7 @@ pub const MAX_BASE58_BYTES: usize = 128;
 #[derive(Serialize, Deserialize, Clone, Debug)]
 #[serde(rename_all = "camelCase")]
 pub struct UiAccount {
-    pub lamports: u64,
+    pub tock: u64,
     pub data: UiAccountData,
     pub owner: String,
     pub executable: bool,
@@ -119,7 +119,7 @@ impl UiAccount {
             }
         };
         UiAccount {
-            lamports: account.lamports(),
+            tock: account.tock(),
             data,
             owner: account.owner().to_string(),
             executable: account.executable(),
@@ -148,7 +148,7 @@ impl UiAccount {
             },
         }?;
         Some(T::create(
-            self.lamports,
+            self.tock,
             data,
             Pubkey::from_str(&self.owner).ok()?,
             self.executable,
@@ -203,7 +203,7 @@ fn slice_data(data: &[u8], data_slice_config: Option<UiDataSliceConfig>) -> &[u8
 #[cfg(test)]
 mod test {
     use super::*;
-    use solana_sdk::account::{Account, AccountSharedData};
+    use analog_sdk::account::{Account, AccountSharedData};
 
     #[test]
     fn test_slice_data() {

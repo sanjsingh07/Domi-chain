@@ -49,7 +49,7 @@ export const WithdrawInfo = type({
   voteAccount: PublicKeyFromString,
   destination: PublicKeyFromString,
   withdrawAuthority: PublicKeyFromString,
-  lamports: number(),
+  tock: number(),
 });
 
 export type UpdateValidatorInfo = Infer<typeof UpdateValidatorInfo>;

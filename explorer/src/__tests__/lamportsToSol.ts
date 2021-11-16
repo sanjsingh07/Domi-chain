@@ -1,9 +1,9 @@
 import { expect } from "chai";
-import { lamportsToSol, LAMPORTS_PER_SOL } from "utils";
+import { lamportsToSol, TOCK_PER_ANLOG } from "utils";
 import BN from "bn.js";
 
 describe("lamportsToSol", () => {
-  it("0 lamports", () => {
+  it("0 tock", () => {
     expect(lamportsToSol(new BN(0))).to.eq(0.0);
   });
 
@@ -12,12 +12,12 @@ describe("lamportsToSol", () => {
     expect(lamportsToSol(new BN(-1))).to.eq(-0.000000001);
   });
 
-  it("1 SOL", () => {
-    expect(lamportsToSol(new BN(LAMPORTS_PER_SOL))).to.eq(1.0);
-    expect(lamportsToSol(new BN(-LAMPORTS_PER_SOL))).to.eq(-1.0);
+  it("1 ANLOG", () => {
+    expect(lamportsToSol(new BN(TOCK_PER_ANLOG))).to.eq(1.0);
+    expect(lamportsToSol(new BN(-TOCK_PER_ANLOG))).to.eq(-1.0);
   });
 
-  it("u64::MAX lamports", () => {
+  it("u64::MAX tock", () => {
     expect(lamportsToSol(new BN(2).pow(new BN(64)))).to.eq(
       18446744073.709551615
     );

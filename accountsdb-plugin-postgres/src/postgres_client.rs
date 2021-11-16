@@ -9,12 +9,12 @@ use {
     crossbeam_channel::{bounded, Receiver, RecvTimeoutError, Sender},
     log::*,
     postgres::{Client, NoTls, Statement},
-    solana_accountsdb_plugin_interface::accountsdb_plugin_interface::{
+    analog_accountsdb_plugin_interface::accountsdb_plugin_interface::{
         AccountsDbPluginError, ReplicaAccountInfo, SlotStatus,
     },
-    solana_measure::measure::Measure,
-    solana_metrics::*,
-    solana_sdk::timing::AtomicInterval,
+    analog_measure::measure::Measure,
+    analog_metrics::*,
+    analog_sdk::timing::AtomicInterval,
     std::{
         sync::{
             atomic::{AtomicBool, AtomicUsize, Ordering},
@@ -60,7 +60,7 @@ impl Eq for DbAccountInfo {}
 #[derive(Clone, PartialEq, Debug)]
 pub struct DbAccountInfo {
     pub pubkey: Vec<u8>,
-    pub lamports: i64,
+    pub tock: i64,
     pub owner: Vec<u8>,
     pub executable: bool,
     pub rent_epoch: i64,
@@ -87,7 +87,7 @@ impl DbAccountInfo {
         let data = account.data().to_vec();
         Self {
             pubkey: account.pubkey().to_vec(),
-            lamports: account.lamports() as i64,
+            tock: account.tock() as i64,
             owner: account.owner().to_vec(),
             executable: account.executable(),
             rent_epoch: account.rent_epoch() as i64,
@@ -101,7 +101,7 @@ impl DbAccountInfo {
 pub trait ReadableAccountInfo: Sized {
     fn pubkey(&self) -> &[u8];
     fn owner(&self) -> &[u8];
-    fn lamports(&self) -> i64;
+    fn tock(&self) -> i64;
     fn executable(&self) -> bool;
     fn rent_epoch(&self) -> i64;
     fn data(&self) -> &[u8];
@@ -117,8 +117,8 @@ impl ReadableAccountInfo for DbAccountInfo {
         &self.owner
     }
 
-    fn lamports(&self) -> i64 {
-        self.lamports
+    fn tock(&self) -> i64 {
+        self.tock
     }
 
     fn executable(&self) -> bool {
@@ -147,8 +147,8 @@ impl<'a> ReadableAccountInfo for ReplicaAccountInfo<'a> {
         self.owner
     }
 
-    fn lamports(&self) -> i64 {
-        self.lamports as i64
+    fn tock(&self) -> i64 {
+        self.tock as i64
     }
 
     fn executable(&self) -> bool {
@@ -237,7 +237,7 @@ impl SimplePostgresClient {
         let batch_size = config
             .batch_size
             .unwrap_or(DEFAULT_ACCOUNTS_INSERT_BATCH_SIZE);
-        let mut stmt = String::from("INSERT INTO account AS acct (pubkey, slot, owner, lamports, executable, rent_epoch, data, write_version, updated_on) VALUES");
+        let mut stmt = String::from("INSERT INTO account AS acct (pubkey, slot, owner, tock, executable, rent_epoch, data, write_version, updated_on) VALUES");
         for j in 0..batch_size {
             let row = j * ACCOUNT_COLUMN_COUNT;
             let val_str = format!(
@@ -260,7 +260,7 @@ impl SimplePostgresClient {
             }
         }
 
-        let handle_conflict = "ON CONFLICT (pubkey) DO UPDATE SET slot=excluded.slot, owner=excluded.owner, lamports=excluded.lamports, executable=excluded.executable, rent_epoch=excluded.rent_epoch, \
+        let handle_conflict = "ON CONFLICT (pubkey) DO UPDATE SET slot=excluded.slot, owner=excluded.owner, tock=excluded.tock, executable=excluded.executable, rent_epoch=excluded.rent_epoch, \
             data=excluded.data, write_version=excluded.write_version, updated_on=excluded.updated_on WHERE acct.slot < excluded.slot OR (\
             acct.slot = excluded.slot AND acct.write_version < excluded.write_version)";
 
@@ -286,9 +286,9 @@ impl SimplePostgresClient {
         client: &mut Client,
         config: &AccountsDbPluginPostgresConfig,
     ) -> Result<Statement, AccountsDbPluginError> {
-        let stmt = "INSERT INTO account AS acct (pubkey, slot, owner, lamports, executable, rent_epoch, data, write_version, updated_on) \
+        let stmt = "INSERT INTO account AS acct (pubkey, slot, owner, tock, executable, rent_epoch, data, write_version, updated_on) \
         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9) \
-        ON CONFLICT (pubkey) DO UPDATE SET slot=excluded.slot, owner=excluded.owner, lamports=excluded.lamports, executable=excluded.executable, rent_epoch=excluded.rent_epoch, \
+        ON CONFLICT (pubkey) DO UPDATE SET slot=excluded.slot, owner=excluded.owner, tock=excluded.tock, executable=excluded.executable, rent_epoch=excluded.rent_epoch, \
         data=excluded.data, write_version=excluded.write_version, updated_on=excluded.updated_on  WHERE acct.slot < excluded.slot OR (\
         acct.slot = excluded.slot AND acct.write_version < excluded.write_version)";
 
@@ -359,7 +359,7 @@ impl SimplePostgresClient {
         statement: &Statement,
         client: &mut Client,
     ) -> Result<(), AccountsDbPluginError> {
-        let lamports = account.lamports() as i64;
+        let tock = account.tock() as i64;
         let rent_epoch = account.rent_epoch() as i64;
         let updated_on = Utc::now().naive_utc();
         let result = client.query(
@@ -368,7 +368,7 @@ impl SimplePostgresClient {
                 &account.pubkey(),
                 &account.slot,
                 &account.owner(),
-                &lamports,
+                &tock,
                 &account.executable(),
                 &rent_epoch,
                 &account.data(),
@@ -416,7 +416,7 @@ impl SimplePostgresClient {
                 values.push(&account.pubkey);
                 values.push(&account.slot);
                 values.push(&account.owner);
-                values.push(&account.lamports);
+                values.push(&account.tock);
                 values.push(&account.executable);
                 values.push(&account.rent_epoch);
                 values.push(&account.data);

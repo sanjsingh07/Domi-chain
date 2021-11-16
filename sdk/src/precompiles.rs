@@ -1,4 +1,4 @@
-//! Solana precompiled programs
+//! Analog precompiled programs
 
 #![cfg(feature = "full")]
 

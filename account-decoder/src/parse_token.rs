@@ -2,7 +2,7 @@ use crate::{
     parse_account_data::{ParsableAccount, ParseAccountError},
     StringAmount, StringDecimals,
 };
-use solana_sdk::pubkey::Pubkey;
+use analog_sdk::pubkey::Pubkey;
 use spl_token_v2_0::{
     solana_program::{
         program_option::COption, program_pack::Pack, pubkey::Pubkey as SplTokenPubkey,
@@ -12,23 +12,23 @@ use spl_token_v2_0::{
 use std::str::FromStr;
 
 // A helper function to convert spl_token_v2_0::id() as spl_sdk::pubkey::Pubkey to
-// solana_sdk::pubkey::Pubkey
+// analog_sdk::pubkey::Pubkey
 pub fn spl_token_id_v2_0() -> Pubkey {
     Pubkey::new_from_array(spl_token_v2_0::id().to_bytes())
 }
 
 // A helper function to convert spl_token_v2_0::native_mint::id() as spl_sdk::pubkey::Pubkey to
-// solana_sdk::pubkey::Pubkey
+// analog_sdk::pubkey::Pubkey
 pub fn spl_token_v2_0_native_mint() -> Pubkey {
     Pubkey::new_from_array(spl_token_v2_0::native_mint::id().to_bytes())
 }
 
-// A helper function to convert a solana_sdk::pubkey::Pubkey to spl_sdk::pubkey::Pubkey
+// A helper function to convert a analog_sdk::pubkey::Pubkey to spl_sdk::pubkey::Pubkey
 pub fn spl_token_v2_0_pubkey(pubkey: &Pubkey) -> SplTokenPubkey {
     SplTokenPubkey::new_from_array(pubkey.to_bytes())
 }
 
-// A helper function to convert a spl_sdk::pubkey::Pubkey to solana_sdk::pubkey::Pubkey
+// A helper function to convert a spl_sdk::pubkey::Pubkey to analog_sdk::pubkey::Pubkey
 pub fn pubkey_from_spl_token_v2_0(pubkey: &SplTokenPubkey) -> Pubkey {
     Pubkey::new_from_array(pubkey.to_bytes())
 }

@@ -2,14 +2,14 @@
 
 extern crate test;
 
-use solana_bpf_loader_program::serialization::{
+use analog_bpf_loader_program::serialization::{
     serialize_parameters_aligned, serialize_parameters_unaligned,
 };
-use solana_sdk::{
+use analog_sdk::{
     account::{Account, AccountSharedData},
     bpf_loader,
 };
-use solana_sdk::{keyed_account::KeyedAccount, pubkey::Pubkey};
+use analog_sdk::{keyed_account::KeyedAccount, pubkey::Pubkey};
 use std::cell::RefCell;
 use test::Bencher;
 
@@ -19,22 +19,22 @@ fn create_inputs() -> (
     Vec<RefCell<AccountSharedData>>,
     Vec<u8>,
 ) {
-    let program_id = solana_sdk::pubkey::new_rand();
-    let dup_key = solana_sdk::pubkey::new_rand();
-    let dup_key2 = solana_sdk::pubkey::new_rand();
+    let program_id = analog_sdk::pubkey::new_rand();
+    let dup_key = analog_sdk::pubkey::new_rand();
+    let dup_key2 = analog_sdk::pubkey::new_rand();
     let keys = vec![
         dup_key,
         dup_key,
-        solana_sdk::pubkey::new_rand(),
-        solana_sdk::pubkey::new_rand(),
+        analog_sdk::pubkey::new_rand(),
+        analog_sdk::pubkey::new_rand(),
         dup_key2,
         dup_key2,
-        solana_sdk::pubkey::new_rand(),
-        solana_sdk::pubkey::new_rand(),
+        analog_sdk::pubkey::new_rand(),
+        analog_sdk::pubkey::new_rand(),
     ];
     let accounts = vec![
         RefCell::new(AccountSharedData::from(Account {
-            lamports: 1,
+            tock: 1,
             data: vec![1u8, 2, 3, 4, 5],
             owner: bpf_loader::id(),
             executable: false,
@@ -42,28 +42,28 @@ fn create_inputs() -> (
         })),
         // dup
         RefCell::new(AccountSharedData::from(Account {
-            lamports: 1,
+            tock: 1,
             data: vec![1u8; 100000],
             owner: bpf_loader::id(),
             executable: false,
             rent_epoch: 100,
         })),
         RefCell::new(AccountSharedData::from(Account {
-            lamports: 2,
+            tock: 2,
             data: vec![11u8; 100000],
             owner: bpf_loader::id(),
             executable: true,
             rent_epoch: 200,
         })),
         RefCell::new(AccountSharedData::from(Account {
-            lamports: 3,
+            tock: 3,
             data: vec![],
             owner: bpf_loader::id(),
             executable: false,
             rent_epoch: 3100,
         })),
         RefCell::new(AccountSharedData::from(Account {
-            lamports: 4,
+            tock: 4,
             data: vec![1u8; 100000],
             owner: bpf_loader::id(),
             executable: false,
@@ -71,21 +71,21 @@ fn create_inputs() -> (
         })),
         // dup
         RefCell::new(AccountSharedData::from(Account {
-            lamports: 4,
+            tock: 4,
             data: vec![1u8; 1000000],
             owner: bpf_loader::id(),
             executable: false,
             rent_epoch: 100,
         })),
         RefCell::new(AccountSharedData::from(Account {
-            lamports: 5,
+            tock: 5,
             data: vec![11u8; 10000],
             owner: bpf_loader::id(),
             executable: true,
             rent_epoch: 200,
         })),
         RefCell::new(AccountSharedData::from(Account {
-            lamports: 6,
+            tock: 6,
             data: vec![],
             owner: bpf_loader::id(),
             executable: false,

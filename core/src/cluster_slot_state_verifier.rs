@@ -3,8 +3,8 @@ use crate::{
     fork_choice::ForkChoice,
     heaviest_subtree_fork_choice::HeaviestSubtreeForkChoice,
 };
-use solana_ledger::blockstore::Blockstore;
-use solana_sdk::{clock::Slot, hash::Hash};
+use analog_ledger::blockstore::Blockstore;
+use analog_sdk::{clock::Slot, hash::Hash};
 use std::collections::{BTreeMap, BTreeSet, HashMap};
 
 pub(crate) type DuplicateSlotsTracker = BTreeSet<Slot>;
@@ -808,7 +808,7 @@ mod test {
     use super::*;
     use crate::{progress_map::ProgressMap, replay_stage::tests::setup_forks_from_tree};
     use crossbeam_channel::unbounded;
-    use solana_runtime::bank_forks::BankForks;
+    use analog_runtime::bank_forks::BankForks;
     use std::{
         collections::{HashMap, HashSet},
         sync::{Arc, RwLock},

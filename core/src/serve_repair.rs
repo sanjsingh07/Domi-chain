@@ -12,23 +12,23 @@ use rand::{
     distributions::{Distribution, WeightedError, WeightedIndex},
     Rng,
 };
-use solana_gossip::{
+use analog_gossip::{
     cluster_info::{ClusterInfo, ClusterInfoError},
     contact_info::ContactInfo,
     weighted_shuffle::{weighted_best, weighted_shuffle},
 };
-use solana_ledger::{
+use analog_ledger::{
     ancestor_iterator::{AncestorIterator, AncestorIteratorWithHash},
     blockstore::Blockstore,
     shred::{Nonce, Shred, SIZE_OF_NONCE},
 };
-use solana_measure::measure::Measure;
-use solana_metrics::inc_new_counter_debug;
-use solana_perf::packet::{limited_deserialize, Packets, PacketsRecycler};
-use solana_sdk::{
+use analog_measure::measure::Measure;
+use analog_metrics::inc_new_counter_debug;
+use analog_perf::packet::{limited_deserialize, Packets, PacketsRecycler};
+use analog_sdk::{
     clock::Slot, hash::Hash, packet::PACKET_DATA_SIZE, pubkey::Pubkey, timing::duration_as_ms,
 };
-use solana_streamer::streamer::{PacketReceiver, PacketSender};
+use analog_streamer::streamer::{PacketReceiver, PacketSender};
 use std::{
     collections::HashSet,
     net::SocketAddr,
@@ -395,7 +395,7 @@ impl ServeRepair {
         let exit = exit.clone();
         let recycler = PacketsRecycler::default();
         Builder::new()
-            .name("solana-repair-listen".to_string())
+            .name("analog-repair-listen".to_string())
             .spawn(move || {
                 let mut last_print = Instant::now();
                 let mut stats = ServeRepairStats::default();
@@ -514,7 +514,7 @@ impl ServeRepair {
         };
         let (peer, addr) = repair_peers.sample(&mut rand::thread_rng());
         let nonce =
-            outstanding_requests.add_request(repair_request, solana_sdk::timing::timestamp());
+            outstanding_requests.add_request(repair_request, analog_sdk::timing::timestamp());
         let out = self.map_repair_request(&repair_request, &peer, repair_stats, nonce)?;
         Ok((addr, out))
     }
@@ -532,7 +532,7 @@ impl ServeRepair {
         let weights = cluster_slots.compute_weights_exclude_nonfrozen(slot, &repair_peers);
         let mut sampled_validators = weighted_shuffle(
             weights.into_iter().map(|(stake, _i)| stake),
-            solana_sdk::pubkey::new_rand().to_bytes(),
+            analog_sdk::pubkey::new_rand().to_bytes(),
         );
         sampled_validators.truncate(ANCESTOR_HASH_REPAIR_SAMPLE_SIZE);
         Ok(sampled_validators
@@ -552,7 +552,7 @@ impl ServeRepair {
             return Err(ClusterInfoError::NoPeers.into());
         }
         let weights = cluster_slots.compute_weights_exclude_nonfrozen(slot, &repair_peers);
-        let n = weighted_best(&weights, solana_sdk::pubkey::new_rand().to_bytes());
+        let n = weighted_best(&weights, analog_sdk::pubkey::new_rand().to_bytes());
         Ok((repair_peers[n].id, repair_peers[n].serve_repair))
     }
 
@@ -754,16 +754,16 @@ impl ServeRepair {
 mod tests {
     use super::*;
     use crate::{repair_response, result::Error};
-    use solana_gossip::{socketaddr, socketaddr_any};
-    use solana_ledger::get_tmp_ledger_path;
-    use solana_ledger::{
+    use analog_gossip::{socketaddr, socketaddr_any};
+    use analog_ledger::get_tmp_ledger_path;
+    use analog_ledger::{
         blockstore::make_many_slot_entries,
         blockstore_processor::fill_blockstore_slot_with_ticks,
         shred::{max_ticks_per_n_shreds, Shred},
     };
-    use solana_perf::packet::Packet;
-    use solana_sdk::{hash::Hash, pubkey::Pubkey, signature::Keypair, timing::timestamp};
-    use solana_streamer::socket::SocketAddrSpace;
+    use analog_perf::packet::Packet;
+    use analog_sdk::{hash::Hash, pubkey::Pubkey, signature::Keypair, timing::timestamp};
+    use analog_streamer::socket::SocketAddrSpace;
 
     #[test]
     fn test_run_highest_window_request() {
@@ -773,7 +773,7 @@ mod tests {
     /// test run_window_request responds with the right shred, and do not overrun
     fn run_highest_window_request(slot: Slot, num_slots: u64, nonce: Nonce) {
         let recycler = PacketsRecycler::default();
-        solana_logger::setup();
+        analog_logger::setup();
         let ledger_path = get_tmp_ledger_path!();
         {
             let blockstore = Arc::new(Blockstore::open(&ledger_path).unwrap());
@@ -843,12 +843,12 @@ mod tests {
     /// test window requests respond with the right shred, and do not overrun
     fn run_window_request(slot: Slot, nonce: Nonce) {
         let recycler = PacketsRecycler::default();
-        solana_logger::setup();
+        analog_logger::setup();
         let ledger_path = get_tmp_ledger_path!();
         {
             let blockstore = Arc::new(Blockstore::open(&ledger_path).unwrap());
             let me = ContactInfo {
-                id: solana_sdk::pubkey::new_rand(),
+                id: analog_sdk::pubkey::new_rand(),
                 gossip: socketaddr!("127.0.0.1:1234"),
                 tvu: socketaddr!("127.0.0.1:1235"),
                 tvu_forwards: socketaddr!("127.0.0.1:1236"),
@@ -919,7 +919,7 @@ mod tests {
     #[test]
     fn window_index_request() {
         let cluster_slots = ClusterSlots::default();
-        let me = ContactInfo::new_localhost(&solana_sdk::pubkey::new_rand(), timestamp());
+        let me = ContactInfo::new_localhost(&analog_sdk::pubkey::new_rand(), timestamp());
         let cluster_info = Arc::new(new_test_cluster_info(me));
         let serve_repair = ServeRepair::new(cluster_info.clone());
         let mut outstanding_requests = OutstandingShredRepairs::default();
@@ -935,7 +935,7 @@ mod tests {
 
         let serve_repair_addr = socketaddr!([127, 0, 0, 1], 1243);
         let nxt = ContactInfo {
-            id: solana_sdk::pubkey::new_rand(),
+            id: analog_sdk::pubkey::new_rand(),
             gossip: socketaddr!([127, 0, 0, 1], 1234),
             tvu: socketaddr!([127, 0, 0, 1], 1235),
             tvu_forwards: socketaddr!([127, 0, 0, 1], 1236),
@@ -965,7 +965,7 @@ mod tests {
 
         let serve_repair_addr2 = socketaddr!([127, 0, 0, 2], 1243);
         let nxt = ContactInfo {
-            id: solana_sdk::pubkey::new_rand(),
+            id: analog_sdk::pubkey::new_rand(),
             gossip: socketaddr!([127, 0, 0, 1], 1234),
             tvu: socketaddr!([127, 0, 0, 1], 1235),
             tvu_forwards: socketaddr!([127, 0, 0, 1], 1236),
@@ -1010,7 +1010,7 @@ mod tests {
     }
 
     fn run_orphan(slot: Slot, num_slots: u64, nonce: Nonce) {
-        solana_logger::setup();
+        analog_logger::setup();
         let recycler = PacketsRecycler::default();
         let ledger_path = get_tmp_ledger_path!();
         {
@@ -1084,7 +1084,7 @@ mod tests {
 
     #[test]
     fn run_orphan_corrupted_shred_size() {
-        solana_logger::setup();
+        analog_logger::setup();
         let recycler = PacketsRecycler::default();
         let ledger_path = get_tmp_ledger_path!();
         {
@@ -1145,7 +1145,7 @@ mod tests {
 
     #[test]
     fn test_run_ancestor_hashes() {
-        solana_logger::setup();
+        analog_logger::setup();
         let recycler = PacketsRecycler::default();
         let ledger_path = get_tmp_ledger_path!();
         {
@@ -1229,14 +1229,14 @@ mod tests {
     #[test]
     fn test_repair_with_repair_validators() {
         let cluster_slots = ClusterSlots::default();
-        let me = ContactInfo::new_localhost(&solana_sdk::pubkey::new_rand(), timestamp());
+        let me = ContactInfo::new_localhost(&analog_sdk::pubkey::new_rand(), timestamp());
         let cluster_info = Arc::new(new_test_cluster_info(me.clone()));
 
         // Insert two peers on the network
         let contact_info2 =
-            ContactInfo::new_localhost(&solana_sdk::pubkey::new_rand(), timestamp());
+            ContactInfo::new_localhost(&analog_sdk::pubkey::new_rand(), timestamp());
         let contact_info3 =
-            ContactInfo::new_localhost(&solana_sdk::pubkey::new_rand(), timestamp());
+            ContactInfo::new_localhost(&analog_sdk::pubkey::new_rand(), timestamp());
         cluster_info.insert_info(contact_info2.clone());
         cluster_info.insert_info(contact_info3.clone());
         let serve_repair = ServeRepair::new(cluster_info);
@@ -1245,7 +1245,7 @@ mod tests {
         // 1) repair validator set doesn't exist in gossip
         // 2) repair validator set only includes our own id
         // then no repairs should be generated
-        for pubkey in &[solana_sdk::pubkey::new_rand(), me.id] {
+        for pubkey in &[analog_sdk::pubkey::new_rand(), me.id] {
             let trusted_validators = Some(vec![*pubkey].into_iter().collect());
             assert!(serve_repair.repair_peers(&trusted_validators, 1).is_empty());
             assert!(serve_repair

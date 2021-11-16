@@ -6,18 +6,18 @@ extern crate test;
 use dashmap::DashMap;
 use rand::Rng;
 use rayon::iter::{IntoParallelRefIterator, ParallelIterator};
-use solana_runtime::{
+use analog_runtime::{
     accounts::{create_test_accounts, AccountAddressFilter, Accounts},
     accounts_db::AccountShrinkThreshold,
     accounts_index::AccountSecondaryIndexes,
     ancestors::Ancestors,
     bank::*,
 };
-use solana_sdk::{
+use analog_sdk::{
     account::{AccountSharedData, ReadableAccount},
     genesis_config::{create_genesis_config, ClusterType},
     hash::Hash,
-    lamports::LamportsError,
+    tock::LamportsError,
     pubkey::Pubkey,
 };
 use std::{
@@ -30,7 +30,7 @@ use test::Bencher;
 
 fn deposit_many(bank: &Bank, pubkeys: &mut Vec<Pubkey>, num: usize) -> Result<(), LamportsError> {
     for t in 0..num {
-        let pubkey = solana_sdk::pubkey::new_rand();
+        let pubkey = analog_sdk::pubkey::new_rand();
         let account =
             AccountSharedData::new((t + 1) as u64, 0, AccountSharedData::default().owner());
         pubkeys.push(pubkey);
@@ -121,7 +121,7 @@ fn test_accounts_hash_bank_hash(bencher: &mut Bencher) {
 
 #[bench]
 fn test_update_accounts_hash(bencher: &mut Bencher) {
-    solana_logger::setup();
+    analog_logger::setup();
     let accounts = Accounts::new_with_config_for_benches(
         vec![PathBuf::from("update_accounts_hash")],
         &ClusterType::Development,
@@ -139,7 +139,7 @@ fn test_update_accounts_hash(bencher: &mut Bencher) {
 
 #[bench]
 fn test_accounts_delta_hash(bencher: &mut Bencher) {
-    solana_logger::setup();
+    analog_logger::setup();
     let accounts = Accounts::new_with_config_for_benches(
         vec![PathBuf::from("accounts_delta_hash")],
         &ClusterType::Development,
@@ -156,7 +156,7 @@ fn test_accounts_delta_hash(bencher: &mut Bencher) {
 
 #[bench]
 fn bench_delete_dependencies(bencher: &mut Bencher) {
-    solana_logger::setup();
+    analog_logger::setup();
     let accounts = Accounts::new_with_config_for_benches(
         vec![PathBuf::from("accounts_delete_deps")],
         &ClusterType::Development,
@@ -167,7 +167,7 @@ fn bench_delete_dependencies(bencher: &mut Bencher) {
     let mut old_pubkey = Pubkey::default();
     let zero_account = AccountSharedData::new(0, 0, AccountSharedData::default().owner());
     for i in 0..1000 {
-        let pubkey = solana_sdk::pubkey::new_rand();
+        let pubkey = analog_sdk::pubkey::new_rand();
         let account =
             AccountSharedData::new((i + 1) as u64, 0, AccountSharedData::default().owner());
         accounts.store_slow_uncached(i, &pubkey, &account);
@@ -204,7 +204,7 @@ fn store_accounts_with_possible_contention<F: 'static>(
     let pubkeys: Arc<Vec<_>> = Arc::new(
         (0..num_keys)
             .map(|_| {
-                let pubkey = solana_sdk::pubkey::new_rand();
+                let pubkey = analog_sdk::pubkey::new_rand();
                 let account = AccountSharedData::new(1, 0, AccountSharedData::default().owner());
                 accounts.store_slow_uncached(slot, &pubkey, &account);
                 pubkey
@@ -232,7 +232,7 @@ fn store_accounts_with_possible_contention<F: 'static>(
             // Write to a different slot than the one being read from. Because
             // there's a new account pubkey being written to every time, will
             // compete for the accounts index lock on every store
-            accounts.store_slow_uncached(slot + 1, &solana_sdk::pubkey::new_rand(), account);
+            accounts.store_slow_uncached(slot + 1, &analog_sdk::pubkey::new_rand(), account);
         }
     })
 }
@@ -391,9 +391,9 @@ fn bench_load_largest_accounts(b: &mut Bencher) {
     );
     let mut rng = rand::thread_rng();
     for _ in 0..10_000 {
-        let lamports = rng.gen();
+        let tock = rng.gen();
         let pubkey = Pubkey::new_unique();
-        let account = AccountSharedData::new(lamports, 0, &Pubkey::default());
+        let account = AccountSharedData::new(tock, 0, &Pubkey::default());
         accounts.store_slow_uncached(0, &pubkey, &account);
     }
     let ancestors = Ancestors::from(vec![0]);

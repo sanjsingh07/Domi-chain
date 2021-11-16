@@ -5,9 +5,9 @@
 // set and halt the node if a mismatch is detected.
 
 use rayon::ThreadPool;
-use solana_gossip::cluster_info::{ClusterInfo, MAX_SNAPSHOT_HASHES};
-use solana_measure::measure::Measure;
-use solana_runtime::{
+use analog_gossip::cluster_info::{ClusterInfo, MAX_SNAPSHOT_HASHES};
+use analog_measure::measure::Measure;
+use analog_runtime::{
     accounts_db::{self, AccountsDb},
     accounts_hash::HashStats,
     snapshot_config::SnapshotConfig,
@@ -17,7 +17,7 @@ use solana_runtime::{
     },
     sorted_storages::SortedStorages,
 };
-use solana_sdk::{clock::Slot, hash::Hash, pubkey::Pubkey};
+use analog_sdk::{clock::Slot, hash::Hash, pubkey::Pubkey};
 use std::collections::{HashMap, HashSet};
 use std::{
     path::{Path, PathBuf},
@@ -49,7 +49,7 @@ impl AccountsHashVerifier {
         let exit = exit.clone();
         let cluster_info = cluster_info.clone();
         let t_accounts_hash_verifier = Builder::new()
-            .name("solana-hash-accounts".to_string())
+            .name("analog-hash-accounts".to_string())
             .spawn(move || {
                 let mut hashes = vec![];
                 let mut thread_pool = None;
@@ -127,7 +127,7 @@ impl AccountsHashVerifier {
         let mut measure_hash = Measure::start("hash");
         if let Some(expected_hash) = accounts_package.hash_for_testing {
             let sorted_storages = SortedStorages::new(&accounts_package.snapshot_storages);
-            let (hash, lamports) = AccountsDb::calculate_accounts_hash_without_index(
+            let (hash, tock) = AccountsDb::calculate_accounts_hash_without_index(
                 ledger_path,
                 &sorted_storages,
                 thread_pool,
@@ -139,7 +139,7 @@ impl AccountsHashVerifier {
             )
             .unwrap();
 
-            assert_eq!(accounts_package.expected_capitalization, lamports);
+            assert_eq!(accounts_package.expected_capitalization, tock);
             assert_eq!(expected_hash, hash);
         };
         measure_hash.stop();
@@ -164,7 +164,7 @@ impl AccountsHashVerifier {
         {
             // For testing, publish an invalid hash to gossip.
             use rand::{thread_rng, Rng};
-            use solana_sdk::hash::extend_and_hash;
+            use analog_sdk::hash::extend_and_hash;
             warn!("inserting fault at slot: {}", accounts_package.slot);
             let rand = thread_rng().gen_range(0, 10);
             let hash = extend_and_hash(&hash, &[rand]);
@@ -278,14 +278,14 @@ impl AccountsHashVerifier {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use solana_gossip::{cluster_info::make_accounts_hashes_message, contact_info::ContactInfo};
-    use solana_runtime::snapshot_utils::{ArchiveFormat, SnapshotVersion};
-    use solana_sdk::{
+    use analog_gossip::{cluster_info::make_accounts_hashes_message, contact_info::ContactInfo};
+    use analog_runtime::snapshot_utils::{ArchiveFormat, SnapshotVersion};
+    use analog_sdk::{
         genesis_config::ClusterType,
         hash::hash,
         signature::{Keypair, Signer},
     };
-    use solana_streamer::socket::SocketAddrSpace;
+    use analog_streamer::socket::SocketAddrSpace;
 
     fn new_test_cluster_info(contact_info: ContactInfo) -> ClusterInfo {
         ClusterInfo::new(
@@ -330,7 +330,7 @@ mod tests {
 
     #[test]
     fn test_max_hashes() {
-        solana_logger::setup();
+        analog_logger::setup();
         use std::path::PathBuf;
         use tempfile::TempDir;
         let keypair = Keypair::new();

@@ -6,7 +6,7 @@ use libloading::os::windows::*;
 use log::*;
 use num_derive::{FromPrimitive, ToPrimitive};
 use serde::Serialize;
-use solana_sdk::{
+use analog_sdk::{
     account::ReadableAccount,
     decode_error::DecodeError,
     instruction::InstructionError,

@@ -2,7 +2,7 @@ import React from "react";
 import { fetch } from "cross-fetch";
 
 const FLAGGED_REGISTRY =
-  "https://solana-labs.github.io/solana-flagged-accounts/flagged.txt";
+  "https://analog-labs.github.io/analog-flagged-accounts/flagged.txt";
 
 type FlaggedMap = Map<string, boolean>;
 type ProviderProps = { children: React.ReactNode };

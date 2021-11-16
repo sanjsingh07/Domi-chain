@@ -4,7 +4,7 @@
 #![allow(unreachable_code)]
 
 use crate::instructions::*;
-use solana_bpf_rust_invoked::instructions::*;
+use analog_bpf_rust_invoked::instructions::*;
 use solana_program::{
     account_info::AccountInfo,
     entrypoint,
@@ -20,10 +20,10 @@ use solana_program::{
 fn do_nested_invokes(num_nested_invokes: u64, accounts: &[AccountInfo]) -> ProgramResult {
     assert!(accounts[ARGUMENT_INDEX].is_signer);
 
-    let pre_argument_lamports = accounts[ARGUMENT_INDEX].lamports();
-    let pre_invoke_argument_lamports = accounts[INVOKED_ARGUMENT_INDEX].lamports();
-    **accounts[ARGUMENT_INDEX].lamports.borrow_mut() -= 5;
-    **accounts[INVOKED_ARGUMENT_INDEX].lamports.borrow_mut() += 5;
+    let pre_argument_lamports = accounts[ARGUMENT_INDEX].tock();
+    let pre_invoke_argument_lamports = accounts[INVOKED_ARGUMENT_INDEX].tock();
+    **accounts[ARGUMENT_INDEX].tock.borrow_mut() -= 5;
+    **accounts[INVOKED_ARGUMENT_INDEX].tock.borrow_mut() += 5;
 
     msg!("First invoke");
     let instruction = create_instruction(
@@ -40,11 +40,11 @@ fn do_nested_invokes(num_nested_invokes: u64, accounts: &[AccountInfo]) -> Progr
     invoke(&instruction, accounts)?;
 
     assert_eq!(
-        accounts[ARGUMENT_INDEX].lamports(),
+        accounts[ARGUMENT_INDEX].tock(),
         pre_argument_lamports - 5 + (2 * num_nested_invokes)
     );
     assert_eq!(
-        accounts[INVOKED_ARGUMENT_INDEX].lamports(),
+        accounts[INVOKED_ARGUMENT_INDEX].tock(),
         pre_invoke_argument_lamports + 5 - (2 * num_nested_invokes)
     );
     Ok(())
@@ -66,8 +66,8 @@ fn process_instruction(
         TEST_SUCCESS => {
             msg!("Call system program create account");
             {
-                let from_lamports = accounts[FROM_INDEX].lamports();
-                let to_lamports = accounts[DERIVED_KEY1_INDEX].lamports();
+                let from_lamports = accounts[FROM_INDEX].tock();
+                let to_lamports = accounts[DERIVED_KEY1_INDEX].tock();
                 assert_eq!(accounts[DERIVED_KEY1_INDEX].data_len(), 0);
                 assert!(solana_program::system_program::check_id(
                     accounts[DERIVED_KEY1_INDEX].owner
@@ -86,8 +86,8 @@ fn process_instruction(
                     &[&[b"You pass butter", &[bump_seed1]]],
                 )?;
 
-                assert_eq!(accounts[FROM_INDEX].lamports(), from_lamports - 42);
-                assert_eq!(accounts[DERIVED_KEY1_INDEX].lamports(), to_lamports + 42);
+                assert_eq!(accounts[FROM_INDEX].tock(), from_lamports - 42);
+                assert_eq!(accounts[DERIVED_KEY1_INDEX].tock(), to_lamports + 42);
                 assert_eq!(program_id, accounts[DERIVED_KEY1_INDEX].owner);
                 assert_eq!(
                     accounts[DERIVED_KEY1_INDEX].data_len(),
@@ -104,16 +104,16 @@ fn process_instruction(
 
             msg!("Call system program transfer");
             {
-                let from_lamports = accounts[FROM_INDEX].lamports();
-                let to_lamports = accounts[DERIVED_KEY1_INDEX].lamports();
+                let from_lamports = accounts[FROM_INDEX].tock();
+                let to_lamports = accounts[DERIVED_KEY1_INDEX].tock();
                 let instruction = system_instruction::transfer(
                     accounts[FROM_INDEX].key,
                     accounts[DERIVED_KEY1_INDEX].key,
                     1,
                 );
                 invoke(&instruction, accounts)?;
-                assert_eq!(accounts[FROM_INDEX].lamports(), from_lamports - 1);
-                assert_eq!(accounts[DERIVED_KEY1_INDEX].lamports(), to_lamports + 1);
+                assert_eq!(accounts[FROM_INDEX].tock(), from_lamports - 1);
+                assert_eq!(accounts[DERIVED_KEY1_INDEX].tock(), to_lamports + 1);
             }
 
             msg!("Test data translation");
@@ -166,7 +166,7 @@ fn process_instruction(
                 invoke(&instruction, accounts)?;
 
                 {
-                    // writable but lamports borrow_mut'd
+                    // writable but tock borrow_mut'd
                     let _ref_mut = accounts[writable].try_borrow_mut_lamports()?;
                     assert_eq!(
                         invoke(&instruction, accounts),
@@ -182,7 +182,7 @@ fn process_instruction(
                     );
                 }
                 {
-                    // writable but lamports borrow'd
+                    // writable but tock borrow'd
                     let _ref_mut = accounts[writable].try_borrow_lamports()?;
                     assert_eq!(
                         invoke(&instruction, accounts),
@@ -198,7 +198,7 @@ fn process_instruction(
                     );
                 }
                 {
-                    // readable but lamports borrow_mut'd
+                    // readable but tock borrow_mut'd
                     let _ref_mut = accounts[readable].try_borrow_mut_lamports()?;
                     assert_eq!(
                         invoke(&instruction, accounts),
@@ -214,7 +214,7 @@ fn process_instruction(
                     );
                 }
                 {
-                    // readable but lamports borrow'd
+                    // readable but tock borrow'd
                     let _ref_mut = accounts[readable].try_borrow_lamports()?;
                     invoke(&instruction, accounts)?;
                 }
@@ -342,8 +342,8 @@ fn process_instruction(
 
             msg!("Create account and init data");
             {
-                let from_lamports = accounts[FROM_INDEX].lamports();
-                let to_lamports = accounts[DERIVED_KEY2_INDEX].lamports();
+                let from_lamports = accounts[FROM_INDEX].tock();
+                let to_lamports = accounts[DERIVED_KEY2_INDEX].tock();
 
                 let instruction = create_instruction(
                     *accounts[INVOKED_PROGRAM_INDEX].key,
@@ -356,8 +356,8 @@ fn process_instruction(
                 );
                 invoke(&instruction, accounts)?;
 
-                assert_eq!(accounts[FROM_INDEX].lamports(), from_lamports - 1);
-                assert_eq!(accounts[DERIVED_KEY2_INDEX].lamports(), to_lamports + 1);
+                assert_eq!(accounts[FROM_INDEX].tock(), from_lamports - 1);
+                assert_eq!(accounts[DERIVED_KEY2_INDEX].tock(), to_lamports + 1);
                 let data = accounts[DERIVED_KEY2_INDEX].try_borrow_mut_data()?;
                 assert_eq!(data[0], 0x0e);
                 assert_eq!(data[MAX_PERMITTED_DATA_INCREASE - 1], 0x0f);
@@ -493,26 +493,26 @@ fn process_instruction(
             let ptr = accounts[FROM_INDEX].data.borrow().as_ptr() as u64 as *mut _;
             let len = accounts[FROM_INDEX].data_len();
             let data = unsafe { std::slice::from_raw_parts_mut(ptr, len) };
-            let mut lamports = accounts[FROM_INDEX].lamports();
+            let mut tock = accounts[FROM_INDEX].tock();
             let from_info =
-                AccountInfo::new(&pubkey, false, true, &mut lamports, data, &owner, false, 0);
+                AccountInfo::new(&pubkey, false, true, &mut tock, data, &owner, false, 0);
 
             let pubkey = *accounts[DERIVED_KEY1_INDEX].key;
             let owner = *accounts[DERIVED_KEY1_INDEX].owner;
             // Point to top edge of heap, attempt to allocate into unprivileged memory
             let data = unsafe { std::slice::from_raw_parts_mut(0x300007ff8 as *mut _, 0) };
-            let mut lamports = accounts[DERIVED_KEY1_INDEX].lamports();
+            let mut tock = accounts[DERIVED_KEY1_INDEX].tock();
             let derived_info =
-                AccountInfo::new(&pubkey, false, true, &mut lamports, data, &owner, false, 0);
+                AccountInfo::new(&pubkey, false, true, &mut tock, data, &owner, false, 0);
 
             let pubkey = *accounts[SYSTEM_PROGRAM_INDEX].key;
             let owner = *accounts[SYSTEM_PROGRAM_INDEX].owner;
             let ptr = accounts[SYSTEM_PROGRAM_INDEX].data.borrow().as_ptr() as u64 as *mut _;
             let len = accounts[SYSTEM_PROGRAM_INDEX].data_len();
             let data = unsafe { std::slice::from_raw_parts_mut(ptr, len) };
-            let mut lamports = accounts[SYSTEM_PROGRAM_INDEX].lamports();
+            let mut tock = accounts[SYSTEM_PROGRAM_INDEX].tock();
             let system_info =
-                AccountInfo::new(&pubkey, false, false, &mut lamports, data, &owner, true, 0);
+                AccountInfo::new(&pubkey, false, false, &mut tock, data, &owner, true, 0);
 
             let instruction = system_instruction::create_account(
                 accounts[FROM_INDEX].key,
@@ -603,14 +603,14 @@ fn process_instruction(
             let _ = do_nested_invokes(5, accounts);
         }
         TEST_EXECUTABLE_LAMPORTS => {
-            msg!("Test executable lamports");
+            msg!("Test executable tock");
             let mut accounts = accounts.to_vec();
 
-            // set account to executable and subtract lamports
+            // set account to executable and subtract tock
             accounts[ARGUMENT_INDEX].executable = true;
-            **(*accounts[ARGUMENT_INDEX].lamports).borrow_mut() -= 1;
-            // add lamports to dest account
-            **(*accounts[DERIVED_KEY1_INDEX].lamports).borrow_mut() += 1;
+            **(*accounts[ARGUMENT_INDEX].tock).borrow_mut() -= 1;
+            // add tock to dest account
+            **(*accounts[DERIVED_KEY1_INDEX].tock).borrow_mut() += 1;
 
             let instruction = create_instruction(
                 *program_id,
@@ -623,7 +623,7 @@ fn process_instruction(
             let _ = invoke(&instruction, &accounts);
 
             // reset executable account
-            **(*accounts[ARGUMENT_INDEX].lamports).borrow_mut() += 1;
+            **(*accounts[ARGUMENT_INDEX].tock).borrow_mut() += 1;
         }
         TEST_CALL_PRECOMPILE => {
             msg!("Test calling precompiled program from cpi");
@@ -633,7 +633,7 @@ fn process_instruction(
         }
         ADD_LAMPORTS => {
             // make sure the total balance is fine
-            **accounts[0].lamports.borrow_mut() += 1;
+            **accounts[0].tock.borrow_mut() += 1;
         }
         TEST_RETURN_DATA_TOO_LARGE => {
             set_return_data(&[1u8; 1028]);

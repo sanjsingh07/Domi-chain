@@ -1,15 +1,15 @@
 extern crate log;
 use clap::{crate_description, crate_name, value_t, App, Arg};
-use solana_measure::measure::Measure;
-use solana_runtime::accounts_hash::AccountsHash;
-use solana_sdk::{hash::Hash, pubkey::Pubkey};
+use analog_measure::measure::Measure;
+use analog_runtime::accounts_hash::AccountsHash;
+use analog_sdk::{hash::Hash, pubkey::Pubkey};
 
 fn main() {
-    solana_logger::setup();
+    analog_logger::setup();
 
     let matches = App::new(crate_name!())
         .about(crate_description!())
-        .version(solana_version::version!())
+        .version(analog_version::version!())
         .arg(
             Arg::with_name("num_accounts")
                 .long("num_accounts")

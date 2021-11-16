@@ -5,11 +5,11 @@ use crate::{
 use clap::{App, AppSettings, Arg, ArgMatches, SubCommand};
 use console::style;
 use serde::{Deserialize, Serialize};
-use solana_clap_utils::{input_parsers::*, input_validators::*, keypair::*};
-use solana_cli_output::{QuietDisplay, VerboseDisplay};
-use solana_client::{client_error::ClientError, rpc_client::RpcClient};
-use solana_remote_wallet::remote_wallet::RemoteWalletManager;
-use solana_sdk::{
+use analog_clap_utils::{input_parsers::*, input_validators::*, keypair::*};
+use analog_cli_output::{QuietDisplay, VerboseDisplay};
+use analog_client::{client_error::ClientError, rpc_client::RpcClient};
+use analog_remote_wallet::remote_wallet::RemoteWalletManager;
+use analog_sdk::{
     account::Account,
     clock::Slot,
     feature::{self, Feature},
@@ -329,7 +329,7 @@ fn feature_set_stats(rpc_client: &RpcClient) -> Result<FeatureSetStats, ClientEr
 
 // Feature activation is only allowed when 95% of the active stake is on the current feature set
 fn feature_activation_allowed(rpc_client: &RpcClient, quiet: bool) -> Result<bool, ClientError> {
-    let my_feature_set = solana_version::Version::default().feature_set;
+    let my_feature_set = analog_version::Version::default().feature_set;
 
     let feature_set_stats = feature_set_stats(rpc_client)?;
 
@@ -594,12 +594,12 @@ fn process_activate(
         SpendAmount::Some(rent),
         &blockhash,
         &config.signers[0].pubkey(),
-        |lamports| {
+        |tock| {
             Message::new(
                 &feature::activate_with_lamports(
                     &feature_id,
                     &config.signers[0].pubkey(),
-                    lamports,
+                    tock,
                 ),
                 Some(&config.signers[0].pubkey()),
             )

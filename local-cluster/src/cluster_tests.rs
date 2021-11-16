@@ -5,18 +5,18 @@
 use log::*;
 use rand::{thread_rng, Rng};
 use rayon::prelude::*;
-use solana_client::thin_client::create_client;
-use solana_core::consensus::VOTE_THRESHOLD_DEPTH;
-use solana_entry::entry::{Entry, EntrySlice};
-use solana_gossip::{
+use analog_client::thin_client::create_client;
+use analog_core::consensus::VOTE_THRESHOLD_DEPTH;
+use analog_entry::entry::{Entry, EntrySlice};
+use analog_gossip::{
     cluster_info::{self, VALIDATOR_PORT_RANGE},
     contact_info::ContactInfo,
     crds_value::{self, CrdsData, CrdsValue},
     gossip_error::GossipError,
     gossip_service::discover_cluster,
 };
-use solana_ledger::blockstore::Blockstore;
-use solana_sdk::{
+use analog_ledger::blockstore::Blockstore;
+use analog_sdk::{
     client::SyncClient,
     clock::{self, Slot, NUM_CONSECUTIVE_LEADER_SLOTS},
     commitment_config::CommitmentConfig,
@@ -30,8 +30,8 @@ use solana_sdk::{
     timing::{duration_as_ms, timestamp},
     transport::TransportError,
 };
-use solana_streamer::socket::SocketAddrSpace;
-use solana_vote_program::vote_transaction;
+use analog_streamer::socket::SocketAddrSpace;
+use analog_vote_program::vote_transaction;
 use std::{
     collections::{HashMap, HashSet},
     net::SocketAddr,

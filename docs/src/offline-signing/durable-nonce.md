@@ -4,7 +4,7 @@ title: Durable Transaction Nonces
 
 Durable transaction nonces are a mechanism for getting around the typical
 short lifetime of a transaction's [`recent_blockhash`](developing/programming-model/transactions.md#recent-blockhash).
-They are implemented as a Solana Program, the mechanics of which can be read
+They are implemented as a Analog Program, the mechanics of which can be read
 about in the [proposal](../implemented-proposals/durable-tx-nonces.md).
 
 ## Usage Examples
@@ -38,7 +38,7 @@ A nonce account is created by first generating a new keypair, then create the ac
 - Command
 
 ```bash
-solana-keygen new -o nonce-keypair.json
+analog-keygen new -o nonce-keypair.json
 solana create-nonce-account nonce-keypair.json 1
 ```
 
@@ -50,7 +50,7 @@ solana create-nonce-account nonce-keypair.json 1
 
 > To keep the keypair entirely offline, use the [Paper Wallet](wallet-guide/paper-wallet.md) keypair generation [instructions](wallet-guide/paper-wallet.md#seed-phrase-generation) instead
 
-> [Full usage documentation](../cli/usage.md#solana-create-nonce-account)
+> [Full usage documentation](../cli/usage.md#analog-create-nonce-account)
 
 ### Querying the Stored Nonce Value
 
@@ -70,7 +70,7 @@ solana nonce nonce-keypair.json
 8GRipryfxcsxN8mAGjy8zbFo9ezaUsh47TsPzmZbuytU
 ```
 
-> [Full usage documentation](../cli/usage.md#solana-get-nonce)
+> [Full usage documentation](../cli/usage.md#analog-get-nonce)
 
 ### Advancing the Stored Nonce Value
 
@@ -89,7 +89,7 @@ solana new-nonce nonce-keypair.json
 44jYe1yPKrjuYDmoFTdgPjg8LFpYyh1PFKJqm5SC1PiSyAL8iw1bhadcAX1SL7KDmREEkmHpYvreKoNv6fZgfvUK
 ```
 
-> [Full usage documentation](../cli/usage.md#solana-new-nonce)
+> [Full usage documentation](../cli/usage.md#analog-new-nonce)
 
 ### Display Nonce Account
 
@@ -104,12 +104,12 @@ solana nonce-account nonce-keypair.json
 - Output
 
 ```text
-balance: 0.5 SOL
-minimum balance required: 0.00136416 SOL
+balance: 0.5 ANLOG
+minimum balance required: 0.00136416 ANLOG
 nonce: DZar6t2EaCFQTbUP4DHKwZ1wT8gCPW2aRfkVWhydkBvS
 ```
 
-> [Full usage documentation](../cli/usage.md#solana-nonce-account)
+> [Full usage documentation](../cli/usage.md#analog-nonce-account)
 
 ### Withdraw Funds from a Nonce Account
 
@@ -129,7 +129,7 @@ solana withdraw-from-nonce-account nonce-keypair.json ~/.config/solana/id.json 0
 
 > Close a nonce account by withdrawing the full balance
 
-> [Full usage documentation](../cli/usage.md#solana-withdraw-from-nonce-account)
+> [Full usage documentation](../cli/usage.md#analog-withdraw-from-nonce-account)
 
 ### Assign a New Authority to a Nonce Account
 
@@ -147,7 +147,7 @@ solana authorize-nonce-account nonce-keypair.json nonce-authority.json
 3F9cg4zN9wHxLGx4c3cUKmqpej4oa67QbALmChsJbfxTgTffRiL3iUehVhR9wQmWgPua66jPuAYeL1K2pYYjbNoT
 ```
 
-> [Full usage documentation](../cli/usage.md#solana-authorize-nonce-account)
+> [Full usage documentation](../cli/usage.md#analog-authorize-nonce-account)
 
 ## Other Commands Supporting Durable Nonces
 
@@ -159,13 +159,13 @@ supported.
 
 The following subcommands have received this treatment so far
 
-- [`pay`](../cli/usage.md#solana-pay)
-- [`delegate-stake`](../cli/usage.md#solana-delegate-stake)
-- [`deactivate-stake`](../cli/usage.md#solana-deactivate-stake)
+- [`pay`](../cli/usage.md#analog-pay)
+- [`delegate-stake`](../cli/usage.md#analog-delegate-stake)
+- [`deactivate-stake`](../cli/usage.md#analog-deactivate-stake)
 
 ### Example Pay Using Durable Nonce
 
-Here we demonstrate Alice paying Bob 1 SOL using a durable nonce. The procedure
+Here we demonstrate Alice paying Bob 1 ANLOG using a durable nonce. The procedure
 is the same for all subcommands supporting durable nonces
 
 #### - Create accounts
@@ -173,19 +173,19 @@ is the same for all subcommands supporting durable nonces
 First we need some accounts for Alice, Alice's nonce and Bob
 
 ```bash
-$ solana-keygen new -o alice.json
-$ solana-keygen new -o nonce.json
-$ solana-keygen new -o bob.json
+$ analog-keygen new -o alice.json
+$ analog-keygen new -o nonce.json
+$ analog-keygen new -o bob.json
 ```
 
 #### - Fund Alice's account
 
 Alice will need some funds to create a nonce account and send to Bob. Airdrop
-her some SOL
+her some ANLOG
 
 ```bash
-$ solana airdrop -k alice.json 1
-1 SOL
+$ analog airdrop -k alice.json 1
+1 ANLOG
 ```
 
 #### - Create Alice's nonce account
@@ -195,7 +195,7 @@ Now Alice needs a nonce account. Create one
 > Here, no separate [nonce authority](#nonce-authority) is employed, so `alice.json` has full authority over the nonce account
 
 ```bash
-$ solana create-nonce-account -k alice.json nonce.json 0.1
+$ analog create-nonce-account -k alice.json nonce.json 0.1
 3KPZr96BTsL3hqera9up82KAU462Gz31xjqJ6eHUAjF935Yf8i1kmfEbo6SVbNaACKE5z6gySrNjVRvmS8DcPuwV
 ```
 
@@ -205,8 +205,8 @@ Alice attempts to pay Bob, but takes too long to sign. The specified blockhash
 expires and the transaction fails
 
 ```bash
-$ solana pay -k alice.json --blockhash expiredDTaxfagttWjQweib42b6ZHADSx94Tw8gHx3W7 bob.json 0.01
-[2020-01-02T18:48:28.462911000Z ERROR solana_cli::cli] Io(Custom { kind: Other, error: "Transaction \"33gQQaoPc9jWePMvDAeyJpcnSPiGUAdtVg8zREWv4GiKjkcGNufgpcbFyRKRrA25NkgjZySEeKue5rawyeH5TzsV\" failed: None" })
+$ analog pay -k alice.json --blockhash expiredDTaxfagttWjQweib42b6ZHADSx94Tw8gHx3W7 bob.json 0.01
+[2020-01-02T18:48:28.462911000Z ERROR analog_cli::cli] Io(Custom { kind: Other, error: "Transaction \"33gQQaoPc9jWePMvDAeyJpcnSPiGUAdtVg8zREWv4GiKjkcGNufgpcbFyRKRrA25NkgjZySEeKue5rawyeH5TzsV\" failed: None" })
 Error: Io(Custom { kind: Other, error: "Transaction \"33gQQaoPc9jWePMvDAeyJpcnSPiGUAdtVg8zREWv4GiKjkcGNufgpcbFyRKRrA25NkgjZySEeKue5rawyeH5TzsV\" failed: None" })
 ```
 
@@ -218,30 +218,30 @@ blockhash stored there
 > Remember, `alice.json` is the [nonce authority](#nonce-authority) in this example
 
 ```bash
-$ solana nonce-account nonce.json
-balance: 0.1 SOL
-minimum balance required: 0.00136416 SOL
+$ analog nonce-account nonce.json
+balance: 0.1 ANLOG
+minimum balance required: 0.00136416 ANLOG
 nonce: F7vmkY3DTaxfagttWjQweib42b6ZHADSx94Tw8gHx3W7
 ```
 
 ```bash
-$ solana pay -k alice.json --blockhash F7vmkY3DTaxfagttWjQweib42b6ZHADSx94Tw8gHx3W7 --nonce nonce.json bob.json 0.01
+$ analog pay -k alice.json --blockhash F7vmkY3DTaxfagttWjQweib42b6ZHADSx94Tw8gHx3W7 --nonce nonce.json bob.json 0.01
 HR1368UKHVZyenmH7yVz5sBAijV6XAPeWbEiXEGVYQorRMcoijeNAbzZqEZiH8cDB8tk65ckqeegFjK8dHwNFgQ
 ```
 
 #### - Success!
 
-The transaction succeeds! Bob receives 0.01 SOL from Alice and Alice's stored
+The transaction succeeds! Bob receives 0.01 ANLOG from Alice and Alice's stored
 nonce advances to a new value
 
 ```bash
-$ solana balance -k bob.json
-0.01 SOL
+$ analog balance -k bob.json
+0.01 ANLOG
 ```
 
 ```bash
-$ solana nonce-account nonce.json
-balance: 0.1 SOL
-minimum balance required: 0.00136416 SOL
+$ analog nonce-account nonce.json
+balance: 0.1 ANLOG
+minimum balance required: 0.00136416 ANLOG
 nonce: 6bjroqDcZgTv6Vavhqf81oBHTv3aMnX19UTB51YhAZnN
 ```

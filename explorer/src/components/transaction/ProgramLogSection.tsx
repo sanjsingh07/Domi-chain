@@ -131,7 +131,7 @@ const instructionErrorMessage: Map<string, string> = new Map([
   ["BorshIoError", "Failed to serialize or deserialize account data: {0}"],
   [
     "AccountNotRentExempt",
-    "An account does not have enough lamports to be rent-exempt",
+    "An account does not have enough tock to be rent-exempt",
   ],
   ["InvalidAccountOwner", "Invalid account owner"],
   ["ArithmeticOverflow", "Program arithmetic overflowed"],

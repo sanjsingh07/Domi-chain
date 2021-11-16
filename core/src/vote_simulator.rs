@@ -12,7 +12,7 @@ use crate::{
     replay_stage::{HeaviestForkFailures, ReplayStage},
     unfrozen_gossip_verified_vote_hashes::UnfrozenGossipVerifiedVoteHashes,
 };
-use solana_runtime::{
+use analog_runtime::{
     accounts_background_service::AbsRequestSender,
     bank::Bank,
     bank_forks::BankForks,
@@ -20,8 +20,8 @@ use solana_runtime::{
         create_genesis_config_with_vote_accounts, GenesisConfigInfo, ValidatorVoteKeypairs,
     },
 };
-use solana_sdk::{clock::Slot, hash::Hash, pubkey::Pubkey, signature::Signer};
-use solana_vote_program::vote_transaction;
+use analog_sdk::{clock::Slot, hash::Hash, pubkey::Pubkey, signature::Signer};
+use analog_vote_program::vote_transaction;
 use std::{
     collections::{HashMap, HashSet},
     sync::{Arc, RwLock},

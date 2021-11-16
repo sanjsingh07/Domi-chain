@@ -2,11 +2,11 @@
 extern crate test;
 
 use rand::{thread_rng, Rng};
-use solana_runtime::append_vec::{
+use analog_runtime::append_vec::{
     test_utils::{create_test_account, get_append_vec_path},
     AppendVec,
 };
-use solana_sdk::{account::ReadableAccount, hash::Hash};
+use analog_sdk::{account::ReadableAccount, hash::Hash};
 use std::{
     sync::{Arc, Mutex},
     thread::sleep,

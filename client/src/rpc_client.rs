@@ -1,7 +1,7 @@
-//! Communication with a Solana node over RPC.
+//! Communication with a Analog node over RPC.
 //!
-//! Software that interacts with the Solana blockchain, whether querying its
-//! state or submitting transactions, communicates with a Solana node over
+//! Software that interacts with the Analog blockchain, whether querying its
+//! state or submitting transactions, communicates with a Analog node over
 //! [JSON-RPC], using the [`RpcClient`] type.
 //!
 //! [JSON-RPC]: https://www.jsonrpc.org/specification
@@ -26,11 +26,11 @@ use {
     bincode::serialize,
     log::*,
     serde_json::{json, Value},
-    solana_account_decoder::{
+    analog_account_decoder::{
         parse_token::{TokenAccountType, UiTokenAccount, UiTokenAmount},
         UiAccount, UiAccountData, UiAccountEncoding,
     },
-    solana_sdk::{
+    analog_sdk::{
         account::Account,
         clock::{Epoch, Slot, UnixTimestamp, DEFAULT_MS_PER_SLOT, MAX_HASH_AGE_IN_SECONDS},
         commitment_config::{CommitmentConfig, CommitmentLevel},
@@ -43,11 +43,11 @@ use {
         signature::Signature,
         transaction::{self, uses_durable_nonce, Transaction},
     },
-    solana_transaction_status::{
+    analog_transaction_status::{
         EncodedConfirmedBlock, EncodedConfirmedTransaction, TransactionStatus, UiConfirmedBlock,
         UiTransactionEncoding,
     },
-    solana_vote_program::vote_state::MAX_LOCKOUT_HISTORY,
+    analog_vote_program::vote_state::MAX_LOCKOUT_HISTORY,
     std::{
         cmp::min,
         net::SocketAddr,
@@ -73,10 +73,10 @@ impl RpcClientConfig {
     }
 }
 
-/// A client of a remote Solana node.
+/// A client of a remote Analog node.
 ///
-/// `RpcClient` communicates with a Solana node over [JSON-RPC], with the
-/// [Solana JSON-RPC protocol][jsonprot]. It is the primary Rust interface for
+/// `RpcClient` communicates with a Analog node over [JSON-RPC], with the
+/// [Analog JSON-RPC protocol][jsonprot]. It is the primary Rust interface for
 /// querying and transacting with the network from external programs.
 ///
 /// This type builds on the underlying RPC protocol, adding extra features such
@@ -111,10 +111,10 @@ impl RpcClientConfig {
 ///
 /// [`Finalized`]: CommitmentLevel::Finalized
 /// [`Processed`]: CommitmentLevel::Processed
-/// [jsonprot]: https://docs.solana.com/developing/clients/jsonrpc-api
+/// [jsonprot]: https://docs.analog.com/developing/clients/jsonrpc-api
 /// [JSON-RPC]: https://www.jsonrpc.org/specification
-/// [slots]: https://docs.solana.com/terminology#slot
-/// [cl]: https://docs.solana.com/developing/clients/jsonrpc-api#configuring-state-commitment
+/// [slots]: https://docs.analog.com/terminology#slot
+/// [cl]: https://docs.analog.com/developing/clients/jsonrpc-api#configuring-state-commitment
 ///
 /// # Errors
 ///
@@ -129,17 +129,17 @@ impl RpcClientConfig {
 /// field, so it is common for the value to be accessed with `?.value`, as in
 ///
 /// ```
-/// # use solana_sdk::system_transaction;
-/// # use solana_client::rpc_client::RpcClient;
-/// # use solana_client::client_error::ClientError;
-/// # use solana_sdk::signature::{Keypair, Signer};
-/// # use solana_sdk::hash::Hash;
+/// # use analog_sdk::system_transaction;
+/// # use analog_client::rpc_client::RpcClient;
+/// # use analog_client::client_error::ClientError;
+/// # use analog_sdk::signature::{Keypair, Signer};
+/// # use analog_sdk::hash::Hash;
 /// # let rpc_client = RpcClient::new_mock("succeeds".to_string());
 /// # let key = Keypair::new();
-/// # let to = solana_sdk::pubkey::new_rand();
-/// # let lamports = 50;
+/// # let to = analog_sdk::pubkey::new_rand();
+/// # let tock = 50;
 /// # let latest_blockhash = Hash::default();
-/// # let tx = system_transaction::transfer(&key, &to, lamports, latest_blockhash);
+/// # let tx = system_transaction::transfer(&key, &to, tock, latest_blockhash);
 /// let signature = rpc_client.send_transaction(&tx)?;
 /// let statuses = rpc_client.get_signature_statuses(&[signature])?.value;
 /// # Ok::<(), ClientError>(())
@@ -183,12 +183,12 @@ impl RpcClient {
     /// The client has a default timeout of 30 seconds, and a default [commitment
     /// level][cl] of [`Finalized`](CommitmentLevel::Finalized).
     ///
-    /// [cl]: https://docs.solana.com/developing/clients/jsonrpc-api#configuring-state-commitment
+    /// [cl]: https://docs.analog.com/developing/clients/jsonrpc-api#configuring-state-commitment
     ///
     /// # Examples
     ///
     /// ```
-    /// # use solana_client::rpc_client::RpcClient;
+    /// # use analog_client::rpc_client::RpcClient;
     /// let url = "http://localhost:8899".to_string();
     /// let client = RpcClient::new(url);
     /// ```
@@ -198,7 +198,7 @@ impl RpcClient {
 
     /// Create an HTTP `RpcClient` with specified [commitment level][cl].
     ///
-    /// [cl]: https://docs.solana.com/developing/clients/jsonrpc-api#configuring-state-commitment
+    /// [cl]: https://docs.analog.com/developing/clients/jsonrpc-api#configuring-state-commitment
     ///
     /// The URL is an HTTP URL, usually for port 8899, as in
     /// "http://localhost:8899".
@@ -209,8 +209,8 @@ impl RpcClient {
     /// # Examples
     ///
     /// ```
-    /// # use solana_sdk::commitment_config::CommitmentConfig;
-    /// # use solana_client::rpc_client::RpcClient;
+    /// # use analog_sdk::commitment_config::CommitmentConfig;
+    /// # use analog_client::rpc_client::RpcClient;
     /// let url = "http://localhost:8899".to_string();
     /// let commitment_config = CommitmentConfig::processed();
     /// let client = RpcClient::new_with_commitment(url, commitment_config);
@@ -230,13 +230,13 @@ impl RpcClient {
     /// The client has and a default [commitment level][cl] of
     /// [`Finalized`](CommitmentLevel::Finalized).
     ///
-    /// [cl]: https://docs.solana.com/developing/clients/jsonrpc-api#configuring-state-commitment
+    /// [cl]: https://docs.analog.com/developing/clients/jsonrpc-api#configuring-state-commitment
     ///
     /// # Examples
     ///
     /// ```
     /// # use std::time::Duration;
-    /// # use solana_client::rpc_client::RpcClient;
+    /// # use analog_client::rpc_client::RpcClient;
     /// let url = "http://localhost::8899".to_string();
     /// let timeout = Duration::from_secs(1);
     /// let client = RpcClient::new_with_timeout(url, timeout);
@@ -250,7 +250,7 @@ impl RpcClient {
 
     /// Create an HTTP `RpcClient` with specified timeout and [commitment level][cl].
     ///
-    /// [cl]: https://docs.solana.com/developing/clients/jsonrpc-api#configuring-state-commitment
+    /// [cl]: https://docs.analog.com/developing/clients/jsonrpc-api#configuring-state-commitment
     ///
     /// The URL is an HTTP URL, usually for port 8899, as in
     /// "http://localhost:8899".
@@ -259,8 +259,8 @@ impl RpcClient {
     ///
     /// ```
     /// # use std::time::Duration;
-    /// # use solana_client::rpc_client::RpcClient;
-    /// # use solana_sdk::commitment_config::CommitmentConfig;
+    /// # use analog_client::rpc_client::RpcClient;
+    /// # use analog_sdk::commitment_config::CommitmentConfig;
     /// let url = "http://localhost::8899".to_string();
     /// let timeout = Duration::from_secs(1);
     /// let commitment_config = CommitmentConfig::processed();
@@ -283,7 +283,7 @@ impl RpcClient {
 
     /// Create an HTTP `RpcClient` with specified timeout and [commitment level][cl].
     ///
-    /// [cl]: https://docs.solana.com/developing/clients/jsonrpc-api#configuring-state-commitment
+    /// [cl]: https://docs.analog.com/developing/clients/jsonrpc-api#configuring-state-commitment
     ///
     /// The URL is an HTTP URL, usually for port 8899, as in
     /// "http://localhost:8899".
@@ -300,8 +300,8 @@ impl RpcClient {
     ///
     /// ```
     /// # use std::time::Duration;
-    /// # use solana_client::rpc_client::RpcClient;
-    /// # use solana_sdk::commitment_config::CommitmentConfig;
+    /// # use analog_client::rpc_client::RpcClient;
+    /// # use analog_sdk::commitment_config::CommitmentConfig;
     /// let url = "http://localhost::8899".to_string();
     /// let timeout = Duration::from_secs(1);
     /// let commitment_config = CommitmentConfig::processed();
@@ -336,14 +336,14 @@ impl RpcClient {
     /// # Examples
     ///
     /// ```
-    /// # use solana_client::rpc_client::RpcClient;
+    /// # use analog_client::rpc_client::RpcClient;
     /// // Create an `RpcClient` that always succeeds
     /// let url = "succeeds".to_string();
     /// let successful_client = RpcClient::new_mock(url);
     /// ```
     ///
     /// ```
-    /// # use solana_client::rpc_client::RpcClient;
+    /// # use analog_client::rpc_client::RpcClient;
     /// // Create an `RpcClient` that always fails
     /// let url = "fails".to_string();
     /// let successful_client = RpcClient::new_mock(url);
@@ -363,7 +363,7 @@ impl RpcClient {
     /// # Examples
     ///
     /// ```
-    /// # use solana_client::{
+    /// # use analog_client::{
     /// #     rpc_client::RpcClient,
     /// #     rpc_request::RpcRequest,
     /// #     rpc_response::{Response, RpcResponseContext},
@@ -394,13 +394,13 @@ impl RpcClient {
     /// The client has a default timeout of 30 seconds, and a default [commitment
     /// level][cl] of [`Finalized`](CommitmentLevel::Finalized).
     ///
-    /// [cl]: https://docs.solana.com/developing/clients/jsonrpc-api#configuring-state-commitment
+    /// [cl]: https://docs.analog.com/developing/clients/jsonrpc-api#configuring-state-commitment
     ///
     /// # Examples
     ///
     /// ```
     /// # use std::net::SocketAddr;
-    /// # use solana_client::rpc_client::RpcClient;
+    /// # use analog_client::rpc_client::RpcClient;
     /// let addr = SocketAddr::from(([127, 0, 0, 1], 8899));
     /// let client = RpcClient::new_socket(addr);
     /// ```
@@ -410,7 +410,7 @@ impl RpcClient {
 
     /// Create an HTTP `RpcClient` from a [`SocketAddr`] with specified [commitment level][cl].
     ///
-    /// [cl]: https://docs.solana.com/developing/clients/jsonrpc-api#configuring-state-commitment
+    /// [cl]: https://docs.analog.com/developing/clients/jsonrpc-api#configuring-state-commitment
     ///
     /// The client has a default timeout of 30 seconds, and a user-specified
     /// [`CommitmentLevel`] via [`CommitmentConfig`].
@@ -419,8 +419,8 @@ impl RpcClient {
     ///
     /// ```
     /// # use std::net::SocketAddr;
-    /// # use solana_client::rpc_client::RpcClient;
-    /// # use solana_sdk::commitment_config::CommitmentConfig;
+    /// # use analog_client::rpc_client::RpcClient;
+    /// # use analog_sdk::commitment_config::CommitmentConfig;
     /// let addr = SocketAddr::from(([127, 0, 0, 1], 8899));
     /// let commitment_config = CommitmentConfig::processed();
     /// let client = RpcClient::new_socket_with_commitment(
@@ -439,14 +439,14 @@ impl RpcClient {
     ///
     /// The client has a default [commitment level][cl] of [`Finalized`](CommitmentLevel::Finalized).
     ///
-    /// [cl]: https://docs.solana.com/developing/clients/jsonrpc-api#configuring-state-commitment
+    /// [cl]: https://docs.analog.com/developing/clients/jsonrpc-api#configuring-state-commitment
     ///
     /// # Examples
     ///
     /// ```
     /// # use std::net::SocketAddr;
     /// # use std::time::Duration;
-    /// # use solana_client::rpc_client::RpcClient;
+    /// # use analog_client::rpc_client::RpcClient;
     /// let addr = SocketAddr::from(([127, 0, 0, 1], 8899));
     /// let timeout = Duration::from_secs(1);
     /// let client = RpcClient::new_socket_with_timeout(addr, timeout);
@@ -466,7 +466,7 @@ impl RpcClient {
             let node_version = self.get_version().map_err(|e| {
                 RpcError::RpcRequestError(format!("cluster version query failed: {}", e))
             })?;
-            let node_version = semver::Version::parse(&node_version.solana_core).map_err(|e| {
+            let node_version = semver::Version::parse(&node_version.analog_core).map_err(|e| {
                 RpcError::RpcRequestError(format!("failed to parse cluster version: {}", e))
             })?;
             *w_node_version = Some(node_version.clone());
@@ -476,7 +476,7 @@ impl RpcClient {
 
     /// Get the configured default [commitment level][cl].
     ///
-    /// [cl]: https://docs.solana.com/developing/clients/jsonrpc-api#configuring-state-commitment
+    /// [cl]: https://docs.analog.com/developing/clients/jsonrpc-api#configuring-state-commitment
     ///
     /// The commitment config may be specified during construction, and
     /// determines how thoroughly committed a transaction must be when waiting
@@ -533,7 +533,7 @@ impl RpcClient {
     /// Once this function returns successfully, the given transaction is
     /// guaranteed to be processed with the configured [commitment level][cl].
     ///
-    /// [cl]: https://docs.solana.com/developing/clients/jsonrpc-api#configuring-state-commitment
+    /// [cl]: https://docs.analog.com/developing/clients/jsonrpc-api#configuring-state-commitment
     ///
     /// After sending the transaction, this method polls in a loop for the
     /// status of the transaction until it has ben confirmed.
@@ -563,17 +563,17 @@ impl RpcClient {
     /// This method is built on the [`sendTransaction`] RPC method, and the
     /// [`getLatestBlockhash`] RPC method.
     ///
-    /// [`sendTransaction`]: https://docs.solana.com/developing/clients/jsonrpc-api#sendtransaction
-    /// [`getLatestBlockhash`]: https://docs.solana.com/developing/clients/jsonrpc-api#getlatestblockhash
+    /// [`sendTransaction`]: https://docs.analog.com/developing/clients/jsonrpc-api#sendtransaction
+    /// [`getLatestBlockhash`]: https://docs.analog.com/developing/clients/jsonrpc-api#getlatestblockhash
     ///
     /// # Examples
     ///
     /// ```
-    /// # use solana_client::{
+    /// # use analog_client::{
     /// #     rpc_client::RpcClient,
     /// #     client_error::ClientError,
     /// # };
-    /// # use solana_sdk::{
+    /// # use analog_sdk::{
     /// #     signature::Signer,
     /// #     signature::Signature,
     /// #     signer::keypair::Keypair,
@@ -582,9 +582,9 @@ impl RpcClient {
     /// # let rpc_client = RpcClient::new_mock("succeeds".to_string());
     /// # let alice = Keypair::new();
     /// # let bob = Keypair::new();
-    /// # let lamports = 50;
+    /// # let tock = 50;
     /// # let latest_blockhash = rpc_client.get_latest_blockhash()?;
-    /// let tx = system_transaction::transfer(&alice, &bob.pubkey(), lamports, latest_blockhash);
+    /// let tx = system_transaction::transfer(&alice, &bob.pubkey(), tock, latest_blockhash);
     /// let signature = rpc_client.send_and_confirm_transaction(&tx)?;
     /// # Ok::<(), ClientError>(())
     /// ```
@@ -723,16 +723,16 @@ impl RpcClient {
     ///
     /// This method is built on the [`sendTransaction`] RPC method.
     ///
-    /// [`sendTransaction`]: https://docs.solana.com/developing/clients/jsonrpc-api#sendtransaction
+    /// [`sendTransaction`]: https://docs.analog.com/developing/clients/jsonrpc-api#sendtransaction
     ///
     /// # Examples
     ///
     /// ```
-    /// # use solana_client::{
+    /// # use analog_client::{
     /// #     client_error::ClientError,
     /// #     rpc_client::RpcClient,
     /// # };
-    /// # use solana_sdk::{
+    /// # use analog_sdk::{
     /// #     signature::Signer,
     /// #     signature::Signature,
     /// #     signer::keypair::Keypair,
@@ -740,12 +740,12 @@ impl RpcClient {
     /// #     system_transaction,
     /// # };
     /// # let rpc_client = RpcClient::new_mock("succeeds".to_string());
-    /// // Transfer lamports from Alice to Bob
+    /// // Transfer tock from Alice to Bob
     /// # let alice = Keypair::new();
     /// # let bob = Keypair::new();
-    /// # let lamports = 50;
+    /// # let tock = 50;
     /// let latest_blockhash = rpc_client.get_latest_blockhash()?;
-    /// let tx = system_transaction::transfer(&alice, &bob.pubkey(), lamports, latest_blockhash);
+    /// let tx = system_transaction::transfer(&alice, &bob.pubkey(), tock, latest_blockhash);
     /// let signature = rpc_client.send_transaction(&tx)?;
     /// # Ok::<(), ClientError>(())
     /// ```
@@ -805,17 +805,17 @@ impl RpcClient {
     ///
     /// This method is built on the [`sendTransaction`] RPC method.
     ///
-    /// [`sendTransaction`]: https://docs.solana.com/developing/clients/jsonrpc-api#sendtransaction
+    /// [`sendTransaction`]: https://docs.analog.com/developing/clients/jsonrpc-api#sendtransaction
     ///
     /// # Examples
     ///
     /// ```
-    /// # use solana_client::{
+    /// # use analog_client::{
     /// #     client_error::ClientError,
     /// #     rpc_client::RpcClient,
     /// #     rpc_config::RpcSendTransactionConfig,
     /// # };
-    /// # use solana_sdk::{
+    /// # use analog_sdk::{
     /// #     signature::Signer,
     /// #     signature::Signature,
     /// #     signer::keypair::Keypair,
@@ -823,12 +823,12 @@ impl RpcClient {
     /// #     system_transaction,
     /// # };
     /// # let rpc_client = RpcClient::new_mock("succeeds".to_string());
-    /// // Transfer lamports from Alice to Bob
+    /// // Transfer tock from Alice to Bob
     /// # let alice = Keypair::new();
     /// # let bob = Keypair::new();
-    /// # let lamports = 50;
+    /// # let tock = 50;
     /// let latest_blockhash = rpc_client.get_latest_blockhash()?;
-    /// let tx = system_transaction::transfer(&alice, &bob.pubkey(), lamports, latest_blockhash);
+    /// let tx = system_transaction::transfer(&alice, &bob.pubkey(), tock, latest_blockhash);
     /// let config = RpcSendTransactionConfig {
     ///     skip_preflight: true,
     ///     .. RpcSendTransactionConfig::default()
@@ -926,7 +926,7 @@ impl RpcClient {
     /// with the configured [commitment level][cl], which can be retrieved with
     /// the [`commitment`](RpcClient::commitment) method.
     ///
-    /// [cl]: https://docs.solana.com/developing/clients/jsonrpc-api#configuring-state-commitment
+    /// [cl]: https://docs.analog.com/developing/clients/jsonrpc-api#configuring-state-commitment
     ///
     /// Note that this method does not wait for a transaction to be confirmed
     /// &mdash; it only checks whether a transaction has been confirmed. To
@@ -940,28 +940,28 @@ impl RpcClient {
     ///
     /// This method is built on the [`getSignatureStatuses`] RPC method.
     ///
-    /// [`getSignatureStatuses`]: https://docs.solana.com/developing/clients/jsonrpc-api#getsignaturestatuses
+    /// [`getSignatureStatuses`]: https://docs.analog.com/developing/clients/jsonrpc-api#getsignaturestatuses
     ///
     /// # Examples
     ///
     /// ```
-    /// # use solana_client::{
+    /// # use analog_client::{
     /// #     client_error::ClientError,
     /// #     rpc_client::RpcClient,
     /// # };
-    /// # use solana_sdk::{
+    /// # use analog_sdk::{
     /// #     signature::Signer,
     /// #     signature::Signature,
     /// #     signer::keypair::Keypair,
     /// #     system_transaction,
     /// # };
     /// # let rpc_client = RpcClient::new_mock("succeeds".to_string());
-    /// // Transfer lamports from Alice to Bob and wait for confirmation
+    /// // Transfer tock from Alice to Bob and wait for confirmation
     /// # let alice = Keypair::new();
     /// # let bob = Keypair::new();
-    /// # let lamports = 50;
+    /// # let tock = 50;
     /// let latest_blockhash = rpc_client.get_latest_blockhash()?;
-    /// let tx = system_transaction::transfer(&alice, &bob.pubkey(), lamports, latest_blockhash);
+    /// let tx = system_transaction::transfer(&alice, &bob.pubkey(), tock, latest_blockhash);
     /// let signature = rpc_client.send_transaction(&tx)?;
     ///
     /// loop {
@@ -983,7 +983,7 @@ impl RpcClient {
     /// Returns an [`RpcResult`] with value `true` if the given transaction
     /// succeeded and has been committed with the given [commitment level][cl].
     ///
-    /// [cl]: https://docs.solana.com/developing/clients/jsonrpc-api#configuring-state-commitment
+    /// [cl]: https://docs.analog.com/developing/clients/jsonrpc-api#configuring-state-commitment
     ///
     /// Note that this method does not wait for a transaction to be confirmed
     /// &mdash; it only checks whether a transaction has been confirmed. To
@@ -997,16 +997,16 @@ impl RpcClient {
     ///
     /// This method is built on the [`getSignatureStatuses`] RPC method.
     ///
-    /// [`getSignatureStatuses`]: https://docs.solana.com/developing/clients/jsonrpc-api#getsignaturestatuses
+    /// [`getSignatureStatuses`]: https://docs.analog.com/developing/clients/jsonrpc-api#getsignaturestatuses
     ///
     /// # Examples
     ///
     /// ```
-    /// # use solana_client::{
+    /// # use analog_client::{
     /// #     client_error::ClientError,
     /// #     rpc_client::RpcClient,
     /// # };
-    /// # use solana_sdk::{
+    /// # use analog_sdk::{
     /// #     commitment_config::CommitmentConfig,
     /// #     signature::Signer,
     /// #     signature::Signature,
@@ -1015,12 +1015,12 @@ impl RpcClient {
     /// # };
     /// # use std::time::Duration;
     /// # let rpc_client = RpcClient::new_mock("succeeds".to_string());
-    /// // Transfer lamports from Alice to Bob and wait for confirmation
+    /// // Transfer tock from Alice to Bob and wait for confirmation
     /// # let alice = Keypair::new();
     /// # let bob = Keypair::new();
-    /// # let lamports = 50;
+    /// # let tock = 50;
     /// let latest_blockhash = rpc_client.get_latest_blockhash()?;
-    /// let tx = system_transaction::transfer(&alice, &bob.pubkey(), lamports, latest_blockhash);
+    /// let tx = system_transaction::transfer(&alice, &bob.pubkey(), tock, latest_blockhash);
     /// let signature = rpc_client.send_transaction(&tx)?;
     ///
     /// loop {
@@ -1158,7 +1158,7 @@ impl RpcClient {
     /// Simulating a transaction is similar to the ["preflight check"] that is
     /// run by default when sending a transaction.
     ///
-    /// ["preflight check"]: https://docs.solana.com/developing/clients/jsonrpc-api#sendtransaction
+    /// ["preflight check"]: https://docs.analog.com/developing/clients/jsonrpc-api#sendtransaction
     ///
     /// By default, signatures are not verified during simulation. To verify
     /// signatures, call the [`simulate_transaction_with_config`] method, with
@@ -1172,17 +1172,17 @@ impl RpcClient {
     ///
     /// This method is built on the [`simulateTransaction`] RPC method.
     ///
-    /// [`simulateTransaction`]: https://docs.solana.com/developing/clients/jsonrpc-api#simulatetransaction
+    /// [`simulateTransaction`]: https://docs.analog.com/developing/clients/jsonrpc-api#simulatetransaction
     ///
     /// # Examples
     ///
     /// ```
-    /// # use solana_client::{
+    /// # use analog_client::{
     /// #     client_error::ClientError,
     /// #     rpc_client::RpcClient,
     /// #     rpc_response::RpcSimulateTransactionResult,
     /// # };
-    /// # use solana_sdk::{
+    /// # use analog_sdk::{
     /// #     signature::Signer,
     /// #     signature::Signature,
     /// #     signer::keypair::Keypair,
@@ -1190,12 +1190,12 @@ impl RpcClient {
     /// #     system_transaction,
     /// # };
     /// # let rpc_client = RpcClient::new_mock("succeeds".to_string());
-    /// // Transfer lamports from Alice to Bob
+    /// // Transfer tock from Alice to Bob
     /// # let alice = Keypair::new();
     /// # let bob = Keypair::new();
-    /// # let lamports = 50;
+    /// # let tock = 50;
     /// let latest_blockhash = rpc_client.get_latest_blockhash()?;
-    /// let tx = system_transaction::transfer(&alice, &bob.pubkey(), lamports, latest_blockhash);
+    /// let tx = system_transaction::transfer(&alice, &bob.pubkey(), tock, latest_blockhash);
     /// let result = rpc_client.simulate_transaction(&tx)?;
     /// assert!(result.value.err.is_none());
     /// # Ok::<(), ClientError>(())
@@ -1225,7 +1225,7 @@ impl RpcClient {
     /// Simulating a transaction is similar to the ["preflight check"] that is
     /// run by default when sending a transaction.
     ///
-    /// ["preflight check"]: https://docs.solana.com/developing/clients/jsonrpc-api#sendtransaction
+    /// ["preflight check"]: https://docs.analog.com/developing/clients/jsonrpc-api#sendtransaction
     ///
     /// By default, signatures are not verified during simulation. To verify
     /// signatures, call the [`simulate_transaction_with_config`] method, with
@@ -1248,30 +1248,30 @@ impl RpcClient {
     ///
     /// This method is built on the [`simulateTransaction`] RPC method.
     ///
-    /// [`simulateTransaction`]: https://docs.solana.com/developing/clients/jsonrpc-api#simulatetransaction
+    /// [`simulateTransaction`]: https://docs.analog.com/developing/clients/jsonrpc-api#simulatetransaction
     ///
     /// # Examples
     ///
     /// ```
-    /// # use solana_client::{
+    /// # use analog_client::{
     /// #     client_error::ClientError,
     /// #     rpc_client::RpcClient,
     /// #     rpc_config::RpcSimulateTransactionConfig,
     /// #     rpc_response::RpcSimulateTransactionResult,
     /// # };
-    /// # use solana_sdk::{
+    /// # use analog_sdk::{
     /// #     signature::Signer,
     /// #     signer::keypair::Keypair,
     /// #     hash::Hash,
     /// #     system_transaction,
     /// # };
     /// # let rpc_client = RpcClient::new_mock("succeeds".to_string());
-    /// // Transfer lamports from Alice to Bob
+    /// // Transfer tock from Alice to Bob
     /// # let alice = Keypair::new();
     /// # let bob = Keypair::new();
-    /// # let lamports = 50;
+    /// # let tock = 50;
     /// let latest_blockhash = rpc_client.get_latest_blockhash()?;
-    /// let tx = system_transaction::transfer(&alice, &bob.pubkey(), lamports, latest_blockhash);
+    /// let tx = system_transaction::transfer(&alice, &bob.pubkey(), tock, latest_blockhash);
     /// let config = RpcSimulateTransactionConfig {
     ///     sig_verify: true,
     ///     .. RpcSimulateTransactionConfig::default()
@@ -1316,12 +1316,12 @@ impl RpcClient {
     ///
     /// This method corresponds directly to the [`getHighestSnapshotSlot`] RPC method.
     ///
-    /// [`getHighestSnapshotSlot`]: https://docs.solana.com/developing/clients/jsonrpc-api#gethighestsnapshotslot
+    /// [`getHighestSnapshotSlot`]: https://docs.analog.com/developing/clients/jsonrpc-api#gethighestsnapshotslot
     ///
     /// # Examples
     ///
     /// ```
-    /// # use solana_client::{
+    /// # use analog_client::{
     /// #     rpc_client::RpcClient,
     /// #     client_error::ClientError,
     /// # };
@@ -1352,7 +1352,7 @@ impl RpcClient {
 
     /// Check if a transaction has been processed with the default [commitment level][cl].
     ///
-    /// [cl]: https://docs.solana.com/developing/clients/jsonrpc-api#configuring-state-commitment
+    /// [cl]: https://docs.analog.com/developing/clients/jsonrpc-api#configuring-state-commitment
     ///
     /// If the transaction has been processed with the default commitment level,
     /// then this method returns `Ok` of `Some`. If the transaction has not yet
@@ -1365,11 +1365,11 @@ impl RpcClient {
     /// and the transaction failed, this method returns `Ok(Some(Err(_)))`,
     /// where the interior error is type [`TransactionError`].
     ///
-    /// [`TransactionError`]: solana_sdk::transaction::TransactionError
+    /// [`TransactionError`]: analog_sdk::transaction::TransactionError
     ///
     /// This function only searches a node's recent history, including all
     /// recent slots, plus up to
-    /// [`MAX_RECENT_BLOCKHASHES`][solana_sdk::clock::MAX_RECENT_BLOCKHASHES]
+    /// [`MAX_RECENT_BLOCKHASHES`][analog_sdk::clock::MAX_RECENT_BLOCKHASHES]
     /// rooted slots. To search the full transaction history use the
     /// [`get_signature_statuse_with_commitment_and_history`][RpcClient::get_signature_status_with_commitment_and_history]
     /// method.
@@ -1378,16 +1378,16 @@ impl RpcClient {
     ///
     /// This method is built on the [`getSignatureStatuses`] RPC method.
     ///
-    /// [`getSignatureStatuses`]: https://docs.solana.com/developing/clients/jsonrpc-api#gitsignaturestatuses
+    /// [`getSignatureStatuses`]: https://docs.analog.com/developing/clients/jsonrpc-api#gitsignaturestatuses
     ///
     /// # Examples
     ///
     /// ```
-    /// # use solana_client::{
+    /// # use analog_client::{
     /// #     rpc_client::RpcClient,
     /// #     client_error::ClientError,
     /// # };
-    /// # use solana_sdk::{
+    /// # use analog_sdk::{
     /// #     signature::Signer,
     /// #     signature::Signature,
     /// #     signer::keypair::Keypair,
@@ -1397,9 +1397,9 @@ impl RpcClient {
     /// # let rpc_client = RpcClient::new_mock("succeeds".to_string());
     /// # let alice = Keypair::new();
     /// # let bob = Keypair::new();
-    /// # let lamports = 50;
+    /// # let tock = 50;
     /// # let latest_blockhash = rpc_client.get_latest_blockhash()?;
-    /// # let tx = system_transaction::transfer(&alice, &bob.pubkey(), lamports, latest_blockhash);
+    /// # let tx = system_transaction::transfer(&alice, &bob.pubkey(), tock, latest_blockhash);
     /// let signature = rpc_client.send_transaction(&tx)?;
     /// let status = rpc_client.get_signature_status(&signature)?;
     /// # Ok::<(), ClientError>(())
@@ -1430,7 +1430,7 @@ impl RpcClient {
     ///
     /// This function only searches a node's recent history, including all
     /// recent slots, plus up to
-    /// [`MAX_RECENT_BLOCKHASHES`][solana_sdk::clock::MAX_RECENT_BLOCKHASHES]
+    /// [`MAX_RECENT_BLOCKHASHES`][analog_sdk::clock::MAX_RECENT_BLOCKHASHES]
     /// rooted slots. To search the full transaction history use the
     /// [`get_signature_statuses_with_history`][RpcClient::get_signature_statuses_with_history]
     /// method.
@@ -1445,16 +1445,16 @@ impl RpcClient {
     ///
     /// This method corresponds directly to the [`getSignatureStatuses`] RPC method.
     ///
-    /// [`getSignatureStatuses`]: https://docs.solana.com/developing/clients/jsonrpc-api#getsignaturestatuses
+    /// [`getSignatureStatuses`]: https://docs.analog.com/developing/clients/jsonrpc-api#getsignaturestatuses
     ///
     /// # Examples
     ///
     /// ```
-    /// # use solana_client::{
+    /// # use analog_client::{
     /// #     rpc_client::RpcClient,
     /// #     client_error::ClientError,
     /// # };
-    /// # use solana_sdk::{
+    /// # use analog_sdk::{
     /// #     signature::Signer,
     /// #     signature::Signature,
     /// #     signer::keypair::Keypair,
@@ -1464,11 +1464,11 @@ impl RpcClient {
     /// # use std::time::Duration;
     /// # let rpc_client = RpcClient::new_mock("succeeds".to_string());
     /// # let alice = Keypair::new();
-    /// // Send lamports from Alice to Bob and wait for the transaction to be processed
+    /// // Send tock from Alice to Bob and wait for the transaction to be processed
     /// # let bob = Keypair::new();
-    /// # let lamports = 50;
+    /// # let tock = 50;
     /// let latest_blockhash = rpc_client.get_latest_blockhash()?;
-    /// let tx = system_transaction::transfer(&alice, &bob.pubkey(), lamports, latest_blockhash);
+    /// let tx = system_transaction::transfer(&alice, &bob.pubkey(), tock, latest_blockhash);
     /// let signature = rpc_client.send_transaction(&tx)?;
     ///
     /// let status = loop {
@@ -1523,16 +1523,16 @@ impl RpcClient {
     /// method, with the `searchTransactionHistory` configuration option set to
     /// `true`.
     ///
-    /// [`getSignatureStatuses`]: https://docs.solana.com/developing/clients/jsonrpc-api#getsignaturestatuses
+    /// [`getSignatureStatuses`]: https://docs.analog.com/developing/clients/jsonrpc-api#getsignaturestatuses
     ///
     /// # Examples
     ///
     /// ```
-    /// # use solana_client::{
+    /// # use analog_client::{
     /// #     rpc_client::RpcClient,
     /// #     client_error::ClientError,
     /// # };
-    /// # use solana_sdk::{
+    /// # use analog_sdk::{
     /// #     signature::Signer,
     /// #     signature::Signature,
     /// #     signer::keypair::Keypair,
@@ -1566,7 +1566,7 @@ impl RpcClient {
 
     /// Check if a transaction has been processed with the given [commitment level][cl].
     ///
-    /// [cl]: https://docs.solana.com/developing/clients/jsonrpc-api#configuring-state-commitment
+    /// [cl]: https://docs.analog.com/developing/clients/jsonrpc-api#configuring-state-commitment
     ///
     /// If the transaction has been processed with the given commitment level,
     /// then this method returns `Ok` of `Some`. If the transaction has not yet
@@ -1579,11 +1579,11 @@ impl RpcClient {
     /// and the transaction failed, this method returns `Ok(Some(Err(_)))`,
     /// where the interior error is type [`TransactionError`].
     ///
-    /// [`TransactionError`]: solana_sdk::transaction::TransactionError
+    /// [`TransactionError`]: analog_sdk::transaction::TransactionError
     ///
     /// This function only searches a node's recent history, including all
     /// recent slots, plus up to
-    /// [`MAX_RECENT_BLOCKHASHES`][solana_sdk::clock::MAX_RECENT_BLOCKHASHES]
+    /// [`MAX_RECENT_BLOCKHASHES`][analog_sdk::clock::MAX_RECENT_BLOCKHASHES]
     /// rooted slots. To search the full transaction history use the
     /// [`get_signature_statuse_with_commitment_and_history`][RpcClient::get_signature_status_with_commitment_and_history]
     /// method.
@@ -1592,16 +1592,16 @@ impl RpcClient {
     ///
     /// This method is built on the [`getSignatureStatuses`] RPC method.
     ///
-    /// [`getSignatureStatuses`]: https://docs.solana.com/developing/clients/jsonrpc-api#getsignaturestatuses
+    /// [`getSignatureStatuses`]: https://docs.analog.com/developing/clients/jsonrpc-api#getsignaturestatuses
     ///
     /// # Examples
     ///
     /// ```
-    /// # use solana_client::{
+    /// # use analog_client::{
     /// #     rpc_client::RpcClient,
     /// #     client_error::ClientError,
     /// # };
-    /// # use solana_sdk::{
+    /// # use analog_sdk::{
     /// #     commitment_config::CommitmentConfig,
     /// #     signature::Signer,
     /// #     signature::Signature,
@@ -1611,9 +1611,9 @@ impl RpcClient {
     /// # let rpc_client = RpcClient::new_mock("succeeds".to_string());
     /// # let alice = Keypair::new();
     /// # let bob = Keypair::new();
-    /// # let lamports = 50;
+    /// # let tock = 50;
     /// # let latest_blockhash = rpc_client.get_latest_blockhash()?;
-    /// # let tx = system_transaction::transfer(&alice, &bob.pubkey(), lamports, latest_blockhash);
+    /// # let tx = system_transaction::transfer(&alice, &bob.pubkey(), tock, latest_blockhash);
     /// let signature = rpc_client.send_and_confirm_transaction(&tx)?;
     /// let commitment_config = CommitmentConfig::processed();
     /// let status = rpc_client.get_signature_status_with_commitment(
@@ -1639,7 +1639,7 @@ impl RpcClient {
 
     /// Check if a transaction has been processed with the given [commitment level][cl].
     ///
-    /// [cl]: https://docs.solana.com/developing/clients/jsonrpc-api#configuring-state-commitment
+    /// [cl]: https://docs.analog.com/developing/clients/jsonrpc-api#configuring-state-commitment
     ///
     /// If the transaction has been processed with the given commitment level,
     /// then this method returns `Ok` of `Some`. If the transaction has not yet
@@ -1652,7 +1652,7 @@ impl RpcClient {
     /// and the transaction failed, this method returns `Ok(Some(Err(_)))`,
     /// where the interior error is type [`TransactionError`].
     ///
-    /// [`TransactionError`]: solana_sdk::transaction::TransactionError
+    /// [`TransactionError`]: analog_sdk::transaction::TransactionError
     ///
     /// This method optionally searches a node's full ledger history and (if
     /// implemented) long-term storage.
@@ -1661,16 +1661,16 @@ impl RpcClient {
     ///
     /// This method is built on the [`getSignatureStatuses`] RPC method.
     ///
-    /// [`getSignatureStatuses`]: https://docs.solana.com/developing/clients/jsonrpc-api#getsignaturestatuses
+    /// [`getSignatureStatuses`]: https://docs.analog.com/developing/clients/jsonrpc-api#getsignaturestatuses
     ///
     /// # Examples
     ///
     /// ```
-    /// # use solana_client::{
+    /// # use analog_client::{
     /// #     rpc_client::RpcClient,
     /// #     client_error::ClientError,
     /// # };
-    /// # use solana_sdk::{
+    /// # use analog_sdk::{
     /// #     commitment_config::CommitmentConfig,
     /// #     signature::Signer,
     /// #     signature::Signature,
@@ -1680,9 +1680,9 @@ impl RpcClient {
     /// # let rpc_client = RpcClient::new_mock("succeeds".to_string());
     /// # let alice = Keypair::new();
     /// # let bob = Keypair::new();
-    /// # let lamports = 50;
+    /// # let tock = 50;
     /// # let latest_blockhash = rpc_client.get_latest_blockhash()?;
-    /// # let tx = system_transaction::transfer(&alice, &bob.pubkey(), lamports, latest_blockhash);
+    /// # let tx = system_transaction::transfer(&alice, &bob.pubkey(), tock, latest_blockhash);
     /// let signature = rpc_client.send_transaction(&tx)?;
     /// let commitment_config = CommitmentConfig::processed();
     /// let search_transaction_history = true;
@@ -1713,18 +1713,18 @@ impl RpcClient {
 
     /// Returns the slot that has reached the configured [commitment level][cl].
     ///
-    /// [cl]: https://docs.solana.com/developing/clients/jsonrpc-api#configuring-state-commitment
+    /// [cl]: https://docs.analog.com/developing/clients/jsonrpc-api#configuring-state-commitment
     ///
     /// # RPC Reference
     ///
     /// This method corresponds directly to the [`getSlot`] RPC method.
     ///
-    /// [`getSlot`]: https://docs.solana.com/developing/clients/jsonrpc-api#getslot
+    /// [`getSlot`]: https://docs.analog.com/developing/clients/jsonrpc-api#getslot
     ///
     /// # Examples
     ///
     /// ```
-    /// # use solana_client::{
+    /// # use analog_client::{
     /// #     rpc_client::RpcClient,
     /// #     client_error::ClientError,
     /// # };
@@ -1738,22 +1738,22 @@ impl RpcClient {
 
     /// Returns the slot that has reached the given [commitment level][cl].
     ///
-    /// [cl]: https://docs.solana.com/developing/clients/jsonrpc-api#configuring-state-commitment
+    /// [cl]: https://docs.analog.com/developing/clients/jsonrpc-api#configuring-state-commitment
     ///
     /// # RPC Reference
     ///
     /// This method corresponds directly to the [`getSlot`] RPC method.
     ///
-    /// [`getSlot`]: https://docs.solana.com/developing/clients/jsonrpc-api#getslot
+    /// [`getSlot`]: https://docs.analog.com/developing/clients/jsonrpc-api#getslot
     ///
     /// # Examples
     ///
     /// ```
-    /// # use solana_client::{
+    /// # use analog_client::{
     /// #     rpc_client::RpcClient,
     /// #     client_error::ClientError,
     /// # };
-    /// # use solana_sdk::commitment_config::CommitmentConfig;
+    /// # use analog_sdk::commitment_config::CommitmentConfig;
     /// # let rpc_client = RpcClient::new_mock("succeeds".to_string());
     /// let commitment_config = CommitmentConfig::processed();
     /// let slot = rpc_client.get_slot_with_commitment(commitment_config)?;
@@ -1771,18 +1771,18 @@ impl RpcClient {
 
     /// Returns the block height that has reached the configured [commitment level][cl].
     ///
-    /// [cl]: https://docs.solana.com/developing/clients/jsonrpc-api#configuring-state-commitment
+    /// [cl]: https://docs.analog.com/developing/clients/jsonrpc-api#configuring-state-commitment
     ///
     /// # RPC Reference
     ///
     /// This method is corresponds directly to the [`getBlockHeight`] RPC method.
     ///
-    /// [`getBlockHeight`]: https://docs.solana.com/developing/clients/jsonrpc-api#getblockheight
+    /// [`getBlockHeight`]: https://docs.analog.com/developing/clients/jsonrpc-api#getblockheight
     ///
     /// # Examples
     ///
     /// ```
-    /// # use solana_client::{
+    /// # use analog_client::{
     /// #     rpc_client::RpcClient,
     /// #     client_error::ClientError,
     /// # };
@@ -1796,22 +1796,22 @@ impl RpcClient {
 
     /// Returns the block height that has reached the given [commitment level][cl].
     ///
-    /// [cl]: https://docs.solana.com/developing/clients/jsonrpc-api#configuring-state-commitment
+    /// [cl]: https://docs.analog.com/developing/clients/jsonrpc-api#configuring-state-commitment
     ///
     /// # RPC Reference
     ///
     /// This method is corresponds directly to the [`getBlockHeight`] RPC method.
     ///
-    /// [`getBlockHeight`]: https://docs.solana.com/developing/clients/jsonrpc-api#getblockheight
+    /// [`getBlockHeight`]: https://docs.analog.com/developing/clients/jsonrpc-api#getblockheight
     ///
     /// # Examples
     ///
     /// ```
-    /// # use solana_client::{
+    /// # use analog_client::{
     /// #     rpc_client::RpcClient,
     /// #     client_error::ClientError,
     /// # };
-    /// # use solana_sdk::commitment_config::CommitmentConfig;
+    /// # use analog_sdk::commitment_config::CommitmentConfig;
     /// # let rpc_client = RpcClient::new_mock("succeeds".to_string());
     /// let commitment_config = CommitmentConfig::processed();
     /// let block_height = rpc_client.get_block_height_with_commitment(
@@ -1835,16 +1835,16 @@ impl RpcClient {
     ///
     /// This method corresponds directly to the [`getSlotLeaders`] RPC method.
     ///
-    /// [`getSlotLeaders`]: https://docs.solana.com/developing/clients/jsonrpc-api#getslotleaders
+    /// [`getSlotLeaders`]: https://docs.analog.com/developing/clients/jsonrpc-api#getslotleaders
     ///
     /// # Examples
     ///
     /// ```
-    /// # use solana_client::{
+    /// # use analog_client::{
     /// #     rpc_client::RpcClient,
     /// #     client_error::ClientError,
     /// # };
-    /// # use solana_sdk::slot_history::Slot;
+    /// # use analog_sdk::slot_history::Slot;
     /// # let rpc_client = RpcClient::new_mock("succeeds".to_string());
     /// let start_slot = 1;
     /// let limit = 3;
@@ -1875,12 +1875,12 @@ impl RpcClient {
     ///
     /// This method corresponds directly to the [`getBlockProduction`] RPC method.
     ///
-    /// [`getBlockProduction`]: https://docs.solana.com/developing/clients/jsonrpc-api#getblockproduction
+    /// [`getBlockProduction`]: https://docs.analog.com/developing/clients/jsonrpc-api#getblockproduction
     ///
     /// # Examples
     ///
     /// ```
-    /// # use solana_client::{
+    /// # use analog_client::{
     /// #     rpc_client::RpcClient,
     /// #     client_error::ClientError,
     /// # };
@@ -1898,18 +1898,18 @@ impl RpcClient {
     ///
     /// This method corresponds directly to the [`getBlockProduction`] RPC method.
     ///
-    /// [`getBlockProduction`]: https://docs.solana.com/developing/clients/jsonrpc-api#getblockproduction
+    /// [`getBlockProduction`]: https://docs.analog.com/developing/clients/jsonrpc-api#getblockproduction
     ///
     /// # Examples
     ///
     /// ```
-    /// # use solana_client::{
+    /// # use analog_client::{
     /// #     rpc_client::RpcClient,
     /// #     client_error::ClientError,
     /// #     rpc_config::RpcBlockProductionConfig,
     /// #     rpc_config::RpcBlockProductionConfigRange,
     /// # };
-    /// # use solana_sdk::{
+    /// # use analog_sdk::{
     /// #     signature::Signer,
     /// #     signer::keypair::Keypair,
     /// #     commitment_config::CommitmentConfig,
@@ -1944,23 +1944,23 @@ impl RpcClient {
     ///
     /// This method uses the configured [commitment level].
     ///
-    /// [cl]: https://docs.solana.com/developing/clients/jsonrpc-api#configuring-state-commitment
+    /// [cl]: https://docs.analog.com/developing/clients/jsonrpc-api#configuring-state-commitment
     ///
     /// # RPC Reference
     ///
     /// This method corresponds directly to the [`getStakeActivation`] RPC method.
     ///
-    /// [`getStakeActivation`]: https://docs.solana.com/developing/clients/jsonrpc-api#getstakeactivation
+    /// [`getStakeActivation`]: https://docs.analog.com/developing/clients/jsonrpc-api#getstakeactivation
     ///
     /// # Examples
     ///
     /// ```
-    /// # use solana_client::{
+    /// # use analog_client::{
     /// #     rpc_client::RpcClient,
     /// #     client_error::ClientError,
     /// #     rpc_response::StakeActivationState,
     /// # };
-    /// # use solana_sdk::{
+    /// # use analog_sdk::{
     /// #     signer::keypair::Keypair,
     /// #     signature::Signer,
     /// #     pubkey::Pubkey,
@@ -2032,18 +2032,18 @@ impl RpcClient {
     ///
     /// This method uses the configured [commitment level][cl].
     ///
-    /// [cl]: https://docs.solana.com/developing/clients/jsonrpc-api#configuring-state-commitment
+    /// [cl]: https://docs.analog.com/developing/clients/jsonrpc-api#configuring-state-commitment
     ///
     /// # RPC Reference
     ///
     /// This method corresponds directly to the [`getSupply`] RPC method.
     ///
-    /// [`getSupply`]: https://docs.solana.com/developing/clients/jsonrpc-api#getsupply
+    /// [`getSupply`]: https://docs.analog.com/developing/clients/jsonrpc-api#getsupply
     ///
     /// # Examples
     ///
     /// ```
-    /// # use solana_client::{
+    /// # use analog_client::{
     /// #     rpc_client::RpcClient,
     /// #     client_error::ClientError,
     /// # };
@@ -2061,16 +2061,16 @@ impl RpcClient {
     ///
     /// This method corresponds directly to the [`getSupply`] RPC method.
     ///
-    /// [`getSupply`]: https://docs.solana.com/developing/clients/jsonrpc-api#getsupply
+    /// [`getSupply`]: https://docs.analog.com/developing/clients/jsonrpc-api#getsupply
     ///
     /// # Examples
     ///
     /// ```
-    /// # use solana_client::{
+    /// # use analog_client::{
     /// #     rpc_client::RpcClient,
     /// #     client_error::ClientError,
     /// # };
-    /// # use solana_sdk::commitment_config::CommitmentConfig;
+    /// # use analog_sdk::commitment_config::CommitmentConfig;
     /// # let rpc_client = RpcClient::new_mock("succeeds".to_string());
     /// let commitment_config = CommitmentConfig::processed();
     /// let supply = rpc_client.supply_with_commitment(
@@ -2088,25 +2088,25 @@ impl RpcClient {
         )
     }
 
-    /// Returns the 20 largest accounts, by lamport balance.
+    /// Returns the 20 largest accounts, bytockbalance.
     ///
     /// # RPC Reference
     ///
     /// This method corresponds directly to the [`getLargestAccounts`] RPC
     /// method.
     ///
-    /// [`getLargestAccounts`]: https://docs.solana.com/developing/clients/jsonrpc-api#getlargestaccounts
+    /// [`getLargestAccounts`]: https://docs.analog.com/developing/clients/jsonrpc-api#getlargestaccounts
     ///
     /// # Examples
     ///
     /// ```
-    /// # use solana_client::{
+    /// # use analog_client::{
     /// #     rpc_client::RpcClient,
     /// #     client_error::ClientError,
     /// #     rpc_config::RpcLargestAccountsConfig,
     /// #     rpc_config::RpcLargestAccountsFilter,
     /// # };
-    /// # use solana_sdk::commitment_config::CommitmentConfig;
+    /// # use analog_sdk::commitment_config::CommitmentConfig;
     /// # let rpc_client = RpcClient::new_mock("succeeds".to_string());
     /// let commitment_config = CommitmentConfig::processed();
     /// let config = RpcLargestAccountsConfig {
@@ -2134,19 +2134,19 @@ impl RpcClient {
     /// Returns the account info and associated stake for all the voting accounts
     /// that have reached the configured [commitment level][cl].
     ///
-    /// [cl]: https://docs.solana.com/developing/clients/jsonrpc-api#configuring-state-commitment
+    /// [cl]: https://docs.analog.com/developing/clients/jsonrpc-api#configuring-state-commitment
     ///
     /// # RPC Reference
     ///
     /// This method corresponds directly to the [`getVoteAccounts`]
     /// RPC method.
     ///
-    /// [`getVoteAccounts`]: https://docs.solana.com/developing/clients/jsonrpc-api#getvoteaccounts
+    /// [`getVoteAccounts`]: https://docs.analog.com/developing/clients/jsonrpc-api#getvoteaccounts
     ///
     /// # Examples
     ///
     /// ```
-    /// # use solana_client::{
+    /// # use analog_client::{
     /// #     rpc_client::RpcClient,
     /// #     client_error::ClientError,
     /// # };
@@ -2161,19 +2161,19 @@ impl RpcClient {
     /// Returns the account info and associated stake for all the voting accounts
     /// that have reached the given [commitment level][cl].
     ///
-    /// [cl]: https://docs.solana.com/developing/clients/jsonrpc-api#configuring-state-commitment
+    /// [cl]: https://docs.analog.com/developing/clients/jsonrpc-api#configuring-state-commitment
     ///
     /// # RPC Reference
     ///
     /// This method corresponds directly to the [`getVoteAccounts`] RPC method.
     ///
-    /// [`getVoteAccounts`]: https://docs.solana.com/developing/clients/jsonrpc-api#getvoteaccounts
+    /// [`getVoteAccounts`]: https://docs.analog.com/developing/clients/jsonrpc-api#getvoteaccounts
     ///
     /// # Examples
     ///
     /// ```
-    /// # use solana_sdk::commitment_config::CommitmentConfig;
-    /// # use solana_client::{
+    /// # use analog_sdk::commitment_config::CommitmentConfig;
+    /// # use analog_client::{
     /// #     rpc_client::RpcClient,
     /// #     client_error::ClientError,
     /// # };
@@ -2197,23 +2197,23 @@ impl RpcClient {
     /// Returns the account info and associated stake for all the voting accounts
     /// that have reached the given [commitment level][cl].
     ///
-    /// [cl]: https://docs.solana.com/developing/clients/jsonrpc-api#configuring-state-commitment
+    /// [cl]: https://docs.analog.com/developing/clients/jsonrpc-api#configuring-state-commitment
     ///
     /// # RPC Reference
     ///
     /// This method corresponds directly to the [`getVoteAccounts`] RPC method.
     ///
-    /// [`getVoteAccounts`]: https://docs.solana.com/developing/clients/jsonrpc-api#getvoteaccounts
+    /// [`getVoteAccounts`]: https://docs.analog.com/developing/clients/jsonrpc-api#getvoteaccounts
     ///
     /// # Examples
     ///
     /// ```
-    /// # use solana_client::{
+    /// # use analog_client::{
     /// #     rpc_client::RpcClient,
     /// #     client_error::ClientError,
     /// #     rpc_config::RpcGetVoteAccountsConfig,
     /// # };
-    /// # use solana_sdk::{
+    /// # use analog_sdk::{
     /// #     signer::keypair::Keypair,
     /// #     signature::Signer,
     /// #     commitment_config::CommitmentConfig,
@@ -2279,12 +2279,12 @@ impl RpcClient {
     /// This method corresponds directly to the [`getClusterNodes`]
     /// RPC method.
     ///
-    /// [`getClusterNodes`]: https://docs.solana.com/developing/clients/jsonrpc-api#getclusternodes
+    /// [`getClusterNodes`]: https://docs.analog.com/developing/clients/jsonrpc-api#getclusternodes
     ///
     /// # Examples
     ///
     /// ```
-    /// # use solana_client::{
+    /// # use analog_client::{
     /// #     rpc_client::RpcClient,
     /// #     client_error::ClientError,
     /// # };
@@ -2310,12 +2310,12 @@ impl RpcClient {
     /// This method corresponds directly to the [`getBlock`] RPC
     /// method.
     ///
-    /// [`getBlock`]: https://docs.solana.com/developing/clients/jsonrpc-api#getblock
+    /// [`getBlock`]: https://docs.analog.com/developing/clients/jsonrpc-api#getblock
     ///
     /// # Examples
     ///
     /// ```
-    /// # use solana_client::{
+    /// # use analog_client::{
     /// #     rpc_client::RpcClient,
     /// #     client_error::ClientError,
     /// # };
@@ -2334,13 +2334,13 @@ impl RpcClient {
     ///
     /// This method corresponds directly to the [`getBlock`] RPC method.
     ///
-    /// [`getBlock`]: https://docs.solana.com/developing/clients/jsonrpc-api#getblock
+    /// [`getBlock`]: https://docs.analog.com/developing/clients/jsonrpc-api#getblock
     ///
     /// # Examples
     ///
     /// ```
-    /// # use solana_transaction_status::UiTransactionEncoding;
-    /// # use solana_client::{
+    /// # use analog_transaction_status::UiTransactionEncoding;
+    /// # use analog_client::{
     /// #     rpc_client::RpcClient,
     /// #     client_error::ClientError,
     /// # };
@@ -2370,16 +2370,16 @@ impl RpcClient {
     ///
     /// This method corresponds directly to the [`getBlock`] RPC method.
     ///
-    /// [`getBlock`]: https://docs.solana.com/developing/clients/jsonrpc-api#getblock
+    /// [`getBlock`]: https://docs.analog.com/developing/clients/jsonrpc-api#getblock
     ///
     /// # Examples
     ///
     /// ```
-    /// # use solana_transaction_status::{
+    /// # use analog_transaction_status::{
     /// #     TransactionDetails,
     /// #     UiTransactionEncoding,
     /// # };
-    /// # use solana_client::{
+    /// # use analog_client::{
     /// #     rpc_client::RpcClient,
     /// #     rpc_config::RpcBlockConfig,
     /// #     client_error::ClientError,
@@ -2457,7 +2457,7 @@ impl RpcClient {
     ///
     /// [`Finalized`]: CommitmentLevel::Finalized
     /// [`get_blocks_with_limit`]: RpcClient::get_blocks_with_limit.
-    /// [cl]: https://docs.solana.com/developing/clients/jsonrpc-api#configuring-state-commitment
+    /// [cl]: https://docs.analog.com/developing/clients/jsonrpc-api#configuring-state-commitment
     ///
     /// # Errors
     ///
@@ -2469,13 +2469,13 @@ impl RpcClient {
     /// the remote node version is less than 1.7, in which case it maps to the
     /// [`getConfirmedBlocks`] RPC method.
     ///
-    /// [`getBlocks`]: https://docs.solana.com/developing/clients/jsonrpc-api#getblocks
-    /// [`getConfirmedBlocks`]: https://docs.solana.com/developing/clients/jsonrpc-api#getConfirmedblocks
+    /// [`getBlocks`]: https://docs.analog.com/developing/clients/jsonrpc-api#getblocks
+    /// [`getConfirmedBlocks`]: https://docs.analog.com/developing/clients/jsonrpc-api#getConfirmedblocks
     ///
     /// # Examples
     ///
     /// ```
-    /// # use solana_client::{
+    /// # use analog_client::{
     /// #     rpc_client::RpcClient,
     /// #     client_error::ClientError,
     /// # };
@@ -2501,7 +2501,7 @@ impl RpcClient {
     /// If `end_slot` is not provided, then the end slot is for the latest
     /// block with the given [commitment level][cl].
     ///
-    /// [cl]: https://docs.solana.com/developing/clients/jsonrpc-api#configuring-state-commitment
+    /// [cl]: https://docs.analog.com/developing/clients/jsonrpc-api#configuring-state-commitment
     ///
     /// This method may not return blocks for the full range of slots if some
     /// slots do not have corresponding blocks. To simply get a specific number
@@ -2525,14 +2525,14 @@ impl RpcClient {
     /// the remote node version is less than 1.7, in which case it maps to the
     /// [`getConfirmedBlocks`] RPC method.
     ///
-    /// [`getBlocks`]: https://docs.solana.com/developing/clients/jsonrpc-api#getblocks
-    /// [`getConfirmedBlocks`]: https://docs.solana.com/developing/clients/jsonrpc-api#getConfirmedblocks
+    /// [`getBlocks`]: https://docs.analog.com/developing/clients/jsonrpc-api#getblocks
+    /// [`getConfirmedBlocks`]: https://docs.analog.com/developing/clients/jsonrpc-api#getConfirmedblocks
     ///
     /// # Examples
     ///
     /// ```
-    /// # use solana_sdk::commitment_config::CommitmentConfig;
-    /// # use solana_client::{
+    /// # use analog_sdk::commitment_config::CommitmentConfig;
+    /// # use analog_client::{
     /// #     rpc_client::RpcClient,
     /// #     client_error::ClientError,
     /// # };
@@ -2572,7 +2572,7 @@ impl RpcClient {
     /// This method uses the [`Finalized`] [commitment level][cl].
     ///
     /// [`Finalized`]: CommitmentLevel::Finalized.
-    /// [cl]: https://docs.solana.com/developing/clients/jsonrpc-api#configuring-state-commitment
+    /// [cl]: https://docs.analog.com/developing/clients/jsonrpc-api#configuring-state-commitment
     ///
     /// # Errors
     ///
@@ -2584,13 +2584,13 @@ impl RpcClient {
     /// method, unless the remote node version is less than 1.7, in which case
     /// it maps to the [`getConfirmedBlocksWithLimit`] RPC method.
     ///
-    /// [`getBlocksWithLimit`]: https://docs.solana.com/developing/clients/jsonrpc-api#getblockswithlimit
-    /// [`getConfirmedBlocksWithLimit`]: https://docs.solana.com/developing/clients/jsonrpc-api#getconfirmedblockswithlimit
+    /// [`getBlocksWithLimit`]: https://docs.analog.com/developing/clients/jsonrpc-api#getblockswithlimit
+    /// [`getConfirmedBlocksWithLimit`]: https://docs.analog.com/developing/clients/jsonrpc-api#getconfirmedblockswithlimit
     ///
     /// # Examples
     ///
     /// ```
-    /// # use solana_client::{
+    /// # use analog_client::{
     /// #     rpc_client::RpcClient,
     /// #     client_error::ClientError,
     /// # };
@@ -2617,7 +2617,7 @@ impl RpcClient {
     /// This method returns an error if the given [commitment level][cl] is below
     /// [`Confirmed`].
     ///
-    /// [cl]: https://docs.solana.com/developing/clients/jsonrpc-api#configuring-state-commitment
+    /// [cl]: https://docs.analog.com/developing/clients/jsonrpc-api#configuring-state-commitment
     /// [`Confirmed`]: CommitmentLevel::Confirmed
     ///
     /// # RPC Reference
@@ -2626,14 +2626,14 @@ impl RpcClient {
     /// method, unless the remote node version is less than 1.7, in which case
     /// it maps to the `getConfirmedBlocksWithLimit` RPC method.
     ///
-    /// [`getBlocksWithLimit`]: https://docs.solana.com/developing/clients/jsonrpc-api#getblockswithlimit
-    /// [`getConfirmedBlocksWithLimit`]: https://docs.solana.com/developing/clients/jsonrpc-api#getconfirmedblockswithlimit
+    /// [`getBlocksWithLimit`]: https://docs.analog.com/developing/clients/jsonrpc-api#getblockswithlimit
+    /// [`getConfirmedBlocksWithLimit`]: https://docs.analog.com/developing/clients/jsonrpc-api#getconfirmedblockswithlimit
     ///
     /// # Examples
     ///
     /// ```
-    /// # use solana_sdk::commitment_config::CommitmentConfig;
-    /// # use solana_client::{
+    /// # use analog_sdk::commitment_config::CommitmentConfig;
+    /// # use analog_client::{
     /// #     rpc_client::RpcClient,
     /// #     client_error::ClientError,
     /// # };
@@ -2745,7 +2745,7 @@ impl RpcClient {
     /// This method uses the [`Finalized`] [commitment level][cl].
     ///
     /// [`Finalized`]: CommitmentLevel::Finalized.
-    /// [cl]: https://docs.solana.com/developing/clients/jsonrpc-api#configuring-state-commitment
+    /// [cl]: https://docs.analog.com/developing/clients/jsonrpc-api#configuring-state-commitment
     ///
     /// # RPC Reference
     ///
@@ -2753,17 +2753,17 @@ impl RpcClient {
     /// method, unless the remote node version is less than 1.7, in which case
     /// it maps to the [`getSignaturesForAddress2`] RPC method.
     ///
-    /// [`getSignaturesForAddress`]: https://docs.solana.com/developing/clients/jsonrpc-api#getsignaturesforaddress
-    /// [`getSignaturesForAddress2`]: https://docs.solana.com/developing/clients/jsonrpc-api#getsignaturesforaddress2
+    /// [`getSignaturesForAddress`]: https://docs.analog.com/developing/clients/jsonrpc-api#getsignaturesforaddress
+    /// [`getSignaturesForAddress2`]: https://docs.analog.com/developing/clients/jsonrpc-api#getsignaturesforaddress2
     ///
     /// # Examples
     ///
     /// ```
-    /// # use solana_client::{
+    /// # use analog_client::{
     /// #     client_error::ClientError,
     /// #     rpc_client::RpcClient,
     /// # };
-    /// # use solana_sdk::{
+    /// # use analog_sdk::{
     /// #     signature::Signer,
     /// #     signer::keypair::Keypair,
     /// #     system_transaction,
@@ -2792,7 +2792,7 @@ impl RpcClient {
     /// This method returns an error if the given [commitment level][cl] is below
     /// [`Confirmed`].
     ///
-    /// [cl]: https://docs.solana.com/developing/clients/jsonrpc-api#configuring-state-commitment
+    /// [cl]: https://docs.analog.com/developing/clients/jsonrpc-api#configuring-state-commitment
     /// [`Confirmed`]: CommitmentLevel::Confirmed
     ///
     /// # RPC Reference
@@ -2801,18 +2801,18 @@ impl RpcClient {
     /// method, unless the remote node version is less than 1.7, in which case
     /// it maps to the [`getSignaturesForAddress2`] RPC method.
     ///
-    /// [`getSignaturesForAddress`]: https://docs.solana.com/developing/clients/jsonrpc-api#getsignaturesforaddress
-    /// [`getSignaturesForAddress2`]: https://docs.solana.com/developing/clients/jsonrpc-api#getsignaturesforaddress2
+    /// [`getSignaturesForAddress`]: https://docs.analog.com/developing/clients/jsonrpc-api#getsignaturesforaddress
+    /// [`getSignaturesForAddress2`]: https://docs.analog.com/developing/clients/jsonrpc-api#getsignaturesforaddress2
     ///
     /// # Examples
     ///
     /// ```
-    /// # use solana_client::{
+    /// # use analog_client::{
     /// #     client_error::ClientError,
     /// #     rpc_client::RpcClient,
     /// #     rpc_client::GetConfirmedSignaturesForAddress2Config,
     /// # };
-    /// # use solana_sdk::{
+    /// # use analog_sdk::{
     /// #     signature::Signer,
     /// #     signer::keypair::Keypair,
     /// #     system_transaction,
@@ -2821,9 +2821,9 @@ impl RpcClient {
     /// # let rpc_client = RpcClient::new_mock("succeeds".to_string());
     /// # let alice = Keypair::new();
     /// # let bob = Keypair::new();
-    /// # let lamports = 50;
+    /// # let tock = 50;
     /// # let latest_blockhash = rpc_client.get_latest_blockhash()?;
-    /// # let tx = system_transaction::transfer(&alice, &bob.pubkey(), lamports, latest_blockhash);
+    /// # let tx = system_transaction::transfer(&alice, &bob.pubkey(), tock, latest_blockhash);
     /// # let signature = rpc_client.send_and_confirm_transaction(&tx)?;
     /// let config = GetConfirmedSignaturesForAddress2Config {
     ///     before: None,
@@ -2902,7 +2902,7 @@ impl RpcClient {
     /// This method uses the [`Finalized`] [commitment level][cl].
     ///
     /// [`Finalized`]: CommitmentLevel::Finalized
-    /// [cl]: https://docs.solana.com/developing/clients/jsonrpc-api#configuring-state-commitment
+    /// [cl]: https://docs.analog.com/developing/clients/jsonrpc-api#configuring-state-commitment
     ///
     /// # RPC Reference
     ///
@@ -2910,29 +2910,29 @@ impl RpcClient {
     /// unless the remote node version is less than 1.7, in which case it maps
     /// to the [`getConfirmedTransaction`] RPC method.
     ///
-    /// [`getTransaction`]: https://docs.solana.com/developing/clients/jsonrpc-api#gettransaction
-    /// [`getConfirmedTransaction`]: https://docs.solana.com/developing/clients/jsonrpc-api#getconfirmedtransaction
+    /// [`getTransaction`]: https://docs.analog.com/developing/clients/jsonrpc-api#gettransaction
+    /// [`getConfirmedTransaction`]: https://docs.analog.com/developing/clients/jsonrpc-api#getconfirmedtransaction
     ///
     /// # Examples
     ///
     /// ```
-    /// # use solana_client::{
+    /// # use analog_client::{
     /// #     client_error::ClientError,
     /// #     rpc_client::RpcClient,
     /// # };
-    /// # use solana_sdk::{
+    /// # use analog_sdk::{
     /// #     signature::Signer,
     /// #     signature::Signature,
     /// #     signer::keypair::Keypair,
     /// #     system_transaction,
     /// # };
-    /// # use solana_transaction_status::UiTransactionEncoding;
+    /// # use analog_transaction_status::UiTransactionEncoding;
     /// # let rpc_client = RpcClient::new_mock("succeeds".to_string());
     /// # let alice = Keypair::new();
     /// # let bob = Keypair::new();
-    /// # let lamports = 50;
+    /// # let tock = 50;
     /// # let latest_blockhash = rpc_client.get_latest_blockhash()?;
-    /// # let tx = system_transaction::transfer(&alice, &bob.pubkey(), lamports, latest_blockhash);
+    /// # let tx = system_transaction::transfer(&alice, &bob.pubkey(), tock, latest_blockhash);
     /// let signature = rpc_client.send_and_confirm_transaction(&tx)?;
     /// let transaction = rpc_client.get_transaction(
     ///     &signature,
@@ -2958,7 +2958,7 @@ impl RpcClient {
     /// This method returns an error if the given [commitment level][cl] is below
     /// [`Confirmed`].
     ///
-    /// [cl]: https://docs.solana.com/developing/clients/jsonrpc-api#configuring-state-commitment
+    /// [cl]: https://docs.analog.com/developing/clients/jsonrpc-api#configuring-state-commitment
     /// [`Confirmed`]: CommitmentLevel::Confirmed
     ///
     /// # RPC Reference
@@ -2967,31 +2967,31 @@ impl RpcClient {
     /// unless the remote node version is less than 1.7, in which case it maps
     /// to the [`getConfirmedTransaction`] RPC method.
     ///
-    /// [`getTransaction`]: https://docs.solana.com/developing/clients/jsonrpc-api#gettransaction
-    /// [`getConfirmedTransaction`]: https://docs.solana.com/developing/clients/jsonrpc-api#getconfirmedtransaction
+    /// [`getTransaction`]: https://docs.analog.com/developing/clients/jsonrpc-api#gettransaction
+    /// [`getConfirmedTransaction`]: https://docs.analog.com/developing/clients/jsonrpc-api#getconfirmedtransaction
     ///
     /// # Examples
     ///
     /// ```
-    /// # use solana_client::{
+    /// # use analog_client::{
     /// #     client_error::ClientError,
     /// #     rpc_client::RpcClient,
     /// #     rpc_config::RpcTransactionConfig,
     /// # };
-    /// # use solana_sdk::{
+    /// # use analog_sdk::{
     /// #     signature::Signer,
     /// #     signature::Signature,
     /// #     signer::keypair::Keypair,
     /// #     system_transaction,
     /// #     commitment_config::CommitmentConfig,
     /// # };
-    /// # use solana_transaction_status::UiTransactionEncoding;
+    /// # use analog_transaction_status::UiTransactionEncoding;
     /// # let rpc_client = RpcClient::new_mock("succeeds".to_string());
     /// # let alice = Keypair::new();
     /// # let bob = Keypair::new();
-    /// # let lamports = 50;
+    /// # let tock = 50;
     /// # let latest_blockhash = rpc_client.get_latest_blockhash()?;
-    /// # let tx = system_transaction::transfer(&alice, &bob.pubkey(), lamports, latest_blockhash);
+    /// # let tx = system_transaction::transfer(&alice, &bob.pubkey(), tock, latest_blockhash);
     /// let signature = rpc_client.send_and_confirm_transaction(&tx)?;
     /// let config = RpcTransactionConfig {
     ///     encoding: Some(UiTransactionEncoding::Json),
@@ -3052,12 +3052,12 @@ impl RpcClient {
     ///
     /// This method corresponds directly to the [`getBlockTime`] RPC method.
     ///
-    /// [`getBlockTime`]: https://docs.solana.com/developing/clients/jsonrpc-api#getblocktime
+    /// [`getBlockTime`]: https://docs.analog.com/developing/clients/jsonrpc-api#getblocktime
     ///
     /// # Examples
     ///
     /// ```
-    /// # use solana_client::{
+    /// # use analog_client::{
     /// #     client_error::ClientError,
     /// #     rpc_client::RpcClient,
     /// # };
@@ -3088,18 +3088,18 @@ impl RpcClient {
     ///
     /// This method uses the configured default [commitment level][cl].
     ///
-    /// [cl]: https://docs.solana.com/developing/clients/jsonrpc-api#configuring-state-commitment
+    /// [cl]: https://docs.analog.com/developing/clients/jsonrpc-api#configuring-state-commitment
     ///
     /// # RPC Reference
     ///
     /// This method corresponds directly to the [`getEpochInfo`] RPC method.
     ///
-    /// [`getEpochInfo`]: https://docs.solana.com/developing/clients/jsonrpc-api#getepochinfo
+    /// [`getEpochInfo`]: https://docs.analog.com/developing/clients/jsonrpc-api#getepochinfo
     ///
     /// # Examples
     ///
     /// ```
-    /// # use solana_client::{
+    /// # use analog_client::{
     /// #     client_error::ClientError,
     /// #     rpc_client::RpcClient,
     /// # };
@@ -3117,16 +3117,16 @@ impl RpcClient {
     ///
     /// This method corresponds directly to the [`getEpochInfo`] RPC method.
     ///
-    /// [`getEpochInfo`]: https://docs.solana.com/developing/clients/jsonrpc-api#getepochinfo
+    /// [`getEpochInfo`]: https://docs.analog.com/developing/clients/jsonrpc-api#getepochinfo
     ///
     /// # Examples
     ///
     /// ```
-    /// # use solana_client::{
+    /// # use analog_client::{
     /// #     client_error::ClientError,
     /// #     rpc_client::RpcClient,
     /// # };
-    /// # use solana_sdk::commitment_config::CommitmentConfig;
+    /// # use analog_sdk::commitment_config::CommitmentConfig;
     /// # let rpc_client = RpcClient::new_mock("succeeds".to_string());
     /// let commitment_config = CommitmentConfig::confirmed();
     /// let epoch_info = rpc_client.get_epoch_info_with_commitment(
@@ -3148,22 +3148,22 @@ impl RpcClient {
     ///
     /// This method uses the configured default [commitment level][cl].
     ///
-    /// [cl]: https://docs.solana.com/developing/clients/jsonrpc-api#configuring-state-commitment
+    /// [cl]: https://docs.analog.com/developing/clients/jsonrpc-api#configuring-state-commitment
     ///
     /// # RPC Reference
     ///
     /// This method corresponds directly to the [`getLeaderSchedule`] RPC method.
     ///
-    /// [`getLeaderSchedule`]: https://docs.solana.com/developing/clients/jsonrpc-api#getleaderschedule
+    /// [`getLeaderSchedule`]: https://docs.analog.com/developing/clients/jsonrpc-api#getleaderschedule
     ///
     /// # Examples
     ///
     /// ```
-    /// # use solana_client::{
+    /// # use analog_client::{
     /// #     client_error::ClientError,
     /// #     rpc_client::RpcClient,
     /// # };
-    /// # use solana_sdk::commitment_config::CommitmentConfig;
+    /// # use analog_sdk::commitment_config::CommitmentConfig;
     /// # let rpc_client = RpcClient::new_mock("succeeds".to_string());
     /// # let slot = rpc_client.get_slot()?;
     /// let leader_schedule = rpc_client.get_leader_schedule(
@@ -3184,16 +3184,16 @@ impl RpcClient {
     ///
     /// This method corresponds directly to the [`getLeaderSchedule`] RPC method.
     ///
-    /// [`getLeaderSchedule`]: https://docs.solana.com/developing/clients/jsonrpc-api#getleaderschedule
+    /// [`getLeaderSchedule`]: https://docs.analog.com/developing/clients/jsonrpc-api#getleaderschedule
     ///
     /// # Examples
     ///
     /// ```
-    /// # use solana_client::{
+    /// # use analog_client::{
     /// #     client_error::ClientError,
     /// #     rpc_client::RpcClient,
     /// # };
-    /// # use solana_sdk::commitment_config::CommitmentConfig;
+    /// # use analog_sdk::commitment_config::CommitmentConfig;
     /// # let rpc_client = RpcClient::new_mock("succeeds".to_string());
     /// # let slot = rpc_client.get_slot()?;
     /// let commitment_config = CommitmentConfig::processed();
@@ -3223,17 +3223,17 @@ impl RpcClient {
     ///
     /// This method corresponds directly to the [`getLeaderSchedule`] RPC method.
     ///
-    /// [`getLeaderSchedule`]: https://docs.solana.com/developing/clients/jsonrpc-api#getleaderschedule
+    /// [`getLeaderSchedule`]: https://docs.analog.com/developing/clients/jsonrpc-api#getleaderschedule
     ///
     /// # Examples
     ///
     /// ```
-    /// # use solana_client::{
+    /// # use analog_client::{
     /// #     client_error::ClientError,
     /// #     rpc_client::RpcClient,
     /// # };
-    /// # use solana_client::rpc_config::RpcLeaderScheduleConfig;
-    /// # use solana_sdk::commitment_config::CommitmentConfig;
+    /// # use analog_client::rpc_config::RpcLeaderScheduleConfig;
+    /// # use analog_sdk::commitment_config::CommitmentConfig;
     /// # let rpc_client = RpcClient::new_mock("succeeds".to_string());
     /// # let slot = rpc_client.get_slot()?;
     /// # let validator_pubkey_str = "7AYmEYBBetok8h5L3Eo3vi3bDWnjNnaFbSXfSNYV5ewB".to_string();
@@ -3261,12 +3261,12 @@ impl RpcClient {
     ///
     /// This method corresponds directly to the [`getEpochSchedule`] RPC method.
     ///
-    /// [`getEpochSchedule`]: https://docs.solana.com/developing/clients/jsonrpc-api#getepochschedule
+    /// [`getEpochSchedule`]: https://docs.analog.com/developing/clients/jsonrpc-api#getepochschedule
     ///
     /// # Examples
     ///
     /// ```
-    /// # use solana_client::{
+    /// # use analog_client::{
     /// #     client_error::ClientError,
     /// #     rpc_client::RpcClient,
     /// # };
@@ -3287,12 +3287,12 @@ impl RpcClient {
     ///
     /// This method corresponds directly to the [`getRecentPerformanceSamples`] RPC method.
     ///
-    /// [`getRecentPerformanceSamples`]: https://docs.solana.com/developing/clients/jsonrpc-api#getrecentperformancesamples
+    /// [`getRecentPerformanceSamples`]: https://docs.analog.com/developing/clients/jsonrpc-api#getrecentperformancesamples
     ///
     /// # Examples
     ///
     /// ```
-    /// # use solana_client::{
+    /// # use analog_client::{
     /// #     client_error::ClientError,
     /// #     rpc_client::RpcClient,
     /// # };
@@ -3316,12 +3316,12 @@ impl RpcClient {
     ///
     /// This method corresponds directly to the [`getIdentity`] RPC method.
     ///
-    /// [`getIdentity`]: https://docs.solana.com/developing/clients/jsonrpc-api#getidentity
+    /// [`getIdentity`]: https://docs.analog.com/developing/clients/jsonrpc-api#getidentity
     ///
     /// # Examples
     ///
     /// ```
-    /// # use solana_client::{
+    /// # use analog_client::{
     /// #     client_error::ClientError,
     /// #     rpc_client::RpcClient,
     /// # };
@@ -3345,19 +3345,19 @@ impl RpcClient {
     /// This method uses the [`Finalized`] [commitment level][cl].
     ///
     /// [`Finalized`]: CommitmentLevel::Finalized
-    /// [cl]: https://docs.solana.com/developing/clients/jsonrpc-api#configuring-state-commitment
+    /// [cl]: https://docs.analog.com/developing/clients/jsonrpc-api#configuring-state-commitment
     ///
     /// # RPC Reference
     ///
     /// This method corresponds directly to the [`getInflationGovernor`] RPC
     /// method.
     ///
-    /// [`getInflationGovernor`]: https://docs.solana.com/developing/clients/jsonrpc-api#getinflationgovernor
+    /// [`getInflationGovernor`]: https://docs.analog.com/developing/clients/jsonrpc-api#getinflationgovernor
     ///
     /// # Examples
     ///
     /// ```
-    /// # use solana_client::{
+    /// # use analog_client::{
     /// #     client_error::ClientError,
     /// #     rpc_client::RpcClient,
     /// # };
@@ -3375,12 +3375,12 @@ impl RpcClient {
     ///
     /// This method corresponds directly to the [`getInflationRate`] RPC method.
     ///
-    /// [`getInflationRate`]: https://docs.solana.com/developing/clients/jsonrpc-api#getinflationrate
+    /// [`getInflationRate`]: https://docs.analog.com/developing/clients/jsonrpc-api#getinflationrate
     ///
     /// # Examples
     ///
     /// ```
-    /// # use solana_client::{
+    /// # use analog_client::{
     /// #     client_error::ClientError,
     /// #     rpc_client::RpcClient,
     /// # };
@@ -3396,22 +3396,22 @@ impl RpcClient {
     ///
     /// This method uses the configured [commitment level][cl].
     ///
-    /// [cl]: https://docs.solana.com/developing/clients/jsonrpc-api#configuring-state-commitment
+    /// [cl]: https://docs.analog.com/developing/clients/jsonrpc-api#configuring-state-commitment
     ///
     /// # RPC Reference
     ///
     /// This method corresponds directly to the [`getInflationReward`] RPC method.
     ///
-    /// [`getInflationReward`]: https://docs.solana.com/developing/clients/jsonrpc-api#getinflationreward
+    /// [`getInflationReward`]: https://docs.analog.com/developing/clients/jsonrpc-api#getinflationreward
     ///
     /// # Examples
     ///
     /// ```
-    /// # use solana_client::{
+    /// # use analog_client::{
     /// #     client_error::ClientError,
     /// #     rpc_client::RpcClient,
     /// # };
-    /// # use solana_sdk::signature::{Keypair, Signer};
+    /// # use analog_sdk::signature::{Keypair, Signer};
     /// # let rpc_client = RpcClient::new_mock("succeeds".to_string());
     /// # let epoch_info = rpc_client.get_epoch_info()?;
     /// # let epoch = epoch_info.epoch;
@@ -3445,26 +3445,26 @@ impl RpcClient {
         )
     }
 
-    /// Returns the current solana version running on the node.
+    /// Returns the current analog version running on the node.
     ///
     /// # RPC Reference
     ///
     /// This method corresponds directly to the [`getVersion`] RPC method.
     ///
-    /// [`getVersion`]: https://docs.solana.com/developing/clients/jsonrpc-api#getversion
+    /// [`getVersion`]: https://docs.analog.com/developing/clients/jsonrpc-api#getversion
     ///
     /// # Examples
     ///
     /// ```
-    /// # use solana_client::{
+    /// # use analog_client::{
     /// #     client_error::ClientError,
     /// #     rpc_client::RpcClient,
     /// # };
-    /// # use solana_sdk::signature::{Keypair, Signer};
+    /// # use analog_sdk::signature::{Keypair, Signer};
     /// # let rpc_client = RpcClient::new_mock("succeeds".to_string());
     /// let expected_version = semver::Version::new(1, 7, 0);
     /// let version = rpc_client.get_version()?;
-    /// let version = semver::Version::parse(&version.solana_core)?;
+    /// let version = semver::Version::parse(&version.analog_core)?;
     /// assert!(version >= expected_version);
     /// # Ok::<(), Box<dyn std::error::Error>>(())
     /// ```
@@ -3482,12 +3482,12 @@ impl RpcClient {
     /// This method corresponds directly to the [`minimumLedgerSlot`] RPC
     /// method.
     ///
-    /// [`minimumLedgerSlot`]: https://docs.solana.com/developing/clients/jsonrpc-api#minimumledgerslot
+    /// [`minimumLedgerSlot`]: https://docs.analog.com/developing/clients/jsonrpc-api#minimumledgerslot
     ///
     /// # Examples
     ///
     /// ```
-    /// # use solana_client::{
+    /// # use analog_client::{
     /// #     client_error::ClientError,
     /// #     rpc_client::RpcClient,
     /// # };
@@ -3503,7 +3503,7 @@ impl RpcClient {
     ///
     /// This method uses the configured [commitment level][cl].
     ///
-    /// [cl]: https://docs.solana.com/developing/clients/jsonrpc-api#configuring-state-commitment
+    /// [cl]: https://docs.analog.com/developing/clients/jsonrpc-api#configuring-state-commitment
     ///
     /// To get multiple accounts at once, use the [`get_multiple_accounts`] method.
     ///
@@ -3521,16 +3521,16 @@ impl RpcClient {
     ///
     /// This method is built on the [`getAccountInfo`] RPC method.
     ///
-    /// [`getAccountInfo`]: https://docs.solana.com/developing/clients/jsonrpc-api#getaccountinfo
+    /// [`getAccountInfo`]: https://docs.analog.com/developing/clients/jsonrpc-api#getaccountinfo
     ///
     /// # Examples
     ///
     /// ```
-    /// # use solana_client::{
+    /// # use analog_client::{
     /// #     rpc_client::{self, RpcClient},
     /// #     client_error::ClientError,
     /// # };
-    /// # use solana_sdk::{
+    /// # use analog_sdk::{
     /// #     signature::Signer,
     /// #     signer::keypair::Keypair,
     /// #     pubkey::Pubkey,
@@ -3560,16 +3560,16 @@ impl RpcClient {
     ///
     /// This method is built on the [`getAccountInfo`] RPC method.
     ///
-    /// [`getAccountInfo`]: https://docs.solana.com/developing/clients/jsonrpc-api#getaccountinfo
+    /// [`getAccountInfo`]: https://docs.analog.com/developing/clients/jsonrpc-api#getaccountinfo
     ///
     /// # Examples
     ///
     /// ```
-    /// # use solana_client::{
+    /// # use analog_client::{
     /// #     rpc_client::{self, RpcClient},
     /// #     client_error::ClientError,
     /// # };
-    /// # use solana_sdk::{
+    /// # use analog_sdk::{
     /// #     signature::Signer,
     /// #     signer::keypair::Keypair,
     /// #     pubkey::Pubkey,
@@ -3636,12 +3636,12 @@ impl RpcClient {
     /// This method corresponds directly to the [`getMaxRetransmitSlot`] RPC
     /// method.
     ///
-    /// [`getMaxRetransmitSlot`]: https://docs.solana.com/developing/clients/jsonrpc-api#getmaxretransmitslot
+    /// [`getMaxRetransmitSlot`]: https://docs.analog.com/developing/clients/jsonrpc-api#getmaxretransmitslot
     ///
     /// # Examples
     ///
     /// ```
-    /// # use solana_client::{
+    /// # use analog_client::{
     /// #     rpc_client::RpcClient,
     /// #     client_error::ClientError,
     /// # };
@@ -3652,19 +3652,19 @@ impl RpcClient {
         self.send(RpcRequest::GetMaxRetransmitSlot, Value::Null)
     }
 
-    /// Get the max slot seen from after [shred](https://docs.solana.com/terminology#shred) insert.
+    /// Get the max slot seen from after [shred](https://docs.analog.com/terminology#shred) insert.
     ///
     /// # RPC Reference
     ///
     /// This method corresponds directly to the
     /// [`getMaxShredInsertSlot`] RPC method.
     ///
-    /// [`getMaxShredInsertSlot`]: https://docs.solana.com/developing/clients/jsonrpc-api#getmaxshredinsertslot
+    /// [`getMaxShredInsertSlot`]: https://docs.analog.com/developing/clients/jsonrpc-api#getmaxshredinsertslot
     ///
     /// # Examples
     ///
     /// ```
-    /// # use solana_client::{
+    /// # use analog_client::{
     /// #     rpc_client::RpcClient,
     /// #     client_error::ClientError,
     /// # };
@@ -3679,22 +3679,22 @@ impl RpcClient {
     ///
     /// This method uses the configured [commitment level][cl].
     ///
-    /// [cl]: https://docs.solana.com/developing/clients/jsonrpc-api#configuring-state-commitment
+    /// [cl]: https://docs.analog.com/developing/clients/jsonrpc-api#configuring-state-commitment
     ///
     /// # RPC Reference
     ///
     /// This method is built on the [`getMultipleAccounts`] RPC method.
     ///
-    /// [`getMultipleAccounts`]: https://docs.solana.com/developing/clients/jsonrpc-api#getmultipleaccounts
+    /// [`getMultipleAccounts`]: https://docs.analog.com/developing/clients/jsonrpc-api#getmultipleaccounts
     ///
     /// # Examples
     ///
     /// ```
-    /// # use solana_client::{
+    /// # use analog_client::{
     /// #     rpc_client::RpcClient,
     /// #     client_error::ClientError,
     /// # };
-    /// # use solana_sdk::{
+    /// # use analog_sdk::{
     /// #     signature::Signer,
     /// #     signer::keypair::Keypair,
     /// # };
@@ -3717,16 +3717,16 @@ impl RpcClient {
     ///
     /// This method is built on the [`getMultipleAccounts`] RPC method.
     ///
-    /// [`getMultipleAccounts`]: https://docs.solana.com/developing/clients/jsonrpc-api#getmultipleaccounts
+    /// [`getMultipleAccounts`]: https://docs.analog.com/developing/clients/jsonrpc-api#getmultipleaccounts
     ///
     /// # Examples
     ///
     /// ```
-    /// # use solana_client::{
+    /// # use analog_client::{
     /// #     rpc_client::RpcClient,
     /// #     client_error::ClientError,
     /// # };
-    /// # use solana_sdk::{
+    /// # use analog_sdk::{
     /// #     signature::Signer,
     /// #     signer::keypair::Keypair,
     /// #     commitment_config::CommitmentConfig,
@@ -3763,22 +3763,22 @@ impl RpcClient {
     ///
     /// This method is built on the [`getMultipleAccounts`] RPC method.
     ///
-    /// [`getMultipleAccounts`]: https://docs.solana.com/developing/clients/jsonrpc-api#getmultipleaccounts
+    /// [`getMultipleAccounts`]: https://docs.analog.com/developing/clients/jsonrpc-api#getmultipleaccounts
     ///
     /// # Examples
     ///
     /// ```
-    /// # use solana_client::{
+    /// # use analog_client::{
     /// #     rpc_client::RpcClient,
     /// #     rpc_config::RpcAccountInfoConfig,
     /// #     client_error::ClientError,
     /// # };
-    /// # use solana_sdk::{
+    /// # use analog_sdk::{
     /// #     signature::Signer,
     /// #     signer::keypair::Keypair,
     /// #     commitment_config::CommitmentConfig,
     /// # };
-    /// # use solana_account_decoder::UiAccountEncoding;
+    /// # use analog_account_decoder::UiAccountEncoding;
     /// # let rpc_client = RpcClient::new_mock("succeeds".to_string());
     /// # let alice = Keypair::new();
     /// # let bob = Keypair::new();
@@ -3832,16 +3832,16 @@ impl RpcClient {
     ///
     /// This method is built on the [`getAccountInfo`] RPC method.
     ///
-    /// [`getAccountInfo`]: https://docs.solana.com/developing/clients/jsonrpc-api#getaccountinfo
+    /// [`getAccountInfo`]: https://docs.analog.com/developing/clients/jsonrpc-api#getaccountinfo
     ///
     /// # Examples
     ///
     /// ```
-    /// # use solana_client::{
+    /// # use analog_client::{
     /// #     rpc_client::{self, RpcClient},
     /// #     client_error::ClientError,
     /// # };
-    /// # use solana_sdk::{
+    /// # use analog_sdk::{
     /// #     signature::Signer,
     /// #     signer::keypair::Keypair,
     /// #     pubkey::Pubkey,
@@ -3864,12 +3864,12 @@ impl RpcClient {
     /// This method corresponds directly to the
     /// [`getMinimumBalanceForRentExemption`] RPC method.
     ///
-    /// [`getMinimumBalanceForRentExemption`]: https://docs.solana.com/developing/clients/jsonrpc-api#getminimumbalanceforrentexemption
+    /// [`getMinimumBalanceForRentExemption`]: https://docs.analog.com/developing/clients/jsonrpc-api#getminimumbalanceforrentexemption
     ///
     /// # Examples
     ///
     /// ```
-    /// # use solana_client::{
+    /// # use analog_client::{
     /// #     rpc_client::RpcClient,
     /// #     client_error::ClientError,
     /// # };
@@ -3899,22 +3899,22 @@ impl RpcClient {
     ///
     /// This method uses the configured [commitment level][cl].
     ///
-    /// [cl]: https://docs.solana.com/developing/clients/jsonrpc-api#configuring-state-commitment
+    /// [cl]: https://docs.analog.com/developing/clients/jsonrpc-api#configuring-state-commitment
     ///
     /// # RPC Reference
     ///
     /// This method corresponds directly to the [`getBalance`] RPC method.
     ///
-    /// [`getBalance`]: https://docs.solana.com/developing/clients/jsonrpc-api#getbalance
+    /// [`getBalance`]: https://docs.analog.com/developing/clients/jsonrpc-api#getbalance
     ///
     /// # Examples
     ///
     /// ```
-    /// # use solana_client::{
+    /// # use analog_client::{
     /// #     rpc_client::RpcClient,
     /// #     client_error::ClientError,
     /// # };
-    /// # use solana_sdk::{
+    /// # use analog_sdk::{
     /// #     signature::Signer,
     /// #     signer::keypair::Keypair,
     /// # };
@@ -3935,16 +3935,16 @@ impl RpcClient {
     ///
     /// This method corresponds directly to the [`getBalance`] RPC method.
     ///
-    /// [`getBalance`]: https://docs.solana.com/developing/clients/jsonrpc-api#getbalance
+    /// [`getBalance`]: https://docs.analog.com/developing/clients/jsonrpc-api#getbalance
     ///
     /// # Examples
     ///
     /// ```
-    /// # use solana_client::{
+    /// # use analog_client::{
     /// #     rpc_client::RpcClient,
     /// #     client_error::ClientError,
     /// # };
-    /// # use solana_sdk::{
+    /// # use analog_sdk::{
     /// #     signature::Signer,
     /// #     signer::keypair::Keypair,
     /// #     commitment_config::CommitmentConfig,
@@ -3976,23 +3976,23 @@ impl RpcClient {
     ///
     /// This method uses the configured [commitment level][cl].
     ///
-    /// [cl]: https://docs.solana.com/developing/clients/jsonrpc-api#configuring-state-commitment
+    /// [cl]: https://docs.analog.com/developing/clients/jsonrpc-api#configuring-state-commitment
     ///
     /// # RPC Reference
     ///
     /// This method corresponds directly to the [`getProgramAccounts`] RPC
     /// method.
     ///
-    /// [`getProgramAccounts`]: https://docs.solana.com/developing/clients/jsonrpc-api#getprogramaccounts
+    /// [`getProgramAccounts`]: https://docs.analog.com/developing/clients/jsonrpc-api#getprogramaccounts
     ///
     /// # Examples
     ///
     /// ```
-    /// # use solana_client::{
+    /// # use analog_client::{
     /// #     rpc_client::RpcClient,
     /// #     client_error::ClientError,
     /// # };
-    /// # use solana_sdk::{
+    /// # use analog_sdk::{
     /// #     signature::Signer,
     /// #     signer::keypair::Keypair,
     /// # };
@@ -4020,23 +4020,23 @@ impl RpcClient {
     ///
     /// This method is built on the [`getProgramAccounts`] RPC method.
     ///
-    /// [`getProgramAccounts`]: https://docs.solana.com/developing/clients/jsonrpc-api#getprogramaccounts
+    /// [`getProgramAccounts`]: https://docs.analog.com/developing/clients/jsonrpc-api#getprogramaccounts
     ///
     /// # Examples
     ///
     /// ```
-    /// # use solana_client::{
+    /// # use analog_client::{
     /// #     rpc_client::RpcClient,
     /// #     client_error::ClientError,
     /// #     rpc_config::{RpcAccountInfoConfig, RpcProgramAccountsConfig},
     /// #     rpc_filter::{MemcmpEncodedBytes, RpcFilterType, Memcmp},
     /// # };
-    /// # use solana_sdk::{
+    /// # use analog_sdk::{
     /// #     signature::Signer,
     /// #     signer::keypair::Keypair,
     /// #     commitment_config::CommitmentConfig,
     /// # };
-    /// # use solana_account_decoder::{UiDataSliceConfig, UiAccountEncoding};
+    /// # use analog_account_decoder::{UiDataSliceConfig, UiAccountEncoding};
     /// # let rpc_client = RpcClient::new_mock("succeeds".to_string());
     /// # let alice = Keypair::new();
     /// # let base64_bytes = "\
@@ -4509,10 +4509,10 @@ impl RpcClient {
         )
     }
 
-    pub fn request_airdrop(&self, pubkey: &Pubkey, lamports: u64) -> ClientResult<Signature> {
+    pub fn request_airdrop(&self, pubkey: &Pubkey, tock: u64) -> ClientResult<Signature> {
         self.request_airdrop_with_config(
             pubkey,
-            lamports,
+            tock,
             RpcRequestAirdropConfig {
                 commitment: Some(self.commitment()),
                 ..RpcRequestAirdropConfig::default()
@@ -4523,12 +4523,12 @@ impl RpcClient {
     pub fn request_airdrop_with_blockhash(
         &self,
         pubkey: &Pubkey,
-        lamports: u64,
+        tock: u64,
         recent_blockhash: &Hash,
     ) -> ClientResult<Signature> {
         self.request_airdrop_with_config(
             pubkey,
-            lamports,
+            tock,
             RpcRequestAirdropConfig {
                 commitment: Some(self.commitment()),
                 recent_blockhash: Some(recent_blockhash.to_string()),
@@ -4539,7 +4539,7 @@ impl RpcClient {
     pub fn request_airdrop_with_config(
         &self,
         pubkey: &Pubkey,
-        lamports: u64,
+        tock: u64,
         config: RpcRequestAirdropConfig,
     ) -> ClientResult<Signature> {
         let commitment = config.commitment.unwrap_or_default();
@@ -4550,7 +4550,7 @@ impl RpcClient {
         };
         self.send(
             RpcRequest::RequestAirdrop,
-            json!([pubkey.to_string(), lamports, config]),
+            json!([pubkey.to_string(), tock, config]),
         )
         .and_then(|signature: String| {
             Signature::from_str(&signature).map_err(|err| {
@@ -4919,7 +4919,7 @@ pub fn create_rpc_client_mocks() -> crate::mock_sender::Mocks {
         value: {
             let pubkey = Pubkey::from_str("BgvYtJEfmZYdVKiptmMjxGzv8iQoo4MWjsP3QsTkhhxa").unwrap();
             let account = Account {
-                lamports: 1_000_000,
+                tock: 1_000_000,
                 data: vec![],
                 owner: pubkey,
                 executable: false,
@@ -4943,7 +4943,7 @@ mod tests {
     use jsonrpc_core::{futures::prelude::*, Error, IoHandler, Params};
     use jsonrpc_http_server::{AccessControlAllowOrigin, DomainsValidation, ServerBuilder};
     use serde_json::Number;
-    use solana_sdk::{
+    use analog_sdk::{
         instruction::InstructionError,
         signature::{Keypair, Signer},
         system_transaction,
@@ -5027,7 +5027,7 @@ mod tests {
         let rpc_client = RpcClient::new_mock("succeeds".to_string());
 
         let key = Keypair::new();
-        let to = solana_sdk::pubkey::new_rand();
+        let to = analog_sdk::pubkey::new_rand();
         let blockhash = Hash::default();
         let tx = system_transaction::transfer(&key, &to, 50, blockhash);
 
@@ -5097,7 +5097,7 @@ mod tests {
         let rpc_client = RpcClient::new_mock("succeeds".to_string());
 
         let key = Keypair::new();
-        let to = solana_sdk::pubkey::new_rand();
+        let to = analog_sdk::pubkey::new_rand();
         let blockhash = Hash::default();
         let tx = system_transaction::transfer(&key, &to, 50, blockhash);
         let result = rpc_client.send_and_confirm_transaction(&tx);

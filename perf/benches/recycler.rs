@@ -2,13 +2,13 @@
 
 extern crate test;
 
-use solana_perf::{packet::PacketsRecycler, recycler::Recycler};
+use analog_perf::{packet::PacketsRecycler, recycler::Recycler};
 
 use test::Bencher;
 
 #[bench]
 fn bench_recycler(bencher: &mut Bencher) {
-    solana_logger::setup();
+    analog_logger::setup();
 
     let recycler: PacketsRecycler = Recycler::default();
 

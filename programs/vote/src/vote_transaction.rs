@@ -1,4 +1,4 @@
-use solana_sdk::{
+use analog_sdk::{
     clock::Slot,
     hash::Hash,
     instruction::CompiledInstruction,
@@ -105,7 +105,7 @@ pub fn new_vote_transaction(
 #[cfg(test)]
 mod test {
     use super::*;
-    use solana_sdk::hash::hash;
+    use analog_sdk::hash::hash;
 
     fn run_test_parse_vote_transaction(input_hash: Option<Hash>) {
         let node_keypair = Keypair::new();

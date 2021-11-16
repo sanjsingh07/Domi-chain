@@ -14,22 +14,22 @@ use {
     crossbeam_channel::{Receiver, RecvTimeoutError, SendError, Sender},
     rayon::prelude::*,
     serde::Serialize,
-    solana_account_decoder::{parse_token::spl_token_id_v2_0, UiAccount, UiAccountEncoding},
-    solana_client::{
+    analog_account_decoder::{parse_token::spl_token_id_v2_0, UiAccount, UiAccountEncoding},
+    analog_client::{
         rpc_filter::RpcFilterType,
         rpc_response::{
             ProcessedSignatureResult, ReceivedSignatureResult, Response, RpcKeyedAccount,
             RpcLogsResponse, RpcResponseContext, RpcSignatureResult, RpcVote, SlotInfo, SlotUpdate,
         },
     },
-    solana_measure::measure::Measure,
-    solana_rayon_threadlimit::get_thread_count,
-    solana_runtime::{
+    analog_measure::measure::Measure,
+    analog_rayon_threadlimit::get_thread_count,
+    analog_runtime::{
         bank::{Bank, TransactionLogInfo},
         bank_forks::BankForks,
         commitment::{BlockCommitmentCache, CommitmentSlots},
     },
-    solana_sdk::{
+    analog_sdk::{
         account::{AccountSharedData, ReadableAccount},
         clock::Slot,
         pubkey::Pubkey,
@@ -37,7 +37,7 @@ use {
         timing::timestamp,
         transaction,
     },
-    solana_vote_program::vote_state::Vote,
+    analog_vote_program::vote_state::Vote,
     std::{
         cell::RefCell,
         collections::{HashMap, VecDeque},
@@ -535,11 +535,11 @@ impl RpcSubscriptions {
         };
         let notification_threads = config.notification_threads;
         let t_cleanup = Builder::new()
-            .name("solana-rpc-notifications".to_string())
+            .name("analog-rpc-notifications".to_string())
             .spawn(move || {
                 let pool = rayon::ThreadPoolBuilder::new()
                     .num_threads(notification_threads.unwrap_or_else(get_thread_count))
-                    .thread_name(|i| format!("sol-sub-notif-{}", i))
+                    .thread_name(|i| format!("anlog-sub-notif-{}", i))
                     .build()
                     .unwrap();
                 pool.install(|| {
@@ -1006,15 +1006,15 @@ pub(crate) mod tests {
             rpc_pubsub_service,
         },
         serial_test::serial,
-        solana_client::rpc_config::{
+        analog_client::rpc_config::{
             RpcAccountInfoConfig, RpcProgramAccountsConfig, RpcSignatureSubscribeConfig,
             RpcTransactionLogsFilter,
         },
-        solana_runtime::{
+        analog_runtime::{
             commitment::BlockCommitment,
             genesis_utils::{create_genesis_config, GenesisConfigInfo},
         },
-        solana_sdk::{
+        analog_sdk::{
             commitment_config::CommitmentConfig,
             message::Message,
             signature::{Keypair, Signer},
@@ -1024,7 +1024,7 @@ pub(crate) mod tests {
         std::{collections::HashSet, sync::atomic::Ordering::Relaxed},
     };
 
-    fn make_account_result(lamports: u64, subscription: u64, data: &str) -> serde_json::Value {
+    fn make_account_result(tock: u64, subscription: u64, data: &str) -> serde_json::Value {
         json!({
            "jsonrpc": "2.0",
            "method": "accountNotification",
@@ -1034,7 +1034,7 @@ pub(crate) mod tests {
                    "value": {
                        "data": data,
                        "executable": false,
-                       "lamports": lamports,
+                       "tock": tock,
                        "owner": "11111111111111111111111111111111",
                        "rentEpoch": 0,
                     },
@@ -1232,7 +1232,7 @@ pub(crate) mod tests {
                        "account": {
                           "data": "1111111111111111",
                           "executable": false,
-                          "lamports": 1,
+                          "tock": 1,
                           "owner": "Stake11111111111111111111111111111111111111",
                           "rentEpoch": 0,
                        },
@@ -1386,7 +1386,7 @@ pub(crate) mod tests {
         );
 
         // a closure to reduce code duplications in building expected responses:
-        let build_expected_resp = |slot: Slot, lamports: u64, pubkey: &str, subscription: i32| {
+        let build_expected_resp = |slot: Slot, tock: u64, pubkey: &str, subscription: i32| {
             json!({
                "jsonrpc": "2.0",
                "method": "programNotification",
@@ -1397,7 +1397,7 @@ pub(crate) mod tests {
                            "account": {
                               "data": "1111111111111111",
                               "executable": false,
-                              "lamports": lamports,
+                              "tock": tock,
                               "owner": "Stake11111111111111111111111111111111111111",
                               "rentEpoch": 0,
                            },
@@ -1664,7 +1664,7 @@ pub(crate) mod tests {
         );
 
         // a closure to reduce code duplications in building expected responses:
-        let build_expected_resp = |slot: Slot, lamports: u64, pubkey: &str, subscription: i32| {
+        let build_expected_resp = |slot: Slot, tock: u64, pubkey: &str, subscription: i32| {
             json!({
                "jsonrpc": "2.0",
                "method": "programNotification",
@@ -1675,7 +1675,7 @@ pub(crate) mod tests {
                            "account": {
                               "data": "1111111111111111",
                               "executable": false,
-                              "lamports": lamports,
+                              "tock": tock,
                               "owner": "Stake11111111111111111111111111111111111111",
                               "rentEpoch": 0,
                            },
@@ -1766,7 +1766,7 @@ pub(crate) mod tests {
 
         let next_bank = Bank::new_from_parent(
             &bank_forks.get(0).unwrap().clone(),
-            &solana_sdk::pubkey::new_rand(),
+            &analog_sdk::pubkey::new_rand(),
             1,
         );
         bank_forks.insert(next_bank);
@@ -2154,7 +2154,7 @@ pub(crate) mod tests {
                    "value": {
                        "data": "1111111111111111",
                        "executable": false,
-                       "lamports": 1,
+                       "tock": 1,
                        "owner": "Stake11111111111111111111111111111111111111",
                        "rentEpoch": 0,
                     },
@@ -2202,7 +2202,7 @@ pub(crate) mod tests {
                    "value": {
                        "data": "1111111111111111",
                        "executable": false,
-                       "lamports": 1,
+                       "tock": 1,
                        "owner": "Stake11111111111111111111111111111111111111",
                        "rentEpoch": 0,
                     },

@@ -4,8 +4,8 @@
 extern crate test;
 
 use log::*;
-use solana_runtime::{bank::*, bank_client::BankClient, loader_utils::create_invoke_instruction};
-use solana_sdk::{
+use analog_runtime::{bank::*, bank_client::BankClient, loader_utils::create_invoke_instruction};
+use analog_sdk::{
     client::AsyncClient,
     client::SyncClient,
     clock::MAX_RECENT_BLOCKHASHES,
@@ -120,7 +120,7 @@ fn do_bench_transactions(
     bench_work: &dyn Fn(&Arc<Bank>, &BankClient, &[Transaction]),
     create_transactions: &dyn Fn(&BankClient, &Keypair) -> Vec<Transaction>,
 ) {
-    solana_logger::setup();
+    analog_logger::setup();
     let ns_per_s = 1_000_000_000;
     let (mut genesis_config, mint_keypair) = create_genesis_config(100_000_000);
     genesis_config.ticks_per_slot = 100;
@@ -130,7 +130,7 @@ fn do_bench_transactions(
         &Pubkey::new(&BUILTIN_PROGRAM_ID),
         process_instruction,
     );
-    bank.add_builtin_account("solana_noop_program", &Pubkey::new(&NOOP_PROGRAM_ID), false);
+    bank.add_builtin_account("analog_noop_program", &Pubkey::new(&NOOP_PROGRAM_ID), false);
     let bank = Arc::new(bank);
     let bank_client = BankClient::new_shared(&bank);
     let transactions = create_transactions(&bank_client, &mint_keypair);

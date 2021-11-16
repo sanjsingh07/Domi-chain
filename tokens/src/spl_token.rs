@@ -3,13 +3,13 @@ use crate::{
     commands::{Allocation, Error, FundingSource},
 };
 use console::style;
-use solana_account_decoder::parse_token::{
+use analog_account_decoder::parse_token::{
     pubkey_from_spl_token_v2_0, real_number_string, real_number_string_trimmed,
     spl_token_v2_0_pubkey,
 };
-use solana_client::rpc_client::RpcClient;
-use solana_sdk::{instruction::Instruction, message::Message, native_token::lamports_to_sol};
-use solana_transaction_status::parse_token::spl_token_v2_0_instruction;
+use analog_client::rpc_client::RpcClient;
+use analog_sdk::{instruction::Instruction, message::Message, native_token::tock_to_anlog};
+use analog_transaction_status::parse_token::spl_token_v2_0_instruction;
 use spl_associated_token_account_v1_0::{
     create_associated_token_account, get_associated_token_address,
 };
@@ -112,7 +112,7 @@ pub fn check_spl_token_balances(
     if fee_payer_balance < fees + account_creation_amount {
         return Err(Error::InsufficientFunds(
             vec![FundingSource::FeePayer].into(),
-            lamports_to_sol(fees + account_creation_amount).to_string(),
+           tock_to_anlog(fees + account_creation_amount).to_string(),
         ));
     }
     let source_token_account = client
@@ -171,8 +171,8 @@ pub fn print_token_balances(
 #[cfg(test)]
 mod tests {
     // The following unit tests were written for v1.4 using the ProgramTest framework, passing its
-    // BanksClient into the `solana-tokens` methods. With the revert to RpcClient in this module
-    // (https://github.com/solana-labs/solana/pull/13623), that approach was no longer viable.
+    // BanksClient into the `analog-tokens` methods. With the revert to RpcClient in this module
+    // (https://github.com/analog-labs/analog/pull/13623), that approach was no longer viable.
     // These tests were removed rather than rewritten to avoid accruing technical debt. Once a new
     // rpc/client framework is implemented, they should be restored.
     //
@@ -180,5 +180,5 @@ mod tests {
     // async fn test_process_spl_token_transfer_amount_allocations()
     // async fn test_check_spl_token_balances()
     //
-    // https://github.com/solana-labs/solana/blob/5511d52c6284013a24ced10966d11d8f4585799e/tokens/src/spl_token.rs#L490-L685
+    // https://github.com/analog-labs/analog/blob/5511d52c6284013a24ced10966d11d8f4585799e/tokens/src/spl_token.rs#L490-L685
 }

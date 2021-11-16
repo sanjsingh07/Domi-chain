@@ -1,6 +1,6 @@
 use {
-    solana_program_test::{processor, ProgramTest},
-    solana_sdk::{
+    analog_program_test::{processor, ProgramTest},
+    analog_sdk::{
         account_info::{next_account_info, AccountInfo},
         entrypoint::ProgramResult,
         instruction::{AccountMeta, Instruction},

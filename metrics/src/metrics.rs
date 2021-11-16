@@ -5,7 +5,7 @@ use {
     gethostname::gethostname,
     lazy_static::lazy_static,
     log::*,
-    solana_sdk::hash::hash,
+    analog_sdk::hash::hash,
     std::{
         cmp,
         collections::HashMap,

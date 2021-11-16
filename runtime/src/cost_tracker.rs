@@ -4,7 +4,7 @@
 //! - add_transaction_cost(&tx_cost), mutable function to accumulate tx_cost to tracker.
 //!
 use crate::{block_cost_limits::*, cost_model::TransactionCost};
-use solana_sdk::{clock::Slot, pubkey::Pubkey, transaction::SanitizedTransaction};
+use analog_sdk::{clock::Slot, pubkey::Pubkey, transaction::SanitizedTransaction};
 use std::collections::HashMap;
 
 const WRITABLE_ACCOUNTS_PER_BLOCK: usize = 512;
@@ -161,7 +161,7 @@ mod tests {
         bank::Bank,
         genesis_utils::{create_genesis_config, GenesisConfigInfo},
     };
-    use solana_sdk::{
+    use analog_sdk::{
         hash::Hash,
         signature::{Keypair, Signer},
         system_transaction,
@@ -170,7 +170,7 @@ mod tests {
     use std::{cmp, sync::Arc};
 
     fn test_setup() -> (Keypair, Hash) {
-        solana_logger::setup();
+        analog_logger::setup();
         let GenesisConfigInfo {
             genesis_config,
             mint_keypair,

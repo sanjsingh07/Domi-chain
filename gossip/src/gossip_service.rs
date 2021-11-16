@@ -6,15 +6,15 @@ use {
         contact_info::ContactInfo,
     },
     rand::{thread_rng, Rng},
-    solana_client::thin_client::{create_client, ThinClient},
-    solana_perf::recycler::Recycler,
-    solana_runtime::bank_forks::BankForks,
-    solana_sdk::{
+    analog_client::thin_client::{create_client, ThinClient},
+    analog_perf::recycler::Recycler,
+    analog_runtime::bank_forks::BankForks,
+    analog_sdk::{
         pubkey::Pubkey,
         signature::{Keypair, Signer},
     },
-    solana_streamer::socket::SocketAddrSpace,
-    solana_streamer::streamer,
+    analog_streamer::socket::SocketAddrSpace,
+    analog_streamer::streamer,
     std::{
         collections::HashSet,
         net::{IpAddr, Ipv4Addr, SocketAddr, TcpListener, UdpSocket},
@@ -162,7 +162,7 @@ pub fn discover(
         info!("Gossip Address: {:?}", my_gossip_addr);
     }
     let _ip_echo_server = ip_echo
-        .map(|tcp_listener| solana_net_utils::ip_echo_server(tcp_listener, Some(my_shred_version)));
+        .map(|tcp_listener| analog_net_utils::ip_echo_server(tcp_listener, Some(my_shred_version)));
     let (met_criteria, elapsed, all_peers, tvu_peers) = spy(
         spy_ref.clone(),
         num_nodes,
@@ -227,7 +227,7 @@ pub fn get_multi_client(
         .collect();
     let rpc_addrs: Vec<_> = addrs.iter().map(|addr| addr.0).collect();
     let tpu_addrs: Vec<_> = addrs.iter().map(|addr| addr.1).collect();
-    let (_, transactions_socket) = solana_net_utils::bind_in_range(
+    let (_, transactions_socket) = analog_net_utils::bind_in_range(
         IpAddr::V4(Ipv4Addr::new(0, 0, 0, 0)),
         VALIDATOR_PORT_RANGE,
     )
@@ -373,8 +373,8 @@ mod tests {
     fn test_gossip_services_spy() {
         const TIMEOUT: Duration = Duration::from_secs(5);
         let keypair = Keypair::new();
-        let peer0 = solana_sdk::pubkey::new_rand();
-        let peer1 = solana_sdk::pubkey::new_rand();
+        let peer0 = analog_sdk::pubkey::new_rand();
+        let peer1 = analog_sdk::pubkey::new_rand();
         let contact_info = ContactInfo::new_localhost(&keypair.pubkey(), 0);
         let peer0_info = ContactInfo::new_localhost(&peer0, 0);
         let peer1_info = ContactInfo::new_localhost(&peer1, 0);
@@ -406,7 +406,7 @@ mod tests {
             spy_ref.clone(),
             None,
             TIMEOUT,
-            Some(solana_sdk::pubkey::new_rand()),
+            Some(analog_sdk::pubkey::new_rand()),
             None,
         );
         assert!(!met_criteria);
@@ -420,7 +420,7 @@ mod tests {
             spy_ref.clone(),
             Some(1),
             TIMEOUT,
-            Some(solana_sdk::pubkey::new_rand()),
+            Some(analog_sdk::pubkey::new_rand()),
             None,
         );
         assert!(!met_criteria);

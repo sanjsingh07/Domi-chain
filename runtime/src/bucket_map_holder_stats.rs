@@ -1,6 +1,6 @@
 use crate::accounts_index::IndexValue;
 use crate::bucket_map_holder::BucketMapHolder;
-use solana_sdk::timing::{timestamp, AtomicInterval};
+use analog_sdk::timing::{timestamp, AtomicInterval};
 use std::fmt::Debug;
 use std::sync::atomic::{AtomicBool, AtomicU64, AtomicU8, Ordering};
 

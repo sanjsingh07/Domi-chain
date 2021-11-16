@@ -7,16 +7,16 @@ use rayon::{
     ThreadPool,
 };
 use sha2::{Digest, Sha512};
-use solana_metrics::inc_new_counter_debug;
-use solana_perf::{
+use analog_metrics::inc_new_counter_debug;
+use analog_perf::{
     cuda_runtime::PinnedVec,
     packet::{limited_deserialize, Packet, Packets},
     perf_libs,
     recycler_cache::RecyclerCache,
     sigverify::{self, batch_size, TxOffset},
 };
-use solana_rayon_threadlimit::get_thread_count;
-use solana_sdk::{
+use analog_rayon_threadlimit::get_thread_count;
+use analog_sdk::{
     clock::Slot,
     pubkey::Pubkey,
     signature::Signature,
@@ -246,7 +246,7 @@ pub fn verify_shreds_gpu(
     out.set_pinnable();
     elems.push(perf_libs::Elems {
         #[allow(clippy::cast_ptr_alignment)]
-        elems: pubkeys.as_ptr() as *const solana_sdk::packet::Packet,
+        elems: pubkeys.as_ptr() as *const analog_sdk::packet::Packet,
         num: num_packets as u32,
     });
 
@@ -383,7 +383,7 @@ pub fn sign_shreds_gpu(
     signatures_out.resize(total_sigs * sig_size, 0);
     elems.push(perf_libs::Elems {
         #[allow(clippy::cast_ptr_alignment)]
-        elems: pinned_keypair.as_ptr() as *const solana_sdk::packet::Packet,
+        elems: pinned_keypair.as_ptr() as *const analog_sdk::packet::Packet,
         num: num_keypair_packets as u32,
     });
 
@@ -453,10 +453,10 @@ pub fn sign_shreds_gpu(
 pub mod tests {
     use super::*;
     use crate::shred::{Shred, Shredder, SIZE_OF_DATA_SHRED_PAYLOAD};
-    use solana_sdk::signature::{Keypair, Signer};
+    use analog_sdk::signature::{Keypair, Signer};
 
     fn run_test_sigverify_shred_cpu(slot: Slot) {
-        solana_logger::setup();
+        analog_logger::setup();
         let mut packet = Packet::default();
         let mut shred = Shred::new_from_data(
             slot,
@@ -502,7 +502,7 @@ pub mod tests {
     }
 
     fn run_test_sigverify_shreds_cpu(slot: Slot) {
-        solana_logger::setup();
+        analog_logger::setup();
         let mut batch = [Packets::default()];
         let mut shred = Shred::new_from_data(
             slot,
@@ -555,7 +555,7 @@ pub mod tests {
     }
 
     fn run_test_sigverify_shreds_gpu(slot: Slot) {
-        solana_logger::setup();
+        analog_logger::setup();
         let recycler_cache = RecyclerCache::default();
 
         let mut batch = [Packets::default()];
@@ -619,7 +619,7 @@ pub mod tests {
     }
 
     fn run_test_sigverify_shreds_sign_gpu(slot: Slot) {
-        solana_logger::setup();
+        analog_logger::setup();
         let recycler_cache = RecyclerCache::default();
 
         let mut packets = Packets::default();
@@ -669,7 +669,7 @@ pub mod tests {
     }
 
     fn run_test_sigverify_shreds_sign_cpu(slot: Slot) {
-        solana_logger::setup();
+        analog_logger::setup();
 
         let mut batch = [Packets::default()];
         let keypair = Keypair::new();

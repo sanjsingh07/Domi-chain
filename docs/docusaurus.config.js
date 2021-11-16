@@ -1,13 +1,13 @@
 const math = require("remark-math");
 const katex = require("rehype-katex");
 module.exports = {
-  title: "Solana Docs",
+  title: "Analog Docs",
   tagline:
-    "Solana is an open source project implementing a new, high-performance, permissionless blockchain.",
+    "Analog is an open source project implementing a new, high-performance, permissionless blockchain.",
   url: "https://docs.solana.com",
   baseUrl: "/",
   favicon: "img/favicon.ico",
-  organizationName: "solana-labs", // Usually your GitHub org/user name.
+  organizationName: "analog-labs", // Usually your GitHub org/user name.
   projectName: "solana", // Usually your repo name.
   onBrokenLinks: "throw",
   stylesheets: [
@@ -47,7 +47,7 @@ module.exports = {
   themeConfig: {
     navbar: {
       logo: {
-        alt: "Solana Logo",
+        alt: "Analog Logo",
         src: "img/logo-horizontal.svg",
         srcDark: "img/logo-horizontal-dark.svg",
       },
@@ -87,7 +87,7 @@ module.exports = {
           position: "right",
         },
         {
-          href: "https://github.com/solana-labs/solana",
+          href: "https://github.com/analog-labs/solana",
           label: "GitHub",
           position: "right",
         },
@@ -133,12 +133,12 @@ module.exports = {
           items: [
             {
               label: "GitHub",
-              href: "https://github.com/solana-labs/solana",
+              href: "https://github.com/analog-labs/solana",
             },
           ],
         },
       ],
-      copyright: `Copyright © ${new Date().getFullYear()} Solana Foundation`,
+      copyright: `Copyright © ${new Date().getFullYear()} Analog Foundation`,
     },
   },
   presets: [

@@ -100,9 +100,9 @@ function StakingComponent() {
     );
   }
 
-  let solanaInfo;
+  let analogInfo;
   if (coinInfo.status === CoingeckoStatus.Success) {
-    solanaInfo = coinInfo.coinInfo;
+    analogInfo = coinInfo.coinInfo;
   }
 
   return (

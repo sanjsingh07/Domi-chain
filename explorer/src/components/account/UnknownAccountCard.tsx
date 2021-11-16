@@ -8,10 +8,10 @@ import { useCluster } from "providers/cluster";
 import { useTokenRegistry } from "providers/mints/token-registry";
 
 export function UnknownAccountCard({ account }: { account: Account }) {
-  const { details, lamports } = account;
+  const { details, tock } = account;
   const { cluster } = useCluster();
   const { tokenRegistry } = useTokenRegistry();
-  if (lamports === undefined) return null;
+  if (tock === undefined) return null;
 
   const label = addressLabel(account.pubkey.toBase58(), cluster, tokenRegistry);
   return (
@@ -34,9 +34,9 @@ export function UnknownAccountCard({ account }: { account: Account }) {
           </tr>
         )}
         <tr>
-          <td>Balance (SOL)</td>
+          <td>Balance (ANLOG)</td>
           <td className="text-lg-right">
-            <SolBalance lamports={lamports} />
+            <SolBalance tock={tock} />
           </td>
         </tr>
 

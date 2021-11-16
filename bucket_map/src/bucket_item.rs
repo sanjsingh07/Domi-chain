@@ -1,5 +1,5 @@
 use crate::RefCount;
-use solana_sdk::pubkey::Pubkey;
+use analog_sdk::pubkey::Pubkey;
 
 #[derive(Debug, Default, Clone)]
 pub struct BucketItem<T> {

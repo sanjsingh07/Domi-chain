@@ -1,5 +1,5 @@
 use dashmap::{mapref::entry::Entry::Occupied, DashMap};
-use solana_sdk::{pubkey::Pubkey, timing::AtomicInterval};
+use analog_sdk::{pubkey::Pubkey, timing::AtomicInterval};
 use std::{
     collections::HashSet,
     fmt::Debug,

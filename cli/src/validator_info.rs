@@ -6,19 +6,19 @@ use bincode::deserialize;
 use clap::{App, AppSettings, Arg, ArgMatches, SubCommand};
 use reqwest::blocking::Client;
 use serde_json::{Map, Value};
-use solana_account_decoder::validator_info::{
+use analog_account_decoder::validator_info::{
     self, ValidatorInfo, MAX_LONG_FIELD_LENGTH, MAX_SHORT_FIELD_LENGTH,
 };
-use solana_clap_utils::{
+use analog_clap_utils::{
     input_parsers::pubkey_of,
     input_validators::{is_pubkey, is_url},
     keypair::DefaultSigner,
 };
-use solana_cli_output::{CliValidatorInfo, CliValidatorInfoVec};
-use solana_client::rpc_client::RpcClient;
-use solana_config_program::{config_instruction, get_config_data, ConfigKeys, ConfigState};
-use solana_remote_wallet::remote_wallet::RemoteWalletManager;
-use solana_sdk::{
+use analog_cli_output::{CliValidatorInfo, CliValidatorInfoVec};
+use analog_client::rpc_client::RpcClient;
+use analog_config_program::{config_instruction, get_config_data, ConfigKeys, ConfigState};
+use analog_remote_wallet::remote_wallet::RemoteWalletManager;
+use analog_sdk::{
     account::Account,
     message::Message,
     pubkey::Pubkey,
@@ -113,7 +113,7 @@ fn parse_validator_info(
     pubkey: &Pubkey,
     account: &Account,
 ) -> Result<(Pubkey, Map<String, serde_json::value::Value>), Box<dyn error::Error>> {
-    if account.owner != solana_config_program::id() {
+    if account.owner != analog_config_program::id() {
         return Err(format!("{} is not a validator info account", pubkey).into());
     }
     let key_list: ConfigKeys = deserialize(&account.data)?;
@@ -135,11 +135,11 @@ impl ValidatorInfoSubCommands for App<'_, '_> {
     fn validator_info_subcommands(self) -> Self {
         self.subcommand(
             SubCommand::with_name("validator-info")
-                .about("Publish/get Validator info on Solana")
+                .about("Publish/get Validator info on Analog")
                 .setting(AppSettings::SubcommandRequiredElseHelp)
                 .subcommand(
                     SubCommand::with_name("publish")
-                        .about("Publish Validator info on Solana")
+                        .about("Publish Validator info on Analog")
                         .arg(
                             Arg::with_name("info_pubkey")
                                 .short("p")
@@ -195,7 +195,7 @@ impl ValidatorInfoSubCommands for App<'_, '_> {
                 )
                 .subcommand(
                     SubCommand::with_name("get")
-                        .about("Get and parse Solana Validator info")
+                        .about("Get and parse Analog Validator info")
                         .arg(
                             Arg::with_name("info_pubkey")
                                 .index(1)
@@ -262,7 +262,7 @@ pub fn process_set_validator_info(
         info: validator_string,
     };
     // Check for existing validator-info account
-    let all_config = rpc_client.get_program_accounts(&solana_config_program::id())?;
+    let all_config = rpc_client.get_program_accounts(&analog_config_program::id())?;
     let existing_account = all_config
         .iter()
         .filter(
@@ -289,7 +289,7 @@ pub fn process_set_validator_info(
     // Check existence of validator-info account
     let balance = rpc_client.get_balance(&info_pubkey).unwrap_or(0);
 
-    let lamports =
+    let tock =
         rpc_client.get_minimum_balance_for_rent_exemption(ValidatorInfo::max_space() as usize)?;
 
     let signers = if balance == 0 {
@@ -305,7 +305,7 @@ pub fn process_set_validator_info(
         vec![config.signers[0]]
     };
 
-    let build_message = |lamports| {
+    let build_message = |tock| {
         let keys = vec![
             (validator_info::id(), false),
             (config.signers[0].pubkey(), true),
@@ -318,7 +318,7 @@ pub fn process_set_validator_info(
             let mut instructions = config_instruction::create_account::<ValidatorInfo>(
                 &config.signers[0].pubkey(),
                 &info_pubkey,
-                lamports,
+                tock,
                 keys.clone(),
             );
             instructions.extend_from_slice(&[config_instruction::store(
@@ -349,7 +349,7 @@ pub fn process_set_validator_info(
     let (message, _) = resolve_spend_tx_and_check_account_balance(
         rpc_client,
         false,
-        SpendAmount::Some(lamports),
+        SpendAmount::Some(tock),
         &latest_blockhash,
         &config.signers[0].pubkey(),
         build_message,
@@ -375,7 +375,7 @@ pub fn process_get_validator_info(
             rpc_client.get_account(&validator_info_pubkey)?,
         )]
     } else {
-        let all_config = rpc_client.get_program_accounts(&solana_config_program::id())?;
+        let all_config = rpc_client.get_program_accounts(&analog_config_program::id())?;
         all_config
             .into_iter()
             .filter(|(_, validator_info_account)| {
@@ -449,7 +449,7 @@ mod tests {
 
     #[test]
     fn test_verify_keybase_username_not_string() {
-        let pubkey = solana_sdk::pubkey::new_rand();
+        let pubkey = analog_sdk::pubkey::new_rand();
         let value = Value::Bool(true);
 
         assert_eq!(
@@ -511,7 +511,7 @@ mod tests {
 
     #[test]
     fn test_parse_validator_info() {
-        let pubkey = solana_sdk::pubkey::new_rand();
+        let pubkey = analog_sdk::pubkey::new_rand();
         let keys = vec![(validator_info::id(), false), (pubkey, true)];
         let config = ConfigKeys { keys };
 
@@ -525,7 +525,7 @@ mod tests {
             parse_validator_info(
                 &Pubkey::default(),
                 &Account {
-                    owner: solana_config_program::id(),
+                    owner: analog_config_program::id(),
                     data,
                     ..Account::default()
                 }
@@ -540,7 +540,7 @@ mod tests {
         assert!(parse_validator_info(
             &Pubkey::default(),
             &Account {
-                owner: solana_sdk::pubkey::new_rand(),
+                owner: analog_sdk::pubkey::new_rand(),
                 ..Account::default()
             }
         )
@@ -560,7 +560,7 @@ mod tests {
         assert!(parse_validator_info(
             &Pubkey::default(),
             &Account {
-                owner: solana_config_program::id(),
+                owner: analog_config_program::id(),
                 data,
                 ..Account::default()
             },

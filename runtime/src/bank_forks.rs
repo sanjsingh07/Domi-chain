@@ -6,8 +6,8 @@ use crate::{
     snapshot_config::SnapshotConfig,
 };
 use log::*;
-use solana_measure::measure::Measure;
-use solana_sdk::{clock::Slot, hash::Hash, timing};
+use analog_measure::measure::Measure;
+use analog_sdk::{clock::Slot, hash::Hash, timing};
 use std::{
     collections::{hash_map::Entry, HashMap, HashSet},
     ops::Index,
@@ -433,14 +433,14 @@ mod tests {
             create_genesis_config, create_genesis_config_with_leader, GenesisConfigInfo,
         },
     };
-    use solana_sdk::hash::Hash;
-    use solana_sdk::{
+    use analog_sdk::hash::Hash;
+    use analog_sdk::{
         clock::UnixTimestamp,
         pubkey::Pubkey,
         signature::{Keypair, Signer},
         sysvar::epoch_schedule::EpochSchedule,
     };
-    use solana_vote_program::vote_state::BlockTimestamp;
+    use analog_vote_program::vote_state::BlockTimestamp;
 
     #[test]
     fn test_bank_forks_new() {
@@ -527,7 +527,7 @@ mod tests {
 
     #[test]
     fn test_bank_forks_different_set_root() {
-        solana_logger::setup();
+        analog_logger::setup();
         let leader_keypair = Keypair::new();
         let GenesisConfigInfo {
             mut genesis_config,

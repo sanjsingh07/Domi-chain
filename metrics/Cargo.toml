@@ -1,12 +1,12 @@
 [package]
-name = "solana-metrics"
+name = "analog-metrics"
 version = "1.9.0"
-description = "Solana Metrics"
-authors = ["Solana Maintainers <maintainers@solana.foundation>"]
-repository = "https://github.com/solana-labs/solana"
+description = "Analog Metrics"
+authors = ["Analog Maintainers <maintainers@analog.foundation>"]
+repository = "https://github.com/analog-labs/analog"
 license = "Apache-2.0"
-homepage = "https://solana.com/"
-documentation = "https://docs.rs/solana-metrics"
+homepage = "https://analog.com/"
+documentation = "https://docs.rs/analog-metrics"
 edition = "2018"
 
 [dependencies]
@@ -15,14 +15,14 @@ gethostname = "0.2.1"
 lazy_static = "1.4.0"
 log = "0.4.14"
 reqwest = { version = "0.11.6", default-features = false, features = ["blocking", "rustls-tls", "json"] }
-solana-sdk = { path = "../sdk", version = "=1.9.0" }
+analog-sdk = { path = "../sdk", version = "=1.9.0" }
 
 [dev-dependencies]
 rand = "0.7.0"
 serial_test = "0.5.1"
 
 [lib]
-name = "solana_metrics"
+name = "analog_metrics"
 
 [package.metadata.docs.rs]
 targets = ["x86_64-unknown-linux-gnu"]

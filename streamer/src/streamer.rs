@@ -6,7 +6,7 @@ use crate::{
     recvmmsg::NUM_RCVMMSGS,
     socket::SocketAddrSpace,
 };
-use solana_sdk::timing::timestamp;
+use analog_sdk::timing::timestamp;
 use std::net::UdpSocket;
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::mpsc::{Receiver, RecvTimeoutError, SendError, Sender};
@@ -98,7 +98,7 @@ pub fn receiver(
     assert!(!res.is_err(), "streamer::receiver set_read_timeout error");
     let exit = exit.clone();
     Builder::new()
-        .name("solana-receiver".to_string())
+        .name("analog-receiver".to_string())
         .spawn(move || {
             let _ = recv_loop(
                 &sock,
@@ -148,7 +148,7 @@ pub fn responder(
     socket_addr_space: SocketAddrSpace,
 ) -> JoinHandle<()> {
     Builder::new()
-        .name(format!("solana-responder-{}", name))
+        .name(format!("analog-responder-{}", name))
         .spawn(move || {
             let mut errors = 0;
             let mut last_error = None;
@@ -181,7 +181,7 @@ mod test {
     use super::*;
     use crate::packet::{Packet, Packets, PACKET_DATA_SIZE};
     use crate::streamer::{receiver, responder};
-    use solana_perf::recycler::Recycler;
+    use analog_perf::recycler::Recycler;
     use std::io;
     use std::io::Write;
     use std::net::UdpSocket;

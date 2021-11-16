@@ -4,21 +4,21 @@ use crossbeam_channel::unbounded;
 use log::*;
 use rand::{thread_rng, Rng};
 use rayon::prelude::*;
-use solana_core::banking_stage::BankingStage;
-use solana_gossip::{cluster_info::ClusterInfo, cluster_info::Node};
-use solana_ledger::{
+use analog_core::banking_stage::BankingStage;
+use analog_gossip::{cluster_info::ClusterInfo, cluster_info::Node};
+use analog_ledger::{
     blockstore::Blockstore,
     genesis_utils::{create_genesis_config, GenesisConfigInfo},
     get_tmp_ledger_path,
 };
-use solana_measure::measure::Measure;
-use solana_perf::packet::to_packets_chunked;
-use solana_poh::poh_recorder::{create_test_recorder, PohRecorder, WorkingBankEntry};
-use solana_runtime::{
+use analog_measure::measure::Measure;
+use analog_perf::packet::to_packets_chunked;
+use analog_poh::poh_recorder::{create_test_recorder, PohRecorder, WorkingBankEntry};
+use analog_runtime::{
     accounts_background_service::AbsRequestSender, bank::Bank, bank_forks::BankForks,
     cost_model::CostModel,
 };
-use solana_sdk::{
+use analog_sdk::{
     hash::Hash,
     signature::Keypair,
     signature::Signature,
@@ -26,7 +26,7 @@ use solana_sdk::{
     timing::{duration_as_us, timestamp},
     transaction::Transaction,
 };
-use solana_streamer::socket::SocketAddrSpace;
+use analog_streamer::socket::SocketAddrSpace;
 use std::{
     sync::{atomic::Ordering, mpsc::Receiver, Arc, Mutex, RwLock},
     thread::sleep,
@@ -69,7 +69,7 @@ fn make_accounts_txs(
     hash: Hash,
     same_payer: bool,
 ) -> Vec<Transaction> {
-    let to_pubkey = solana_sdk::pubkey::new_rand();
+    let to_pubkey = analog_sdk::pubkey::new_rand();
     let payer_key = Keypair::new();
     let dummy = system_transaction::transfer(&payer_key, &to_pubkey, 1, hash);
     (0..total_num_transactions)
@@ -78,9 +78,9 @@ fn make_accounts_txs(
             let mut new = dummy.clone();
             let sig: Vec<u8> = (0..64).map(|_| thread_rng().gen::<u8>()).collect();
             if !same_payer {
-                new.message.account_keys[0] = solana_sdk::pubkey::new_rand();
+                new.message.account_keys[0] = analog_sdk::pubkey::new_rand();
             }
-            new.message.account_keys[1] = solana_sdk::pubkey::new_rand();
+            new.message.account_keys[1] = analog_sdk::pubkey::new_rand();
             new.signatures = vec![Signature::new(&sig[0..64])];
             new
         })
@@ -105,11 +105,11 @@ fn bytes_as_usize(bytes: &[u8]) -> usize {
 
 #[allow(clippy::cognitive_complexity)]
 fn main() {
-    solana_logger::setup();
+    analog_logger::setup();
 
     let matches = App::new(crate_name!())
         .about(crate_description!())
-        .version(solana_version::version!())
+        .version(analog_version::version!())
         .arg(
             Arg::with_name("num_chunks")
                 .long("num-chunks")
@@ -249,7 +249,7 @@ fn main() {
         let base_tx_count = bank.transaction_count();
         let mut txs_processed = 0;
         let mut root = 1;
-        let collector = solana_sdk::pubkey::new_rand();
+        let collector = analog_sdk::pubkey::new_rand();
         let config = Config {
             packets_per_batch: packets_per_chunk,
             chunk_len,

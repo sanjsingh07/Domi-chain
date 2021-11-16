@@ -1,10 +1,10 @@
 /// Module responsible for replicating AccountsDb data from its peer to its local AccountsDb in the replica-node
 use {
     log::*,
-    solana_replica_lib::accountsdb_repl_client::{
+    analog_replica_lib::accountsdb_repl_client::{
         AccountsDbReplClientService, AccountsDbReplClientServiceConfig, ReplicaRpcError,
     },
-    solana_sdk::{clock::Slot, pubkey::Pubkey},
+    analog_sdk::{clock::Slot, pubkey::Pubkey},
     std::{
         thread::{self, sleep, Builder, JoinHandle},
         time::Duration,
@@ -22,7 +22,7 @@ impl AccountsDbReplService {
     ) -> Result<Self, ReplicaRpcError> {
         let accountsdb_repl_client = AccountsDbReplClientService::new(config)?;
         let thread = Builder::new()
-            .name("sol-accountsdb-repl-svc".to_string())
+            .name("anlog-accountsdb-repl-svc".to_string())
             .spawn(move || {
                 Self::run_service(last_replicated_slot, accountsdb_repl_client);
             })

@@ -1,6 +1,6 @@
 use {
     log::*,
-    solana_sdk::clock::Slot,
+    analog_sdk::clock::Slot,
     std::{net::SocketAddr, sync::Arc},
     tokio::runtime::Runtime,
     tonic::{self, transport::Endpoint, Request},
@@ -89,7 +89,7 @@ impl AccountsDbReplClientService {
         let runtime = Arc::new(
             tokio::runtime::Builder::new_multi_thread()
                 .worker_threads(config.worker_threads)
-                .thread_name("sol-accountsdb-repl-wrk")
+                .thread_name("anlog-accountsdb-repl-wrk")
                 .enable_all()
                 .build()
                 .expect("Runtime"),

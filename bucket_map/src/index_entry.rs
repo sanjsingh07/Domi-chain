@@ -1,8 +1,8 @@
 use crate::bucket::Bucket;
 use crate::bucket_storage::{BucketStorage, Uid};
 use crate::RefCount;
-use solana_sdk::clock::Slot;
-use solana_sdk::pubkey::Pubkey;
+use analog_sdk::clock::Slot;
+use analog_sdk::pubkey::Pubkey;
 use std::collections::hash_map::DefaultHasher;
 use std::fmt::Debug;
 use std::hash::{Hash, Hasher};

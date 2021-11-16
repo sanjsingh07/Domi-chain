@@ -9,7 +9,7 @@ use crate::{
     spend_utils::{resolve_spend_tx_and_check_account_balances, SpendAmount},
 };
 use clap::{value_t, App, Arg, ArgGroup, ArgMatches, SubCommand};
-use solana_clap_utils::{
+use analog_clap_utils::{
     fee_payer::{fee_payer_arg, FEE_PAYER_ARG},
     input_parsers::*,
     input_validators::*,
@@ -19,16 +19,16 @@ use solana_clap_utils::{
     offline::*,
     ArgConstant,
 };
-use solana_cli_output::{
+use analog_cli_output::{
     return_signers_with_config, CliEpochReward, CliStakeHistory, CliStakeHistoryEntry,
     CliStakeState, CliStakeType, OutputFormat, ReturnSignersConfig,
 };
-use solana_client::{
+use analog_client::{
     blockhash_query::BlockhashQuery, nonce_utils, rpc_client::RpcClient,
     rpc_request::DELINQUENT_VALIDATOR_SLOT_DISTANCE, rpc_response::RpcInflationReward,
 };
-use solana_remote_wallet::remote_wallet::RemoteWalletManager;
-use solana_sdk::{
+use analog_remote_wallet::remote_wallet::RemoteWalletManager;
+use analog_sdk::{
     account::from_account,
     account_utils::StateMut,
     clock::{Clock, UnixTimestamp, SECONDS_PER_DAY},
@@ -46,7 +46,7 @@ use solana_sdk::{
     sysvar::{clock, stake_history},
     transaction::Transaction,
 };
-use solana_vote_program::vote_state::VoteState;
+use analog_vote_program::vote_state::VoteState;
 use std::{ops::Deref, sync::Arc};
 
 pub const STAKE_AUTHORITY_ARG: ArgConstant<'static> = ArgConstant {
@@ -133,7 +133,7 @@ impl StakeSubCommands for App<'_, '_> {
                         .takes_value(true)
                         .validator(is_amount_or_all)
                         .required(true)
-                        .help("The amount to send to the stake account, in SOL; accepts keyword ALL")
+                        .help("The amount to send to the stake account, in ANLOG; accepts keyword ALL")
                 )
                 .arg(
                     pubkey!(Arg::with_name("custodian")
@@ -212,7 +212,7 @@ impl StakeSubCommands for App<'_, '_> {
                         .takes_value(true)
                         .validator(is_amount_or_all)
                         .required(true)
-                        .help("The amount to send to the stake account, in SOL; accepts keyword ALL")
+                        .help("The amount to send to the stake account, in ANLOG; accepts keyword ALL")
                 )
                 .arg(
                     Arg::with_name("seed")
@@ -409,7 +409,7 @@ impl StakeSubCommands for App<'_, '_> {
                         .takes_value(true)
                         .validator(is_amount)
                         .required(true)
-                        .help("The amount to move into the new stake account, in SOL")
+                        .help("The amount to move into the new stake account, in ANLOG")
                 )
                 .arg(
                     Arg::with_name("seed")
@@ -451,7 +451,7 @@ impl StakeSubCommands for App<'_, '_> {
         )
         .subcommand(
             SubCommand::with_name("withdraw-stake")
-                .about("Withdraw the unstaked SOL from the stake account")
+                .about("Withdraw the unstaked ANLOG from the stake account")
                 .arg(
                     pubkey!(Arg::with_name("stake_account_pubkey")
                         .index(1)
@@ -464,7 +464,7 @@ impl StakeSubCommands for App<'_, '_> {
                         .index(2)
                         .value_name("RECIPIENT_ADDRESS")
                         .required(true),
-                        "Recipient of withdrawn SOL")
+                        "Recipient of withdrawn ANLOG")
                 )
                 .arg(
                     Arg::with_name("amount")
@@ -473,7 +473,7 @@ impl StakeSubCommands for App<'_, '_> {
                         .takes_value(true)
                         .validator(is_amount_or_all)
                         .required(true)
-                        .help("The amount to withdraw from the stake account, in SOL; accepts keyword ALL")
+                        .help("The amount to withdraw from the stake account, in ANLOG; accepts keyword ALL")
                 )
                 .arg(
                     Arg::with_name("seed")
@@ -600,10 +600,10 @@ impl StakeSubCommands for App<'_, '_> {
                         "The stake account to display. ")
                 )
                 .arg(
-                    Arg::with_name("lamports")
-                        .long("lamports")
+                    Arg::with_name("tock")
+                        .long("tock")
                         .takes_value(false)
-                        .help("Display balance in lamports instead of SOL")
+                        .help("Display balance in tock instead of ANLOG")
                 )
                 .arg(
                     Arg::with_name("with_rewards")
@@ -627,10 +627,10 @@ impl StakeSubCommands for App<'_, '_> {
                 .about("Show the stake history")
                 .alias("show-stake-history")
                 .arg(
-                    Arg::with_name("lamports")
-                        .long("lamports")
+                    Arg::with_name("tock")
+                        .long("tock")
                         .takes_value(false)
-                        .help("Display balance in lamports instead of SOL")
+                        .help("Display balance in tock instead of ANLOG")
                 )
                 .arg(
                     Arg::with_name("limit")
@@ -900,7 +900,7 @@ pub fn parse_split_stake(
         pubkey_of_signer(matches, "stake_account_pubkey", wallet_manager)?.unwrap();
     let (split_stake_account, split_stake_account_pubkey) =
         signer_of(matches, "split_stake_account", wallet_manager)?;
-    let lamports = lamports_of_sol(matches, "amount").unwrap();
+    let tock = lamports_of_anlog(matches, "amount").unwrap();
     let seed = matches.value_of("seed").map(|s| s.to_string());
 
     let sign_only = matches.is_present(SIGN_ONLY_ARG.name);
@@ -933,7 +933,7 @@ pub fn parse_split_stake(
             memo,
             split_stake_account: signer_info.index_of(split_stake_account_pubkey).unwrap(),
             seed,
-            lamports,
+            tock,
             fee_payer: signer_info.index_of(fee_payer_pubkey).unwrap(),
         },
         signers: signer_info.signers,
@@ -1154,7 +1154,7 @@ pub fn parse_show_stake_account(
 ) -> Result<CliCommandInfo, CliError> {
     let stake_account_pubkey =
         pubkey_of_signer(matches, "stake_account_pubkey", wallet_manager)?.unwrap();
-    let use_lamports_unit = matches.is_present("lamports");
+    let use_lamports_unit = matches.is_present("tock");
     let with_rewards = if matches.is_present("with_rewards") {
         Some(value_of(matches, "num_rewards_epochs").unwrap())
     } else {
@@ -1171,7 +1171,7 @@ pub fn parse_show_stake_account(
 }
 
 pub fn parse_show_stake_history(matches: &ArgMatches<'_>) -> Result<CliCommandInfo, CliError> {
-    let use_lamports_unit = matches.is_present("lamports");
+    let use_lamports_unit = matches.is_present("tock");
     let limit_results = value_of(matches, "limit").unwrap();
     Ok(CliCommandInfo {
         command: CliCommand::ShowStakeHistory {
@@ -1217,7 +1217,7 @@ pub fn process_create_stake_account(
     let fee_payer = config.signers[fee_payer];
     let nonce_authority = config.signers[nonce_authority];
 
-    let build_message = |lamports| {
+    let build_message = |tock| {
         let authorized = Authorized {
             staker: staker.unwrap_or(from.pubkey()),
             withdrawer: withdrawer.unwrap_or(from.pubkey()),
@@ -1231,7 +1231,7 @@ pub fn process_create_stake_account(
                     &stake_account.pubkey(), // base
                     seed,                    // seed
                     &authorized,
-                    lamports,
+                    tock,
                 )
             }
             (Some(seed), None) => stake_instruction::create_account_with_seed(
@@ -1241,20 +1241,20 @@ pub fn process_create_stake_account(
                 seed,                    // seed
                 &authorized,
                 lockup,
-                lamports,
+                tock,
             ),
             (None, Some(_withdrawer_signer)) => stake_instruction::create_account_checked(
                 &from.pubkey(),
                 &stake_account.pubkey(),
                 &authorized,
-                lamports,
+                tock,
             ),
             (None, None) => stake_instruction::create_account(
                 &from.pubkey(),
                 &stake_account.pubkey(),
                 &authorized,
                 lockup,
-                lamports,
+                tock,
             ),
         }
         .with_memo(memo);
@@ -1272,7 +1272,7 @@ pub fn process_create_stake_account(
 
     let recent_blockhash = blockhash_query.get_blockhash(rpc_client, config.commitment)?;
 
-    let (message, lamports) = resolve_spend_tx_and_check_account_balances(
+    let (message, tock) = resolve_spend_tx_and_check_account_balances(
         rpc_client,
         sign_only,
         amount,
@@ -1299,10 +1299,10 @@ pub fn process_create_stake_account(
         let minimum_balance =
             rpc_client.get_minimum_balance_for_rent_exemption(std::mem::size_of::<StakeState>())?;
 
-        if lamports < minimum_balance {
+        if tock < minimum_balance {
             return Err(CliError::BadParameter(format!(
-                "need at least {} lamports for stake account to be rent exempt, provided lamports: {}",
-                minimum_balance, lamports
+                "need at least {} tock for stake account to be rent exempt, provided tock: {}",
+                minimum_balance, tock
             ))
             .into());
         }
@@ -1573,12 +1573,12 @@ pub fn process_withdraw_stake(
     let fee_payer = config.signers[fee_payer];
     let nonce_authority = config.signers[nonce_authority];
 
-    let build_message = |lamports| {
+    let build_message = |tock| {
         let ixs = vec![stake_instruction::withdraw(
             &stake_account_address,
             &withdraw_authority.pubkey(),
             destination_account_pubkey,
-            lamports,
+            tock,
             custodian.map(|signer| signer.pubkey()).as_ref(),
         )]
         .with_memo(memo);
@@ -1652,7 +1652,7 @@ pub fn process_split_stake(
     memo: Option<&String>,
     split_stake_account: SignerIndex,
     split_stake_account_seed: &Option<String>,
-    lamports: u64,
+    tock: u64,
     fee_payer: SignerIndex,
 ) -> ProcessResult {
     let split_stake_account = config.signers[split_stake_account];
@@ -1706,10 +1706,10 @@ pub fn process_split_stake(
         let minimum_balance =
             rpc_client.get_minimum_balance_for_rent_exemption(std::mem::size_of::<StakeState>())?;
 
-        if lamports < minimum_balance {
+        if tock < minimum_balance {
             return Err(CliError::BadParameter(format!(
-                "need at least {} lamports for stake account to be rent exempt, provided lamports: {}",
-                minimum_balance, lamports
+                "need at least {} tock for stake account to be rent exempt, provided tock: {}",
+                minimum_balance, tock
             ))
             .into());
         }
@@ -1721,7 +1721,7 @@ pub fn process_split_stake(
         stake_instruction::split_with_seed(
             stake_account_pubkey,
             &stake_authority.pubkey(),
-            lamports,
+            tock,
             &split_stake_account_address,
             &split_stake_account.pubkey(),
             seed,
@@ -1731,7 +1731,7 @@ pub fn process_split_stake(
         stake_instruction::split(
             stake_account_pubkey,
             &stake_authority.pubkey(),
-            lamports,
+            tock,
             &split_stake_account_address,
         )
         .with_memo(memo)
@@ -2236,7 +2236,7 @@ pub fn process_show_stake_account(
             })?;
 
             let mut state = build_stake_state(
-                stake_account.lamports,
+                stake_account.tock,
                 &stake_state,
                 use_lamports_unit,
                 &stake_history,
@@ -2425,8 +2425,8 @@ pub fn process_delegate_stake(
 mod tests {
     use super::*;
     use crate::{clap_app::get_clap_app, cli::parse_command};
-    use solana_client::blockhash_query;
-    use solana_sdk::{
+    use analog_client::blockhash_query;
+    use analog_sdk::{
         hash::Hash,
         signature::{
             keypair_from_seed, read_keypair_file, write_keypair, Keypair, Presigner, Signer,
@@ -3518,9 +3518,9 @@ mod tests {
         );
 
         // Test CreateStakeAccount SubCommand
-        let custodian = solana_sdk::pubkey::new_rand();
+        let custodian = analog_sdk::pubkey::new_rand();
         let custodian_string = format!("{}", custodian);
-        let authorized = solana_sdk::pubkey::new_rand();
+        let authorized = analog_sdk::pubkey::new_rand();
         let authorized_string = format!("{}", authorized);
         let test_create_stake_account = test_commands.clone().get_matches_from(vec![
             "test",
@@ -3719,7 +3719,7 @@ mod tests {
         );
 
         // Test DelegateStake Subcommand
-        let vote_account_pubkey = solana_sdk::pubkey::new_rand();
+        let vote_account_pubkey = analog_sdk::pubkey::new_rand();
         let vote_account_string = vote_account_pubkey.to_string();
         let test_delegate_stake = test_commands.clone().get_matches_from(vec![
             "test",
@@ -3748,7 +3748,7 @@ mod tests {
         );
 
         // Test DelegateStake Subcommand w/ authority
-        let vote_account_pubkey = solana_sdk::pubkey::new_rand();
+        let vote_account_pubkey = analog_sdk::pubkey::new_rand();
         let vote_account_string = vote_account_pubkey.to_string();
         let test_delegate_stake = test_commands.clone().get_matches_from(vec![
             "test",
@@ -3875,7 +3875,7 @@ mod tests {
         );
 
         // Test Delegate Subcommand w/ absent fee payer
-        let key1 = solana_sdk::pubkey::new_rand();
+        let key1 = analog_sdk::pubkey::new_rand();
         let sig1 = Keypair::new().sign_message(&[0u8]);
         let signer1 = format!("{}={}", key1, sig1);
         let test_delegate_stake = test_commands.clone().get_matches_from(vec![
@@ -3917,7 +3917,7 @@ mod tests {
         );
 
         // Test Delegate Subcommand w/ absent fee payer and absent nonce authority
-        let key2 = solana_sdk::pubkey::new_rand();
+        let key2 = analog_sdk::pubkey::new_rand();
         let sig2 = Keypair::new().sign_message(&[0u8]);
         let signer2 = format!("{}={}", key2, sig2);
         let test_delegate_stake = test_commands.clone().get_matches_from(vec![
@@ -4273,7 +4273,7 @@ mod tests {
         );
 
         // Test Deactivate Subcommand w/ absent fee payer
-        let key1 = solana_sdk::pubkey::new_rand();
+        let key1 = analog_sdk::pubkey::new_rand();
         let sig1 = Keypair::new().sign_message(&[0u8]);
         let signer1 = format!("{}={}", key1, sig1);
         let test_deactivate_stake = test_commands.clone().get_matches_from(vec![
@@ -4313,7 +4313,7 @@ mod tests {
         );
 
         // Test Deactivate Subcommand w/ absent fee payer and nonce authority
-        let key2 = solana_sdk::pubkey::new_rand();
+        let key2 = analog_sdk::pubkey::new_rand();
         let sig2 = Keypair::new().sign_message(&[0u8]);
         let signer2 = format!("{}={}", key2, sig2);
         let test_deactivate_stake = test_commands.clone().get_matches_from(vec![
@@ -4418,7 +4418,7 @@ mod tests {
                     memo: None,
                     split_stake_account: 1,
                     seed: None,
-                    lamports: 50_000_000_000,
+                    tock: 50_000_000_000,
                     fee_payer: 0,
                 },
                 signers: vec![
@@ -4484,7 +4484,7 @@ mod tests {
                     memo: None,
                     split_stake_account: 2,
                     seed: None,
-                    lamports: 50_000_000_000,
+                    tock: 50_000_000_000,
                     fee_payer: 1,
                 },
                 signers: vec![
@@ -4502,7 +4502,7 @@ mod tests {
         let stake_account_keypair = Keypair::new();
         write_keypair(&stake_account_keypair, tmp_file.as_file_mut()).unwrap();
 
-        let source_stake_account_pubkey = solana_sdk::pubkey::new_rand();
+        let source_stake_account_pubkey = analog_sdk::pubkey::new_rand();
         let test_merge_stake_account = test_commands.clone().get_matches_from(vec![
             "test",
             "merge-stake",

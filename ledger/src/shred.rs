@@ -54,12 +54,12 @@ use {
     bincode::config::Options,
     rayon::{prelude::*, ThreadPool},
     serde::{Deserialize, Serialize},
-    solana_entry::entry::{create_ticks, Entry},
-    solana_measure::measure::Measure,
-    solana_perf::packet::{limited_deserialize, Packet},
-    solana_rayon_threadlimit::get_thread_count,
-    solana_runtime::bank::Bank,
-    solana_sdk::{
+    analog_entry::entry::{create_ticks, Entry},
+    analog_measure::measure::Measure,
+    analog_perf::packet::{limited_deserialize, Packet},
+    analog_rayon_threadlimit::get_thread_count,
+    analog_runtime::bank::Bank,
+    analog_sdk::{
         clock::Slot,
         feature_set,
         hash::{hashv, Hash},
@@ -1045,7 +1045,7 @@ pub mod tests {
     use bincode::serialized_size;
     use matches::assert_matches;
     use rand::{seq::SliceRandom, Rng};
-    use solana_sdk::{
+    use analog_sdk::{
         hash::{self, hash},
         shred_version, system_transaction,
     };
@@ -1586,13 +1586,13 @@ pub mod tests {
         let mut rng = rand::thread_rng();
         let txs = repeat_with(|| {
             let from_pubkey = Pubkey::new_unique();
-            let instruction = solana_sdk::system_instruction::transfer(
+            let instruction = analog_sdk::system_instruction::transfer(
                 &from_pubkey,
                 &Pubkey::new_unique(), // to
-                rng.gen(),             // lamports
+                rng.gen(),             // tock
             );
-            let message = solana_sdk::message::Message::new(&[instruction], Some(&from_pubkey));
-            let mut tx = solana_sdk::transaction::Transaction::new_unsigned(message);
+            let message = analog_sdk::message::Message::new(&[instruction], Some(&from_pubkey));
+            let mut tx = analog_sdk::transaction::Transaction::new_unsigned(message);
             // Also randomize the signatre bytes.
             let mut signature = [0u8; 64];
             rng.fill(&mut signature[..]);
@@ -1838,7 +1838,7 @@ pub mod tests {
 
     #[test]
     fn test_shred_offsets() {
-        solana_logger::setup();
+        analog_logger::setup();
         let mut packet = Packet::default();
         let shred = Shred::new_from_data(1, 3, 0, None, true, true, 0, 0, 0);
         shred.copy_to_packet(&mut packet);

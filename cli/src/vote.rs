@@ -9,21 +9,21 @@ use crate::{
     stake::check_current_authority,
 };
 use clap::{value_t_or_exit, App, Arg, ArgMatches, SubCommand};
-use solana_clap_utils::{
+use analog_clap_utils::{
     input_parsers::*,
     input_validators::*,
     keypair::{DefaultSigner, SignerIndex},
     memo::{memo_arg, MEMO_ARG},
 };
-use solana_cli_output::{CliEpochVotingHistory, CliLockout, CliVoteAccount};
-use solana_client::{rpc_client::RpcClient, rpc_config::RpcGetVoteAccountsConfig};
-use solana_remote_wallet::remote_wallet::RemoteWalletManager;
-use solana_sdk::{
+use analog_cli_output::{CliEpochVotingHistory, CliLockout, CliVoteAccount};
+use analog_client::{rpc_client::RpcClient, rpc_config::RpcGetVoteAccountsConfig};
+use analog_remote_wallet::remote_wallet::RemoteWalletManager;
+use analog_sdk::{
     account::Account, commitment_config::CommitmentConfig, message::Message,
-    native_token::lamports_to_sol, pubkey::Pubkey, system_instruction::SystemError,
+    native_token::tock_to_anlog, pubkey::Pubkey, system_instruction::SystemError,
     transaction::Transaction,
 };
-use solana_vote_program::{
+use analog_vote_program::{
     vote_instruction::{self, withdraw, VoteError},
     vote_state::{VoteAuthorize, VoteInit, VoteState},
 };
@@ -280,10 +280,10 @@ impl VoteSubCommands for App<'_, '_> {
                         "Vote account pubkey. "),
                 )
                 .arg(
-                    Arg::with_name("lamports")
-                        .long("lamports")
+                    Arg::with_name("tock")
+                        .long("tock")
                         .takes_value(false)
-                        .help("Display balance in lamports instead of SOL"),
+                        .help("Display balance in tock instead of ANLOG"),
                 )
                 .arg(
                     Arg::with_name("with_rewards")
@@ -304,7 +304,7 @@ impl VoteSubCommands for App<'_, '_> {
         )
         .subcommand(
             SubCommand::with_name("withdraw-from-vote-account")
-                .about("Withdraw lamports from a vote account into a specified account")
+                .about("Withdraw tock from a vote account into a specified account")
                 .arg(
                     pubkey!(Arg::with_name("vote_account_pubkey")
                         .index(1)
@@ -317,7 +317,7 @@ impl VoteSubCommands for App<'_, '_> {
                         .index(2)
                         .value_name("RECIPIENT_ADDRESS")
                         .required(true),
-                        "The recipient of withdrawn SOL. "),
+                        "The recipient of withdrawn ANLOG. "),
                 )
                 .arg(
                     Arg::with_name("amount")
@@ -326,7 +326,7 @@ impl VoteSubCommands for App<'_, '_> {
                         .takes_value(true)
                         .required(true)
                         .validator(is_amount_or_all)
-                        .help("The amount to withdraw, in SOL; accepts keyword ALL"),
+                        .help("The amount to withdraw, in ANLOG; accepts keyword ALL"),
                 )
                 .arg(
                     Arg::with_name("authorized_withdrawer")
@@ -354,7 +354,7 @@ impl VoteSubCommands for App<'_, '_> {
                         .index(2)
                         .value_name("RECIPIENT_ADDRESS")
                         .required(true),
-                        "The recipient of all withdrawn SOL. "),
+                        "The recipient of all withdrawn ANLOG. "),
                 )
                 .arg(
                     Arg::with_name("authorized_withdrawer")
@@ -534,7 +534,7 @@ pub fn parse_vote_get_account_command(
 ) -> Result<CliCommandInfo, CliError> {
     let vote_account_pubkey =
         pubkey_of_signer(matches, "vote_account_pubkey", wallet_manager)?.unwrap();
-    let use_lamports_unit = matches.is_present("lamports");
+    let use_lamports_unit = matches.is_present("tock");
     let with_rewards = if matches.is_present("with_rewards") {
         Some(value_of(matches, "num_rewards_epochs").unwrap())
     } else {
@@ -630,7 +630,7 @@ pub fn process_create_vote_account(
     let vote_account = config.signers[vote_account];
     let vote_account_pubkey = vote_account.pubkey();
     let vote_account_address = if let Some(seed) = seed {
-        Pubkey::create_with_seed(&vote_account_pubkey, seed, &solana_vote_program::id())?
+        Pubkey::create_with_seed(&vote_account_pubkey, seed, &analog_vote_program::id())?
     } else {
         vote_account_pubkey
     };
@@ -651,7 +651,7 @@ pub fn process_create_vote_account(
         .max(1);
     let amount = SpendAmount::Some(required_balance);
 
-    let build_message = |lamports| {
+    let build_message = |tock| {
         let vote_init = VoteInit {
             node_pubkey: identity_pubkey,
             authorized_voter: authorized_voter.unwrap_or(identity_pubkey),
@@ -666,7 +666,7 @@ pub fn process_create_vote_account(
                 &vote_account_pubkey,        // base
                 seed,                        // seed
                 &vote_init,
-                lamports,
+                tock,
             )
             .with_memo(memo)
         } else {
@@ -674,7 +674,7 @@ pub fn process_create_vote_account(
                 &config.signers[0].pubkey(),
                 &vote_account_pubkey,
                 &vote_init,
-                lamports,
+                tock,
             )
             .with_memo(memo)
         };
@@ -685,7 +685,7 @@ pub fn process_create_vote_account(
         rpc_client.get_account_with_commitment(&vote_account_address, config.commitment)
     {
         if let Some(vote_account) = response.value {
-            let err_msg = if vote_account.owner == solana_vote_program::id() {
+            let err_msg = if vote_account.owner == analog_vote_program::id() {
                 format!("Vote account {} already exists", vote_account_address)
             } else {
                 format!(
@@ -867,7 +867,7 @@ fn get_vote_account(
             CliError::RpcRequestError(format!("{:?} account does not exist", vote_account_pubkey))
         })?;
 
-    if vote_account.owner != solana_vote_program::id() {
+    if vote_account.owner != analog_vote_program::id() {
         return Err(CliError::RpcRequestError(format!(
             "{:?} is not a vote account",
             vote_account_pubkey
@@ -926,7 +926,7 @@ pub fn process_show_vote_account(
         });
 
     let vote_account_data = CliVoteAccount {
-        account_balance: vote_account.lamports,
+        account_balance: vote_account.tock,
         validator_identity: vote_state.node_pubkey.to_string(),
         authorized_voters: vote_state.authorized_voters().into(),
         authorized_withdrawer: vote_state.authorized_withdrawer.to_string(),
@@ -958,12 +958,12 @@ pub fn process_withdraw_from_vote_account(
     let current_balance = rpc_client.get_balance(vote_account_pubkey)?;
     let minimum_balance = rpc_client.get_minimum_balance_for_rent_exemption(VoteState::size_of())?;
 
-    let lamports = match withdraw_amount {
+    let tock = match withdraw_amount {
         SpendAmount::All => current_balance.saturating_sub(minimum_balance),
         SpendAmount::Some(withdraw_amount) => {
             if current_balance.saturating_sub(withdraw_amount) < minimum_balance {
                 return Err(CliError::BadParameter(format!(
-                    "Withdraw amount too large. The vote account balance must be at least {} SOL to remain rent exempt", lamports_to_sol(minimum_balance)
+                    "Withdraw amount too large. The vote account balance must be at least {} ANLOG to remain rent exempt",tock_to_anlog(minimum_balance)
                 ))
                 .into());
             }
@@ -974,7 +974,7 @@ pub fn process_withdraw_from_vote_account(
     let ixs = vec![withdraw(
         vote_account_pubkey,
         &withdraw_authority.pubkey(),
-        lamports,
+        tock,
         destination_account_pubkey,
     )]
     .with_memo(memo);
@@ -1051,7 +1051,7 @@ pub fn process_close_vote_account(
 mod tests {
     use super::*;
     use crate::{clap_app::get_clap_app, cli::parse_command};
-    use solana_sdk::signature::{read_keypair_file, write_keypair, Keypair, Signer};
+    use analog_sdk::signature::{read_keypair_file, write_keypair, Keypair, Signer};
     use tempfile::NamedTempFile;
 
     fn make_tmp_file() -> (String, NamedTempFile) {
@@ -1258,7 +1258,7 @@ mod tests {
         );
 
         // test init with an authed voter
-        let authed = solana_sdk::pubkey::new_rand();
+        let authed = analog_sdk::pubkey::new_rand();
         let (keypair_file, mut tmp_file) = make_tmp_file();
         let keypair = Keypair::new();
         write_keypair(&keypair, tmp_file.as_file_mut()).unwrap();

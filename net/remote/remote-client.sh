@@ -42,11 +42,11 @@ skip)
 esac
 
 case $clientToRun in
-solana-bench-tps)
+analog-bench-tps)
   net/scripts/rsync-retry.sh -vPrc \
-    "$entrypointIp":~/solana/config/bench-tps"$clientIndex".yml ./client-accounts.yml
+    "$entrypointIp":~/analog/config/bench-tps"$clientIndex".yml ./client-accounts.yml
   clientCommand="\
-    solana-bench-tps \
+    analog-bench-tps \
       --entrypoint $entrypointIp:8001 \
       --faucet $entrypointIp:9900 \
       --duration 7500 \
@@ -59,7 +59,7 @@ solana-bench-tps)
 idle)
   # Add the faucet keypair to idle clients for convenience
   net/scripts/rsync-retry.sh -vPrc \
-    "$entrypointIp":~/solana/config/faucet.json ~/solana/
+    "$entrypointIp":~/analog/config/faucet.json ~/analog/
   exit 0
   ;;
 *)
@@ -68,9 +68,9 @@ idle)
 esac
 
 
-cat > ~/solana/on-reboot <<EOF
+cat > ~/analog/on-reboot <<EOF
 #!/usr/bin/env bash
-cd ~/solana
+cd ~/analog
 
 PATH="$HOME"/.cargo/bin:"$PATH"
 export USE_INSTALL=1
@@ -97,10 +97,10 @@ tmux new -s "$clientToRun" -d "
   done
 "
 EOF
-chmod +x ~/solana/on-reboot
-echo "@reboot ~/solana/on-reboot" | crontab -
+chmod +x ~/analog/on-reboot
+echo "@reboot ~/analog/on-reboot" | crontab -
 
-~/solana/on-reboot
+~/analog/on-reboot
 
 sleep 1
 tmux capture-pane -t "$clientToRun" -p -S -100

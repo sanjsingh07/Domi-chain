@@ -7,11 +7,11 @@ import * as web3 from '@solana/web3.js';
     'confirmed',
   );
 
-  // Generate a new wallet keypair and airdrop SOL
+  // Generate a new wallet keypair and airdrop ANLOG
   var wallet = web3.Keypair.generate();
   var airdropSignature = await connection.requestAirdrop(
     wallet.publicKey,
-    web3.LAMPORTS_PER_SOL,
+    web3.TOCK_PER_ANLOG,
   );
 
   //wait for airdrop confirmation

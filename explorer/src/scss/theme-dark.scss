@@ -12,10 +12,10 @@
 @import '~bootstrap/scss/functions.scss';
 
 // Custom variables
-@import 'solana-variables-dark';
+@import 'analog-variables-dark';
 
 // Custom variables
-@import 'solana-variables';
+@import 'analog-variables';
 
 // Dark mode variables
 @import 'dashkit/dark/variables-dark';
@@ -36,4 +36,4 @@
 @import 'solana';
 
 // Dark mode overrides
-@import 'solana-dark-overrides';
+@import 'analog-dark-overrides';

@@ -2,10 +2,10 @@ use crate::{
     heaviest_subtree_fork_choice::HeaviestSubtreeForkChoice, repair_service::RepairTiming,
     repair_weighted_traversal, serve_repair::ShredRepairType, tree_diff::TreeDiff,
 };
-use solana_ledger::{ancestor_iterator::AncestorIterator, blockstore::Blockstore};
-use solana_measure::measure::Measure;
-use solana_runtime::{contains::Contains, epoch_stakes::EpochStakes};
-use solana_sdk::{
+use analog_ledger::{ancestor_iterator::AncestorIterator, blockstore::Blockstore};
+use analog_measure::measure::Measure;
+use analog_runtime::{contains::Contains, epoch_stakes::EpochStakes};
+use analog_sdk::{
     clock::Slot,
     epoch_schedule::{Epoch, EpochSchedule},
     hash::Hash,
@@ -532,9 +532,9 @@ impl RepairWeight {
 #[cfg(test)]
 mod test {
     use super::*;
-    use solana_ledger::{blockstore::Blockstore, get_tmp_ledger_path};
-    use solana_runtime::{bank::Bank, bank_utils};
-    use solana_sdk::hash::Hash;
+    use analog_ledger::{blockstore::Blockstore, get_tmp_ledger_path};
+    use analog_runtime::{bank::Bank, bank_utils};
+    use analog_sdk::hash::Hash;
     use trees::tr;
 
     #[test]

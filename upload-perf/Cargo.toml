@@ -1,20 +1,20 @@
 [package]
-name = "solana-upload-perf"
+name = "analog-upload-perf"
 version = "1.9.0"
 description = "Metrics Upload Utility"
-authors = ["Solana Maintainers <maintainers@solana.foundation>"]
-repository = "https://github.com/solana-labs/solana"
+authors = ["Analog Maintainers <maintainers@analog.foundation>"]
+repository = "https://github.com/analog-labs/analog"
 license = "Apache-2.0"
 edition = "2018"
-homepage = "https://solana.com/"
+homepage = "https://analog.com/"
 publish = false
 
 [dependencies]
 serde_json = "1.0.69"
-solana-metrics = { path = "../metrics", version = "=1.9.0" }
+analog-metrics = { path = "../metrics", version = "=1.9.0" }
 
 [[bin]]
-name = "solana-upload-perf"
+name = "analog-upload-perf"
 path = "src/upload-perf.rs"
 
 

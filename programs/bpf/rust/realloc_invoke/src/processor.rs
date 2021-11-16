@@ -4,7 +4,7 @@
 
 extern crate solana_program;
 use crate::instructions::*;
-use solana_bpf_rust_realloc::instructions::*;
+use analog_bpf_rust_realloc::instructions::*;
 use solana_program::{
     account_info::AccountInfo,
     entrypoint,

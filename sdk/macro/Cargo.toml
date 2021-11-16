@@ -1,11 +1,11 @@
 [package]
-name = "solana-sdk-macro"
+name = "analog-sdk-macro"
 version = "1.9.0"
-description = "Solana SDK Macro"
-authors = ["Solana Maintainers <maintainers@solana.foundation>"]
-repository = "https://github.com/solana-labs/solana"
-homepage = "https://solana.com/"
-documentation = "https://docs.rs/solana-sdk-macro"
+description = "Analog SDK Macro"
+authors = ["Analog Maintainers <maintainers@analog.foundation>"]
+repository = "https://github.com/analog-labs/analog"
+homepage = "https://analog.com/"
+documentation = "https://docs.rs/analog-sdk-macro"
 license = "Apache-2.0"
 edition = "2018"
 

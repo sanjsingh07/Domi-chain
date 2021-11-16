@@ -38,7 +38,7 @@ fn process_instruction(
     ];
     let ix = Instruction::new_with_bincode(
         system_program::id(),
-        &SystemInstruction::Transfer { lamports: 1 },
+        &SystemInstruction::Transfer { tock: 1 },
         account_metas,
     );
 

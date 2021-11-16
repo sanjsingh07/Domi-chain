@@ -1,7 +1,7 @@
 use crate::{cluster_info_vote_listener::VerifiedLabelVotePacketsReceiver, result::Result};
-use solana_gossip::crds_value::CrdsValueLabel;
-use solana_perf::packet::Packets;
-use solana_sdk::clock::Slot;
+use analog_gossip::crds_value::CrdsValueLabel;
+use analog_perf::packet::Packets;
+use analog_sdk::clock::Slot;
 use std::{
     collections::{hash_map::Entry, HashMap},
     time::Duration,
@@ -77,11 +77,11 @@ mod tests {
     use super::*;
     use crate::result::Error;
     use crossbeam_channel::{unbounded, RecvTimeoutError};
-    use solana_perf::packet::{Meta, Packet};
+    use analog_perf::packet::{Meta, Packet};
 
     #[test]
     fn test_get_latest_votes() {
-        let pubkey = solana_sdk::pubkey::new_rand();
+        let pubkey = analog_sdk::pubkey::new_rand();
         let label1 = CrdsValueLabel::Vote(0, pubkey);
         let label2 = CrdsValueLabel::Vote(1, pubkey);
         let mut verified_vote_packets = VerifiedVotePackets(HashMap::new());
@@ -124,7 +124,7 @@ mod tests {
     #[test]
     fn test_get_and_process_vote_packets() {
         let (s, r) = unbounded();
-        let pubkey = solana_sdk::pubkey::new_rand();
+        let pubkey = analog_sdk::pubkey::new_rand();
         let label1 = CrdsValueLabel::Vote(0, pubkey);
         let label2 = CrdsValueLabel::Vote(1, pubkey);
         let mut update_version = 0;

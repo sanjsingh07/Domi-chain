@@ -5,14 +5,14 @@ use {
     gag::BufferRedirect,
     log::*,
     serial_test::serial,
-    solana_client::{
+    analog_client::{
         pubsub_client::PubsubClient,
         rpc_client::RpcClient,
         rpc_config::{RpcProgramAccountsConfig, RpcSignatureSubscribeConfig},
         rpc_response::RpcSignatureResult,
         thin_client::{create_client, ThinClient},
     },
-    solana_core::{
+    analog_core::{
         broadcast_stage::{
             broadcast_duplicates_run::BroadcastDuplicatesConfig, BroadcastStageType,
         },
@@ -22,32 +22,32 @@ use {
         tower_storage::{FileTowerStorage, SavedTower, TowerStorage},
         validator::ValidatorConfig,
     },
-    solana_download_utils::download_snapshot_archive,
-    solana_gossip::{
+    analog_download_utils::download_snapshot_archive,
+    analog_gossip::{
         cluster_info::VALIDATOR_PORT_RANGE,
         crds::Cursor,
         gossip_service::{self, discover_cluster},
     },
-    solana_ledger::{
+    analog_ledger::{
         ancestor_iterator::AncestorIterator,
         blockstore::{Blockstore, PurgeType},
         blockstore_db::AccessType,
         leader_schedule::FixedSchedule,
         leader_schedule::LeaderSchedule,
     },
-    solana_local_cluster::{
+    analog_local_cluster::{
         cluster::{Cluster, ClusterValidatorInfo},
         cluster_tests,
         local_cluster::{ClusterConfig, LocalCluster},
         validator_configs::*,
     },
-    solana_runtime::{
+    analog_runtime::{
         snapshot_archive_info::SnapshotArchiveInfoGetter,
         snapshot_config::SnapshotConfig,
         snapshot_package::SnapshotType,
         snapshot_utils::{self, ArchiveFormat},
     },
-    solana_sdk::{
+    analog_sdk::{
         account::AccountSharedData,
         client::{AsyncClient, SyncClient},
         clock::{self, Slot, DEFAULT_MS_PER_SLOT, DEFAULT_TICKS_PER_SLOT, MAX_RECENT_BLOCKHASHES},
@@ -60,8 +60,8 @@ use {
         signature::{Keypair, Signer},
         system_program, system_transaction,
     },
-    solana_streamer::socket::SocketAddrSpace,
-    solana_vote_program::{vote_state::MAX_LOCKOUT_HISTORY, vote_transaction},
+    analog_streamer::socket::SocketAddrSpace,
+    analog_vote_program::{vote_state::MAX_LOCKOUT_HISTORY, vote_transaction},
     std::{
         collections::{BTreeSet, HashMap, HashSet},
         fs,
@@ -77,12 +77,12 @@ use {
 };
 
 const RUST_LOG_FILTER: &str =
-    "error,solana_core::replay_stage=warn,solana_local_cluster=info,local_cluster=info";
+    "error,analog_core::replay_stage=warn,analog_local_cluster=info,local_cluster=info";
 
 #[test]
 #[serial]
 fn test_ledger_cleanup_service() {
-    solana_logger::setup_with_default(RUST_LOG_FILTER);
+    analog_logger::setup_with_default(RUST_LOG_FILTER);
     error!("test_ledger_cleanup_service");
     let num_nodes = 3;
     let validator_config = ValidatorConfig {
@@ -124,7 +124,7 @@ fn test_ledger_cleanup_service() {
 #[test]
 #[serial]
 fn test_spend_and_verify_all_nodes_1() {
-    solana_logger::setup_with_default(RUST_LOG_FILTER);
+    analog_logger::setup_with_default(RUST_LOG_FILTER);
     error!("test_spend_and_verify_all_nodes_1");
     let num_nodes = 1;
     let local =
@@ -141,7 +141,7 @@ fn test_spend_and_verify_all_nodes_1() {
 #[test]
 #[serial]
 fn test_spend_and_verify_all_nodes_2() {
-    solana_logger::setup_with_default(RUST_LOG_FILTER);
+    analog_logger::setup_with_default(RUST_LOG_FILTER);
     error!("test_spend_and_verify_all_nodes_2");
     let num_nodes = 2;
     let local =
@@ -158,7 +158,7 @@ fn test_spend_and_verify_all_nodes_2() {
 #[test]
 #[serial]
 fn test_spend_and_verify_all_nodes_3() {
-    solana_logger::setup_with_default(RUST_LOG_FILTER);
+    analog_logger::setup_with_default(RUST_LOG_FILTER);
     error!("test_spend_and_verify_all_nodes_3");
     let num_nodes = 3;
     let local =
@@ -175,7 +175,7 @@ fn test_spend_and_verify_all_nodes_3() {
 #[test]
 #[serial]
 fn test_local_cluster_signature_subscribe() {
-    solana_logger::setup_with_default(RUST_LOG_FILTER);
+    analog_logger::setup_with_default(RUST_LOG_FILTER);
     let num_nodes = 2;
     let cluster =
         LocalCluster::new_with_equal_stakes(num_nodes, 10_000, 100, SocketAddrSpace::Unspecified);
@@ -198,7 +198,7 @@ fn test_local_cluster_signature_subscribe() {
 
     let mut transaction = system_transaction::transfer(
         &cluster.funding_keypair,
-        &solana_sdk::pubkey::new_rand(),
+        &analog_sdk::pubkey::new_rand(),
         10,
         blockhash,
     );
@@ -250,7 +250,7 @@ fn test_local_cluster_signature_subscribe() {
 #[allow(unused_attributes)]
 #[ignore]
 fn test_spend_and_verify_all_nodes_env_num_nodes() {
-    solana_logger::setup_with_default(RUST_LOG_FILTER);
+    analog_logger::setup_with_default(RUST_LOG_FILTER);
     let num_nodes: usize = std::env::var("NUM_NODES")
         .expect("please set environment variable NUM_NODES")
         .parse()
@@ -270,7 +270,7 @@ fn test_spend_and_verify_all_nodes_env_num_nodes() {
 #[test]
 #[serial]
 fn test_leader_failure_4() {
-    solana_logger::setup_with_default(RUST_LOG_FILTER);
+    analog_logger::setup_with_default(RUST_LOG_FILTER);
     error!("test_leader_failure_4");
     let num_nodes = 4;
     let validator_config = ValidatorConfig::default();
@@ -318,7 +318,7 @@ fn run_cluster_partition<C>(
     ticks_per_slot: Option<u64>,
     additional_accounts: Vec<(Pubkey, AccountSharedData)>,
 ) {
-    solana_logger::setup_with_default(RUST_LOG_FILTER);
+    analog_logger::setup_with_default(RUST_LOG_FILTER);
     info!("PARTITION_TEST!");
     let num_nodes = partitions.len();
     let node_stakes: Vec<_> = partitions
@@ -705,7 +705,7 @@ fn find_latest_replayed_slot_from_ledger(
 #[test]
 #[serial]
 fn test_switch_threshold_uses_gossip_votes() {
-    solana_logger::setup_with_default(RUST_LOG_FILTER);
+    analog_logger::setup_with_default(RUST_LOG_FILTER);
     let total_stake = 100;
 
     // Minimum stake needed to generate a switching proof
@@ -1059,7 +1059,7 @@ fn test_kill_partition_switch_threshold_progress() {
 // stalling the network.
 
 fn test_fork_choice_refresh_old_votes() {
-    solana_logger::setup_with_default(RUST_LOG_FILTER);
+    analog_logger::setup_with_default(RUST_LOG_FILTER);
     let max_switch_threshold_failure_pct = 1.0 - 2.0 * SWITCH_FORK_THRESHOLD;
     let total_stake = 100;
     let max_failures_stake = (max_switch_threshold_failure_pct * total_stake as f64) as u64;
@@ -1254,7 +1254,7 @@ fn test_fork_choice_refresh_old_votes() {
 #[test]
 #[serial]
 fn test_two_unbalanced_stakes() {
-    solana_logger::setup_with_default(RUST_LOG_FILTER);
+    analog_logger::setup_with_default(RUST_LOG_FILTER);
     error!("test_two_unbalanced_stakes");
     let validator_config = ValidatorConfig::default();
     let num_ticks_per_second = 100;
@@ -1322,7 +1322,7 @@ fn test_forwarding() {
 #[test]
 #[serial]
 fn test_restart_node() {
-    solana_logger::setup_with_default(RUST_LOG_FILTER);
+    analog_logger::setup_with_default(RUST_LOG_FILTER);
     error!("test_restart_node");
     let slots_per_epoch = MINIMUM_SLOTS_PER_EPOCH * 2;
     let ticks_per_slot = 16;
@@ -1384,7 +1384,7 @@ fn test_listener_startup() {
 #[test]
 #[serial]
 fn test_mainnet_beta_cluster_type() {
-    solana_logger::setup_with_default(RUST_LOG_FILTER);
+    analog_logger::setup_with_default(RUST_LOG_FILTER);
 
     let mut config = ClusterConfig {
         cluster_type: ClusterType::MainnetBeta,
@@ -1409,13 +1409,13 @@ fn test_mainnet_beta_cluster_type() {
 
     // Programs that are available at epoch 0
     for program_id in [
-        &solana_config_program::id(),
-        &solana_sdk::system_program::id(),
-        &solana_sdk::stake::program::id(),
-        &solana_vote_program::id(),
-        &solana_sdk::bpf_loader_deprecated::id(),
-        &solana_sdk::bpf_loader::id(),
-        &solana_sdk::bpf_loader_upgradeable::id(),
+        &analog_config_program::id(),
+        &analog_sdk::system_program::id(),
+        &analog_sdk::stake::program::id(),
+        &analog_vote_program::id(),
+        &analog_sdk::bpf_loader_deprecated::id(),
+        &analog_sdk::bpf_loader::id(),
+        &analog_sdk::bpf_loader_upgradeable::id(),
     ]
     .iter()
     {
@@ -1458,11 +1458,11 @@ fn generate_frozen_account_panic(mut cluster: LocalCluster, frozen_account: Arc<
     );
 
     // Reset the frozen account panic signal
-    solana_runtime::accounts_db::FROZEN_ACCOUNT_PANIC.store(false, Ordering::Relaxed);
+    analog_runtime::accounts_db::FROZEN_ACCOUNT_PANIC.store(false, Ordering::Relaxed);
 
     // Wait for the frozen account panic signal
     let mut i = 0;
-    while !solana_runtime::accounts_db::FROZEN_ACCOUNT_PANIC.load(Ordering::Relaxed) {
+    while !analog_runtime::accounts_db::FROZEN_ACCOUNT_PANIC.load(Ordering::Relaxed) {
         // Transfer from frozen account
         let (blockhash, _) = client
             .get_latest_blockhash_with_commitment(CommitmentConfig::processed())
@@ -1471,7 +1471,7 @@ fn generate_frozen_account_panic(mut cluster: LocalCluster, frozen_account: Arc<
             .async_transfer(
                 1,
                 &frozen_account,
-                &solana_sdk::pubkey::new_rand(),
+                &analog_sdk::pubkey::new_rand(),
                 blockhash,
             )
             .unwrap();
@@ -1490,9 +1490,9 @@ fn generate_frozen_account_panic(mut cluster: LocalCluster, frozen_account: Arc<
 #[test]
 #[serial]
 fn test_frozen_account_from_genesis() {
-    solana_logger::setup_with_default(RUST_LOG_FILTER);
+    analog_logger::setup_with_default(RUST_LOG_FILTER);
     let validator_identity =
-        Arc::new(solana_sdk::signature::keypair_from_seed(&[0u8; 32]).unwrap());
+        Arc::new(analog_sdk::signature::keypair_from_seed(&[0u8; 32]).unwrap());
 
     let mut config = ClusterConfig {
         validator_keys: Some(vec![(validator_identity.clone(), true)]),
@@ -1514,9 +1514,9 @@ fn test_frozen_account_from_genesis() {
 #[test]
 #[serial]
 fn test_frozen_account_from_snapshot() {
-    solana_logger::setup_with_default(RUST_LOG_FILTER);
+    analog_logger::setup_with_default(RUST_LOG_FILTER);
     let validator_identity =
-        Arc::new(solana_sdk::signature::keypair_from_seed(&[0u8; 32]).unwrap());
+        Arc::new(analog_sdk::signature::keypair_from_seed(&[0u8; 32]).unwrap());
 
     let mut snapshot_test_config = setup_snapshot_validator_config(5, 1);
     // Freeze the validator identity account
@@ -1563,7 +1563,7 @@ fn test_frozen_account_from_snapshot() {
 #[test]
 #[serial]
 fn test_consistency_halt() {
-    solana_logger::setup_with_default(RUST_LOG_FILTER);
+    analog_logger::setup_with_default(RUST_LOG_FILTER);
     let snapshot_interval_slots = 20;
     let num_account_paths = 1;
 
@@ -1666,7 +1666,7 @@ fn test_consistency_halt() {
 #[test]
 #[serial]
 fn test_snapshot_download() {
-    solana_logger::setup_with_default(RUST_LOG_FILTER);
+    analog_logger::setup_with_default(RUST_LOG_FILTER);
     // First set up the cluster with 1 node
     let snapshot_interval_slots = 50;
     let num_account_paths = 3;
@@ -1738,7 +1738,7 @@ fn test_snapshot_download() {
 #[test]
 #[serial]
 fn test_incremental_snapshot_download() {
-    solana_logger::setup_with_default(RUST_LOG_FILTER);
+    analog_logger::setup_with_default(RUST_LOG_FILTER);
     // First set up the cluster with 1 node
     let accounts_hash_interval = 3;
     let incremental_snapshot_interval = accounts_hash_interval * 3;
@@ -1893,7 +1893,7 @@ fn test_incremental_snapshot_download() {
 #[test]
 #[serial]
 fn test_incremental_snapshot_download_with_crossing_full_snapshot_interval_at_startup() {
-    solana_logger::setup_with_default(RUST_LOG_FILTER);
+    analog_logger::setup_with_default(RUST_LOG_FILTER);
     // If these intervals change, also make sure to change the loop timers accordingly.
     let accounts_hash_interval = 3;
     let incremental_snapshot_interval = accounts_hash_interval * 3;
@@ -2284,7 +2284,7 @@ fn test_incremental_snapshot_download_with_crossing_full_snapshot_interval_at_st
 #[test]
 #[serial]
 fn test_snapshot_restart_tower() {
-    solana_logger::setup_with_default(RUST_LOG_FILTER);
+    analog_logger::setup_with_default(RUST_LOG_FILTER);
     // First set up the cluster with 2 nodes
     let snapshot_interval_slots = 10;
     let num_account_paths = 2;
@@ -2357,7 +2357,7 @@ fn test_snapshot_restart_tower() {
 #[test]
 #[serial]
 fn test_snapshots_blockstore_floor() {
-    solana_logger::setup_with_default(RUST_LOG_FILTER);
+    analog_logger::setup_with_default(RUST_LOG_FILTER);
     // First set up the cluster with 1 snapshotting leader
     let snapshot_interval_slots = 10;
     let num_account_paths = 4;
@@ -2467,7 +2467,7 @@ fn test_snapshots_blockstore_floor() {
 #[test]
 #[serial]
 fn test_snapshots_restart_validity() {
-    solana_logger::setup_with_default(RUST_LOG_FILTER);
+    analog_logger::setup_with_default(RUST_LOG_FILTER);
     let snapshot_interval_slots = 10;
     let num_account_paths = 1;
     let mut snapshot_test_config =
@@ -2785,7 +2785,7 @@ fn test_faulty_node(
     faulty_node_type: BroadcastStageType,
     node_stakes: Vec<u64>,
 ) -> (LocalCluster, Vec<Arc<Keypair>>) {
-    solana_logger::setup_with_default("solana_local_cluster=info");
+    analog_logger::setup_with_default("analog_local_cluster=info");
     let num_nodes = node_stakes.len();
 
     let error_validator_config = ValidatorConfig {
@@ -2824,7 +2824,7 @@ fn test_faulty_node(
 
 #[test]
 fn test_wait_for_max_stake() {
-    solana_logger::setup_with_default(RUST_LOG_FILTER);
+    analog_logger::setup_with_default(RUST_LOG_FILTER);
     let validator_config = ValidatorConfig::default();
     let mut config = ClusterConfig {
         cluster_lamports: 10_000,
@@ -2845,7 +2845,7 @@ fn test_wait_for_max_stake() {
 // Test that when a leader is leader for banks B_i..B_{i+n}, and B_i is not
 // votable, then B_{i+1} still chains to B_i
 fn test_no_voting() {
-    solana_logger::setup_with_default(RUST_LOG_FILTER);
+    analog_logger::setup_with_default(RUST_LOG_FILTER);
     let validator_config = ValidatorConfig {
         voting_disabled: true,
         ..ValidatorConfig::default()
@@ -2885,7 +2885,7 @@ fn test_no_voting() {
 #[test]
 #[serial]
 fn test_optimistic_confirmation_violation_detection() {
-    solana_logger::setup_with_default(RUST_LOG_FILTER);
+    analog_logger::setup_with_default(RUST_LOG_FILTER);
     // First set up the cluster with 2 nodes
     let slots_per_epoch = 2048;
     let node_stakes = vec![51, 50];
@@ -3018,7 +3018,7 @@ fn test_optimistic_confirmation_violation_detection() {
 #[test]
 #[serial]
 fn test_validator_saves_tower() {
-    solana_logger::setup_with_default(RUST_LOG_FILTER);
+    analog_logger::setup_with_default(RUST_LOG_FILTER);
 
     let validator_config = ValidatorConfig {
         require_tower: true,
@@ -3280,7 +3280,7 @@ fn remove_tower(tower_path: &Path, node_pubkey: &Pubkey) {
 //    `A` should not be able to generate a switching proof.
 //
 fn do_test_optimistic_confirmation_violation_with_or_without_tower(with_tower: bool) {
-    solana_logger::setup_with_default(RUST_LOG_FILTER);
+    analog_logger::setup_with_default(RUST_LOG_FILTER);
 
     // First set up the cluster with 4 nodes
     let slots_per_epoch = 2048;
@@ -3516,7 +3516,7 @@ enum ClusterMode {
 }
 
 fn do_test_future_tower(cluster_mode: ClusterMode) {
-    solana_logger::setup_with_default(RUST_LOG_FILTER);
+    analog_logger::setup_with_default(RUST_LOG_FILTER);
 
     // First set up the cluster with 4 nodes
     let slots_per_epoch = 2048;
@@ -3631,7 +3631,7 @@ fn test_future_tower_master_slave() {
 
 #[test]
 fn test_hard_fork_invalidates_tower() {
-    solana_logger::setup_with_default(RUST_LOG_FILTER);
+    analog_logger::setup_with_default(RUST_LOG_FILTER);
 
     // First set up the cluster with 2 nodes
     let slots_per_epoch = 2048;
@@ -3690,10 +3690,10 @@ fn test_hard_fork_invalidates_tower() {
     // setup hard fork at slot < a previously rooted slot!
     let hard_fork_slot = min_root - 5;
     let hard_fork_slots = Some(vec![hard_fork_slot]);
-    let mut hard_forks = solana_sdk::hard_forks::HardForks::default();
+    let mut hard_forks = analog_sdk::hard_forks::HardForks::default();
     hard_forks.register(hard_fork_slot);
 
-    let expected_shred_version = solana_sdk::shred_version::compute_shred_version(
+    let expected_shred_version = analog_sdk::shred_version::compute_shred_version(
         &cluster.lock().unwrap().genesis_config.hash(),
         Some(&hard_forks),
     );
@@ -3778,7 +3778,7 @@ fn test_run_test_load_program_accounts_root() {
 #[serial]
 fn test_restart_tower_rollback() {
     // Test node crashing and failing to save its tower before restart
-    solana_logger::setup_with_default(RUST_LOG_FILTER);
+    analog_logger::setup_with_default(RUST_LOG_FILTER);
 
     // First set up the cluster with 4 nodes
     let slots_per_epoch = 2048;
@@ -4017,7 +4017,7 @@ fn setup_transfer_scan_threads(
                             .into_iter()
                             .map(|(key, account)| {
                                 if tracked_pubkeys.contains(&key) {
-                                    account.lamports
+                                    account.tock
                                 } else {
                                     0
                                 }
@@ -4035,7 +4035,7 @@ fn setup_transfer_scan_threads(
 }
 
 fn run_test_load_program_accounts(scan_commitment: CommitmentConfig) {
-    solana_logger::setup_with_default(RUST_LOG_FILTER);
+    analog_logger::setup_with_default(RUST_LOG_FILTER);
     // First set up the cluster with 2 nodes
     let slots_per_epoch = 2048;
     let node_stakes = vec![51, 50];

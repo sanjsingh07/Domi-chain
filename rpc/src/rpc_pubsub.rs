@@ -13,8 +13,8 @@ use {
     jsonrpc_core::{Error, ErrorCode, Result},
     jsonrpc_derive::rpc,
     jsonrpc_pubsub::{typed::Subscriber, SubscriptionId as PubSubSubscriptionId},
-    solana_account_decoder::{UiAccount, UiAccountEncoding},
-    solana_client::{
+    analog_account_decoder::{UiAccount, UiAccountEncoding},
+    analog_client::{
         rpc_config::{
             RpcAccountInfoConfig, RpcProgramAccountsConfig, RpcSignatureSubscribeConfig,
             RpcTransactionLogsConfig, RpcTransactionLogsFilter,
@@ -24,7 +24,7 @@ use {
             SlotInfo, SlotUpdate,
         },
     },
-    solana_sdk::{clock::Slot, pubkey::Pubkey, signature::Signature},
+    analog_sdk::{clock::Slot, pubkey::Pubkey, signature::Signature},
     std::{str::FromStr, sync::Arc},
 };
 
@@ -508,11 +508,11 @@ mod tests {
         },
         jsonrpc_core::{IoHandler, Response},
         serial_test::serial,
-        solana_account_decoder::{parse_account_data::parse_account_data, UiAccountEncoding},
-        solana_client::rpc_response::{
+        analog_account_decoder::{parse_account_data::parse_account_data, UiAccountEncoding},
+        analog_client::rpc_response::{
             ProcessedSignatureResult, ReceivedSignatureResult, RpcSignatureResult, SlotInfo,
         },
-        solana_runtime::{
+        analog_runtime::{
             bank::Bank,
             bank_forks::BankForks,
             commitment::{BlockCommitmentCache, CommitmentSlots},
@@ -521,7 +521,7 @@ mod tests {
                 ValidatorVoteKeypairs,
             },
         },
-        solana_sdk::{
+        analog_sdk::{
             account::ReadableAccount,
             clock::Slot,
             commitment_config::CommitmentConfig,
@@ -536,8 +536,8 @@ mod tests {
             system_instruction, system_program, system_transaction,
             transaction::{self, Transaction},
         },
-        solana_stake_program::stake_state,
-        solana_vote_program::vote_state::Vote,
+        analog_stake_program::stake_state,
+        analog_vote_program::vote_state::Vote,
         std::{
             sync::{atomic::AtomicBool, RwLock},
             thread::sleep,
@@ -699,7 +699,7 @@ mod tests {
             mint_keypair: alice,
             ..
         } = create_genesis_config(10_000);
-        let bob_pubkey = solana_sdk::pubkey::new_rand();
+        let bob_pubkey = analog_sdk::pubkey::new_rand();
         let bank = Bank::new_for_tests(&genesis_config);
         let blockhash = bank.last_blockhash();
         let bank_forks = Arc::new(RwLock::new(BankForks::new(bank)));
@@ -745,7 +745,7 @@ mod tests {
             ..
         } = create_genesis_config(10_000);
 
-        let new_stake_authority = solana_sdk::pubkey::new_rand();
+        let new_stake_authority = analog_sdk::pubkey::new_rand();
         let stake_authority = Keypair::new();
         let from = Keypair::new();
         let stake_account = Keypair::new();
@@ -818,7 +818,7 @@ mod tests {
                    "context": { "slot": 1 },
                    "value": {
                        "owner": stake_program_id.to_string(),
-                       "lamports": 51,
+                       "tock": 51,
                        "data": [base64::encode(expected_data), encoding],
                        "executable": false,
                        "rentEpoch": 0,
@@ -935,7 +935,7 @@ mod tests {
                    "context": { "slot": 1 },
                    "value": {
                        "owner": system_program::id().to_string(),
-                       "lamports": 100,
+                       "tock": 100,
                        "data": expected_data,
                        "executable": false,
                        "rentEpoch": 0,
@@ -955,7 +955,7 @@ mod tests {
     #[test]
     #[serial]
     fn test_account_unsubscribe() {
-        let bob_pubkey = solana_sdk::pubkey::new_rand();
+        let bob_pubkey = analog_sdk::pubkey::new_rand();
 
         let GenesisConfigInfo { genesis_config, .. } = create_genesis_config(10_000);
         let bank_forks = Arc::new(RwLock::new(BankForks::new(Bank::new_for_tests(
@@ -1106,7 +1106,7 @@ mod tests {
                    "context": { "slot": 1 },
                    "value": {
                        "owner": system_program::id().to_string(),
-                       "lamports": 100,
+                       "tock": 100,
                        "data": "",
                        "executable": false,
                        "rentEpoch": 0,

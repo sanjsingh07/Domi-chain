@@ -1,7 +1,7 @@
 use serde::{Deserialize, Serialize};
 #[allow(deprecated)]
-use solana_sdk::sysvar::recent_blockhashes;
-use solana_sdk::{fee_calculator::FeeCalculator, hash::Hash, timing::timestamp};
+use analog_sdk::sysvar::recent_blockhashes;
+use analog_sdk::{fee_calculator::FeeCalculator, hash::Hash, timing::timestamp};
 use std::collections::HashMap;
 
 #[derive(Debug, PartialEq, Eq, Clone, Serialize, Deserialize, AbiExample)]
@@ -142,8 +142,8 @@ mod tests {
     use super::*;
     use bincode::serialize;
     #[allow(deprecated)]
-    use solana_sdk::sysvar::recent_blockhashes::IterItem;
-    use solana_sdk::{clock::MAX_RECENT_BLOCKHASHES, hash::hash};
+    use analog_sdk::sysvar::recent_blockhashes::IterItem;
+    use analog_sdk::{clock::MAX_RECENT_BLOCKHASHES, hash::hash};
 
     #[test]
     fn test_register_hash() {

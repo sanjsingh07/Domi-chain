@@ -2,10 +2,10 @@
 
 extern crate test;
 
-use solana_perf::packet::to_packets_chunked;
-use solana_perf::recycler::Recycler;
-use solana_perf::sigverify;
-use solana_perf::test_tx::test_tx;
+use analog_perf::packet::to_packets_chunked;
+use analog_perf::recycler::Recycler;
+use analog_perf::sigverify;
+use analog_perf::test_tx::test_tx;
 use test::Bencher;
 
 #[bench]

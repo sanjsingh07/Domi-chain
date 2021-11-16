@@ -1,7 +1,7 @@
 use {
     crate::rpc_response::RpcSimulateTransactionResult,
     serde_json::{json, Value},
-    solana_sdk::{clock::Slot, pubkey::Pubkey},
+    analog_sdk::{clock::Slot, pubkey::Pubkey},
     std::fmt,
     thiserror::Error,
 };
@@ -269,7 +269,7 @@ pub enum TokenAccountsFilter {
 mod tests {
     use super::*;
     use crate::rpc_config::RpcTokenAccountsFilter;
-    use solana_sdk::commitment_config::{CommitmentConfig, CommitmentLevel};
+    use analog_sdk::commitment_config::{CommitmentConfig, CommitmentLevel};
 
     #[test]
     fn test_build_request_json() {
@@ -339,7 +339,7 @@ mod tests {
 
         // Test request with CommitmentConfig and params
         let test_request = RpcRequest::GetTokenAccountsByOwner;
-        let mint = solana_sdk::pubkey::new_rand();
+        let mint = analog_sdk::pubkey::new_rand();
         let token_account_filter = RpcTokenAccountsFilter::Mint(mint.to_string());
         let request = test_request
             .build_request_json(1, json!([addr, token_account_filter, commitment_config]));

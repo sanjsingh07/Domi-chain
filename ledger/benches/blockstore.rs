@@ -1,15 +1,15 @@
 #![allow(clippy::integer_arithmetic)]
 #![feature(test)]
-extern crate solana_ledger;
+extern crate analog_ledger;
 extern crate test;
 
 use rand::Rng;
-use solana_entry::entry::{create_ticks, Entry};
-use solana_ledger::{
+use analog_entry::entry::{create_ticks, Entry};
+use analog_ledger::{
     blockstore::{entries_to_test_shreds, Blockstore},
     get_tmp_ledger_path,
 };
-use solana_sdk::{clock::Slot, hash::Hash};
+use analog_sdk::{clock::Slot, hash::Hash};
 use std::path::Path;
 use test::Bencher;
 

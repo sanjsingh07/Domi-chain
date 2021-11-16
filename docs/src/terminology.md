@@ -6,9 +6,9 @@ The following terms are used throughout the documentation.
 
 ## account
 
-A record in the Solana ledger that either holds data or is an executable program.
+A record in the Analog ledger that either holds data or is an executable program.
 
-Like an account at a traditional bank, a Solana account may hold funds called [lamports](#lamport). Like a file in Linux, it is addressable by a key, often referred to as a [public key](#public-key-pubkey) or pubkey.
+Like an account at a traditional bank, a Analog account may hold funds called [tock](#lamport). Like a file in Linux, it is addressable by a key, often referred to as a [public key](#public-key-pubkey) or pubkey.
 
 The key may be one of:
 
@@ -22,7 +22,7 @@ The address of the program that owns the account. Only the owning program is cap
 
 ## app
 
-A front-end application that interacts with a Solana cluster.
+A front-end application that interacts with a Analog cluster.
 
 ## bank state
 
@@ -34,7 +34,7 @@ A contiguous set of [entries](#entry) on the ledger covered by a [vote](#ledger-
 
 ## blockhash
 
-A unique value ([hash](#hash)) that identifies a record (block).  Solana computes a blockhash from the last [entry id](#entry-id) of the block.
+A unique value ([hash](#hash)) that identifies a record (block).  Analog computes a blockhash from the last [entry id](#entry-id) of the block.
 
 ## block height
 
@@ -46,11 +46,11 @@ The [validator](#validator) that produces the genesis (first) [block](#block) of
 
 ## BPF loader
 
-The Solana program that owns and loads [BPF](developing/on-chain-programs/overview#berkeley-packet-filter-bpf) smart contract programs, allowing the program to interface with the runtime.
+The Analog program that owns and loads [BPF](developing/on-chain-programs/overview#berkeley-packet-filter-bpf) smart contract programs, allowing the program to interface with the runtime.
 
 ## client
 
-A computer program that accesses the Solana server network [cluster](#cluster).
+A computer program that accesses the Analog server network [cluster](#cluster).
 
 ## cluster
 
@@ -132,7 +132,7 @@ A digital fingerprint of a sequence of bytes.
 
 ## inflation
 
-An increase in token supply over time used to fund rewards for validation and to fund continued development of Solana.
+An increase in token supply over time used to fund rewards for validation and to fund continued development of Analog.
 
 ## inner instruction
 
@@ -148,7 +148,7 @@ A [public key](#public-key-pubkey) and corresponding [private key](#private-key)
 
 ## lamport
 
-A fractional [native token](#native-token) with the value of 0.000000001 [sol](#sol).
+A fractional [native token](#native-token) with the value of 0.000000001 [anlog](#anlog).
 
 ## leader
 
@@ -197,7 +197,7 @@ See [Proof of History](#proof-of-history-poh).
 
 ## point
 
-A weighted [credit](#credit) in a rewards regime. In the [validator](#validator) [rewards regime](cluster/stake-delegation-and-rewards.md), the number of points owed to a [stake](#stake) during redemption is the product of the [vote credits](#vote-credit) earned and the number of lamports staked.
+A weighted [credit](#credit) in a rewards regime. In the [validator](#validator) [rewards regime](cluster/stake-delegation-and-rewards.md), the number of points owed to a [stake](#stake) during redemption is the product of the [vote credits](#vote-credit) earned and the number of tock staked.
 
 ## private key
 
@@ -233,7 +233,7 @@ The component of a [validator](#validator) responsible for [program](#program) e
 
 ## Sealevel
 
-Solana's parallel smart contracts run-time.
+Analog's parallel smart contracts run-time.
 
 ## shred
 
@@ -261,13 +261,13 @@ Collectively, slots create a logical clock. Slots are ordered sequentially and n
 
 A program on a blockchain that can read and modify accounts over which it has control.
 
-## sol
+## anlog
 
-The [native token](#native-token) of a Solana [cluster](#cluster).
+The [native token](#native-token) of a Analog [cluster](#cluster).
 
-## Solana Program Library (SPL)
+## Analog Program Library (SPL)
 
-A library of programs on Solana such as spl-token that facilitates tasks such as creating and using tokens
+A library of programs on Analog such as spl-token that facilitates tasks such as creating and using tokens
 
 ## stake
 
@@ -319,7 +319,7 @@ A set of [transactions](#transaction) that may be executed in parallel.
 
 ## validator
 
-A full participant in a Solana network [cluster](#cluster) that produces new [blocks](#block).  A validator validates the transactions added to the [ledger](#ledger)
+A full participant in a Analog network [cluster](#cluster) that produces new [blocks](#block).  A validator validates the transactions added to the [ledger](#ledger)
 
 ## VDF
 

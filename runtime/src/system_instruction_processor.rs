@@ -1,6 +1,6 @@
 use crate::nonce_keyed_account::NonceKeyedAccount;
 use log::*;
-use solana_sdk::{
+use analog_sdk::{
     account::{AccountSharedData, ReadableAccount, WritableAccount},
     account_utils::StateMut,
     feature_set, ic_msg,
@@ -151,7 +151,7 @@ fn create_account(
     from: &KeyedAccount,
     to: &KeyedAccount,
     to_address: &Address,
-    lamports: u64,
+    tock: u64,
     space: u64,
     owner: &Pubkey,
     signers: &HashSet<Pubkey>,
@@ -160,7 +160,7 @@ fn create_account(
     // if it looks like the `to` account is already in use, bail
     {
         let to = &mut to.try_account_ref_mut()?;
-        if to.lamports() > 0 {
+        if to.tock() > 0 {
             ic_msg!(
                 invoke_context,
                 "Create Account: account {:?} already in use",
@@ -171,42 +171,42 @@ fn create_account(
 
         allocate_and_assign(to, to_address, space, owner, signers, invoke_context)?;
     }
-    transfer(from, to, lamports, invoke_context)
+    transfer(from, to, tock, invoke_context)
 }
 
 fn transfer_verified(
     from: &KeyedAccount,
     to: &KeyedAccount,
-    lamports: u64,
+    tock: u64,
     invoke_context: &dyn InvokeContext,
 ) -> Result<(), InstructionError> {
     if !from.data_is_empty()? {
         ic_msg!(invoke_context, "Transfer: `from` must not carry data");
         return Err(InstructionError::InvalidArgument);
     }
-    if lamports > from.lamports()? {
+    if tock > from.tock()? {
         ic_msg!(
             invoke_context,
-            "Transfer: insufficient lamports {}, need {}",
-            from.lamports()?,
-            lamports
+            "Transfer: insufficient tock {}, need {}",
+            from.tock()?,
+            tock
         );
         return Err(SystemError::ResultWithNegativeLamports.into());
     }
 
-    from.try_account_ref_mut()?.checked_sub_lamports(lamports)?;
-    to.try_account_ref_mut()?.checked_add_lamports(lamports)?;
+    from.try_account_ref_mut()?.checked_sub_lamports(tock)?;
+    to.try_account_ref_mut()?.checked_add_lamports(tock)?;
     Ok(())
 }
 
 fn transfer(
     from: &KeyedAccount,
     to: &KeyedAccount,
-    lamports: u64,
+    tock: u64,
     invoke_context: &dyn InvokeContext,
 ) -> Result<(), InstructionError> {
     if !invoke_context.is_feature_active(&feature_set::system_transfer_zero_check::id())
-        && lamports == 0
+        && tock == 0
     {
         return Ok(());
     }
@@ -220,7 +220,7 @@ fn transfer(
         return Err(InstructionError::MissingRequiredSignature);
     }
 
-    transfer_verified(from, to, lamports, invoke_context)
+    transfer_verified(from, to, tock, invoke_context)
 }
 
 fn transfer_with_seed(
@@ -229,11 +229,11 @@ fn transfer_with_seed(
     from_seed: &str,
     from_owner: &Pubkey,
     to: &KeyedAccount,
-    lamports: u64,
+    tock: u64,
     invoke_context: &dyn InvokeContext,
 ) -> Result<(), InstructionError> {
     if !invoke_context.is_feature_active(&feature_set::system_transfer_zero_check::id())
-        && lamports == 0
+        && tock == 0
     {
         return Ok(());
     }
@@ -259,7 +259,7 @@ fn transfer_with_seed(
         return Err(SystemError::AddressWithSeedMismatch.into());
     }
 
-    transfer_verified(from, to, lamports, invoke_context)
+    transfer_verified(from, to, tock, invoke_context)
 }
 
 pub fn process_instruction(
@@ -277,7 +277,7 @@ pub fn process_instruction(
     let signers = get_signers(&keyed_accounts[first_instruction_account..]);
     match instruction {
         SystemInstruction::CreateAccount {
-            lamports,
+            tock,
             space,
             owner,
         } => {
@@ -288,7 +288,7 @@ pub fn process_instruction(
                 from,
                 to,
                 &to_address,
-                lamports,
+                tock,
                 space,
                 &owner,
                 &signers,
@@ -298,7 +298,7 @@ pub fn process_instruction(
         SystemInstruction::CreateAccountWithSeed {
             base,
             seed,
-            lamports,
+            tock,
             space,
             owner,
         } => {
@@ -313,7 +313,7 @@ pub fn process_instruction(
                 from,
                 to,
                 &to_address,
-                lamports,
+                tock,
                 space,
                 &owner,
                 &signers,
@@ -326,13 +326,13 @@ pub fn process_instruction(
             let address = Address::create(keyed_account.unsigned_key(), None, invoke_context)?;
             assign(&mut account, &address, &owner, &signers, invoke_context)
         }
-        SystemInstruction::Transfer { lamports } => {
+        SystemInstruction::Transfer { tock } => {
             let from = keyed_account_at_index(keyed_accounts, first_instruction_account)?;
             let to = keyed_account_at_index(keyed_accounts, first_instruction_account + 1)?;
-            transfer(from, to, lamports, invoke_context)
+            transfer(from, to, tock, invoke_context)
         }
         SystemInstruction::TransferWithSeed {
-            lamports,
+            tock,
             from_seed,
             from_owner,
         } => {
@@ -345,14 +345,14 @@ pub fn process_instruction(
                 &from_seed,
                 &from_owner,
                 to,
-                lamports,
+                tock,
                 invoke_context,
             )
         }
         SystemInstruction::AdvanceNonceAccount => {
             let me = &mut keyed_account_at_index(keyed_accounts, first_instruction_account)?;
             #[allow(deprecated)]
-            if from_keyed_account::<solana_sdk::sysvar::recent_blockhashes::RecentBlockhashes>(
+            if from_keyed_account::<analog_sdk::sysvar::recent_blockhashes::RecentBlockhashes>(
                 keyed_account_at_index(keyed_accounts, first_instruction_account + 1)?,
             )?
             .is_empty()
@@ -365,15 +365,15 @@ pub fn process_instruction(
             }
             me.advance_nonce_account(&signers, invoke_context)
         }
-        SystemInstruction::WithdrawNonceAccount(lamports) => {
+        SystemInstruction::WithdrawNonceAccount(tock) => {
             let me = &mut keyed_account_at_index(keyed_accounts, first_instruction_account)?;
             let to = &mut keyed_account_at_index(keyed_accounts, first_instruction_account + 1)?;
             #[allow(deprecated)]
-            let _ = from_keyed_account::<solana_sdk::sysvar::recent_blockhashes::RecentBlockhashes>(
+            let _ = from_keyed_account::<analog_sdk::sysvar::recent_blockhashes::RecentBlockhashes>(
                 keyed_account_at_index(keyed_accounts, first_instruction_account + 2)?,
             )?;
             me.withdraw_nonce_account(
-                lamports,
+                tock,
                 to,
                 &from_keyed_account::<Rent>(keyed_account_at_index(
                     keyed_accounts,
@@ -386,7 +386,7 @@ pub fn process_instruction(
         SystemInstruction::InitializeNonceAccount(authorized) => {
             let me = &mut keyed_account_at_index(keyed_accounts, first_instruction_account)?;
             #[allow(deprecated)]
-            if from_keyed_account::<solana_sdk::sysvar::recent_blockhashes::RecentBlockhashes>(
+            if from_keyed_account::<analog_sdk::sysvar::recent_blockhashes::RecentBlockhashes>(
                 keyed_account_at_index(keyed_accounts, first_instruction_account + 1)?,
             )?
             .is_empty()
@@ -483,7 +483,7 @@ mod tests {
     use bincode::serialize;
     use solana_program_runtime::invoke_context::{mock_process_instruction, ThisInvokeContext};
     #[allow(deprecated)]
-    use solana_sdk::{
+    use analog_sdk::{
         account::{self, Account, AccountSharedData},
         client::SyncClient,
         feature_set::FeatureSet,
@@ -551,7 +551,7 @@ mod tests {
         assert_eq!(
             process_instruction(
                 &bincode::serialize(&SystemInstruction::CreateAccount {
-                    lamports: 50,
+                    tock: 50,
                     space: 2,
                     owner: new_owner
                 })
@@ -563,8 +563,8 @@ mod tests {
             ),
             Ok(())
         );
-        assert_eq!(from_account.borrow().lamports(), 50);
-        assert_eq!(to_account.borrow().lamports(), 50);
+        assert_eq!(from_account.borrow().tock(), 50);
+        assert_eq!(to_account.borrow().tock(), 50);
         assert_eq!(to_account.borrow().owner(), &new_owner);
         assert_eq!(to_account.borrow().data(), &[0, 0]);
     }
@@ -583,7 +583,7 @@ mod tests {
                 &bincode::serialize(&SystemInstruction::CreateAccountWithSeed {
                     base: from,
                     seed: seed.to_string(),
-                    lamports: 50,
+                    tock: 50,
                     space: 2,
                     owner: new_owner
                 })
@@ -595,8 +595,8 @@ mod tests {
             ),
             Ok(())
         );
-        assert_eq!(from_account.borrow().lamports(), 50);
-        assert_eq!(to_account.borrow().lamports(), 50);
+        assert_eq!(from_account.borrow().tock(), 50);
+        assert_eq!(to_account.borrow().tock(), 50);
         assert_eq!(to_account.borrow().owner(), &new_owner);
         assert_eq!(to_account.borrow().data(), &[0, 0]);
     }
@@ -617,7 +617,7 @@ mod tests {
                 &bincode::serialize(&SystemInstruction::CreateAccountWithSeed {
                     base,
                     seed: seed.to_string(),
-                    lamports: 50,
+                    tock: 50,
                     space: 2,
                     owner: new_owner
                 })
@@ -630,8 +630,8 @@ mod tests {
             ),
             Ok(())
         );
-        assert_eq!(from_account.borrow().lamports(), 50);
-        assert_eq!(to_account.borrow().lamports(), 50);
+        assert_eq!(from_account.borrow().tock(), 50);
+        assert_eq!(to_account.borrow().tock(), 50);
         assert_eq!(to_account.borrow().owner(), &new_owner);
         assert_eq!(to_account.borrow().data(), &[0, 0]);
     }
@@ -676,14 +676,14 @@ mod tests {
             ),
             Err(InstructionError::MissingRequiredSignature)
         );
-        assert_eq!(from_account.borrow().lamports(), 100);
+        assert_eq!(from_account.borrow().tock(), 100);
         assert_eq!(*to_account.borrow(), AccountSharedData::default());
     }
 
     #[test]
     fn test_create_with_zero_lamports() {
         let invoke_context = ThisInvokeContext::new_mock(&[], &[]);
-        // create account with zero lamports transferred
+        // create account with zero tock transferred
         let new_owner = Pubkey::new(&[9; 32]);
         let from = Pubkey::new_unique();
         let from_account = AccountSharedData::new_ref(100, 0, &Pubkey::new_unique()); // not from system account
@@ -705,8 +705,8 @@ mod tests {
             Ok(())
         );
 
-        let from_lamports = from_account.borrow().lamports();
-        let to_lamports = to_account.borrow().lamports();
+        let from_lamports = from_account.borrow().tock();
+        let to_lamports = to_account.borrow().tock();
         let to_owner = *to_account.borrow().owner();
         assert_eq!(from_lamports, 100);
         assert_eq!(to_lamports, 0);
@@ -717,7 +717,7 @@ mod tests {
     #[test]
     fn test_create_negative_lamports() {
         let invoke_context = ThisInvokeContext::new_mock(&[], &[]);
-        // Attempt to create account with more lamports than remaining in from_account
+        // Attempt to create account with more tock than remaining in from_account
         let new_owner = Pubkey::new(&[9; 32]);
         let from = Pubkey::new_unique();
         let from_account = AccountSharedData::new_ref(100, 0, &system_program::id());
@@ -778,7 +778,7 @@ mod tests {
             &invoke_context,
         );
         assert!(result.is_ok());
-        assert_eq!(to_account.borrow().lamports(), 50);
+        assert_eq!(to_account.borrow().tock(), 50);
         assert_eq!(
             to_account.borrow().data().len() as u64,
             MAX_PERMITTED_DATA_LENGTH
@@ -813,7 +813,7 @@ mod tests {
         );
         assert_eq!(result, Err(SystemError::AccountAlreadyInUse.into()));
 
-        let from_lamports = from_account.borrow().lamports();
+        let from_lamports = from_account.borrow().tock();
         assert_eq!(from_lamports, 100);
         assert_eq!(owned_account, unchanged_account);
 
@@ -831,11 +831,11 @@ mod tests {
             &invoke_context,
         );
         assert_eq!(result, Err(SystemError::AccountAlreadyInUse.into()));
-        let from_lamports = from_account.borrow().lamports();
+        let from_lamports = from_account.borrow().tock();
         assert_eq!(from_lamports, 100);
         assert_eq!(*owned_account.borrow(), unchanged_account);
 
-        // Attempt to create an account that already has lamports
+        // Attempt to create an account that already has tock
         let owned_account = AccountSharedData::new_ref(1, 0, &Pubkey::default());
         let unchanged_account = owned_account.borrow().clone();
         let result = create_account(
@@ -893,7 +893,7 @@ mod tests {
         );
         assert_eq!(result, Err(InstructionError::MissingRequiredSignature));
 
-        // Don't support unsigned creation with zero lamports (ephemeral account)
+        // Don't support unsigned creation with zero tock (ephemeral account)
         let owned_account = AccountSharedData::new_ref(0, 0, &Pubkey::default());
         let result = create_account(
             &KeyedAccount::new(&from, false, &from_account),
@@ -1146,7 +1146,7 @@ mod tests {
         // Attempt to transfer with no destination
         let from = Pubkey::new_unique();
         let from_account = AccountSharedData::new_ref(100, 0, &system_program::id());
-        let instruction = SystemInstruction::Transfer { lamports: 0 };
+        let instruction = SystemInstruction::Transfer { tock: 0 };
         let data = serialize(&instruction).unwrap();
         let result = process_instruction(&data, &[(true, false, from, from_account)]);
         assert_eq!(result, Err(InstructionError::NotEnoughAccountKeys));
@@ -1162,22 +1162,22 @@ mod tests {
         let from_keyed_account = KeyedAccount::new(&from, true, &from_account);
         let to_keyed_account = KeyedAccount::new(&to, false, &to_account);
         transfer(&from_keyed_account, &to_keyed_account, 50, &invoke_context).unwrap();
-        let from_lamports = from_keyed_account.account.borrow().lamports();
-        let to_lamports = to_keyed_account.account.borrow().lamports();
+        let from_lamports = from_keyed_account.account.borrow().tock();
+        let to_lamports = to_keyed_account.account.borrow().tock();
         assert_eq!(from_lamports, 50);
         assert_eq!(to_lamports, 51);
 
-        // Attempt to move more lamports than remaining in from_account
+        // Attempt to move more tock than remaining in from_account
         let from_keyed_account = KeyedAccount::new(&from, true, &from_account);
         let result = transfer(&from_keyed_account, &to_keyed_account, 100, &invoke_context);
         assert_eq!(result, Err(SystemError::ResultWithNegativeLamports.into()));
-        assert_eq!(from_keyed_account.account.borrow().lamports(), 50);
-        assert_eq!(to_keyed_account.account.borrow().lamports(), 51);
+        assert_eq!(from_keyed_account.account.borrow().tock(), 50);
+        assert_eq!(to_keyed_account.account.borrow().tock(), 51);
 
         // test signed transfer of zero
         assert!(transfer(&from_keyed_account, &to_keyed_account, 0, &invoke_context).is_ok());
-        assert_eq!(from_keyed_account.account.borrow().lamports(), 50);
-        assert_eq!(to_keyed_account.account.borrow().lamports(), 51);
+        assert_eq!(from_keyed_account.account.borrow().tock(), 50);
+        assert_eq!(to_keyed_account.account.borrow().tock(), 51);
 
         // test unsigned transfer of zero
         let from_keyed_account = KeyedAccount::new(&from, false, &from_account);
@@ -1186,8 +1186,8 @@ mod tests {
             transfer(&from_keyed_account, &to_keyed_account, 0, &invoke_context),
             Err(InstructionError::MissingRequiredSignature)
         );
-        assert_eq!(from_keyed_account.account.borrow().lamports(), 50);
-        assert_eq!(to_keyed_account.account.borrow().lamports(), 51);
+        assert_eq!(from_keyed_account.account.borrow().tock(), 50);
+        assert_eq!(to_keyed_account.account.borrow().tock(), 51);
     }
 
     #[test]
@@ -1214,12 +1214,12 @@ mod tests {
             &invoke_context,
         )
         .unwrap();
-        let from_lamports = from_keyed_account.account.borrow().lamports();
-        let to_lamports = to_keyed_account.account.borrow().lamports();
+        let from_lamports = from_keyed_account.account.borrow().tock();
+        let to_lamports = to_keyed_account.account.borrow().tock();
         assert_eq!(from_lamports, 50);
         assert_eq!(to_lamports, 51);
 
-        // Attempt to move more lamports than remaining in from_account
+        // Attempt to move more tock than remaining in from_account
         let from_keyed_account = KeyedAccount::new(&from, true, &from_account);
         let result = transfer_with_seed(
             &from_keyed_account,
@@ -1231,8 +1231,8 @@ mod tests {
             &invoke_context,
         );
         assert_eq!(result, Err(SystemError::ResultWithNegativeLamports.into()));
-        assert_eq!(from_keyed_account.account.borrow().lamports(), 50);
-        assert_eq!(to_keyed_account.account.borrow().lamports(), 51);
+        assert_eq!(from_keyed_account.account.borrow().tock(), 50);
+        assert_eq!(to_keyed_account.account.borrow().tock(), 51);
 
         // test unsigned transfer of zero
         let from_keyed_account = KeyedAccount::new(&from, false, &from_account);
@@ -1246,8 +1246,8 @@ mod tests {
             &invoke_context,
         )
         .is_ok());
-        assert_eq!(from_keyed_account.account.borrow().lamports(), 50);
-        assert_eq!(to_keyed_account.account.borrow().lamports(), 51);
+        assert_eq!(from_keyed_account.account.borrow().tock(), 50);
+        assert_eq!(to_keyed_account.account.borrow().tock(), 51);
     }
 
     #[test]
@@ -1323,7 +1323,7 @@ mod tests {
     where
         F: Fn(&Bank),
     {
-        solana_logger::setup();
+        analog_logger::setup();
 
         let alice_keypair = Keypair::new();
         let bob_keypair = Keypair::new();
@@ -1346,7 +1346,7 @@ mod tests {
             .transfer_and_confirm(mint_lamports, &mint_keypair, &alice_pubkey)
             .unwrap();
 
-        // create zero-lamports account to be cleaned
+        // create zero-tock account to be cleaned
         let bank = Arc::new(Bank::new_from_parent(&bank, &collector, bank.slot() + 1));
         let bank_client = BankClient::new_shared(&bank);
         let ix = system_instruction::create_account(&alice_pubkey, &bob_pubkey, 0, len1, &program);
@@ -1364,7 +1364,7 @@ mod tests {
         // super fun time; callback chooses to .clean_accounts(None) or not
         callback(&*bank);
 
-        // create a normal account at the same pubkey as the zero-lamports account
+        // create a normal account at the same pubkey as the zero-tock account
         let bank = Arc::new(Bank::new_from_parent(&bank, &collector, bank.slot() + 1));
         let bank_client = BankClient::new_shared(&bank);
         let ix = system_instruction::create_account(&alice_pubkey, &bob_pubkey, 1, len2, &program);
@@ -1446,7 +1446,7 @@ mod tests {
         ];
         let malicious_instruction = Instruction::new_with_bincode(
             system_program::id(),
-            &SystemInstruction::Transfer { lamports: 10 },
+            &SystemInstruction::Transfer { tock: 10 },
             account_metas,
         );
         assert_eq!(
@@ -1561,7 +1561,7 @@ mod tests {
         let blockhash = hash(&serialize(&0).unwrap());
         #[allow(deprecated)]
         let new_recent_blockhashes_account = Rc::new(RefCell::new(
-            solana_sdk::recent_blockhashes_account::create_account_with_data_for_test(
+            analog_sdk::recent_blockhashes_account::create_account_with_data_for_test(
                 vec![IterItem(0u64, &blockhash, 0); sysvar::recent_blockhashes::MAX_ENTRIES]
                     .into_iter(),
             ),
@@ -1919,7 +1919,7 @@ mod tests {
         let nonce_account = Rc::new(nonce_account::create_account(1_000_000));
         #[allow(deprecated)]
         let new_recent_blockhashes_account = Rc::new(RefCell::new(
-            solana_sdk::recent_blockhashes_account::create_account_with_data_for_test(
+            analog_sdk::recent_blockhashes_account::create_account_with_data_for_test(
                 vec![].into_iter(),
             ),
         ));
@@ -1972,7 +1972,7 @@ mod tests {
         .unwrap();
         #[allow(deprecated)]
         let new_recent_blockhashes_account = Rc::new(RefCell::new(
-            solana_sdk::recent_blockhashes_account::create_account_with_data_for_test(
+            analog_sdk::recent_blockhashes_account::create_account_with_data_for_test(
                 vec![].into_iter(),
             ),
         ));

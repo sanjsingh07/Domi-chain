@@ -79,7 +79,7 @@ export type CreateStakeAccountParams = {
   /** Lockup of the new stake account */
   lockup?: Lockup;
   /** Funding amount */
-  lamports: number;
+  tock: number;
 };
 
 /**
@@ -92,7 +92,7 @@ export type CreateStakeAccountWithSeedParams = {
   seed: string;
   authorized: Authorized;
   lockup?: Lockup;
-  lamports: number;
+  tock: number;
 };
 
 /**
@@ -144,7 +144,7 @@ export type SplitStakeParams = {
   stakePubkey: PublicKey;
   authorizedPubkey: PublicKey;
   splitStakePubkey: PublicKey;
-  lamports: number;
+  tock: number;
 };
 
 /**
@@ -154,7 +154,7 @@ export type WithdrawStakeParams = {
   stakePubkey: PublicKey;
   authorizedPubkey: PublicKey;
   toPubkey: PublicKey;
-  lamports: number;
+  tock: number;
   custodianPubkey?: PublicKey;
 };
 
@@ -323,7 +323,7 @@ export class StakeInstruction {
   static decodeSplit(instruction: TransactionInstruction): SplitStakeParams {
     this.checkProgramId(instruction.programId);
     this.checkKeyLength(instruction.keys, 3);
-    const {lamports} = decodeData(
+    const {tock} = decodeData(
       STAKE_INSTRUCTION_LAYOUTS.Split,
       instruction.data,
     );
@@ -332,7 +332,7 @@ export class StakeInstruction {
       stakePubkey: instruction.keys[0].pubkey,
       splitStakePubkey: instruction.keys[1].pubkey,
       authorizedPubkey: instruction.keys[2].pubkey,
-      lamports,
+      tock,
     };
   }
 
@@ -359,7 +359,7 @@ export class StakeInstruction {
   ): WithdrawStakeParams {
     this.checkProgramId(instruction.programId);
     this.checkKeyLength(instruction.keys, 5);
-    const {lamports} = decodeData(
+    const {tock} = decodeData(
       STAKE_INSTRUCTION_LAYOUTS.Withdraw,
       instruction.data,
     );
@@ -368,7 +368,7 @@ export class StakeInstruction {
       stakePubkey: instruction.keys[0].pubkey,
       toPubkey: instruction.keys[1].pubkey,
       authorizedPubkey: instruction.keys[4].pubkey,
-      lamports,
+      tock,
     };
     if (instruction.keys.length > 5) {
       o.custodianPubkey = instruction.keys[5].pubkey;
@@ -457,14 +457,14 @@ export const STAKE_INSTRUCTION_LAYOUTS: {
     index: 3,
     layout: BufferLayout.struct([
       BufferLayout.u32('instruction'),
-      BufferLayout.ns64('lamports'),
+      BufferLayout.ns64('tock'),
     ]),
   },
   Withdraw: {
     index: 4,
     layout: BufferLayout.struct([
       BufferLayout.u32('instruction'),
-      BufferLayout.ns64('lamports'),
+      BufferLayout.ns64('tock'),
     ]),
   },
   Deactivate: {
@@ -491,7 +491,7 @@ export const STAKE_INSTRUCTION_LAYOUTS: {
  * Stake authorization type
  */
 export type StakeAuthorizationType = {
-  /** The Stake Authorization index (from solana-stake-program) */
+  /** The Stake Authorization index (from analog-stake-program) */
   index: number;
 };
 
@@ -526,9 +526,9 @@ export class StakeProgram {
   /**
    * Max space of a Stake account
    *
-   * This is generated from the solana-stake-program StakeState struct as
+   * This is generated from the analog-stake-program StakeState struct as
    * `std::mem::size_of::<StakeState>()`:
-   * https://docs.rs/solana-stake-program/1.4.4/solana_stake_program/stake_state/enum.StakeState.html
+   * https://docs.rs/analog-stake-program/1.4.4/analog_stake_program/stake_state/enum.StakeState.html
    */
   static space: number = 200;
 
@@ -575,7 +575,7 @@ export class StakeProgram {
         newAccountPubkey: params.stakePubkey,
         basePubkey: params.basePubkey,
         seed: params.seed,
-        lamports: params.lamports,
+        tock: params.tock,
         space: this.space,
         programId: this.programId,
       }),
@@ -594,7 +594,7 @@ export class StakeProgram {
       SystemProgram.createAccount({
         fromPubkey: params.fromPubkey,
         newAccountPubkey: params.stakePubkey,
-        lamports: params.lamports,
+        tock: params.tock,
         space: this.space,
         programId: this.programId,
       }),
@@ -709,20 +709,20 @@ export class StakeProgram {
    * Generate a Transaction that splits Stake tokens into another stake account
    */
   static split(params: SplitStakeParams): Transaction {
-    const {stakePubkey, authorizedPubkey, splitStakePubkey, lamports} = params;
+    const {stakePubkey, authorizedPubkey, splitStakePubkey, tock} = params;
 
     const transaction = new Transaction();
     transaction.add(
       SystemProgram.createAccount({
         fromPubkey: authorizedPubkey,
         newAccountPubkey: splitStakePubkey,
-        lamports: 0,
+        tock: 0,
         space: this.space,
         programId: this.programId,
       }),
     );
     const type = STAKE_INSTRUCTION_LAYOUTS.Split;
-    const data = encodeData(type, {lamports});
+    const data = encodeData(type, {tock});
 
     return transaction.add({
       keys: [
@@ -764,10 +764,10 @@ export class StakeProgram {
    * Generate a Transaction that withdraws deactivated Stake tokens.
    */
   static withdraw(params: WithdrawStakeParams): Transaction {
-    const {stakePubkey, authorizedPubkey, toPubkey, lamports, custodianPubkey} =
+    const {stakePubkey, authorizedPubkey, toPubkey, tock, custodianPubkey} =
       params;
     const type = STAKE_INSTRUCTION_LAYOUTS.Withdraw;
-    const data = encodeData(type, {lamports});
+    const data = encodeData(type, {tock});
 
     const keys = [
       {pubkey: stakePubkey, isSigner: false, isWritable: true},

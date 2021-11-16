@@ -1,19 +1,19 @@
 use {
     crate::parse_instruction::parse_memo_data,
-    solana_sdk::{
+    analog_sdk::{
         message::{Message, SanitizedMessage},
         pubkey::Pubkey,
     },
 };
 
 // A helper function to convert spl_memo::v1::id() as spl_sdk::pubkey::Pubkey to
-// solana_sdk::pubkey::Pubkey
+// analog_sdk::pubkey::Pubkey
 pub fn spl_memo_id_v1() -> Pubkey {
     Pubkey::new_from_array(spl_memo::v1::id().to_bytes())
 }
 
 // A helper function to convert spl_memo::id() as spl_sdk::pubkey::Pubkey to
-// solana_sdk::pubkey::Pubkey
+// analog_sdk::pubkey::Pubkey
 pub fn spl_memo_id_v3() -> Pubkey {
     Pubkey::new_from_array(spl_memo::id().to_bytes())
 }
@@ -73,7 +73,7 @@ impl ExtractMemos for SanitizedMessage {
 mod test {
     use {
         super::*,
-        solana_sdk::{
+        analog_sdk::{
             hash::Hash,
             instruction::CompiledInstruction,
             message::{v0, MappedAddresses, MappedMessage, MessageHeader},

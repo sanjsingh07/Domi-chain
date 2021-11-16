@@ -22,7 +22,7 @@ jobs:
       git:
         depth: false
       script:
-        - .travis/export-github-repo.sh web3.js/ solana-web3.js
+        - .travis/export-github-repo.sh web3.js/ analog-web3.js
 
     - &release-artifacts
       if: type IN (api, cron) OR tag IS present

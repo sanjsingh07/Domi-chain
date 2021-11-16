@@ -4,8 +4,8 @@ use {
     },
     bincode::deserialize,
     serde_json::json,
-    solana_sdk::{instruction::CompiledInstruction, pubkey::Pubkey},
-    solana_vote_program::vote_instruction::VoteInstruction,
+    analog_sdk::{instruction::CompiledInstruction, pubkey::Pubkey},
+    analog_vote_program::vote_instruction::VoteInstruction,
 };
 
 pub fn parse_vote(
@@ -70,7 +70,7 @@ pub fn parse_vote(
                 }),
             })
         }
-        VoteInstruction::Withdraw(lamports) => {
+        VoteInstruction::Withdraw(tock) => {
             check_num_vote_accounts(&instruction.accounts, 3)?;
             Ok(ParsedInstructionEnum {
                 instruction_type: "withdraw".to_string(),
@@ -78,7 +78,7 @@ pub fn parse_vote(
                     "voteAccount": account_keys[instruction.accounts[0] as usize].to_string(),
                     "destination": account_keys[instruction.accounts[1] as usize].to_string(),
                     "withdrawAuthority": account_keys[instruction.accounts[2] as usize].to_string(),
-                    "lamports": lamports,
+                    "tock": tock,
                 }),
             })
         }
@@ -147,8 +147,8 @@ fn check_num_vote_accounts(accounts: &[u8], num: usize) -> Result<(), ParseInstr
 mod test {
     use {
         super::*,
-        solana_sdk::{hash::Hash, message::Message, pubkey::Pubkey},
-        solana_vote_program::{
+        analog_sdk::{hash::Hash, message::Message, pubkey::Pubkey},
+        analog_vote_program::{
             vote_instruction,
             vote_state::{Vote, VoteAuthorize, VoteInit},
         },
@@ -159,10 +159,10 @@ mod test {
     fn test_parse_vote_instruction() {
         let mut keys: Vec<Pubkey> = vec![];
         for _ in 0..5 {
-            keys.push(solana_sdk::pubkey::new_rand());
+            keys.push(analog_sdk::pubkey::new_rand());
         }
 
-        let lamports = 55;
+        let tock = 55;
         let hash = Hash::new_from_array([1; 32]);
         let vote = Vote {
             slots: vec![1, 2, 4],
@@ -171,8 +171,8 @@ mod test {
         };
 
         let commission = 10;
-        let authorized_voter = solana_sdk::pubkey::new_rand();
-        let authorized_withdrawer = solana_sdk::pubkey::new_rand();
+        let authorized_voter = analog_sdk::pubkey::new_rand();
+        let authorized_withdrawer = analog_sdk::pubkey::new_rand();
         let vote_init = VoteInit {
             node_pubkey: keys[2],
             authorized_voter,
@@ -181,10 +181,10 @@ mod test {
         };
 
         let instructions = vote_instruction::create_account(
-            &solana_sdk::pubkey::new_rand(),
+            &analog_sdk::pubkey::new_rand(),
             &keys[1],
             &vote_init,
-            lamports,
+            tock,
         );
         let message = Message::new(&instructions, None);
         assert_eq!(
@@ -243,7 +243,7 @@ mod test {
         );
         assert!(parse_vote(&message.instructions[0], &keys[0..3]).is_err());
 
-        let instruction = vote_instruction::withdraw(&keys[1], &keys[0], lamports, &keys[2]);
+        let instruction = vote_instruction::withdraw(&keys[1], &keys[0], tock, &keys[2]);
         let message = Message::new(&[instruction], None);
         assert_eq!(
             parse_vote(&message.instructions[0], &keys[0..3]).unwrap(),
@@ -253,7 +253,7 @@ mod test {
                     "voteAccount": keys[1].to_string(),
                     "destination": keys[2].to_string(),
                     "withdrawAuthority": keys[0].to_string(),
-                    "lamports": lamports,
+                    "tock": tock,
                 }),
             }
         );

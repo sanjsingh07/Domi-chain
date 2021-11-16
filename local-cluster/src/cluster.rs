@@ -1,9 +1,9 @@
 use {
-    solana_client::thin_client::ThinClient,
-    solana_core::validator::{Validator, ValidatorConfig},
-    solana_gossip::{cluster_info::Node, contact_info::ContactInfo},
-    solana_sdk::{pubkey::Pubkey, signature::Keypair},
-    solana_streamer::socket::SocketAddrSpace,
+    analog_client::thin_client::ThinClient,
+    analog_core::validator::{Validator, ValidatorConfig},
+    analog_gossip::{cluster_info::Node, contact_info::ContactInfo},
+    analog_sdk::{pubkey::Pubkey, signature::Keypair},
+    analog_streamer::socket::SocketAddrSpace,
     std::{path::PathBuf, sync::Arc},
 };
 

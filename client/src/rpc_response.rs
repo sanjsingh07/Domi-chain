@@ -1,14 +1,14 @@
 use {
     crate::client_error,
-    solana_account_decoder::{parse_token::UiTokenAmount, UiAccount},
-    solana_sdk::{
+    analog_account_decoder::{parse_token::UiTokenAmount, UiAccount},
+    analog_sdk::{
         clock::{Epoch, Slot, UnixTimestamp},
         fee_calculator::{FeeCalculator, FeeRateGovernor},
         hash::Hash,
         inflation::Inflation,
         transaction::{Result, TransactionError},
     },
-    solana_transaction_status::{
+    analog_transaction_status::{
         ConfirmedTransactionStatusWithSignature, TransactionConfirmationStatus,
     },
     std::{collections::HashMap, fmt, net::SocketAddr},
@@ -256,25 +256,25 @@ pub struct RpcBlockProduction {
 #[derive(Serialize, Deserialize, Clone)]
 #[serde(rename_all = "kebab-case")]
 pub struct RpcVersionInfo {
-    /// The current version of solana-core
-    pub solana_core: String,
+    /// The current version of analog-core
+    pub analog_core: String,
     /// first 4 bytes of the FeatureSet identifier
     pub feature_set: Option<u32>,
 }
 
 impl fmt::Debug for RpcVersionInfo {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(f, "{}", self.solana_core)
+        write!(f, "{}", self.analog_core)
     }
 }
 
 impl fmt::Display for RpcVersionInfo {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        if let Some(version) = self.solana_core.split_whitespace().next() {
+        if let Some(version) = self.analog_core.split_whitespace().next() {
             // Display just the semver if possible
             write!(f, "{}", version)
         } else {
-            write!(f, "{}", self.solana_core)
+            write!(f, "{}", self.analog_core)
         }
     }
 }
@@ -310,7 +310,7 @@ pub struct RpcVoteAccountInfo {
     /// The validator identity, as base-58 encoded string
     pub node_pubkey: String,
 
-    /// The current stake, in lamports, delegated to this vote account
+    /// The current stake, in tock, delegated to this vote account
     pub activated_stake: u64,
 
     /// An 8-bit integer used as a fraction (commission/MAX_U8) for rewards payout
@@ -357,7 +357,7 @@ pub struct RpcStorageTurn {
 #[serde(rename_all = "camelCase")]
 pub struct RpcAccountBalance {
     pub address: String,
-    pub lamports: u64,
+    pub tock: u64,
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug)]
@@ -419,8 +419,8 @@ pub struct RpcPerfSample {
 pub struct RpcInflationReward {
     pub epoch: Epoch,
     pub effective_slot: Slot,
-    pub amount: u64,            // lamports
-    pub post_balance: u64,      // lamports
+    pub amount: u64,            // tock
+    pub post_balance: u64,      // tock
     pub commission: Option<u8>, // Vote account commission when the reward was credited
 }
 

@@ -101,7 +101,7 @@ export function TopAccountsCard() {
                 <tr>
                   <th className="text-muted">Rank</th>
                   <th className="text-muted">Address</th>
-                  <th className="text-muted text-right">Balance (SOL)</th>
+                  <th className="text-muted text-right">Balance (ANLOG)</th>
                   <th className="text-muted text-right">
                     % of {header} Supply
                   </th>
@@ -134,10 +134,10 @@ const renderAccountRow = (
         <Address pubkey={account.address} link />
       </td>
       <td className="text-right">
-        <SolBalance lamports={account.lamports} maximumFractionDigits={0} />
+        <SolBalance tock={account.tock} maximumFractionDigits={0} />
       </td>
       <td className="text-right">{`${(
-        (100 * account.lamports) /
+        (100 * account.tock) /
         supply
       ).toFixed(3)}%`}</td>
     </tr>

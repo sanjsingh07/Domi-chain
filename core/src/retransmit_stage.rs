@@ -16,22 +16,22 @@ use {
     crossbeam_channel::{Receiver, Sender},
     lru::LruCache,
     rayon::{prelude::*, ThreadPool, ThreadPoolBuilder},
-    solana_client::rpc_response::SlotUpdate,
-    solana_gossip::{
+    analog_client::rpc_response::SlotUpdate,
+    analog_gossip::{
         cluster_info::{ClusterInfo, DATA_PLANE_FANOUT},
         contact_info::ContactInfo,
     },
-    solana_ledger::{
+    analog_ledger::{
         shred::Shred,
         {blockstore::Blockstore, leader_schedule_cache::LeaderScheduleCache},
     },
-    solana_measure::measure::Measure,
-    solana_perf::packet::Packets,
-    solana_rayon_threadlimit::get_thread_count,
-    solana_rpc::{max_slots::MaxSlots, rpc_subscriptions::RpcSubscriptions},
-    solana_runtime::{bank::Bank, bank_forks::BankForks},
-    solana_sdk::{clock::Slot, epoch_schedule::EpochSchedule, pubkey::Pubkey, timing::timestamp},
-    solana_streamer::sendmmsg::{multi_target_send, SendPktsError},
+    analog_measure::measure::Measure,
+    analog_perf::packet::Packets,
+    analog_rayon_threadlimit::get_thread_count,
+    analog_rpc::{max_slots::MaxSlots, rpc_subscriptions::RpcSubscriptions},
+    analog_runtime::{bank::Bank, bank_forks::BankForks},
+    analog_sdk::{clock::Slot, epoch_schedule::EpochSchedule, pubkey::Pubkey, timing::timestamp},
+    analog_streamer::sendmmsg::{multi_target_send, SendPktsError},
     std::{
         collections::{BTreeSet, HashMap, HashSet},
         net::UdpSocket,
@@ -387,7 +387,7 @@ pub fn retransmitter(
         .build()
         .unwrap();
     Builder::new()
-        .name("solana-retransmitter".to_string())
+        .name("analog-retransmitter".to_string())
         .spawn(move || {
             trace!("retransmitter started");
             loop {
@@ -527,21 +527,21 @@ impl RetransmitStage {
 mod tests {
     use {
         super::*,
-        solana_gossip::contact_info::ContactInfo,
-        solana_ledger::{
+        analog_gossip::contact_info::ContactInfo,
+        analog_ledger::{
             blockstore_processor::{process_blockstore, ProcessOptions},
             create_new_tmp_ledger,
             genesis_utils::{create_genesis_config, GenesisConfigInfo},
         },
-        solana_net_utils::find_available_port_in_range,
-        solana_sdk::signature::Keypair,
-        solana_streamer::socket::SocketAddrSpace,
+        analog_net_utils::find_available_port_in_range,
+        analog_sdk::signature::Keypair,
+        analog_streamer::socket::SocketAddrSpace,
         std::net::{IpAddr, Ipv4Addr},
     };
 
     #[test]
     fn test_skip_repair() {
-        solana_logger::setup();
+        analog_logger::setup();
         let GenesisConfigInfo { genesis_config, .. } = create_genesis_config(123);
         let (ledger_path, _blockhash) = create_new_tmp_ledger!(&genesis_config);
         let blockstore = Blockstore::open(&ledger_path).unwrap();
@@ -565,7 +565,7 @@ mod tests {
         let leader_schedule_cache = Arc::new(cached_leader_schedule);
         let bank_forks = Arc::new(RwLock::new(bank_forks));
 
-        let mut me = ContactInfo::new_localhost(&solana_sdk::pubkey::new_rand(), 0);
+        let mut me = ContactInfo::new_localhost(&analog_sdk::pubkey::new_rand(), 0);
         let ip_addr = IpAddr::V4(Ipv4Addr::new(0, 0, 0, 0));
         let port = find_available_port_in_range(ip_addr, (8000, 10000)).unwrap();
         let me_retransmit = UdpSocket::bind(format!("127.0.0.1:{}", port)).unwrap();
@@ -580,7 +580,7 @@ mod tests {
         // This fixes the order of nodes returned by shuffle_peers_and_index,
         // and makes turbine retransmit tree deterministic for the purpose of
         // the test.
-        let other = std::iter::repeat_with(solana_sdk::pubkey::new_rand)
+        let other = std::iter::repeat_with(analog_sdk::pubkey::new_rand)
             .find(|pk| me.id < *pk)
             .unwrap();
         let other = ContactInfo::new_localhost(&other, 0);
@@ -610,7 +610,7 @@ mod tests {
         // it should send this over the sockets.
         retransmit_sender.send(vec![shred]).unwrap();
         let mut packets = Packets::new(vec![]);
-        solana_streamer::packet::recv_from(&mut packets, &me_retransmit, 1).unwrap();
+        analog_streamer::packet::recv_from(&mut packets, &me_retransmit, 1).unwrap();
         assert_eq!(packets.packets.len(), 1);
         assert!(!packets.packets[0].meta.repair);
     }

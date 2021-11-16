@@ -9,18 +9,18 @@ use crate::{
 };
 use inflector::Inflector;
 use serde_json::Value;
-use solana_sdk::{instruction::InstructionError, pubkey::Pubkey, stake, system_program, sysvar};
+use analog_sdk::{instruction::InstructionError, pubkey::Pubkey, stake, system_program, sysvar};
 use std::collections::HashMap;
 use thiserror::Error;
 
 lazy_static! {
-    static ref BPF_UPGRADEABLE_LOADER_PROGRAM_ID: Pubkey = solana_sdk::bpf_loader_upgradeable::id();
-    static ref CONFIG_PROGRAM_ID: Pubkey = solana_config_program::id();
+    static ref BPF_UPGRADEABLE_LOADER_PROGRAM_ID: Pubkey = analog_sdk::bpf_loader_upgradeable::id();
+    static ref CONFIG_PROGRAM_ID: Pubkey = analog_config_program::id();
     static ref STAKE_PROGRAM_ID: Pubkey = stake::program::id();
     static ref SYSTEM_PROGRAM_ID: Pubkey = system_program::id();
     static ref SYSVAR_PROGRAM_ID: Pubkey = sysvar::id();
     static ref TOKEN_PROGRAM_ID: Pubkey = spl_token_id_v2_0();
-    static ref VOTE_PROGRAM_ID: Pubkey = solana_vote_program::id();
+    static ref VOTE_PROGRAM_ID: Pubkey = analog_vote_program::id();
     pub static ref PARSABLE_PROGRAM_IDS: HashMap<Pubkey, ParsableAccount> = {
         let mut m = HashMap::new();
         m.insert(
@@ -113,16 +113,16 @@ pub fn parse_account_data(
 #[cfg(test)]
 mod test {
     use super::*;
-    use solana_sdk::nonce::{
+    use analog_sdk::nonce::{
         state::{Data, Versions},
         State,
     };
-    use solana_vote_program::vote_state::{VoteState, VoteStateVersions};
+    use analog_vote_program::vote_state::{VoteState, VoteStateVersions};
 
     #[test]
     fn test_parse_account_data() {
-        let account_pubkey = solana_sdk::pubkey::new_rand();
-        let other_program = solana_sdk::pubkey::new_rand();
+        let account_pubkey = analog_sdk::pubkey::new_rand();
+        let other_program = analog_sdk::pubkey::new_rand();
         let data = vec![0; 4];
         assert!(parse_account_data(&account_pubkey, &other_program, &data, None).is_err());
 
@@ -132,7 +132,7 @@ mod test {
         VoteState::serialize(&versioned, &mut vote_account_data).unwrap();
         let parsed = parse_account_data(
             &account_pubkey,
-            &solana_vote_program::id(),
+            &analog_vote_program::id(),
             &vote_account_data,
             None,
         )

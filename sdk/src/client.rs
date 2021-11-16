@@ -1,5 +1,5 @@
 //! Defines traits for blocking (synchronous) and non-blocking (asynchronous)
-//! communication with a Solana server as well a a trait that encompasses both.
+//! communication with a Analog server as well a a trait that encompasses both.
 //!
 //! //! Synchronous implementations are expected to create transactions, sign them, and send
 //! them with multiple retries, updating blockhashes and resigning as-needed.
@@ -46,11 +46,11 @@ pub trait SyncClient {
         instruction: Instruction,
     ) -> Result<Signature>;
 
-    /// Transfer lamports from `keypair` to `pubkey`, retrying until the
+    /// Transfer tock from `keypair` to `pubkey`, retrying until the
     /// transfer completes or produces and error.
     fn transfer_and_confirm(
         &self,
-        lamports: u64,
+        tock: u64,
         keypair: &Keypair,
         pubkey: &Pubkey,
     ) -> Result<Signature>;
@@ -193,10 +193,10 @@ pub trait AsyncClient {
         recent_blockhash: Hash,
     ) -> Result<Signature>;
 
-    /// Attempt to transfer lamports from `keypair` to `pubkey`, but don't wait to confirm.
+    /// Attempt to transfer tock from `keypair` to `pubkey`, but don't wait to confirm.
     fn async_transfer(
         &self,
-        lamports: u64,
+        tock: u64,
         keypair: &Keypair,
         pubkey: &Pubkey,
         recent_blockhash: Hash,

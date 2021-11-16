@@ -2,11 +2,11 @@
 use clap::{crate_description, crate_name, value_t, value_t_or_exit, App, Arg};
 use log::*;
 use rand::{thread_rng, Rng};
-use solana_client::rpc_client::RpcClient;
-use solana_core::serve_repair::RepairProtocol;
-use solana_gossip::{contact_info::ContactInfo, gossip_service::discover};
-use solana_sdk::pubkey::Pubkey;
-use solana_streamer::socket::SocketAddrSpace;
+use analog_client::rpc_client::RpcClient;
+use analog_core::serve_repair::RepairProtocol;
+use analog_gossip::{contact_info::ContactInfo, gossip_service::discover};
+use analog_sdk::pubkey::Pubkey;
+use analog_streamer::socket::SocketAddrSpace;
 use std::net::{SocketAddr, UdpSocket};
 use std::process::exit;
 use std::str::FromStr;
@@ -15,7 +15,7 @@ use std::time::{Duration, Instant};
 fn get_repair_contact(nodes: &[ContactInfo]) -> ContactInfo {
     let source = thread_rng().gen_range(0, nodes.len());
     let mut contact = nodes[source].clone();
-    contact.id = solana_sdk::pubkey::new_rand();
+    contact.id = analog_sdk::pubkey::new_rand();
     contact
 }
 
@@ -84,7 +84,7 @@ fn run_dos(
             data.resize(data_size, 0);
         }
         "transaction" => {
-            let tx = solana_perf::test_tx::test_tx();
+            let tx = analog_perf::test_tx::test_tx();
             info!("{:?}", tx);
             data = bincode::serialize(&tx).unwrap();
         }
@@ -144,10 +144,10 @@ fn run_dos(
 }
 
 fn main() {
-    solana_logger::setup_with_default("solana=info");
+    analog_logger::setup_with_default("analog=info");
     let matches = App::new(crate_name!())
         .about(crate_description!())
-        .version(solana_version::version!())
+        .version(analog_version::version!())
         .arg(
             Arg::with_name("entrypoint")
                 .long("entrypoint")
@@ -218,7 +218,7 @@ fn main() {
 
     let mut entrypoint_addr = SocketAddr::from(([127, 0, 0, 1], 8001));
     if let Some(addr) = matches.value_of("entrypoint") {
-        entrypoint_addr = solana_net_utils::parse_host_port(addr).unwrap_or_else(|e| {
+        entrypoint_addr = analog_net_utils::parse_host_port(addr).unwrap_or_else(|e| {
             eprintln!("failed to parse entrypoint address: {}", e);
             exit(1)
         });
@@ -268,12 +268,12 @@ fn main() {
 #[cfg(test)]
 pub mod test {
     use super::*;
-    use solana_sdk::timing::timestamp;
+    use analog_sdk::timing::timestamp;
 
     #[test]
     fn test_dos() {
         let nodes = [ContactInfo::new_localhost(
-            &solana_sdk::pubkey::new_rand(),
+            &analog_sdk::pubkey::new_rand(),
             timestamp(),
         )];
         let entrypoint_addr = nodes[0].gossip;

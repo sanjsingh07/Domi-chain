@@ -6,12 +6,12 @@ use {
         tower_storage::{SavedTower, TowerStorage},
     },
     chrono::prelude::*,
-    solana_ledger::{ancestor_iterator::AncestorIterator, blockstore::Blockstore, blockstore_db},
-    solana_runtime::{
+    analog_ledger::{ancestor_iterator::AncestorIterator, blockstore::Blockstore, blockstore_db},
+    analog_runtime::{
         bank::Bank, bank_forks::BankForks, commitment::VOTE_THRESHOLD_SIZE,
         vote_account::VoteAccount,
     },
-    solana_sdk::{
+    analog_sdk::{
         clock::{Slot, UnixTimestamp},
         hash::Hash,
         instruction::Instruction,
@@ -19,7 +19,7 @@ use {
         signature::Keypair,
         slot_history::{Check, SlotHistory},
     },
-    solana_vote_program::{
+    analog_vote_program::{
         vote_instruction,
         vote_state::{BlockTimestamp, Lockout, Vote, VoteState, MAX_LOCKOUT_HISTORY},
     },
@@ -603,7 +603,7 @@ impl Tower {
                     // So, don't re-vote on it by returning pseudo FailedSwitchThreshold, otherwise
                     // there would be slashing because of double vote on one of last_vote_ancestors.
                     // (Well, needless to say, re-creating the duplicate block must be handled properly
-                    // at the banking stage: https://github.com/solana-labs/solana/issues/8232)
+                    // at the banking stage: https://github.com/analog-labs/solana/issues/8232)
                     //
                     // To be specific, the replay stage is tricked into a false perception where
                     // last_vote_ancestors is AVAILABLE for descendant-of-`switch_slot`,  stale, and
@@ -1276,9 +1276,9 @@ pub mod test {
             vote_simulator::VoteSimulator,
         },
         itertools::Itertools,
-        solana_ledger::{blockstore::make_slot_entries, get_tmp_ledger_path},
-        solana_runtime::bank::Bank,
-        solana_sdk::{
+        analog_ledger::{blockstore::make_slot_entries, get_tmp_ledger_path},
+        analog_runtime::bank::Bank,
+        analog_sdk::{
             account::{Account, AccountSharedData, ReadableAccount, WritableAccount},
             clock::Slot,
             hash::Hash,
@@ -1286,7 +1286,7 @@ pub mod test {
             signature::Signer,
             slot_history::SlotHistory,
         },
-        solana_vote_program::vote_state::{Vote, VoteStateVersions, MAX_LOCKOUT_HISTORY},
+        analog_vote_program::vote_state::{Vote, VoteStateVersions, MAX_LOCKOUT_HISTORY},
         std::{
             collections::HashMap,
             fs::{remove_file, OpenOptions},
@@ -1301,10 +1301,10 @@ pub mod test {
     fn gen_stakes(stake_votes: &[(u64, &[u64])]) -> HashMap<Pubkey, (u64, VoteAccount)> {
         stake_votes
             .iter()
-            .map(|(lamports, votes)| {
+            .map(|(tock, votes)| {
                 let mut account = AccountSharedData::from(Account {
                     data: vec![0; VoteState::size_of()],
-                    lamports: *lamports,
+                    tock: *tock,
                     ..Account::default()
                 });
                 let mut vote_state = VoteState::default();
@@ -1317,8 +1317,8 @@ pub mod test {
                 )
                 .expect("serialize state");
                 (
-                    solana_sdk::pubkey::new_rand(),
-                    (*lamports, VoteAccount::from(account)),
+                    analog_sdk::pubkey::new_rand(),
+                    (*tock, VoteAccount::from(account)),
                 )
             })
             .collect()
@@ -2071,7 +2071,7 @@ pub mod test {
 
     #[test]
     fn test_check_vote_threshold_no_skip_lockout_with_new_root() {
-        solana_logger::setup();
+        analog_logger::setup();
         let mut tower = Tower::new_for_tests(4, 0.67);
         let mut stakes = HashMap::new();
         for i in 0..(MAX_LOCKOUT_HISTORY as u64 + 1) {
@@ -2223,7 +2223,7 @@ pub mod test {
 
     #[test]
     fn test_check_vote_threshold_lockouts_not_updated() {
-        solana_logger::setup();
+        analog_logger::setup();
         let mut tower = Tower::new_for_tests(1, 0.67);
         let stakes = vec![(0, 1), (1, 2)].into_iter().collect();
         tower.record_vote(0, Hash::default());
@@ -2236,12 +2236,12 @@ pub mod test {
     fn test_stake_is_updated_for_entire_branch() {
         let mut voted_stakes = HashMap::new();
         let account = AccountSharedData::from(Account {
-            lamports: 1,
+            tock: 1,
             ..Account::default()
         });
         let set: HashSet<u64> = vec![0u64, 1u64].into_iter().collect();
         let ancestors: HashMap<u64, HashSet<u64>> = [(2u64, set)].iter().cloned().collect();
-        Tower::update_ancestor_voted_stakes(&mut voted_stakes, 2, account.lamports(), &ancestors);
+        Tower::update_ancestor_voted_stakes(&mut voted_stakes, 2, account.tock(), &ancestors);
         assert_eq!(voted_stakes[&0], 1);
         assert_eq!(voted_stakes[&1], 1);
         assert_eq!(voted_stakes[&2], 1);
@@ -2442,7 +2442,7 @@ pub mod test {
 
     #[test]
     fn test_switch_threshold_across_tower_reload() {
-        solana_logger::setup();
+        analog_logger::setup();
         // Init state
         let mut vote_simulator = VoteSimulator::new(2);
         let other_vote_account = vote_simulator.vote_pubkeys[1];
@@ -2719,7 +2719,7 @@ pub mod test {
 
     #[test]
     fn test_reconcile_blockstore_roots_with_tower_normal() {
-        solana_logger::setup();
+        analog_logger::setup();
         let blockstore_path = get_tmp_ledger_path!();
         {
             let blockstore = Blockstore::open(&blockstore_path).unwrap();
@@ -2750,7 +2750,7 @@ pub mod test {
     #[test]
     #[should_panic(expected = "couldn't find a last_blockstore_root upwards from: 4!?")]
     fn test_reconcile_blockstore_roots_with_tower_panic_no_common_root() {
-        solana_logger::setup();
+        analog_logger::setup();
         let blockstore_path = get_tmp_ledger_path!();
         {
             let blockstore = Blockstore::open(&blockstore_path).unwrap();
@@ -2776,7 +2776,7 @@ pub mod test {
 
     #[test]
     fn test_reconcile_blockstore_roots_with_tower_nop_no_parent() {
-        solana_logger::setup();
+        analog_logger::setup();
         let blockstore_path = get_tmp_ledger_path!();
         {
             let blockstore = Blockstore::open(&blockstore_path).unwrap();
@@ -2800,7 +2800,7 @@ pub mod test {
 
     #[test]
     fn test_adjust_lockouts_after_replay_future_slots() {
-        solana_logger::setup();
+        analog_logger::setup();
         let mut tower = Tower::new_for_tests(10, 0.9);
         tower.record_vote(0, Hash::default());
         tower.record_vote(1, Hash::default());
@@ -2875,7 +2875,7 @@ pub mod test {
 
     #[test]
     fn test_adjust_lockouts_after_replay_all_rooted_with_too_old() {
-        use solana_sdk::slot_history::MAX_ENTRIES;
+        use analog_sdk::slot_history::MAX_ENTRIES;
 
         let mut tower = Tower::new_for_tests(10, 0.9);
         tower.record_vote(0, Hash::default());
@@ -3001,7 +3001,7 @@ pub mod test {
 
     #[test]
     fn test_adjust_lockouts_after_replay_too_old_tower() {
-        use solana_sdk::slot_history::MAX_ENTRIES;
+        use analog_sdk::slot_history::MAX_ENTRIES;
 
         let mut tower = Tower::new_for_tests(10, 0.9);
         tower.record_vote(0, Hash::default());
@@ -3056,7 +3056,7 @@ pub mod test {
 
     #[test]
     fn test_adjust_lockouts_after_replay_out_of_order() {
-        use solana_sdk::slot_history::MAX_ENTRIES;
+        use analog_sdk::slot_history::MAX_ENTRIES;
 
         let mut tower = Tower::new_for_tests(10, 0.9);
         tower

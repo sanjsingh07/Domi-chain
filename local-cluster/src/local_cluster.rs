@@ -6,22 +6,22 @@ use {
     },
     itertools::izip,
     log::*,
-    solana_client::thin_client::{create_client, ThinClient},
-    solana_core::{
+    analog_client::thin_client::{create_client, ThinClient},
+    analog_core::{
         tower_storage::FileTowerStorage,
         validator::{Validator, ValidatorConfig, ValidatorStartProgress},
     },
-    solana_gossip::{
+    analog_gossip::{
         cluster_info::{Node, VALIDATOR_PORT_RANGE},
         contact_info::ContactInfo,
         gossip_service::discover_cluster,
     },
-    solana_ledger::create_new_tmp_ledger,
-    solana_runtime::genesis_utils::{
+    analog_ledger::create_new_tmp_ledger,
+    analog_runtime::genesis_utils::{
         create_genesis_config_with_vote_accounts_and_cluster_type, GenesisConfigInfo,
         ValidatorVoteKeypairs,
     },
-    solana_sdk::{
+    analog_sdk::{
         account::Account,
         account::AccountSharedData,
         client::SyncClient,
@@ -40,9 +40,9 @@ use {
         system_transaction,
         transaction::Transaction,
     },
-    solana_stake_program::{config::create_account as create_stake_config_account, stake_state},
-    solana_streamer::socket::SocketAddrSpace,
-    solana_vote_program::{
+    analog_stake_program::{config::create_account as create_stake_config_account, stake_state},
+    analog_streamer::socket::SocketAddrSpace,
+    analog_vote_program::{
         vote_instruction,
         vote_state::{VoteInit, VoteState},
     },
@@ -67,7 +67,7 @@ pub struct ClusterConfig {
     pub validator_keys: Option<Vec<(Arc<Keypair>, bool)>>,
     /// The stakes of each node
     pub node_stakes: Vec<u64>,
-    /// The total lamports available to the cluster
+    /// The total tock available to the cluster
     pub cluster_lamports: u64,
     pub ticks_per_slot: u64,
     pub slots_per_epoch: u64,
@@ -352,7 +352,7 @@ impl LocalCluster {
             // setup as a listener
             info!("listener {} ", validator_pubkey,);
         } else {
-            // Give the validator some lamports to setup vote accounts
+            // Give the validator some tock to setup vote accounts
             if should_create_vote_pubkey {
                 let validator_balance = Self::transfer_with_client(
                     &client,
@@ -421,12 +421,12 @@ impl LocalCluster {
         self.close_preserve_ledgers();
     }
 
-    pub fn transfer(&self, source_keypair: &Keypair, dest_pubkey: &Pubkey, lamports: u64) -> u64 {
+    pub fn transfer(&self, source_keypair: &Keypair, dest_pubkey: &Pubkey, tock: u64) -> u64 {
         let client = create_client(
             self.entry_point_info.client_facing_addr(),
             VALIDATOR_PORT_RANGE,
         );
-        Self::transfer_with_client(&client, source_keypair, dest_pubkey, lamports)
+        Self::transfer_with_client(&client, source_keypair, dest_pubkey, tock)
     }
 
     pub fn check_for_new_roots(
@@ -483,16 +483,16 @@ impl LocalCluster {
         client: &ThinClient,
         source_keypair: &Keypair,
         dest_pubkey: &Pubkey,
-        lamports: u64,
+        tock: u64,
     ) -> u64 {
         trace!("getting leader blockhash");
         let (blockhash, _) = client
             .get_latest_blockhash_with_commitment(CommitmentConfig::processed())
             .unwrap();
-        let mut tx = system_transaction::transfer(source_keypair, dest_pubkey, lamports, blockhash);
+        let mut tx = system_transaction::transfer(source_keypair, dest_pubkey, tock, blockhash);
         info!(
             "executing transfer of {} from {} to {}",
-            lamports,
+            tock,
             source_keypair.pubkey(),
             *dest_pubkey
         );
@@ -502,7 +502,7 @@ impl LocalCluster {
         client
             .wait_for_balance_with_commitment(
                 dest_pubkey,
-                Some(lamports),
+                Some(tock),
                 CommitmentConfig::processed(),
             )
             .expect("get balance")
@@ -760,11 +760,11 @@ impl Drop for LocalCluster {
 #[cfg(test)]
 mod test {
     use super::*;
-    use solana_sdk::epoch_schedule::MINIMUM_SLOTS_PER_EPOCH;
+    use analog_sdk::epoch_schedule::MINIMUM_SLOTS_PER_EPOCH;
 
     #[test]
     fn test_local_cluster_start_and_exit() {
-        solana_logger::setup();
+        analog_logger::setup();
         let num_nodes = 1;
         let cluster =
             LocalCluster::new_with_equal_stakes(num_nodes, 100, 3, SocketAddrSpace::Unspecified);
@@ -773,7 +773,7 @@ mod test {
 
     #[test]
     fn test_local_cluster_start_and_exit_with_config() {
-        solana_logger::setup();
+        analog_logger::setup();
         const NUM_NODES: usize = 1;
         let mut config = ClusterConfig {
             validator_configs: make_identical_validator_configs(

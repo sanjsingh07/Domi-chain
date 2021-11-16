@@ -1,9 +1,9 @@
 use {
     crate::tpu_info::TpuInfo,
     log::*,
-    solana_metrics::{datapoint_warn, inc_new_counter_info},
-    solana_runtime::{bank::Bank, bank_forks::BankForks},
-    solana_sdk::{hash::Hash, nonce_account, pubkey::Pubkey, signature::Signature},
+    analog_metrics::{datapoint_warn, inc_new_counter_info},
+    analog_runtime::{bank::Bank, bank_forks::BankForks},
+    analog_sdk::{hash::Hash, nonce_account, pubkey::Pubkey, signature::Signature},
     std::{
         collections::HashMap,
         net::{SocketAddr, UdpSocket},
@@ -327,7 +327,7 @@ mod test {
     use {
         super::*,
         crate::tpu_info::NullTpuInfo,
-        solana_sdk::{
+        analog_sdk::{
             account::AccountSharedData, genesis_config::create_genesis_config, nonce,
             pubkey::Pubkey, signature::Signer, system_program, system_transaction,
         },
@@ -356,7 +356,7 @@ mod test {
 
     #[test]
     fn process_transactions() {
-        solana_logger::setup();
+        analog_logger::setup();
 
         let (genesis_config, mint_keypair) = create_genesis_config(4);
         let bank = Bank::new_for_tests(&genesis_config);
@@ -601,7 +601,7 @@ mod test {
 
     #[test]
     fn test_retry_durable_nonce_transactions() {
-        solana_logger::setup();
+        analog_logger::setup();
 
         let (genesis_config, mint_keypair) = create_genesis_config(4);
         let bank = Bank::new_for_tests(&genesis_config);

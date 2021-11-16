@@ -1,4 +1,4 @@
-//! The `rpc_service` module implements the Solana JSON RPC service.
+//! The `rpc_service` module implements the Analog JSON RPC service.
 
 use {
     crate::{
@@ -17,25 +17,25 @@ use {
         RequestMiddlewareAction, ServerBuilder,
     },
     regex::Regex,
-    solana_client::rpc_cache::LargestAccountsCache,
-    solana_gossip::cluster_info::ClusterInfo,
-    solana_ledger::{
+    analog_client::rpc_cache::LargestAccountsCache,
+    analog_gossip::cluster_info::ClusterInfo,
+    analog_ledger::{
         bigtable_upload_service::BigTableUploadService, blockstore::Blockstore,
         leader_schedule_cache::LeaderScheduleCache,
     },
-    solana_metrics::inc_new_counter_info,
-    solana_perf::thread::renice_this_thread,
-    solana_poh::poh_recorder::PohRecorder,
-    solana_runtime::{
+    analog_metrics::inc_new_counter_info,
+    analog_perf::thread::renice_this_thread,
+    analog_poh::poh_recorder::PohRecorder,
+    analog_runtime::{
         bank_forks::BankForks, commitment::BlockCommitmentCache,
         snapshot_archive_info::SnapshotArchiveInfoGetter, snapshot_config::SnapshotConfig,
         snapshot_utils,
     },
-    solana_sdk::{
+    analog_sdk::{
         exit::Exit, genesis_config::DEFAULT_GENESIS_DOWNLOAD_PATH, hash::Hash,
-        native_token::lamports_to_sol, pubkey::Pubkey,
+        native_token::tock_to_anlog, pubkey::Pubkey,
     },
-    solana_send_transaction_service::send_transaction_service::{self, SendTransactionService},
+    analog_send_transaction_service::send_transaction_service::{self, SendTransactionService},
     std::{
         collections::HashSet,
         net::SocketAddr,
@@ -263,19 +263,19 @@ fn process_rest(bank_forks: &Arc<RwLock<BankForks>>, path: &str) -> Option<Strin
             let bank = r_bank_forks.root_bank();
             let total_supply = bank.capitalization();
             let non_circulating_supply =
-                solana_runtime::non_circulating_supply::calculate_non_circulating_supply(&bank)
+                analog_runtime::non_circulating_supply::calculate_non_circulating_supply(&bank)
                     .expect("Scan should not error on root banks")
-                    .lamports;
+                    .tock;
             Some(format!(
                 "{}",
-                lamports_to_sol(total_supply - non_circulating_supply)
+               tock_to_anlog(total_supply - non_circulating_supply)
             ))
         }
         "/v0/total-supply" => {
             let r_bank_forks = bank_forks.read().unwrap();
             let bank = r_bank_forks.root_bank();
             let total_supply = bank.capitalization();
-            Some(format!("{}", lamports_to_sol(total_supply)))
+            Some(format!("{}",tock_to_anlog(total_supply)))
         }
         _ => None,
     }
@@ -331,7 +331,7 @@ impl JsonRpcService {
             tokio::runtime::Builder::new_multi_thread()
                 .worker_threads(rpc_threads)
                 .on_thread_start(move || renice_this_thread(rpc_niceness_adj).unwrap())
-                .thread_name("sol-rpc-el")
+                .thread_name("anlog-rpc-el")
                 .enable_all()
                 .build()
                 .expect("Runtime"),
@@ -342,7 +342,7 @@ impl JsonRpcService {
         let (bigtable_ledger_storage, _bigtable_ledger_upload_service) =
             if config.enable_bigtable_ledger_storage || config.enable_bigtable_ledger_upload {
                 runtime
-                    .block_on(solana_storage_bigtable::LedgerStorage::new(
+                    .block_on(analog_storage_bigtable::LedgerStorage::new(
                         !config.enable_bigtable_ledger_upload,
                         config.rpc_bigtable_timeout,
                     ))
@@ -412,7 +412,7 @@ impl JsonRpcService {
 
         let (close_handle_sender, close_handle_receiver) = channel();
         let thread_hdl = Builder::new()
-            .name("solana-jsonrpc".to_string())
+            .name("analog-jsonrpc".to_string())
             .spawn(move || {
                 renice_this_thread(rpc_niceness_adj).unwrap();
 
@@ -497,22 +497,22 @@ mod tests {
     use {
         super::*,
         crate::rpc::create_validator_exit,
-        solana_gossip::{
+        analog_gossip::{
             contact_info::ContactInfo,
             crds::GossipRoute,
             crds_value::{CrdsData, CrdsValue, SnapshotHashes},
         },
-        solana_ledger::{
+        analog_ledger::{
             genesis_utils::{create_genesis_config, GenesisConfigInfo},
             get_tmp_ledger_path,
         },
-        solana_runtime::bank::Bank,
-        solana_sdk::{
+        analog_runtime::bank::Bank,
+        analog_sdk::{
             genesis_config::{ClusterType, DEFAULT_GENESIS_ARCHIVE},
             signature::Signer,
             signer::keypair::Keypair,
         },
-        solana_streamer::socket::SocketAddrSpace,
+        analog_streamer::socket::SocketAddrSpace,
         std::{
             io::Write,
             net::{IpAddr, Ipv4Addr},
@@ -538,7 +538,7 @@ mod tests {
         let ip_addr = IpAddr::V4(Ipv4Addr::new(0, 0, 0, 0));
         let rpc_addr = SocketAddr::new(
             ip_addr,
-            solana_net_utils::find_available_port_in_range(ip_addr, (10000, 65535)).unwrap(),
+            analog_net_utils::find_available_port_in_range(ip_addr, (10000, 65535)).unwrap(),
         );
         let bank_forks = Arc::new(RwLock::new(BankForks::new(bank)));
         let ledger_path = get_tmp_ledger_path!();
@@ -571,7 +571,7 @@ mod tests {
             Arc::new(AtomicU64::default()),
         );
         let thread = rpc_service.thread_hdl.thread();
-        assert_eq!(thread.name().unwrap(), "solana-jsonrpc");
+        assert_eq!(thread.name().unwrap(), "analog-jsonrpc");
 
         assert_eq!(
             10_000,
@@ -757,9 +757,9 @@ mod tests {
         let health_check_slot_distance = 123;
         let override_health_check = Arc::new(AtomicBool::new(false));
         let trusted_validators = vec![
-            solana_sdk::pubkey::new_rand(),
-            solana_sdk::pubkey::new_rand(),
-            solana_sdk::pubkey::new_rand(),
+            analog_sdk::pubkey::new_rand(),
+            analog_sdk::pubkey::new_rand(),
+            analog_sdk::pubkey::new_rand(),
         ];
 
         let health = Arc::new(RpcHealth::new(

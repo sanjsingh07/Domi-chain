@@ -1,19 +1,19 @@
 #![allow(clippy::integer_arithmetic)]
 use clap::{crate_description, crate_name, value_t, App, Arg};
 #[cfg(any(target_arch = "x86", target_arch = "x86_64"))]
-use solana_entry::entry::{self, create_ticks, init_poh, EntrySlice, VerifyRecyclers};
+use analog_entry::entry::{self, create_ticks, init_poh, EntrySlice, VerifyRecyclers};
 #[cfg(not(any(target_arch = "x86", target_arch = "x86_64")))]
-use solana_entry::entry::{create_ticks, init_poh, EntrySlice, VerifyRecyclers};
-use solana_measure::measure::Measure;
-use solana_perf::perf_libs;
-use solana_sdk::hash::hash;
+use analog_entry::entry::{create_ticks, init_poh, EntrySlice, VerifyRecyclers};
+use analog_measure::measure::Measure;
+use analog_perf::perf_libs;
+use analog_sdk::hash::hash;
 
 fn main() {
-    solana_logger::setup();
+    analog_logger::setup();
 
     let matches = App::new(crate_name!())
         .about(crate_description!())
-        .version(solana_version::version!())
+        .version(analog_version::version!())
         .arg(
             Arg::with_name("max_num_entries")
                 .long("max-num-entries")

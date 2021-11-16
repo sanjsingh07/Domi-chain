@@ -10,21 +10,21 @@
 //! For Entries:
 //! * recorded entry must be >= WorkingBank::min_tick_height && entry must be < WorkingBank::max_tick_height
 //!
-pub use solana_sdk::clock::Slot;
+pub use analog_sdk::clock::Slot;
 use {
     crate::poh_service::PohService,
     crossbeam_channel::{
         unbounded, Receiver as CrossbeamReceiver, RecvTimeoutError, Sender as CrossbeamSender,
     },
     log::*,
-    solana_entry::{entry::Entry, poh::Poh},
-    solana_ledger::{
+    analog_entry::{entry::Entry, poh::Poh},
+    analog_ledger::{
         blockstore::Blockstore,
         genesis_utils::{create_genesis_config, GenesisConfigInfo},
         leader_schedule_cache::LeaderScheduleCache,
     },
-    solana_runtime::bank::Bank,
-    solana_sdk::{
+    analog_runtime::bank::Bank,
+    analog_sdk::{
         clock::NUM_CONSECUTIVE_LEADER_SLOTS, hash::Hash, poh_config::PohConfig, pubkey::Pubkey,
         timing, transaction::VersionedTransaction,
     },
@@ -825,9 +825,9 @@ mod tests {
     use {
         super::*,
         bincode::serialize,
-        solana_ledger::{blockstore::Blockstore, blockstore_meta::SlotMeta, get_tmp_ledger_path},
-        solana_perf::test_tx::test_tx,
-        solana_sdk::{clock::DEFAULT_TICKS_PER_SLOT, hash::hash},
+        analog_ledger::{blockstore::Blockstore, blockstore_meta::SlotMeta, get_tmp_ledger_path},
+        analog_perf::test_tx::test_tx,
+        analog_sdk::{clock::DEFAULT_TICKS_PER_SLOT, hash::hash},
         std::sync::mpsc::sync_channel,
     };
 
@@ -1360,7 +1360,7 @@ mod tests {
 
     #[test]
     fn test_reset_to_new_value() {
-        solana_logger::setup();
+        analog_logger::setup();
 
         let ledger_path = get_tmp_ledger_path!();
         {
@@ -1455,7 +1455,7 @@ mod tests {
 
     #[test]
     fn test_poh_recorder_record_sets_start_slot() {
-        solana_logger::setup();
+        analog_logger::setup();
         let ledger_path = get_tmp_ledger_path!();
         {
             let blockstore = Blockstore::open(&ledger_path)
@@ -1506,7 +1506,7 @@ mod tests {
 
     #[test]
     fn test_reached_leader_tick() {
-        solana_logger::setup();
+        analog_logger::setup();
 
         let ledger_path = get_tmp_ledger_path!();
         {
@@ -1570,7 +1570,7 @@ mod tests {
 
     #[test]
     fn test_reached_leader_slot() {
-        solana_logger::setup();
+        analog_logger::setup();
 
         let ledger_path = get_tmp_ledger_path!();
         {

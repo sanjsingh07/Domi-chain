@@ -1,12 +1,12 @@
 [package]
-name = "solana-rpc-test"
+name = "analog-rpc-test"
 version = "1.9.0"
-description = "Solana RPC Test"
-authors = ["Solana Maintainers <maintainers@solana.foundation>"]
-repository = "https://github.com/solana-labs/solana"
+description = "Analog RPC Test"
+authors = ["Analog Maintainers <maintainers@analog.foundation>"]
+repository = "https://github.com/analog-labs/analog"
 license = "Apache-2.0"
-homepage = "https://solana.com/"
-documentation = "https://docs.rs/solana-rpc-test"
+homepage = "https://analog.com/"
+documentation = "https://docs.rs/analog-rpc-test"
 edition = "2018"
 
 [dependencies]
@@ -18,17 +18,17 @@ log = "0.4.11"
 reqwest = { version = "0.11.5", default-features = false, features = ["blocking", "rustls-tls", "json"] }
 serde = "1.0.130"
 serde_json = "1.0.69"
-solana-account-decoder = { path = "../account-decoder", version = "=1.9.0" }
-solana-client = { path = "../client", version = "=1.9.0" }
-solana-rpc = { path = "../rpc", version = "=1.9.0" }
-solana-sdk = { path = "../sdk", version = "=1.9.0" }
-solana-streamer = { path = "../streamer", version = "=1.9.0" }
-solana-test-validator = { path = "../test-validator", version = "=1.9.0" }
-solana-transaction-status = { path = "../transaction-status", version = "=1.9.0" }
+analog-account-decoder = { path = "../account-decoder", version = "=1.9.0" }
+analog-client = { path = "../client", version = "=1.9.0" }
+analog-rpc = { path = "../rpc", version = "=1.9.0" }
+analog-sdk = { path = "../sdk", version = "=1.9.0" }
+analog-streamer = { path = "../streamer", version = "=1.9.0" }
+analog-test-validator = { path = "../test-validator", version = "=1.9.0" }
+analog-transaction-status = { path = "../transaction-status", version = "=1.9.0" }
 tokio = { version = "1", features = ["full"] }
 
 [dev-dependencies]
-solana-logger = { path = "../logger", version = "=1.9.0" }
+analog-logger = { path = "../logger", version = "=1.9.0" }
 
 [package.metadata.docs.rs]
 targets = ["x86_64-unknown-linux-gnu"]

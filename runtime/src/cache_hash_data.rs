@@ -4,7 +4,7 @@ use crate::cache_hash_data_stats::CacheHashDataStats;
 use crate::pubkey_bins::PubkeyBinCalculator24;
 use log::*;
 use memmap2::MmapMut;
-use solana_measure::measure::Measure;
+use analog_measure::measure::Measure;
 use std::collections::HashSet;
 use std::fs::{self};
 use std::fs::{remove_file, OpenOptions};
@@ -413,14 +413,14 @@ pub mod tests {
                                 let mut pk;
                                 loop {
                                     // expensive, but small numbers and for tests, so ok
-                                    pk = solana_sdk::pubkey::new_rand();
+                                    pk = analog_sdk::pubkey::new_rand();
                                     if binner.bin_from_pubkey(&pk) == bin {
                                         break;
                                     }
                                 }
 
                                 CalculateHashIntermediate::new(
-                                    solana_sdk::hash::new_rand(&mut rng),
+                                    analog_sdk::hash::new_rand(&mut rng),
                                     ct as u64,
                                     pk,
                                 )

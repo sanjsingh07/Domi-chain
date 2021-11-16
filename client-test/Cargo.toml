@@ -1,33 +1,33 @@
 [package]
-name = "solana-client-test"
+name = "analog-client-test"
 version = "1.9.0"
-description = "Solana RPC Test"
-authors = ["Solana Maintainers <maintainers@solana.foundation>"]
-repository = "https://github.com/solana-labs/solana"
+description = "Analog RPC Test"
+authors = ["Analog Maintainers <maintainers@analog.foundation>"]
+repository = "https://github.com/analog-labs/analog"
 license = "Apache-2.0"
-homepage = "https://solana.com/"
-documentation = "https://docs.rs/solana-client-test"
+homepage = "https://analog.com/"
+documentation = "https://docs.rs/analog-client-test"
 edition = "2018"
 
 [dependencies]
 serde_json = "1.0.69"
 serial_test = "0.5.1"
-solana-client = { path = "../client", version = "=1.9.0" }
-solana-measure = { path = "../measure", version = "=1.9.0" }
-solana-merkle-tree = { path = "../merkle-tree", version = "=1.9.0" }
-solana-metrics = { path = "../metrics", version = "=1.9.0" }
-solana-perf = { path = "../perf", version = "=1.9.0" }
-solana-rayon-threadlimit = { path = "../rayon-threadlimit", version = "=1.9.0" }
-solana-rpc = { path = "../rpc", version = "=1.9.0" }
-solana-runtime = { path = "../runtime", version = "=1.9.0" }
-solana-sdk = { path = "../sdk", version = "=1.9.0" }
-solana-streamer = { path = "../streamer", version = "=1.9.0" }
-solana-test-validator = { path = "../test-validator", version = "=1.9.0" }
-solana-version = { path = "../version", version = "=1.9.0" }
+analog-client = { path = "../client", version = "=1.9.0" }
+analog-measure = { path = "../measure", version = "=1.9.0" }
+analog-merkle-tree = { path = "../merkle-tree", version = "=1.9.0" }
+analog-metrics = { path = "../metrics", version = "=1.9.0" }
+analog-perf = { path = "../perf", version = "=1.9.0" }
+analog-rayon-threadlimit = { path = "../rayon-threadlimit", version = "=1.9.0" }
+analog-rpc = { path = "../rpc", version = "=1.9.0" }
+analog-runtime = { path = "../runtime", version = "=1.9.0" }
+analog-sdk = { path = "../sdk", version = "=1.9.0" }
+analog-streamer = { path = "../streamer", version = "=1.9.0" }
+analog-test-validator = { path = "../test-validator", version = "=1.9.0" }
+analog-version = { path = "../version", version = "=1.9.0" }
 systemstat = "0.1.10"
 
 [dev-dependencies]
-solana-logger = { path = "../logger", version = "=1.9.0" }
+analog-logger = { path = "../logger", version = "=1.9.0" }
 
 [package.metadata.docs.rs]
 targets = ["x86_64-unknown-linux-gnu"]

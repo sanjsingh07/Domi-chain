@@ -8,7 +8,7 @@ use chrono::{
     serde::ts_seconds,
 };
 use serde_derive::{Deserialize, Serialize};
-use solana_sdk::{instruction::Instruction, pubkey::Pubkey};
+use analog_sdk::{instruction::Instruction, pubkey::Pubkey};
 
 #[derive(Serialize, Deserialize, Debug, PartialEq, Eq, Clone)]
 pub struct DateConfig {
@@ -45,9 +45,9 @@ impl ConfigState for DateConfig {
 pub fn create_account(
     payer_pubkey: &Pubkey,
     date_pubkey: &Pubkey,
-    lamports: u64,
+    tock: u64,
 ) -> Vec<Instruction> {
-    config_instruction::create_account::<DateConfig>(payer_pubkey, date_pubkey, lamports, vec![])
+    config_instruction::create_account::<DateConfig>(payer_pubkey, date_pubkey, tock, vec![])
 }
 
 /// Set the date in the date account. The account pubkey must be signed in the

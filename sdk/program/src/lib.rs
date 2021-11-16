@@ -23,7 +23,7 @@ pub mod hash;
 pub mod incinerator;
 pub mod instruction;
 pub mod keccak;
-pub mod lamports;
+pub mod tock;
 pub mod loader_instruction;
 pub mod loader_upgradeable_instruction;
 pub mod log;
@@ -64,7 +64,7 @@ pub mod vote {
 }
 
 /// Same as `declare_id` except report that this id has been deprecated
-pub use solana_sdk_macro::program_declare_deprecated_id as declare_deprecated_id;
+pub use analog_sdk_macro::program_declare_deprecated_id as declare_deprecated_id;
 /// Convenience macro to declare a static public key and functions to interact with it
 ///
 /// Input: a single literal base58 string representation of a program's id
@@ -86,13 +86,13 @@ pub use solana_sdk_macro::program_declare_deprecated_id as declare_deprecated_id
 /// let my_id = Pubkey::from_str("My11111111111111111111111111111111111111111").unwrap();
 /// assert_eq!(id(), my_id);
 /// ```
-pub use solana_sdk_macro::program_declare_id as declare_id;
+pub use analog_sdk_macro::program_declare_id as declare_id;
 
 #[macro_use]
 extern crate serde_derive;
 
 #[macro_use]
-extern crate solana_frozen_abi_macro;
+extern crate analog_frozen_abi_macro;
 
 /// Convenience macro for doing integer division where the opersation's safety
 /// can be checked at compile-time

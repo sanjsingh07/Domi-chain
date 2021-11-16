@@ -1,4 +1,4 @@
-use solana_sdk::{instruction::InstructionError, process_instruction::InvokeContext};
+use analog_sdk::{instruction::InstructionError, process_instruction::InvokeContext};
 
 pub fn process_instruction(
     _first_instruction_account: usize,

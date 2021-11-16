@@ -2,10 +2,10 @@ use crate::accounts_index::{AccountsIndexConfig, IndexValue};
 use crate::bucket_map_holder_stats::BucketMapHolderStats;
 use crate::in_mem_accounts_index::{InMemAccountsIndex, SlotT};
 use crate::waitable_condvar::WaitableCondvar;
-use solana_bucket_map::bucket_map::{BucketMap, BucketMapConfig};
-use solana_measure::measure::Measure;
-use solana_sdk::clock::SLOT_MS;
-use solana_sdk::timing::AtomicInterval;
+use analog_bucket_map::bucket_map::{BucketMap, BucketMapConfig};
+use analog_measure::measure::Measure;
+use analog_sdk::clock::SLOT_MS;
+use analog_sdk::timing::AtomicInterval;
 use std::fmt::Debug;
 use std::sync::atomic::{AtomicBool, AtomicU8, AtomicUsize, Ordering};
 use std::sync::{Arc, Mutex};
@@ -294,7 +294,7 @@ pub mod tests {
 
     #[test]
     fn test_next_bucket_to_flush() {
-        solana_logger::setup();
+        analog_logger::setup();
         let bins = 4;
         let test = BucketMapHolder::<u64>::new(bins, &Some(AccountsIndexConfig::default()), 1);
         let visited = (0..bins)
@@ -318,7 +318,7 @@ pub mod tests {
 
     #[test]
     fn test_age_increment() {
-        solana_logger::setup();
+        analog_logger::setup();
         let bins = 4;
         let test = BucketMapHolder::<u64>::new(bins, &Some(AccountsIndexConfig::default()), 1);
         for age in 0..513 {
@@ -338,7 +338,7 @@ pub mod tests {
 
     #[test]
     fn test_throttle() {
-        solana_logger::setup();
+        analog_logger::setup();
         let bins = 100;
         let test = BucketMapHolder::<u64>::new(bins, &Some(AccountsIndexConfig::default()), 1);
         let bins = test.bins as u64;
@@ -367,7 +367,7 @@ pub mod tests {
 
     #[test]
     fn test_age_time() {
-        solana_logger::setup();
+        analog_logger::setup();
         let bins = 1;
         let test = BucketMapHolder::<u64>::new(bins, &Some(AccountsIndexConfig::default()), 1);
         let threads = 2;
@@ -387,7 +387,7 @@ pub mod tests {
 
     #[test]
     fn test_age_broad() {
-        solana_logger::setup();
+        analog_logger::setup();
         let bins = 4;
         let test = BucketMapHolder::<u64>::new(bins, &Some(AccountsIndexConfig::default()), 1);
         assert_eq!(test.current_age(), 0);

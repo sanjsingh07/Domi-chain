@@ -1,14 +1,14 @@
 #![feature(test)]
 
 extern crate test;
-use solana_ledger::shred::Shred;
-use solana_ledger::shred::SIZE_OF_DATA_SHRED_PAYLOAD;
-use solana_ledger::sigverify_shreds::{
+use analog_ledger::shred::Shred;
+use analog_ledger::shred::SIZE_OF_DATA_SHRED_PAYLOAD;
+use analog_ledger::sigverify_shreds::{
     sign_shreds_cpu, sign_shreds_gpu, sign_shreds_gpu_pinned_keypair,
 };
-use solana_perf::packet::{Packet, Packets};
-use solana_perf::recycler_cache::RecyclerCache;
-use solana_sdk::signature::Keypair;
+use analog_perf::packet::{Packet, Packets};
+use analog_perf::recycler_cache::RecyclerCache;
+use analog_sdk::signature::Keypair;
 use std::sync::Arc;
 use test::Bencher;
 

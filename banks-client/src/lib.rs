@@ -5,16 +5,16 @@
 //! but they are undocumented, may change over time, and are generally more
 //! cumbersome to use.
 
-pub use solana_banks_interface::{BanksClient as TarpcClient, TransactionStatus};
+pub use analog_banks_interface::{BanksClient as TarpcClient, TransactionStatus};
 use {
     borsh::BorshDeserialize,
     futures::{future::join_all, Future, FutureExt},
-    solana_banks_interface::{BanksRequest, BanksResponse},
+    analog_banks_interface::{BanksRequest, BanksResponse},
     solana_program::{
         clock::Slot, fee_calculator::FeeCalculator, hash::Hash, program_pack::Pack, pubkey::Pubkey,
         rent::Rent, sysvar::Sysvar,
     },
-    solana_sdk::{
+    analog_sdk::{
         account::{from_account, Account},
         commitment_config::CommitmentLevel,
         message::Message,
@@ -275,7 +275,7 @@ impl BanksClient {
         })
     }
 
-    /// Return the balance in lamports of an account at the given address at the slot
+    /// Return the balance in tock of an account at the given address at the slot
     /// corresponding to the given commitment level.
     pub fn get_balance_with_commitment(
         &mut self,
@@ -283,10 +283,10 @@ impl BanksClient {
         commitment: CommitmentLevel,
     ) -> impl Future<Output = io::Result<u64>> + '_ {
         self.get_account_with_commitment_and_context(context::current(), address, commitment)
-            .map(|result| Ok(result?.map(|x| x.lamports).unwrap_or(0)))
+            .map(|result| Ok(result?.map(|x| x.tock).unwrap_or(0)))
     }
 
-    /// Return the balance in lamports of an account at the given address at the time
+    /// Return the balance in tock of an account at the given address at the time
     /// of the most recent root slot.
     pub fn get_balance(&mut self, address: Pubkey) -> impl Future<Output = io::Result<u64>> + '_ {
         self.get_balance_with_commitment(address, CommitmentLevel::default())
@@ -380,12 +380,12 @@ pub async fn start_tcp_client<T: ToSocketAddrs>(addr: T) -> io::Result<BanksClie
 #[cfg(test)]
 mod tests {
     use super::*;
-    use solana_banks_server::banks_server::start_local_server;
-    use solana_runtime::{
+    use analog_banks_server::banks_server::start_local_server;
+    use analog_runtime::{
         bank::Bank, bank_forks::BankForks, commitment::BlockCommitmentCache,
         genesis_utils::create_genesis_config,
     };
-    use solana_sdk::{message::Message, signature::Signer, system_instruction};
+    use analog_sdk::{message::Message, signature::Signer, system_instruction};
     use std::sync::{Arc, RwLock};
     use tarpc::transport;
     use tokio::{runtime::Runtime, time::sleep};
@@ -410,7 +410,7 @@ mod tests {
         ));
         let bank_forks = Arc::new(RwLock::new(BankForks::new(bank)));
 
-        let bob_pubkey = solana_sdk::pubkey::new_rand();
+        let bob_pubkey = analog_sdk::pubkey::new_rand();
         let mint_pubkey = genesis.mint_keypair.pubkey();
         let instruction = system_instruction::transfer(&mint_pubkey, &bob_pubkey, 1);
         let message = Message::new(&[instruction], Some(&mint_pubkey));
@@ -444,7 +444,7 @@ mod tests {
         let bank_forks = Arc::new(RwLock::new(BankForks::new(bank)));
 
         let mint_pubkey = &genesis.mint_keypair.pubkey();
-        let bob_pubkey = solana_sdk::pubkey::new_rand();
+        let bob_pubkey = analog_sdk::pubkey::new_rand();
         let instruction = system_instruction::transfer(mint_pubkey, &bob_pubkey, 1);
         let message = Message::new(&[instruction], Some(mint_pubkey));
 

@@ -4,12 +4,12 @@ extern crate test;
 
 use log::*;
 use solana_program_runtime::instruction_processor::{ExecuteDetailsTimings, PreAccount};
-use solana_sdk::{account::AccountSharedData, pubkey, rent::Rent};
+use analog_sdk::{account::AccountSharedData, pubkey, rent::Rent};
 use test::Bencher;
 
 #[bench]
 fn bench_verify_account_changes_data(bencher: &mut Bencher) {
-    solana_logger::setup();
+    analog_logger::setup();
 
     let owner = pubkey::new_rand();
     let non_owner = pubkey::new_rand();

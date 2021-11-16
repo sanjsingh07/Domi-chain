@@ -8,15 +8,15 @@ use crate::{
 use bip39::{Language, Mnemonic, MnemonicType, Seed};
 use clap::{App, AppSettings, Arg, ArgMatches, SubCommand};
 use log::*;
-use solana_account_decoder::{UiAccountEncoding, UiDataSliceConfig};
-use solana_bpf_loader_program::{syscalls::register_syscalls, BpfError, ThisInstructionMeter};
-use solana_clap_utils::{self, input_parsers::*, input_validators::*, keypair::*};
-use solana_cli_output::{
+use analog_account_decoder::{UiAccountEncoding, UiDataSliceConfig};
+use analog_bpf_loader_program::{syscalls::register_syscalls, BpfError, ThisInstructionMeter};
+use analog_clap_utils::{self, input_parsers::*, input_validators::*, keypair::*};
+use analog_cli_output::{
     CliProgram, CliProgramAccountType, CliProgramAuthority, CliProgramBuffer, CliProgramId,
     CliUpgradeableBuffer, CliUpgradeableBuffers, CliUpgradeableProgram,
     CliUpgradeableProgramClosed, CliUpgradeablePrograms,
 };
-use solana_client::{
+use analog_client::{
     client_error::ClientErrorKind,
     rpc_client::RpcClient,
     rpc_config::RpcSendTransactionConfig,
@@ -29,8 +29,8 @@ use solana_rbpf::{
     verifier,
     vm::{Config, Executable},
 };
-use solana_remote_wallet::remote_wallet::RemoteWalletManager;
-use solana_sdk::{
+use analog_remote_wallet::remote_wallet::RemoteWalletManager;
+use analog_sdk::{
     account::Account,
     account_utils::StateMut,
     bpf_loader, bpf_loader_deprecated,
@@ -39,7 +39,7 @@ use solana_sdk::{
     instruction::InstructionError,
     loader_instruction,
     message::Message,
-    native_token::Sol,
+    native_token::Anlog,
     packet::PACKET_DATA_SIZE,
     pubkey::Pubkey,
     signature::{keypair_from_seed, read_keypair_file, Keypair, Signature, Signer},
@@ -169,7 +169,7 @@ impl ProgramSubCommands for App<'_, '_> {
                             Arg::with_name("allow_excessive_balance")
                                 .long("allow-excessive-deploy-account-balance")
                                 .takes_value(false)
-                                .help("Use the designated program id even if the account already holds a large balance of SOL")
+                                .help("Use the designated program id even if the account already holds a large balance of ANLOG")
                         ),
                 )
                 .subcommand(
@@ -310,10 +310,10 @@ impl ProgramSubCommands for App<'_, '_> {
                                 "Authority [default: the default configured keypair]"),
                         )
                         .arg(
-                            Arg::with_name("lamports")
-                                .long("lamports")
+                            Arg::with_name("tock")
+                                .long("tock")
                                 .takes_value(false)
-                                .help("Display balance in lamports instead of SOL"),
+                                .help("Display balance in tock instead of ANLOG"),
                         ),
                 )
                 .subcommand(
@@ -338,7 +338,7 @@ impl ProgramSubCommands for App<'_, '_> {
                 )
                 .subcommand(
                     SubCommand::with_name("close")
-                        .about("Close a program or buffer account and withdraw all lamports")
+                        .about("Close a program or buffer account and withdraw all tock")
                         .arg(
                             Arg::with_name("account")
                                 .index(1)
@@ -367,13 +367,13 @@ impl ProgramSubCommands for App<'_, '_> {
                             pubkey!(Arg::with_name("recipient_account")
                                 .long("recipient")
                                 .value_name("RECIPIENT_ADDRESS"),
-                                "Address of the account to deposit the closed account's lamports [default: the default configured keypair]"),
+                                "Address of the account to deposit the closed account's tock [default: the default configured keypair]"),
                         )
                         .arg(
-                            Arg::with_name("lamports")
-                                .long("lamports")
+                            Arg::with_name("tock")
+                                .long("tock")
                                 .takes_value(false)
-                                .help("Display balance in lamports instead of SOL"),
+                                .help("Display balance in tock instead of ANLOG"),
                         ),
                 )
         )
@@ -408,7 +408,7 @@ impl ProgramSubCommands for App<'_, '_> {
                     Arg::with_name("allow_excessive_balance")
                         .long("allow-excessive-deploy-account-balance")
                         .takes_value(false)
-                        .help("Use the designated program id, even if the account already holds a large balance of SOL")
+                        .help("Use the designated program id, even if the account already holds a large balance of ANLOG")
                 ),
         )
     }
@@ -600,7 +600,7 @@ pub fn parse_program_subcommand(
                     get_programs: matches.is_present("programs"),
                     get_buffers: matches.is_present("buffers"),
                     all: matches.is_present("all"),
-                    use_lamports_unit: matches.is_present("lamports"),
+                    use_lamports_unit: matches.is_present("tock"),
                 }),
                 signers: vec![],
             }
@@ -646,7 +646,7 @@ pub fn parse_program_subcommand(
                     account_pubkey,
                     recipient_pubkey,
                     authority_index: signer_info.index_of(authority_pubkey).unwrap(),
-                    use_lamports_unit: matches.is_present("lamports"),
+                    use_lamports_unit: matches.is_present("tock"),
                 }),
                 signers: signer_info.signers,
             }
@@ -1175,7 +1175,7 @@ fn get_buffers(
                     .map(|pubkey| pubkey.to_string())
                     .unwrap_or_else(|| "none".to_string()),
                 data_len: 0,
-                lamports: account.lamports,
+                tock: account.tock,
                 use_lamports_unit,
             });
         } else {
@@ -1252,7 +1252,7 @@ fn get_programs(
                 last_deploy_slot: slot,
                 data_len: programdata_account.data.len()
                     - UpgradeableLoaderState::programdata_data_offset()?,
-                lamports: programdata_account.lamports,
+                tock: programdata_account.tock,
                 use_lamports_unit,
             });
         } else {
@@ -1334,7 +1334,7 @@ fn process_show(
                                     last_deploy_slot: slot,
                                     data_len: programdata_account.data.len()
                                         - UpgradeableLoaderState::programdata_data_offset()?,
-                                    lamports: programdata_account.lamports,
+                                    tock: programdata_account.tock,
                                     use_lamports_unit,
                                 }))
                         } else {
@@ -1355,7 +1355,7 @@ fn process_show(
                                 .unwrap_or_else(|| "none".to_string()),
                             data_len: account.data.len()
                                 - UpgradeableLoaderState::buffer_data_offset()?,
-                            lamports: account.lamports,
+                            tock: account.tock,
                             use_lamports_unit,
                         }))
                 } else {
@@ -1540,7 +1540,7 @@ fn process_close(
                                     .map(|pubkey| pubkey.to_string())
                                     .unwrap_or_else(|| "none".to_string()),
                                 data_len: 0,
-                                lamports: account.lamports,
+                                tock: account.tock,
                                 use_lamports_unit,
                             }],
                             use_lamports_unit,
@@ -1577,7 +1577,7 @@ fn process_close(
                                 Ok(config.output_format.formatted_string(
                                     &CliUpgradeableProgramClosed {
                                         program_id: account_pubkey.to_string(),
-                                        lamports: account.lamports,
+                                        tock: account.tock,
                                         use_lamports_unit,
                                     },
                                 ))
@@ -2044,21 +2044,21 @@ fn complete_partial_program_init(
         if account.owner != *loader_id {
             instructions.push(system_instruction::assign(elf_pubkey, loader_id));
         }
-        if account.lamports < minimum_balance {
-            let balance = minimum_balance - account.lamports;
+        if account.tock < minimum_balance {
+            let balance = minimum_balance - account.tock;
             instructions.push(system_instruction::transfer(
                 payer_pubkey,
                 elf_pubkey,
                 balance,
             ));
             balance_needed = balance;
-        } else if account.lamports > minimum_balance
+        } else if account.tock > minimum_balance
             && system_program::check_id(&account.owner)
             && !allow_excessive_balance
         {
             return Err(format!(
                 "Buffer account has a balance: {:?}; it may already be in use",
-                Sol(account.lamports)
+                Anlog(account.tock)
             )
             .into());
         }
@@ -2191,13 +2191,13 @@ fn report_ephemeral_mnemonic(words: usize, mnemonic: bip39::Mnemonic) {
         divider
     );
     eprintln!(
-        "`solana-keygen recover` and the following {}-word seed phrase:",
+        "`analog-keygen recover` and the following {}-word seed phrase:",
         words
     );
     eprintln!("{}\n{}\n{}", divider, phrase, divider);
     eprintln!("To resume a deploy, pass the recovered keypair as the");
     eprintln!("[BUFFER_SIGNER] to `solana program deploy` or `solana write-buffer'.");
-    eprintln!("Or to recover the account's lamports, pass it as the");
+    eprintln!("Or to recover the account's tock, pass it as the");
     eprintln!(
         "[BUFFER_ACCOUNT_ADDRESS] argument to `solana program close`.\n{}",
         divider
@@ -2212,8 +2212,8 @@ mod tests {
         cli::{parse_command, process_command},
     };
     use serde_json::Value;
-    use solana_cli_output::OutputFormat;
-    use solana_sdk::signature::write_keypair_file;
+    use analog_cli_output::OutputFormat;
+    use analog_sdk::signature::write_keypair_file;
 
     fn make_tmp_path(name: &str) -> String {
         let out_dir = std::env::var("FARF_DIR").unwrap_or_else(|_| "farf".to_string());
@@ -2793,7 +2793,7 @@ mod tests {
             "show",
             "--programs",
             "--all",
-            "--lamports",
+            "--tock",
         ]);
         assert_eq!(
             parse_command(&test_command, &default_signer, &mut None).unwrap(),
@@ -2816,7 +2816,7 @@ mod tests {
             "show",
             "--buffers",
             "--all",
-            "--lamports",
+            "--tock",
         ]);
         assert_eq!(
             parse_command(&test_command, &default_signer, &mut None).unwrap(),
@@ -2963,13 +2963,13 @@ mod tests {
             }
         );
 
-        // --buffers and lamports
+        // --buffers and tock
         let test_command = test_commands.clone().get_matches_from(vec![
             "test",
             "program",
             "close",
             "--buffers",
-            "--lamports",
+            "--tock",
         ]);
         assert_eq!(
             parse_command(&test_command, &default_signer, &mut None).unwrap(),
@@ -2987,7 +2987,7 @@ mod tests {
 
     #[test]
     fn test_cli_keypair_file() {
-        solana_logger::setup();
+        analog_logger::setup();
 
         let default_keypair = Keypair::new();
         let program_pubkey = Keypair::new();

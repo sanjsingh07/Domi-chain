@@ -11,7 +11,7 @@ fn get_last_metrics(metric: &str, db: &str, name: &str, branch: &str) -> Result<
         metric, db, name, branch
     );
 
-    let response = solana_metrics::query(&query)?;
+    let response = analog_metrics::query(&query)?;
 
     match serde_json::from_str(&response) {
         Result::Ok(v) => {
@@ -64,7 +64,7 @@ fn main() {
                 let deviation: i64 = v["deviation"].to_string().parse().unwrap();
                 assert!(!upload_metrics, "TODO");
                 /*
-                solana_metrics::datapoint_info!(
+                analog_metrics::datapoint_info!(
                     &v["name"].as_str().unwrap().trim_matches('\"'),
                     ("test", "bench", String),
                     ("branch", branch.to_string(), String),
@@ -108,5 +108,5 @@ fn main() {
             println!("{}, {:10?}, {:10?}", entry, values.0, values.1);
         }
     }
-    solana_metrics::flush();
+    analog_metrics::flush();
 }

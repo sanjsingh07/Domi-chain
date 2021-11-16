@@ -3,7 +3,7 @@ use {
         cluster_info::ClusterInfo, contact_info::ContactInfo, weighted_shuffle::weighted_shuffle,
     },
     itertools::Itertools,
-    solana_sdk::{clock::Slot, pubkey::Pubkey},
+    analog_sdk::{clock::Slot, pubkey::Pubkey},
     std::collections::HashMap,
 };
 

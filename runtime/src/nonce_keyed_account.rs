@@ -1,4 +1,4 @@
-use solana_sdk::{
+use analog_sdk::{
     account::{ReadableAccount, WritableAccount},
     account_utils::State as AccountUtilsState,
     feature_set, ic_msg,
@@ -20,7 +20,7 @@ pub trait NonceKeyedAccount {
     ) -> Result<(), InstructionError>;
     fn withdraw_nonce_account(
         &self,
-        lamports: u64,
+        tock: u64,
         to: &KeyedAccount,
         rent: &Rent,
         signers: &HashSet<Pubkey>,
@@ -94,7 +94,7 @@ impl<'a> NonceKeyedAccount for KeyedAccount<'a> {
 
     fn withdraw_nonce_account(
         &self,
-        lamports: u64,
+        tock: u64,
         to: &KeyedAccount,
         rent: &Rent,
         signers: &HashSet<Pubkey>,
@@ -104,19 +104,19 @@ impl<'a> NonceKeyedAccount for KeyedAccount<'a> {
             .is_feature_active(&feature_set::merge_nonce_error_into_system_error::id());
         let signer = match AccountUtilsState::<Versions>::state(self)?.convert_to_current() {
             State::Uninitialized => {
-                if lamports > self.lamports()? {
+                if tock > self.tock()? {
                     ic_msg!(
                         invoke_context,
-                        "Withdraw nonce account: insufficient lamports {}, need {}",
-                        self.lamports()?,
-                        lamports,
+                        "Withdraw nonce account: insufficient tock {}, need {}",
+                        self.tock()?,
+                        tock,
                     );
                     return Err(InstructionError::InsufficientFunds);
                 }
                 *self.unsigned_key()
             }
             State::Initialized(ref data) => {
-                if lamports == self.lamports()? {
+                if tock == self.tock()? {
                     if data.blockhash == *invoke_context.get_blockhash() {
                         ic_msg!(
                             invoke_context,
@@ -130,12 +130,12 @@ impl<'a> NonceKeyedAccount for KeyedAccount<'a> {
                     self.set_state(&Versions::new_current(State::Uninitialized))?;
                 } else {
                     let min_balance = rent.minimum_balance(self.data_len()?);
-                    let amount = checked_add(lamports, min_balance)?;
-                    if amount > self.lamports()? {
+                    let amount = checked_add(tock, min_balance)?;
+                    if amount > self.tock()? {
                         ic_msg!(
                             invoke_context,
-                            "Withdraw nonce account: insufficient lamports {}, need {}",
-                            self.lamports()?,
+                            "Withdraw nonce account: insufficient tock {}, need {}",
+                            self.tock()?,
                             amount,
                         );
                         return Err(InstructionError::InsufficientFunds);
@@ -154,16 +154,16 @@ impl<'a> NonceKeyedAccount for KeyedAccount<'a> {
             return Err(InstructionError::MissingRequiredSignature);
         }
 
-        let nonce_balance = self.try_account_ref_mut()?.lamports();
+        let nonce_balance = self.try_account_ref_mut()?.tock();
         self.try_account_ref_mut()?.set_lamports(
             nonce_balance
-                .checked_sub(lamports)
+                .checked_sub(tock)
                 .ok_or(InstructionError::ArithmeticOverflow)?,
         );
-        let to_balance = to.try_account_ref_mut()?.lamports();
+        let to_balance = to.try_account_ref_mut()?.tock();
         to.try_account_ref_mut()?.set_lamports(
             to_balance
-                .checked_add(lamports)
+                .checked_add(tock)
                 .ok_or(InstructionError::ArithmeticOverflow)?,
         );
 
@@ -181,11 +181,11 @@ impl<'a> NonceKeyedAccount for KeyedAccount<'a> {
         match AccountUtilsState::<Versions>::state(self)?.convert_to_current() {
             State::Uninitialized => {
                 let min_balance = rent.minimum_balance(self.data_len()?);
-                if self.lamports()? < min_balance {
+                if self.tock()? < min_balance {
                     ic_msg!(
                         invoke_context,
-                        "Initialize nonce account: insufficient lamports {}, need {}",
-                        self.lamports()?,
+                        "Initialize nonce account: insufficient tock {}, need {}",
+                        self.tock()?,
                         min_balance
                     );
                     return Err(InstructionError::InsufficientFunds);
@@ -255,7 +255,7 @@ impl<'a> NonceKeyedAccount for KeyedAccount<'a> {
 mod test {
     use super::*;
     use solana_program_runtime::invoke_context::ThisInvokeContext;
-    use solana_sdk::{
+    use analog_sdk::{
         account::ReadableAccount,
         account_utils::State as AccountUtilsState,
         hash::{hash, Hash},
@@ -265,12 +265,12 @@ mod test {
         system_instruction::SystemError,
     };
 
-    fn with_test_keyed_account<F>(lamports: u64, signer: bool, f: F)
+    fn with_test_keyed_account<F>(tock: u64, signer: bool, f: F)
     where
         F: Fn(&KeyedAccount),
     {
         let pubkey = Pubkey::new_unique();
-        let account = create_account(lamports);
+        let account = create_account(tock);
         let keyed_account = KeyedAccount::new(&pubkey, signer, &account);
         f(&keyed_account)
     }
@@ -359,10 +359,10 @@ mod test {
             assert_eq!(state, State::Initialized(data));
             with_test_keyed_account(42, false, |to_keyed| {
                 let invoke_context = create_invoke_context_with_blockhash(0);
-                let withdraw_lamports = keyed_account.account.borrow().lamports();
+                let withdraw_lamports = keyed_account.account.borrow().tock();
                 let expect_nonce_lamports =
-                    keyed_account.account.borrow().lamports() - withdraw_lamports;
-                let expect_to_lamports = to_keyed.account.borrow().lamports() + withdraw_lamports;
+                    keyed_account.account.borrow().tock() - withdraw_lamports;
+                let expect_to_lamports = to_keyed.account.borrow().tock() + withdraw_lamports;
                 keyed_account
                     .withdraw_nonce_account(
                         withdraw_lamports,
@@ -374,11 +374,11 @@ mod test {
                     .unwrap();
                 // Empties Account balance
                 assert_eq!(
-                    keyed_account.account.borrow().lamports(),
+                    keyed_account.account.borrow().tock(),
                     expect_nonce_lamports
                 );
                 // Account balance goes to `to`
-                assert_eq!(to_keyed.account.borrow().lamports(), expect_to_lamports);
+                assert_eq!(to_keyed.account.borrow().tock(), expect_to_lamports);
                 let state = AccountUtilsState::<Versions>::state(keyed_account)
                     .unwrap()
                     .convert_to_current();
@@ -519,10 +519,10 @@ mod test {
                 let mut signers = HashSet::new();
                 signers.insert(*nonce_keyed.signer_key().unwrap());
                 let invoke_context = create_invoke_context_with_blockhash(0);
-                let withdraw_lamports = nonce_keyed.account.borrow().lamports();
+                let withdraw_lamports = nonce_keyed.account.borrow().tock();
                 let expect_nonce_lamports =
-                    nonce_keyed.account.borrow().lamports() - withdraw_lamports;
-                let expect_to_lamports = to_keyed.account.borrow().lamports() + withdraw_lamports;
+                    nonce_keyed.account.borrow().tock() - withdraw_lamports;
+                let expect_to_lamports = to_keyed.account.borrow().tock() + withdraw_lamports;
                 nonce_keyed
                     .withdraw_nonce_account(
                         withdraw_lamports,
@@ -540,11 +540,11 @@ mod test {
                 assert_eq!(state, State::Uninitialized);
                 // Empties Account balance
                 assert_eq!(
-                    nonce_keyed.account.borrow().lamports(),
+                    nonce_keyed.account.borrow().tock(),
                     expect_nonce_lamports
                 );
                 // Account balance goes to `to`
-                assert_eq!(to_keyed.account.borrow().lamports(), expect_to_lamports);
+                assert_eq!(to_keyed.account.borrow().tock(), expect_to_lamports);
             })
         })
     }
@@ -564,9 +564,9 @@ mod test {
             with_test_keyed_account(42, false, |to_keyed| {
                 let signers = HashSet::new();
                 let invoke_context = create_invoke_context_with_blockhash(0);
-                let lamports = nonce_keyed.account.borrow().lamports();
+                let tock = nonce_keyed.account.borrow().tock();
                 let result = nonce_keyed.withdraw_nonce_account(
-                    lamports,
+                    tock,
                     to_keyed,
                     &rent,
                     &signers,
@@ -593,9 +593,9 @@ mod test {
                 let mut signers = HashSet::new();
                 signers.insert(*nonce_keyed.signer_key().unwrap());
                 let invoke_context = create_invoke_context_with_blockhash(0);
-                let lamports = nonce_keyed.account.borrow().lamports() + 1;
+                let tock = nonce_keyed.account.borrow().tock() + 1;
                 let result = nonce_keyed.withdraw_nonce_account(
-                    lamports,
+                    tock,
                     to_keyed,
                     &rent,
                     &signers,
@@ -618,10 +618,10 @@ mod test {
                 let mut signers = HashSet::new();
                 signers.insert(*nonce_keyed.signer_key().unwrap());
                 let invoke_context = create_invoke_context_with_blockhash(0);
-                let withdraw_lamports = nonce_keyed.account.borrow().lamports() / 2;
+                let withdraw_lamports = nonce_keyed.account.borrow().tock() / 2;
                 let nonce_expect_lamports =
-                    nonce_keyed.account.borrow().lamports() - withdraw_lamports;
-                let to_expect_lamports = to_keyed.account.borrow().lamports() + withdraw_lamports;
+                    nonce_keyed.account.borrow().tock() - withdraw_lamports;
+                let to_expect_lamports = to_keyed.account.borrow().tock() + withdraw_lamports;
                 nonce_keyed
                     .withdraw_nonce_account(
                         withdraw_lamports,
@@ -636,14 +636,14 @@ mod test {
                     .convert_to_current();
                 assert_eq!(state, State::Uninitialized);
                 assert_eq!(
-                    nonce_keyed.account.borrow().lamports(),
+                    nonce_keyed.account.borrow().tock(),
                     nonce_expect_lamports
                 );
-                assert_eq!(to_keyed.account.borrow().lamports(), to_expect_lamports);
-                let withdraw_lamports = nonce_keyed.account.borrow().lamports();
+                assert_eq!(to_keyed.account.borrow().tock(), to_expect_lamports);
+                let withdraw_lamports = nonce_keyed.account.borrow().tock();
                 let nonce_expect_lamports =
-                    nonce_keyed.account.borrow().lamports() - withdraw_lamports;
-                let to_expect_lamports = to_keyed.account.borrow().lamports() + withdraw_lamports;
+                    nonce_keyed.account.borrow().tock() - withdraw_lamports;
+                let to_expect_lamports = to_keyed.account.borrow().tock() + withdraw_lamports;
                 nonce_keyed
                     .withdraw_nonce_account(
                         withdraw_lamports,
@@ -658,10 +658,10 @@ mod test {
                     .convert_to_current();
                 assert_eq!(state, State::Uninitialized);
                 assert_eq!(
-                    nonce_keyed.account.borrow().lamports(),
+                    nonce_keyed.account.borrow().tock(),
                     nonce_expect_lamports
                 );
-                assert_eq!(to_keyed.account.borrow().lamports(), to_expect_lamports);
+                assert_eq!(to_keyed.account.borrow().tock(), to_expect_lamports);
             })
         })
     }
@@ -691,10 +691,10 @@ mod test {
             );
             assert_eq!(state, State::Initialized(data.clone()));
             with_test_keyed_account(42, false, |to_keyed| {
-                let withdraw_lamports = nonce_keyed.account.borrow().lamports() - min_lamports;
+                let withdraw_lamports = nonce_keyed.account.borrow().tock() - min_lamports;
                 let nonce_expect_lamports =
-                    nonce_keyed.account.borrow().lamports() - withdraw_lamports;
-                let to_expect_lamports = to_keyed.account.borrow().lamports() + withdraw_lamports;
+                    nonce_keyed.account.borrow().tock() - withdraw_lamports;
+                let to_expect_lamports = to_keyed.account.borrow().tock() + withdraw_lamports;
                 nonce_keyed
                     .withdraw_nonce_account(
                         withdraw_lamports,
@@ -714,15 +714,15 @@ mod test {
                 );
                 assert_eq!(state, State::Initialized(data));
                 assert_eq!(
-                    nonce_keyed.account.borrow().lamports(),
+                    nonce_keyed.account.borrow().tock(),
                     nonce_expect_lamports
                 );
-                assert_eq!(to_keyed.account.borrow().lamports(), to_expect_lamports);
+                assert_eq!(to_keyed.account.borrow().tock(), to_expect_lamports);
                 let invoke_context = create_invoke_context_with_blockhash(0);
-                let withdraw_lamports = nonce_keyed.account.borrow().lamports();
+                let withdraw_lamports = nonce_keyed.account.borrow().tock();
                 let nonce_expect_lamports =
-                    nonce_keyed.account.borrow().lamports() - withdraw_lamports;
-                let to_expect_lamports = to_keyed.account.borrow().lamports() + withdraw_lamports;
+                    nonce_keyed.account.borrow().tock() - withdraw_lamports;
+                let to_expect_lamports = to_keyed.account.borrow().tock() + withdraw_lamports;
                 nonce_keyed
                     .withdraw_nonce_account(
                         withdraw_lamports,
@@ -737,10 +737,10 @@ mod test {
                     .convert_to_current();
                 assert_eq!(state, State::Uninitialized);
                 assert_eq!(
-                    nonce_keyed.account.borrow().lamports(),
+                    nonce_keyed.account.borrow().tock(),
                     nonce_expect_lamports
                 );
-                assert_eq!(to_keyed.account.borrow().lamports(), to_expect_lamports);
+                assert_eq!(to_keyed.account.borrow().tock(), to_expect_lamports);
             })
         })
     }
@@ -761,7 +761,7 @@ mod test {
             with_test_keyed_account(42, false, |to_keyed| {
                 let mut signers = HashSet::new();
                 signers.insert(*nonce_keyed.signer_key().unwrap());
-                let withdraw_lamports = nonce_keyed.account.borrow().lamports();
+                let withdraw_lamports = nonce_keyed.account.borrow().tock();
                 let result = nonce_keyed.withdraw_nonce_account(
                     withdraw_lamports,
                     to_keyed,
@@ -791,7 +791,7 @@ mod test {
                 let invoke_context = create_invoke_context_with_blockhash(63);
                 let mut signers = HashSet::new();
                 signers.insert(*nonce_keyed.signer_key().unwrap());
-                let withdraw_lamports = nonce_keyed.account.borrow().lamports() + 1;
+                let withdraw_lamports = nonce_keyed.account.borrow().tock() + 1;
                 let result = nonce_keyed.withdraw_nonce_account(
                     withdraw_lamports,
                     to_keyed,
@@ -821,7 +821,7 @@ mod test {
                 let invoke_context = create_invoke_context_with_blockhash(63);
                 let mut signers = HashSet::new();
                 signers.insert(*nonce_keyed.signer_key().unwrap());
-                let withdraw_lamports = nonce_keyed.account.borrow().lamports() - min_lamports + 1;
+                let withdraw_lamports = nonce_keyed.account.borrow().tock() - min_lamports + 1;
                 let result = nonce_keyed.withdraw_nonce_account(
                     withdraw_lamports,
                     to_keyed,

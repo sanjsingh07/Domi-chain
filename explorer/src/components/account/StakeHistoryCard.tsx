@@ -29,9 +29,9 @@ export function StakeHistoryCard({
             <thead>
               <tr>
                 <th className="w-1 text-muted">Epoch</th>
-                <th className="text-muted">Effective (SOL)</th>
-                <th className="text-muted">Activating (SOL)</th>
-                <th className="text-muted">Deactivating (SOL)</th>
+                <th className="text-muted">Effective (ANLOG)</th>
+                <th className="text-muted">Activating (ANLOG)</th>
+                <th className="text-muted">Deactivating (ANLOG)</th>
               </tr>
             </thead>
             <tbody className="list">
@@ -60,13 +60,13 @@ const renderAccountRow = (entry: StakeHistoryEntry, index: number) => {
         <Epoch epoch={entry.epoch} link />
       </td>
       <td className="text-monospace">
-        <SolBalance lamports={entry.stakeHistory.effective} />
+        <SolBalance tock={entry.stakeHistory.effective} />
       </td>
       <td className="text-monospace">
-        <SolBalance lamports={entry.stakeHistory.activating} />
+        <SolBalance tock={entry.stakeHistory.activating} />
       </td>
       <td className="text-monospace">
-        <SolBalance lamports={entry.stakeHistory.deactivating} />
+        <SolBalance tock={entry.stakeHistory.deactivating} />
       </td>
     </tr>
   );

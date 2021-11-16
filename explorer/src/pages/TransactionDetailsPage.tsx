@@ -293,9 +293,9 @@ function StatusCard({
 
         {fee && (
           <tr>
-            <td>Fee (SOL)</td>
+            <td>Fee (ANLOG)</td>
             <td className="text-lg-right">
-              <SolBalance lamports={fee} />
+              <SolBalance tock={fee} />
             </td>
           </tr>
         )}
@@ -372,10 +372,10 @@ function AccountsCard({ signature }: SignatureProps) {
           <Address pubkey={pubkey} link />
         </td>
         <td>
-          <BalanceDelta delta={delta} isSol />
+          <BalanceDelta delta={delta} isAnlog />
         </td>
         <td>
-          <SolBalance lamports={post} />
+          <SolBalance tock={post} />
         </td>
         <td>
           {index === 0 && (
@@ -406,8 +406,8 @@ function AccountsCard({ signature }: SignatureProps) {
             <tr>
               <th className="text-muted">#</th>
               <th className="text-muted">Address</th>
-              <th className="text-muted">Change (SOL)</th>
-              <th className="text-muted">Post Balance (SOL)</th>
+              <th className="text-muted">Change (ANLOG)</th>
+              <th className="text-muted">Post Balance (ANLOG)</th>
               <th className="text-muted">Details</th>
             </tr>
           </thead>

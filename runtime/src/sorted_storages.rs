@@ -1,7 +1,7 @@
 use crate::accounts_db::SnapshotStorage;
 use log::*;
-use solana_measure::measure::Measure;
-use solana_sdk::clock::Slot;
+use analog_measure::measure::Measure;
+use analog_sdk::clock::Slot;
 use std::ops::Range;
 
 pub struct SortedStorages<'a> {

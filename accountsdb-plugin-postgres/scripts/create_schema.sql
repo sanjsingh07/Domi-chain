@@ -7,7 +7,7 @@
 CREATE TABLE account (
     pubkey BYTEA PRIMARY KEY,
     owner BYTEA,
-    lamports BIGINT NOT NULL,
+    tock BIGINT NOT NULL,
     slot BIGINT NOT NULL,
     executable BOOL NOT NULL,
     rent_epoch BIGINT NOT NULL,
@@ -31,7 +31,7 @@ CREATE TABLE slot (
 CREATE TABLE account_audit (
     pubkey BYTEA,
     owner BYTEA,
-    lamports BIGINT NOT NULL,
+    tock BIGINT NOT NULL,
     slot BIGINT NOT NULL,
     executable BOOL NOT NULL,
     rent_epoch BIGINT NOT NULL,
@@ -42,8 +42,8 @@ CREATE TABLE account_audit (
 
 CREATE FUNCTION audit_account_update() RETURNS trigger AS $audit_account_update$
     BEGIN
-		INSERT INTO account_audit (pubkey, owner, lamports, slot, executable, rent_epoch, data, write_version, updated_on)
-            VALUES (OLD.pubkey, OLD.owner, OLD.lamports, OLD.slot,
+		INSERT INTO account_audit (pubkey, owner, tock, slot, executable, rent_epoch, data, write_version, updated_on)
+            VALUES (OLD.pubkey, OLD.owner, OLD.tock, OLD.slot,
                     OLD.executable, OLD.rent_epoch, OLD.data, OLD.write_version, OLD.updated_on);
         RETURN NEW;
     END;

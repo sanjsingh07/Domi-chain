@@ -16,8 +16,8 @@ use {
         value::Value::{Number, Object},
         Map, Value,
     },
-    solana_account_decoder::UiAccount,
-    solana_sdk::{clock::Slot, pubkey::Pubkey, signature::Signature},
+    analog_account_decoder::UiAccount,
+    analog_sdk::{clock::Slot, pubkey::Pubkey, signature::Signature},
     std::{
         marker::PhantomData,
         net::TcpStream,

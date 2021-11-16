@@ -7,7 +7,7 @@ use {
     crate::{rpc_client::RpcClient, rpc_config::RpcProgramAccountsConfig, rpc_response::Response},
     bincode::{serialize_into, serialized_size},
     log::*,
-    solana_sdk::{
+    analog_sdk::{
         account::Account,
         client::{AsyncClient, Client, SyncClient},
         clock::{Slot, MAX_PROCESSING_AGE},
@@ -350,12 +350,12 @@ impl SyncClient for ThinClient {
 
     fn transfer_and_confirm(
         &self,
-        lamports: u64,
+        tock: u64,
         keypair: &Keypair,
         pubkey: &Pubkey,
     ) -> TransportResult<Signature> {
         let transfer_instruction =
-            system_instruction::transfer(&keypair.pubkey(), pubkey, lamports);
+            system_instruction::transfer(&keypair.pubkey(), pubkey, tock);
         self.send_and_confirm_instruction(keypair, transfer_instruction)
     }
 
@@ -638,20 +638,20 @@ impl AsyncClient for ThinClient {
     }
     fn async_transfer(
         &self,
-        lamports: u64,
+        tock: u64,
         keypair: &Keypair,
         pubkey: &Pubkey,
         recent_blockhash: Hash,
     ) -> TransportResult<Signature> {
         let transfer_instruction =
-            system_instruction::transfer(&keypair.pubkey(), pubkey, lamports);
+            system_instruction::transfer(&keypair.pubkey(), pubkey, tock);
         self.async_send_instruction(keypair, transfer_instruction, recent_blockhash)
     }
 }
 
 pub fn create_client((rpc, tpu): (SocketAddr, SocketAddr), range: (u16, u16)) -> ThinClient {
     let (_, transactions_socket) =
-        solana_net_utils::bind_in_range(IpAddr::V4(Ipv4Addr::new(0, 0, 0, 0)), range).unwrap();
+        analog_net_utils::bind_in_range(IpAddr::V4(Ipv4Addr::new(0, 0, 0, 0)), range).unwrap();
     ThinClient::new(rpc, tpu, transactions_socket)
 }
 
@@ -661,7 +661,7 @@ pub fn create_client_with_timeout(
     timeout: Duration,
 ) -> ThinClient {
     let (_, transactions_socket) =
-        solana_net_utils::bind_in_range(IpAddr::V4(Ipv4Addr::new(0, 0, 0, 0)), range).unwrap();
+        analog_net_utils::bind_in_range(IpAddr::V4(Ipv4Addr::new(0, 0, 0, 0)), range).unwrap();
     ThinClient::new_socket_with_timeout(rpc, tpu, transactions_socket, timeout)
 }
 
@@ -672,7 +672,7 @@ mod tests {
 
     #[test]
     fn test_client_optimizer() {
-        solana_logger::setup();
+        analog_logger::setup();
 
         const NUM_CLIENTS: usize = 5;
         let optimizer = ClientOptimizer::new(NUM_CLIENTS);

@@ -17,17 +17,17 @@ use {
         Sender as CrossbeamSender,
     },
     itertools::Itertools,
-    solana_gossip::cluster_info::{ClusterInfo, ClusterInfoError, DATA_PLANE_FANOUT},
-    solana_ledger::{blockstore::Blockstore, shred::Shred},
-    solana_measure::measure::Measure,
-    solana_metrics::{inc_new_counter_error, inc_new_counter_info},
-    solana_poh::poh_recorder::WorkingBankEntry,
-    solana_runtime::{bank::Bank, bank_forks::BankForks},
-    solana_sdk::{
+    analog_gossip::cluster_info::{ClusterInfo, ClusterInfoError, DATA_PLANE_FANOUT},
+    analog_ledger::{blockstore::Blockstore, shred::Shred},
+    analog_measure::measure::Measure,
+    analog_metrics::{inc_new_counter_error, inc_new_counter_info},
+    analog_poh::poh_recorder::WorkingBankEntry,
+    analog_runtime::{bank::Bank, bank_forks::BankForks},
+    analog_sdk::{
         timing::{timestamp, AtomicInterval},
         {clock::Slot, pubkey::Pubkey, signature::Keypair},
     },
-    solana_streamer::{
+    analog_streamer::{
         sendmmsg::{batch_send, SendPktsError},
         socket::SocketAddrSpace,
     },
@@ -262,7 +262,7 @@ impl BroadcastStage {
         let thread_hdl = {
             let cluster_info = cluster_info.clone();
             Builder::new()
-                .name("solana-broadcaster".to_string())
+                .name("analog-broadcaster".to_string())
                 .spawn(move || {
                     let _finalizer = Finalizer::new(exit);
                     Self::run(
@@ -284,11 +284,11 @@ impl BroadcastStage {
             let cluster_info = cluster_info.clone();
             let bank_forks = bank_forks.clone();
             let t = Builder::new()
-                .name("solana-broadcaster-transmit".to_string())
+                .name("analog-broadcaster-transmit".to_string())
                 .spawn(move || loop {
                     let res =
                         bs_transmit.transmit(&socket_receiver, &cluster_info, &sock, &bank_forks);
-                    let res = Self::handle_error(res, "solana-broadcaster-transmit");
+                    let res = Self::handle_error(res, "analog-broadcaster-transmit");
                     if let Some(res) = res {
                         return res;
                     }
@@ -302,10 +302,10 @@ impl BroadcastStage {
             let mut bs_record = broadcast_stage_run.clone();
             let btree = blockstore.clone();
             let t = Builder::new()
-                .name("solana-broadcaster-record".to_string())
+                .name("analog-broadcaster-record".to_string())
                 .spawn(move || loop {
                     let res = bs_record.record(&blockstore_receiver, &btree);
-                    let res = Self::handle_error(res, "solana-broadcaster-record");
+                    let res = Self::handle_error(res, "analog-broadcaster-record");
                     if let Some(res) = res {
                         return res;
                     }
@@ -316,7 +316,7 @@ impl BroadcastStage {
 
         let blockstore = blockstore.clone();
         let retransmit_thread = Builder::new()
-            .name("solana-broadcaster-retransmit".to_string())
+            .name("analog-broadcaster-retransmit".to_string())
             .spawn(move || loop {
                 if let Some(res) = Self::handle_error(
                     Self::check_retransmit_signals(
@@ -324,7 +324,7 @@ impl BroadcastStage {
                         &retransmit_slots_receiver,
                         &socket_sender,
                     ),
-                    "solana-broadcaster-retransmit-check_retransmit_signals",
+                    "analog-broadcaster-retransmit-check_retransmit_signals",
                 ) {
                     return res;
                 }
@@ -454,16 +454,16 @@ pub fn broadcast_shreds(
 pub mod test {
     use super::*;
     use crossbeam_channel::unbounded;
-    use solana_entry::entry::create_ticks;
-    use solana_gossip::cluster_info::{ClusterInfo, Node};
-    use solana_ledger::{
+    use analog_entry::entry::create_ticks;
+    use analog_gossip::cluster_info::{ClusterInfo, Node};
+    use analog_ledger::{
         blockstore::{make_slot_entries, Blockstore},
         genesis_utils::{create_genesis_config, GenesisConfigInfo},
         get_tmp_ledger_path,
         shred::{max_ticks_per_n_shreds, ProcessShredsStats, Shredder},
     };
-    use solana_runtime::bank::Bank;
-    use solana_sdk::{
+    use analog_runtime::bank::Bank;
+    use analog_sdk::{
         hash::Hash,
         pubkey::Pubkey,
         signature::{Keypair, Signer},
@@ -642,7 +642,7 @@ pub mod test {
 
     #[test]
     fn test_broadcast_ledger() {
-        solana_logger::setup();
+        analog_logger::setup();
         let ledger_path = get_tmp_ledger_path!();
 
         {

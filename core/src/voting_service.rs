@@ -1,9 +1,9 @@
 use crate::tower_storage::{SavedTower, TowerStorage};
-use solana_gossip::cluster_info::ClusterInfo;
-use solana_measure::measure::Measure;
-use solana_poh::poh_recorder::PohRecorder;
-use solana_runtime::bank_forks::BankForks;
-use solana_sdk::{clock::Slot, transaction::Transaction};
+use analog_gossip::cluster_info::ClusterInfo;
+use analog_measure::measure::Measure;
+use analog_poh::poh_recorder::PohRecorder;
+use analog_runtime::bank_forks::BankForks;
+use analog_sdk::{clock::Slot, transaction::Transaction};
 use std::{
     sync::{mpsc::Receiver, Arc, Mutex, RwLock},
     thread::{self, Builder, JoinHandle},
@@ -43,7 +43,7 @@ impl VotingService {
         bank_forks: Arc<RwLock<BankForks>>,
     ) -> Self {
         let thread_hdl = Builder::new()
-            .name("sol-vote-service".to_string())
+            .name("anlog-vote-service".to_string())
             .spawn(move || {
                 for vote_op in vote_receiver.iter() {
                     let rooted_bank = bank_forks.read().unwrap().root_bank().clone();

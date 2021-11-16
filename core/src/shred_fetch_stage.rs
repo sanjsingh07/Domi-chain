@@ -2,13 +2,13 @@
 
 use crate::packet_hasher::PacketHasher;
 use lru::LruCache;
-use solana_ledger::shred::{get_shred_slot_index_type, ShredFetchStats};
-use solana_perf::cuda_runtime::PinnedVec;
-use solana_perf::packet::{Packet, PacketsRecycler};
-use solana_perf::recycler::Recycler;
-use solana_runtime::bank_forks::BankForks;
-use solana_sdk::clock::{Slot, DEFAULT_MS_PER_SLOT};
-use solana_streamer::streamer::{self, PacketReceiver, PacketSender};
+use analog_ledger::shred::{get_shred_slot_index_type, ShredFetchStats};
+use analog_perf::cuda_runtime::PinnedVec;
+use analog_perf::packet::{Packet, PacketsRecycler};
+use analog_perf::recycler::Recycler;
+use analog_runtime::bank_forks::BankForks;
+use analog_sdk::clock::{Slot, DEFAULT_MS_PER_SLOT};
+use analog_streamer::streamer::{self, PacketReceiver, PacketSender};
 use std::net::UdpSocket;
 use std::sync::atomic::AtomicBool;
 use std::sync::mpsc::channel;
@@ -156,7 +156,7 @@ impl ShredFetchStage {
             .collect();
 
         let modifier_hdl = Builder::new()
-            .name("solana-tvu-fetch-stage-packet-modifier".to_string())
+            .name("analog-tvu-fetch-stage-packet-modifier".to_string())
             .spawn(move || Self::modify_packets(packet_receiver, sender, bank_forks, name, modify))
             .unwrap();
         (streamers, modifier_hdl)
@@ -224,12 +224,12 @@ impl ShredFetchStage {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use solana_ledger::blockstore::MAX_DATA_SHREDS_PER_SLOT;
-    use solana_ledger::shred::Shred;
+    use analog_ledger::blockstore::MAX_DATA_SHREDS_PER_SLOT;
+    use analog_ledger::shred::Shred;
 
     #[test]
     fn test_data_code_same_index() {
-        solana_logger::setup();
+        analog_logger::setup();
         let mut shreds_received = LruCache::new(DEFAULT_LRU_SIZE);
         let mut packet = Packet::default();
         let mut stats = ShredFetchStats::default();
@@ -263,7 +263,7 @@ mod tests {
             &hasher,
         );
         assert!(!packet.meta.discard);
-        let coding = solana_ledger::shred::Shredder::generate_coding_shreds(
+        let coding = analog_ledger::shred::Shredder::generate_coding_shreds(
             &[shred],
             false, // is_last_in_slot
         );
@@ -283,7 +283,7 @@ mod tests {
 
     #[test]
     fn test_shred_filter() {
-        solana_logger::setup();
+        analog_logger::setup();
         let mut shreds_received = LruCache::new(DEFAULT_LRU_SIZE);
         let mut packet = Packet::default();
         let mut stats = ShredFetchStats::default();

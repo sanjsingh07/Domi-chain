@@ -1,8 +1,8 @@
 #![allow(clippy::integer_arithmetic)]
 use crate::rpc_client::RpcClient;
 use log::*;
-use solana_measure::measure::Measure;
-use solana_sdk::{
+use analog_measure::measure::Measure;
+use analog_sdk::{
     commitment_config::CommitmentConfig, signature::Signature, timing::timestamp,
     transaction::Transaction,
 };

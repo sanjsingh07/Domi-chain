@@ -5,8 +5,8 @@ use crate::{
 use bincode::deserialize;
 use bv::BitVec;
 #[allow(deprecated)]
-use solana_sdk::sysvar::{fees::Fees, recent_blockhashes::RecentBlockhashes};
-use solana_sdk::{
+use analog_sdk::sysvar::{fees::Fees, recent_blockhashes::RecentBlockhashes};
+use analog_sdk::{
     clock::{Clock, Epoch, Slot, UnixTimestamp},
     epoch_schedule::EpochSchedule,
     pubkey::Pubkey,
@@ -220,8 +220,8 @@ pub struct UiStakeHistoryEntry {
 mod test {
     use super::*;
     #[allow(deprecated)]
-    use solana_sdk::sysvar::recent_blockhashes::IterItem;
-    use solana_sdk::{account::create_account_for_test, fee_calculator::FeeCalculator, hash::Hash};
+    use analog_sdk::sysvar::recent_blockhashes::IterItem;
+    use analog_sdk::{account::create_account_for_test, fee_calculator::FeeCalculator, hash::Hash};
 
     #[test]
     fn test_parse_sysvars() {
@@ -325,7 +325,7 @@ mod test {
             }]),
         );
 
-        let bad_pubkey = solana_sdk::pubkey::new_rand();
+        let bad_pubkey = analog_sdk::pubkey::new_rand();
         assert!(parse_sysvar(&stake_history_sysvar.data, &bad_pubkey).is_err());
 
         let bad_data = vec![0; 4];

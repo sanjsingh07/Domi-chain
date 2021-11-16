@@ -10,19 +10,19 @@ use crate::{
 };
 use crossbeam_channel::{unbounded, Receiver, Sender};
 use dashmap::{mapref::entry::Entry::Occupied, DashMap};
-use solana_ledger::{blockstore::Blockstore, shred::SIZE_OF_NONCE};
-use solana_measure::measure::Measure;
-use solana_perf::{
+use analog_ledger::{blockstore::Blockstore, shred::SIZE_OF_NONCE};
+use analog_measure::measure::Measure;
+use analog_perf::{
     packet::{limited_deserialize, Packet, Packets},
     recycler::Recycler,
 };
-use solana_runtime::bank::Bank;
-use solana_sdk::{
+use analog_runtime::bank::Bank;
+use analog_sdk::{
     clock::{Slot, SLOT_MS},
     pubkey::Pubkey,
     timing::timestamp,
 };
-use solana_streamer::streamer::{self, PacketReceiver};
+use analog_streamer::streamer::{self, PacketReceiver};
 use std::{
     collections::HashSet,
     net::UdpSocket,
@@ -203,7 +203,7 @@ impl AncestorHashesService {
         retryable_slots_sender: RetryableSlotsSender,
     ) -> JoinHandle<()> {
         Builder::new()
-            .name("solana-ancestor-hashes-responses-service".to_string())
+            .name("analog-ancestor-hashes-responses-service".to_string())
             .spawn(move || {
                 let mut last_stats_report = Instant::now();
                 let mut stats = AncestorHashesResponsesStats::default();
@@ -466,7 +466,7 @@ impl AncestorHashesService {
         // to MAX_ANCESTOR_HASHES_SLOT_REQUESTS_PER_SECOND/second
         let mut request_throttle = vec![];
         Builder::new()
-            .name("solana-manage-ancestor-requests".to_string())
+            .name("analog-manage-ancestor-requests".to_string())
             .spawn(move || loop {
                 if exit.load(Ordering::Relaxed) {
                     return;
@@ -692,14 +692,14 @@ mod test {
         serve_repair::MAX_ANCESTOR_RESPONSES,
         vote_simulator::VoteSimulator,
     };
-    use solana_gossip::{
+    use analog_gossip::{
         cluster_info::{ClusterInfo, Node},
         contact_info::ContactInfo,
     };
-    use solana_ledger::{blockstore::make_many_slot_entries, get_tmp_ledger_path};
-    use solana_runtime::{accounts_background_service::AbsRequestSender, bank_forks::BankForks};
-    use solana_sdk::{hash::Hash, signature::Keypair};
-    use solana_streamer::socket::SocketAddrSpace;
+    use analog_ledger::{blockstore::make_many_slot_entries, get_tmp_ledger_path};
+    use analog_runtime::{accounts_background_service::AbsRequestSender, bank_forks::BankForks};
+    use analog_sdk::{hash::Hash, signature::Keypair};
+    use analog_streamer::socket::SocketAddrSpace;
     use std::{collections::HashMap, sync::mpsc::channel};
     use trees::tr;
 

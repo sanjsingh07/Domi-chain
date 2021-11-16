@@ -1,11 +1,11 @@
 [package]
-name = "solana-frozen-abi-macro"
+name = "analog-frozen-abi-macro"
 version = "1.9.0"
-description = "Solana Frozen ABI Macro"
-authors = ["Solana Maintainers <maintainers@solana.foundation>"]
-repository = "https://github.com/solana-labs/solana"
-homepage = "https://solana.com/"
-documentation = "https://docs.rs/solana-frozen-abi-macro"
+description = "Analog Frozen ABI Macro"
+authors = ["Analog Maintainers <maintainers@analog.foundation>"]
+repository = "https://github.com/analog-labs/analog"
+homepage = "https://analog.com/"
+documentation = "https://docs.rs/analog-frozen-abi-macro"
 license = "Apache-2.0"
 edition = "2018"
 

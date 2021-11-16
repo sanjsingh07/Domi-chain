@@ -3,22 +3,22 @@
 extern crate log;
 use clap::{crate_description, crate_name, value_t, App, Arg};
 use rayon::prelude::*;
-use solana_measure::measure::Measure;
-use solana_runtime::{
+use analog_measure::measure::Measure;
+use analog_runtime::{
     accounts::{create_test_accounts, update_accounts_bench, Accounts},
     accounts_db::AccountShrinkThreshold,
     accounts_index::AccountSecondaryIndexes,
     ancestors::Ancestors,
 };
-use solana_sdk::{genesis_config::ClusterType, pubkey::Pubkey};
+use analog_sdk::{genesis_config::ClusterType, pubkey::Pubkey};
 use std::{env, fs, path::PathBuf};
 
 fn main() {
-    solana_logger::setup();
+    analog_logger::setup();
 
     let matches = App::new(crate_name!())
         .about(crate_description!())
-        .version(solana_version::version!())
+        .version(analog_version::version!())
         .arg(
             Arg::with_name("num_slots")
                 .long("num_slots")
@@ -118,7 +118,7 @@ fn main() {
             let results_store = accounts.accounts_db.update_accounts_hash_with_index_option(
                 false,
                 false,
-                solana_sdk::clock::Slot::default(),
+                analog_sdk::clock::Slot::default(),
                 &ancestors,
                 None,
                 false,

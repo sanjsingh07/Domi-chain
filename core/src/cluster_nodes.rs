@@ -4,7 +4,7 @@ use {
     lru::LruCache,
     rand::{Rng, SeedableRng},
     rand_chacha::ChaChaRng,
-    solana_gossip::{
+    analog_gossip::{
         cluster_info::{compute_retransmit_peers, ClusterInfo},
         contact_info::ContactInfo,
         crds_gossip_pull::CRDS_GOSSIP_PULL_CRDS_TIMEOUT_MS,
@@ -12,15 +12,15 @@ use {
             weighted_best, weighted_sample_single, weighted_shuffle, WeightedShuffle,
         },
     },
-    solana_ledger::shred::Shred,
-    solana_runtime::bank::Bank,
-    solana_sdk::{
+    analog_ledger::shred::Shred,
+    analog_runtime::bank::Bank,
+    analog_sdk::{
         clock::{Epoch, Slot},
         feature_set,
         pubkey::Pubkey,
         timing::timestamp,
     },
-    solana_streamer::socket::SocketAddrSpace,
+    analog_streamer::socket::SocketAddrSpace,
     std::{
         any::TypeId,
         cmp::Reverse,
@@ -339,7 +339,7 @@ fn new_cluster_nodes<T: 'static>(
     //   * nodes which do not have contact-info are excluded.
     //   * stakes are floored at 1.
     // The sorting key here should be equivalent to
-    // solana_gossip::deprecated::sorted_stakes_with_index.
+    // analog_gossip::deprecated::sorted_stakes_with_index.
     // Leader itself is excluded when sampling broadcast peers.
     let index = nodes
         .iter()
@@ -522,7 +522,7 @@ mod tests {
     use {
         super::*,
         rand::{seq::SliceRandom, Rng},
-        solana_gossip::{
+        analog_gossip::{
             crds::GossipRoute,
             crds_value::{CrdsData, CrdsValue},
             deprecated::{
@@ -530,8 +530,8 @@ mod tests {
                 sorted_stakes_with_index,
             },
         },
-        solana_sdk::{signature::Keypair, timing::timestamp},
-        solana_streamer::socket::SocketAddrSpace,
+        analog_sdk::{signature::Keypair, timing::timestamp},
+        analog_streamer::socket::SocketAddrSpace,
         std::{iter::repeat_with, sync::Arc},
     };
 

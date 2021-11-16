@@ -1,8 +1,8 @@
 use crossbeam_channel::{Receiver, RecvTimeoutError, Sender};
-use solana_ledger::blockstore::Blockstore;
-use solana_runtime::bank::RewardInfo;
-use solana_sdk::{clock::Slot, pubkey::Pubkey};
-use solana_transaction_status::Reward;
+use analog_ledger::blockstore::Blockstore;
+use analog_runtime::bank::RewardInfo;
+use analog_sdk::{clock::Slot, pubkey::Pubkey};
+use analog_transaction_status::Reward;
 use std::{
     sync::{
         atomic::{AtomicBool, Ordering},
@@ -28,7 +28,7 @@ impl RewardsRecorderService {
     ) -> Self {
         let exit = exit.clone();
         let thread_hdl = Builder::new()
-            .name("solana-rewards-writer".to_string())
+            .name("analog-rewards-writer".to_string())
             .spawn(move || loop {
                 if exit.load(Ordering::Relaxed) {
                     break;
@@ -52,7 +52,7 @@ impl RewardsRecorderService {
             .into_iter()
             .map(|(pubkey, reward_info)| Reward {
                 pubkey: pubkey.to_string(),
-                lamports: reward_info.lamports,
+                tock: reward_info.tock,
                 post_balance: reward_info.post_balance,
                 reward_type: Some(reward_info.reward_type),
                 commission: reward_info.commission,

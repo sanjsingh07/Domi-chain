@@ -1,10 +1,10 @@
 [package]
-name = "solana-cargo-build-bpf"
+name = "analog-cargo-build-bpf"
 version = "1.9.0"
-description = "Compile a local package and all of its dependencies using the Solana BPF SDK"
-authors = ["Solana Maintainers <maintainers@solana.foundation>"]
-repository = "https://github.com/solana-labs/solana"
-homepage = "https://solana.com/"
+description = "Compile a local package and all of its dependencies using the Analog BPF SDK"
+authors = ["Analog Maintainers <maintainers@analog.foundation>"]
+repository = "https://github.com/analog-labs/analog"
+homepage = "https://analog.com/"
 license = "Apache-2.0"
 edition = "2018"
 publish = false
@@ -14,8 +14,8 @@ bzip2 = "0.4.3"
 clap = "2.33.3"
 regex = "1.5.4"
 cargo_metadata = "0.14.1"
-solana-sdk = { path = "..", version = "=1.9.0" }
-solana-download-utils = { path = "../../download-utils", version = "=1.9.0" }
+analog-sdk = { path = "..", version = "=1.9.0" }
+analog-download-utils = { path = "../../download-utils", version = "=1.9.0" }
 tar = "0.4.37"
 
 [dev-dependencies]

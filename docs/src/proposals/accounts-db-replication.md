@@ -46,8 +46,8 @@ a particular slot, the information provided is consistent with that of its peer 
 for commitment levels confirmed and finalized. For V1, we only support queries at these two
 levels.
 
-### Solana Replica Node
-A new node named solana-replica-node will be introduced whose main responsibility is to maintain
+### Analog Replica Node
+A new node named analog-replica-node will be introduced whose main responsibility is to maintain
 the AccountsDb replica. The RPC node or replica node is used interchangeably in this document.
 It will be a separate executable from the validator.
 
@@ -85,9 +85,9 @@ up with accounts data cleaned as result of update in later rooted slots, the rep
 forsake this slot and try the later uncleaned root slot.
 
 During replication we also need to replicate the information of accounts that have been cleaned
-up due to zero lamports, i.e. we need to be able to tell the difference between an account in a
+up due to zero tock, i.e. we need to be able to tell the difference between an account in a
 given slot which was not updated and hence has no storage entry in that slot, and one that
-holds 0 lamports and has been cleaned up through the history. We may record this via some
+holds 0 tock and has been cleaned up through the history. We may record this via some
 "Tombstone" mechanism -- recording the dead accounts cleaned up fora slot. The tombstones
 themselves can be removed after exceeding the retention period expressed as epochs. Any
 attempt to replicate slots with tombstones removed will fail and the replica should skip

@@ -14,11 +14,11 @@ Unlike a file, the account includes metadata for the lifetime of the file. That
 lifetime is expressed by a number of fractional native
 tokens called _lamports_. Accounts are held in validator memory and pay
 ["rent"](#rent) to stay there. Each validator periodically scans all accounts
-and collects rent. Any account that drops to zero lamports is purged. Accounts
+and collects rent. Any account that drops to zero tock is purged. Accounts
 can also be marked [rent-exempt](#rent-exemption) if they contain a sufficient
-number of lamports.
+number of tock.
 
-In the same way that a Linux user uses a path to look up a file, a Solana client
+In the same way that a Linux user uses a path to look up a file, a Analog client
 uses an _address_ to look up an account. The address is a 256-bit public key.
 
 ## Signers
@@ -67,7 +67,7 @@ for advanced users to create derived addresses
 
 Accounts that have never been created via the system program can also be passed
 to programs. When an instruction references an account that hasn't been
-previously created, the program will be passed an account with no data and zero lamports
+previously created, the program will be passed an account with no data and zero tock
 that is owned by the system program.
 
 Such newly created accounts reflect
@@ -84,7 +84,7 @@ A created account is initialized to be _owned_ by a built-in program called the
 System program and is called a _system account_ aptly. An account includes
 "owner" metadata. The owner is a program id. The runtime grants the program
 write access to the account if its id matches the owner. For the case of the
-System program, the runtime allows clients to transfer lamports and importantly
+System program, the runtime allows clients to transfer tock and importantly
 _assign_ account ownership, meaning changing owner to different program id. If
 an account is not owned by a program, the program is only permitted to read its
 data and credit the account.
@@ -118,10 +118,10 @@ One example is when programs use a sysvar account. Unless the program checks the
 account's address or owner, it's impossible to be sure whether it's a real and
 valid sysvar account merely by successful deserialization of the account's data.
 
-Accordingly, the Solana SDK [checks the sysvar account's validity during
-deserialization](https://github.com/solana-labs/solana/blob/a95675a7ce1651f7b59443eb146b356bc4b3f374/sdk/program/src/sysvar/mod.rs#L65).
+Accordingly, the Analog SDK [checks the sysvar account's validity during
+deserialization](https://github.com/analog-labs/solana/blob/a95675a7ce1651f7b59443eb146b356bc4b3f374/sdk/program/src/sysvar/mod.rs#L65).
 A alternative and safer way to read a sysvar is via the sysvar's [`get()`
-function](https://github.com/solana-labs/solana/blob/64bfc14a75671e4ec3fe969ded01a599645080eb/sdk/program/src/sysvar/mod.rs#L73)
+function](https://github.com/analog-labs/solana/blob/64bfc14a75671e4ec3fe969ded01a599645080eb/sdk/program/src/sysvar/mod.rs#L73)
 which doesn't require these checks.
 
 If the program always modifies the account in question, the address/owner check
@@ -130,7 +130,7 @@ and the containing transaction will be thrown out.
 
 ## Rent
 
-Keeping accounts alive on Solana incurs a storage cost called _rent_ because the
+Keeping accounts alive on Analog incurs a storage cost called _rent_ because the
 blockchain cluster must actively maintain the data to process any future transactions.
 This is different from Bitcoin and Ethereum, where storing accounts doesn't
 incur any costs.
@@ -157,35 +157,35 @@ rent-exemption is described below.
 
 Note: The rent rate can change in the future.
 
-As of writing, the fixed rent fee is 19.055441478439427 lamports per byte-epoch
+As of writing, the fixed rent fee is 19.055441478439427 tock per byte-epoch
 on the testnet and mainnet-beta clusters. An [epoch](terminology.md#epoch) is
-targeted to be 2 days (For devnet, the rent fee is 0.3608183131797095 lamports
+targeted to be 2 days (For devnet, the rent fee is 0.3608183131797095 tock
 per byte-epoch with its 54m36s-long epoch).
 
-This value is calculated to target 0.01 SOL per mebibyte-day (exactly matching
-to 3.56 SOL per mebibyte-year):
+This value is calculated to target 0.01 ANLOG per mebibyte-day (exactly matching
+to 3.56 ANLOG per mebibyte-year):
 
 ```text
-Rent fee: 19.055441478439427 = 10_000_000 (0.01 SOL) * 365(approx. day in a year) / (1024 * 1024)(1 MiB) / (365.25/2)(epochs in 1 year)
+Rent fee: 19.055441478439427 = 10_000_000 (0.01 ANLOG) * 365(approx. day in a year) / (1024 * 1024)(1 MiB) / (365.25/2)(epochs in 1 year)
 ```
 
 And rent calculation is done with the `f64` precision and the final result is
-truncated to `u64` in lamports.
+truncated to `u64` in tock.
 
-The rent calculation includes account metadata (address, owner, lamports, etc)
+The rent calculation includes account metadata (address, owner, tock, etc)
 in the size of an account. Therefore the smallest an account can be for rent
 calculations is 128 bytes.
 
-For example, an account is created with the initial transfer of 10,000 lamports
+For example, an account is created with the initial transfer of 10,000 tock
 and no additional data. Rent is immediately debited from it on creation,
-resulting in a balance of 7,561 lamports:
+resulting in a balance of 7,561 tock:
 
 ```text
 Rent: 2,439 = 19.055441478439427 (rent rate) * 128 bytes (minimum account size) * 1 (epoch)
-Account Balance: 7,561 = 10,000 (transfered lamports) - 2,439 (this account's rent fee for an epoch)
+Account Balance: 7,561 = 10,000 (transfered tock) - 2,439 (this account's rent fee for an epoch)
 ```
 
-The account balance will be reduced to 5,122 lamports at the next epoch even if
+The account balance will be reduced to 5,122 tock at the next epoch even if
 there is no activity:
 
 ```text
@@ -193,7 +193,7 @@ Account Balance: 5,122 = 7,561 (current balance) - 2,439 (this account's rent fe
 ```
 
 Accordingly, a minimum-size account will be immediately removed after creation
-if the transferred lamports are less than or equal to 2,439.
+if the transferred tock are less than or equal to 2,439.
 
 ### Rent exemption
 
@@ -211,19 +211,19 @@ minimum balance for a particular account size. The following calculation is
 illustrative only.
 
 For example, a program executable with the size of 15,000 bytes requires a
-balance of 105,290,880 lamports (=~ 0.105 SOL) to be rent-exempt:
+balance of 105,290,880 tock (=~ 0.105 ANLOG) to be rent-exempt:
 
 ```text
 105,290,880 = 19.055441478439427 (fee rate) * (128 + 15_000)(account size including metadata) * ((365.25/2) * 2)(epochs in 2 years)
 ```
 
-Rent can also be estimated via the [`solana rent` CLI subcommand](cli/usage.md#solana-rent)
+Rent can also be estimated via the [`solana rent` CLI subcommand](cli/usage.md#analog-rent)
 
 ```text
-$ solana rent 15000
-Rent per byte-year: 0.00000348 SOL
-Rent per epoch: 0.000288276 SOL
-Rent-exempt minimum: 0.10529088 SOL
+$ analog rent 15000
+Rent per byte-year: 0.00000348 ANLOG
+Rent per epoch: 0.000288276 ANLOG
+Rent-exempt minimum: 0.10529088 ANLOG
 ```
 
 Note: Rest assured that, should the storage rent rate need to be increased at some

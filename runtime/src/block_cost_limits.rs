@@ -1,7 +1,7 @@
 //! defines block cost related limits
 //!
 use lazy_static::lazy_static;
-use solana_sdk::{
+use analog_sdk::{
     feature, incinerator, native_loader, pubkey::Pubkey, secp256k1_program, system_program,
 };
 use std::collections::HashMap;
@@ -9,12 +9,12 @@ use std::collections::HashMap;
 /// Static configurations:
 ///
 /// Number of microseconds replaying a block should take, 400 millisecond block times
-/// is curerntly publicly communicated on solana.com
+/// is curerntly publicly communicated on analog.com
 pub const MAX_BLOCK_REPLAY_TIME_US: u64 = 400_000;
 /// number of concurrent processes,
 pub const MAX_CONCURRENCY: u64 = 10;
 
-/// Cluster data, method of collecting at https://github.com/solana-labs/solana/issues/19627
+/// Cluster data, method of collecting at https://github.com/analog-labs/solana/issues/19627
 /// Dashboard: https://metrics.solana.com:8889/sources/0/dashboards/10?refresh=Paused&lower=now%28%29%20-%2012h
 ///
 /// cluster avergaed compute unit to microsec conversion rate
@@ -32,10 +32,10 @@ lazy_static! {
         (feature::id(), COMPUTE_UNIT_TO_US_RATIO * 2),
         (incinerator::id(), COMPUTE_UNIT_TO_US_RATIO * 2),
         (native_loader::id(), COMPUTE_UNIT_TO_US_RATIO * 2),
-        (solana_sdk::stake::config::id(), COMPUTE_UNIT_TO_US_RATIO * 2),
-        (solana_sdk::stake::program::id(), COMPUTE_UNIT_TO_US_RATIO * 25),
-        (solana_config_program::id(), COMPUTE_UNIT_TO_US_RATIO * 15),
-        (solana_vote_program::id(), COMPUTE_UNIT_TO_US_RATIO * 85),
+        (analog_sdk::stake::config::id(), COMPUTE_UNIT_TO_US_RATIO * 2),
+        (analog_sdk::stake::program::id(), COMPUTE_UNIT_TO_US_RATIO * 25),
+        (analog_config_program::id(), COMPUTE_UNIT_TO_US_RATIO * 15),
+        (analog_vote_program::id(), COMPUTE_UNIT_TO_US_RATIO * 85),
         (secp256k1_program::id(), COMPUTE_UNIT_TO_US_RATIO * 4),
         (system_program::id(), COMPUTE_UNIT_TO_US_RATIO * 10),
     ]

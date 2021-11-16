@@ -3,13 +3,13 @@
 extern crate test;
 
 use rand::{thread_rng, Rng};
-use solana_runtime::{
+use analog_runtime::{
     accounts_db::AccountInfo,
     accounts_index::{
         AccountSecondaryIndexes, AccountsIndex, ACCOUNTS_INDEX_CONFIG_FOR_BENCHMARKS,
     },
 };
-use solana_sdk::pubkey::{self, Pubkey};
+use analog_sdk::pubkey::{self, Pubkey};
 use test::Bencher;
 
 #[bench]

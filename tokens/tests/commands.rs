@@ -1,12 +1,12 @@
-use solana_client::rpc_client::RpcClient;
-use solana_sdk::signature::{Keypair, Signer};
-use solana_streamer::socket::SocketAddrSpace;
-use solana_test_validator::TestValidator;
-use solana_tokens::commands::test_process_distribute_tokens_with_client;
+use analog_client::rpc_client::RpcClient;
+use analog_sdk::signature::{Keypair, Signer};
+use analog_streamer::socket::SocketAddrSpace;
+use analog_test_validator::TestValidator;
+use analog_tokens::commands::test_process_distribute_tokens_with_client;
 
 #[test]
 fn test_process_distribute_with_rpc_client() {
-    solana_logger::setup();
+    analog_logger::setup();
 
     let mint_keypair = Keypair::new();
     let test_validator =

@@ -15,11 +15,11 @@ pull_request_rules:
           - community
       request_reviews:
         teams:
-          - "@solana-labs/community-pr-subscribers"
+          - "@analog-labs/community-pr-subscribers"
   - name: automatic merge (squash) on CI success
     conditions:
       - and:
-        - status-success=buildkite/solana
+        - status-success=buildkite/analog
         - status-success=ci-gate
         - label=automerge
         - author≠@dont-squash-my-commits
@@ -42,7 +42,7 @@ pull_request_rules:
   - name: automatic merge (rebase) on CI success
     conditions:
       - and:
-        - status-success=buildkite/solana
+        - status-success=buildkite/analog
         - status-success=Travis CI - Pull Request
         - status-success=ci-gate
         - label=automerge

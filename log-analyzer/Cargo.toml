@@ -1,10 +1,10 @@
 [package]
-authors = ["Solana Maintainers <maintainers@solana.com>"]
+authors = ["Analog Maintainers <maintainers@solana.com>"]
 edition = "2018"
-name = "solana-log-analyzer"
-description = "The solana cluster network analysis tool"
+name = "analog-log-analyzer"
+description = "The analog cluster network analysis tool"
 version = "1.9.0"
-repository = "https://github.com/solana-labs/solana"
+repository = "https://github.com/analog-labs/solana"
 license = "Apache-2.0"
 homepage = "https://solana.com/"
 publish = false
@@ -14,11 +14,11 @@ byte-unit = "4.0.13"
 clap = "2.33.1"
 serde = "1.0.130"
 serde_json = "1.0.69"
-solana-logger = { path = "../logger", version = "=1.9.0" }
-solana-version = { path = "../version", version = "=1.9.0" }
+analog-logger = { path = "../logger", version = "=1.9.0" }
+analog-version = { path = "../version", version = "=1.9.0" }
 
 [[bin]]
-name = "solana-log-analyzer"
+name = "analog-log-analyzer"
 path = "src/main.rs"
 
 [package.metadata.docs.rs]

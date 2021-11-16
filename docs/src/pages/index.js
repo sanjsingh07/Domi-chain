@@ -12,7 +12,7 @@ function Home() {
   const context = useDocusaurusContext();
   const { siteConfig = {} } = context;
   return (
-    <Layout title="Homepage" description="Solana Documentation">
+    <Layout title="Homepage" description="Analog Documentation">
       <main>
         <section className={styles.features}>
           <div className="container">
@@ -78,7 +78,7 @@ function Home() {
                     <div className="card__body">
                       <p>
                         <Translate description="erc-20">
-                          Launch your own SPL Token, Solana's equivalent of
+                          Launch your own SPL Token, Analog's equivalent of
                           ERC-20.
                         </Translate>
                       </p>
@@ -134,14 +134,14 @@ function Home() {
                     <div className="card__header">
                       <h3>
                         <Translate description="learn-how">
-                          🤯 Learn How Solana Works
+                          🤯 Learn How Analog Works
                         </Translate>
                       </h3>
                     </div>
                     <div className="card__body">
                       <p>
                         <Translate description="high-level">
-                          Get a high-level understanding of Solana's
+                          Get a high-level understanding of Analog's
                           architecture.
                         </Translate>
                       </p>

@@ -9,17 +9,17 @@ use crate::{
     spend_utils::{resolve_spend_tx_and_check_account_balance, SpendAmount},
 };
 use clap::{App, Arg, ArgMatches, SubCommand};
-use solana_clap_utils::{
+use analog_clap_utils::{
     input_parsers::*,
     input_validators::*,
     keypair::{DefaultSigner, SignerIndex},
     memo::{memo_arg, MEMO_ARG},
     nonce::*,
 };
-use solana_cli_output::CliNonceAccount;
-use solana_client::{nonce_utils::*, rpc_client::RpcClient};
-use solana_remote_wallet::remote_wallet::RemoteWalletManager;
-use solana_sdk::{
+use analog_cli_output::CliNonceAccount;
+use analog_client::{nonce_utils::*, rpc_client::RpcClient};
+use analog_remote_wallet::remote_wallet::RemoteWalletManager;
+use analog_sdk::{
     account::Account,
     feature_set::merge_nonce_error_into_system_error,
     hash::Hash,
@@ -82,7 +82,7 @@ impl NonceSubCommands for App<'_, '_> {
                         .takes_value(true)
                         .required(true)
                         .validator(is_amount_or_all)
-                        .help("The amount to load the nonce account with, in SOL; accepts keyword ALL"),
+                        .help("The amount to load the nonce account with, in ANLOG; accepts keyword ALL"),
                 )
                 .arg(
                     pubkey!(Arg::with_name(NONCE_AUTHORITY_ARG.name)
@@ -136,15 +136,15 @@ impl NonceSubCommands for App<'_, '_> {
                         "Address of the nonce account to display. "),
                 )
                 .arg(
-                    Arg::with_name("lamports")
-                        .long("lamports")
+                    Arg::with_name("tock")
+                        .long("tock")
                         .takes_value(false)
-                        .help("Display balance in lamports instead of SOL"),
+                        .help("Display balance in tock instead of ANLOG"),
                 ),
         )
         .subcommand(
             SubCommand::with_name("withdraw-from-nonce-account")
-                .about("Withdraw SOL from the nonce account")
+                .about("Withdraw ANLOG from the nonce account")
                 .arg(
                     pubkey!(Arg::with_name("nonce_account_pubkey")
                         .index(1)
@@ -157,7 +157,7 @@ impl NonceSubCommands for App<'_, '_> {
                         .index(2)
                         .value_name("RECIPIENT_ADDRESS")
                         .required(true),
-                        "The account to which the SOL should be transferred. "),
+                        "The account to which the ANLOG should be transferred. "),
                 )
                 .arg(
                     Arg::with_name("amount")
@@ -166,7 +166,7 @@ impl NonceSubCommands for App<'_, '_> {
                         .takes_value(true)
                         .required(true)
                         .validator(is_amount)
-                        .help("The amount to withdraw from the nonce account, in SOL"),
+                        .help("The amount to withdraw from the nonce account, in ANLOG"),
                 )
                 .arg(nonce_authority_arg())
                 .arg(memo_arg()),
@@ -280,7 +280,7 @@ pub fn parse_show_nonce_account(
 ) -> Result<CliCommandInfo, CliError> {
     let nonce_account_pubkey =
         pubkey_of_signer(matches, "nonce_account_pubkey", wallet_manager)?.unwrap();
-    let use_lamports_unit = matches.is_present("lamports");
+    let use_lamports_unit = matches.is_present("tock");
 
     Ok(CliCommandInfo {
         command: CliCommand::ShowNonceAccount {
@@ -299,7 +299,7 @@ pub fn parse_withdraw_from_nonce_account(
     let nonce_account = pubkey_of_signer(matches, "nonce_account_pubkey", wallet_manager)?.unwrap();
     let destination_account_pubkey =
         pubkey_of_signer(matches, "destination_account_pubkey", wallet_manager)?.unwrap();
-    let lamports = lamports_of_sol(matches, "amount").unwrap();
+    let tock = lamports_of_anlog(matches, "amount").unwrap();
     let memo = matches.value_of(MEMO_ARG.name).map(String::from);
     let (nonce_authority, nonce_authority_pubkey) =
         signer_of(matches, NONCE_AUTHORITY_ARG.name, wallet_manager)?;
@@ -317,7 +317,7 @@ pub fn parse_withdraw_from_nonce_account(
             nonce_authority: signer_info.index_of(nonce_authority_pubkey).unwrap(),
             memo,
             destination_account_pubkey,
-            lamports,
+            tock,
         },
         signers: signer_info.signers,
     })
@@ -410,7 +410,7 @@ pub fn process_create_nonce_account(
 
     let nonce_authority = nonce_authority.unwrap_or_else(|| config.signers[0].pubkey());
 
-    let build_message = |lamports| {
+    let build_message = |tock| {
         let ixs = if let Some(seed) = seed.clone() {
             create_nonce_account_with_seed(
                 &config.signers[0].pubkey(), // from
@@ -418,7 +418,7 @@ pub fn process_create_nonce_account(
                 &nonce_account_pubkey,       // base
                 &seed,                       // seed
                 &nonce_authority,
-                lamports,
+                tock,
             )
             .with_memo(memo)
         } else {
@@ -426,7 +426,7 @@ pub fn process_create_nonce_account(
                 &config.signers[0].pubkey(),
                 &nonce_account_pubkey,
                 &nonce_authority,
-                lamports,
+                tock,
             )
             .with_memo(memo)
         };
@@ -435,7 +435,7 @@ pub fn process_create_nonce_account(
 
     let latest_blockhash = rpc_client.get_latest_blockhash()?;
 
-    let (message, lamports) = resolve_spend_tx_and_check_account_balance(
+    let (message, tock) = resolve_spend_tx_and_check_account_balance(
         rpc_client,
         false,
         amount,
@@ -458,10 +458,10 @@ pub fn process_create_nonce_account(
     }
 
     let minimum_balance = rpc_client.get_minimum_balance_for_rent_exemption(State::size())?;
-    if lamports < minimum_balance {
+    if tock < minimum_balance {
         return Err(CliError::BadParameter(format!(
-            "need at least {} lamports for nonce account to be rent exempt, provided lamports: {}",
-            minimum_balance, lamports
+            "need at least {} tock for nonce account to be rent exempt, provided tock: {}",
+            minimum_balance, tock
         ))
         .into());
     }
@@ -581,7 +581,7 @@ pub fn process_show_nonce_account(
         get_account_with_commitment(rpc_client, nonce_account_pubkey, config.commitment)?;
     let print_account = |data: Option<&nonce::state::Data>| {
         let mut nonce_account = CliNonceAccount {
-            balance: nonce_account.lamports,
+            balance: nonce_account.tock,
             minimum_balance_for_rent_exemption: rpc_client
                 .get_minimum_balance_for_rent_exemption(State::size())?,
             use_lamports_unit,
@@ -608,7 +608,7 @@ pub fn process_withdraw_from_nonce_account(
     nonce_authority: SignerIndex,
     memo: Option<&String>,
     destination_account_pubkey: &Pubkey,
-    lamports: u64,
+    tock: u64,
 ) -> ProcessResult {
     let latest_blockhash = rpc_client.get_latest_blockhash()?;
 
@@ -617,7 +617,7 @@ pub fn process_withdraw_from_nonce_account(
         nonce_account,
         &nonce_authority.pubkey(),
         destination_account_pubkey,
-        lamports,
+        tock,
     )]
     .with_memo(memo);
     let message = Message::new(&ixs, Some(&config.signers[0].pubkey()));
@@ -650,7 +650,7 @@ pub fn process_withdraw_from_nonce_account(
 mod tests {
     use super::*;
     use crate::{clap_app::get_clap_app, cli::parse_command};
-    use solana_sdk::{
+    use analog_sdk::{
         account::Account,
         account_utils::StateMut,
         hash::hash,
@@ -872,7 +872,7 @@ mod tests {
                     nonce_authority: 0,
                     memo: None,
                     destination_account_pubkey: nonce_account_pubkey,
-                    lamports: 42_000_000_000
+                    tock: 42_000_000_000
                 },
                 signers: vec![read_keypair_file(&default_keypair_file).unwrap().into()],
             }
@@ -901,7 +901,7 @@ mod tests {
                     nonce_authority: 1,
                     memo: None,
                     destination_account_pubkey: nonce_account_pubkey,
-                    lamports: 42_000_000_000
+                    tock: 42_000_000_000
                 },
                 signers: vec![
                     read_keypair_file(&default_keypair_file).unwrap().into(),
@@ -914,7 +914,7 @@ mod tests {
     #[test]
     fn test_check_nonce_account() {
         let blockhash = Hash::default();
-        let nonce_pubkey = solana_sdk::pubkey::new_rand();
+        let nonce_pubkey = analog_sdk::pubkey::new_rand();
         let data = Versions::new_current(State::Initialized(nonce::state::Data::new(
             nonce_pubkey,
             blockhash,
@@ -950,7 +950,7 @@ mod tests {
         }
 
         let data = Versions::new_current(State::Initialized(nonce::state::Data::new(
-            solana_sdk::pubkey::new_rand(),
+            analog_sdk::pubkey::new_rand(),
             blockhash,
             0,
         )));

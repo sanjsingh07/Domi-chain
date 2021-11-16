@@ -1,12 +1,12 @@
 use {
     crossbeam_channel::{Receiver, RecvTimeoutError},
     itertools::izip,
-    solana_ledger::{
+    analog_ledger::{
         blockstore::Blockstore,
         blockstore_processor::{TransactionStatusBatch, TransactionStatusMessage},
     },
-    solana_runtime::bank::{Bank, InnerInstructionsList, TransactionLogMessages},
-    solana_transaction_status::{
+    analog_runtime::bank::{Bank, InnerInstructionsList, TransactionLogMessages},
+    analog_transaction_status::{
         extract_and_fmt_memos, InnerInstructions, Reward, TransactionStatusMeta,
     },
     std::{
@@ -33,7 +33,7 @@ impl TransactionStatusService {
     ) -> Self {
         let exit = exit.clone();
         let thread_hdl = Builder::new()
-            .name("solana-transaction-status-writer".to_string())
+            .name("analog-transaction-status-writer".to_string())
             .spawn(move || loop {
                 if exit.load(Ordering::Relaxed) {
                     break;
@@ -137,7 +137,7 @@ impl TransactionStatusService {
                                 .into_unordered_rewards_iter()
                                 .map(|(pubkey, reward_info)| Reward {
                                     pubkey: pubkey.to_string(),
-                                    lamports: reward_info.lamports,
+                                    tock: reward_info.tock,
                                     post_balance: reward_info.post_balance,
                                     reward_type: Some(reward_info.reward_type),
                                     commission: reward_info.commission,

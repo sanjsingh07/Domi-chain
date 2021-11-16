@@ -13,7 +13,7 @@ use crate::{
     syscalls::SyscallError,
 };
 use log::{log_enabled, trace, Level::Trace};
-use solana_measure::measure::Measure;
+use analog_measure::measure::Measure;
 use solana_program_runtime::instruction_processor::InstructionProcessor;
 use solana_rbpf::{
     aligned_memory::AlignedMemory,
@@ -23,7 +23,7 @@ use solana_rbpf::{
     verifier::{self, VerifierError},
     vm::{Config, EbpfVm, Executable, InstructionMeter},
 };
-use solana_sdk::{
+use analog_sdk::{
     account::{ReadableAccount, WritableAccount},
     account_utils::State,
     bpf_loader, bpf_loader_deprecated,
@@ -48,10 +48,10 @@ use solana_sdk::{
 use std::{cell::RefCell, fmt::Debug, rc::Rc, sync::Arc};
 use thiserror::Error;
 
-solana_sdk::declare_builtin!(
-    solana_sdk::bpf_loader::ID,
-    solana_bpf_loader_program,
-    solana_bpf_loader_program::process_instruction
+analog_sdk::declare_builtin!(
+    analog_sdk::bpf_loader::ID,
+    analog_bpf_loader_program,
+    analog_bpf_loader_program::process_instruction
 );
 
 /// Errors returned by functions the BPF Loader registers with the VM
@@ -387,7 +387,7 @@ fn process_loader_upgradeable_instruction(
                 ic_logger_msg!(logger, "Program account too small");
                 return Err(InstructionError::AccountDataTooSmall);
             }
-            if program.lamports()? < rent.minimum_balance(program.data_len()?) {
+            if program.tock()? < rent.minimum_balance(program.data_len()?) {
                 ic_logger_msg!(logger, "Program account not rent-exempt");
                 return Err(InstructionError::ExecutableAccountNotRentExempt);
             }
@@ -445,7 +445,7 @@ fn process_loader_upgradeable_instruction(
                 // Drain the Buffer account to payer before paying for programdata account
                 payer
                     .try_account_ref_mut()?
-                    .checked_add_lamports(buffer.lamports()?)?;
+                    .checked_add_lamports(buffer.tock()?)?;
                 buffer.try_account_ref_mut()?.set_lamports(0);
             }
 
@@ -466,7 +466,7 @@ fn process_loader_upgradeable_instruction(
             let signers = [&[new_program_id.as_ref(), &[bump_seed]]]
                 .iter()
                 .map(|seeds| Pubkey::create_program_address(*seeds, caller_program_id))
-                .collect::<Result<Vec<Pubkey>, solana_sdk::pubkey::PubkeyError>>()?;
+                .collect::<Result<Vec<Pubkey>, analog_sdk::pubkey::PubkeyError>>()?;
             InstructionProcessor::native_invoke(invoke_context, instruction, signers.as_slice())?;
 
             // Load and verify the program bits
@@ -504,7 +504,7 @@ fn process_loader_upgradeable_instruction(
                 // Drain the Buffer account back to the payer
                 payer
                     .try_account_ref_mut()?
-                    .checked_add_lamports(buffer.lamports()?)?;
+                    .checked_add_lamports(buffer.tock()?)?;
                 buffer.try_account_ref_mut()?.set_lamports(0);
             }
 
@@ -587,7 +587,7 @@ fn process_loader_upgradeable_instruction(
                 ic_logger_msg!(logger, "ProgramData account not large enough");
                 return Err(InstructionError::AccountDataTooSmall);
             }
-            if programdata.lamports()? + buffer.lamports()? < programdata_balance_required {
+            if programdata.tock()? + buffer.tock()? < programdata_balance_required {
                 ic_logger_msg!(logger, "Buffer account balance too low to fund upgrade");
                 return Err(InstructionError::InsufficientFunds);
             }
@@ -644,7 +644,7 @@ fn process_loader_upgradeable_instruction(
             // Fund ProgramData to rent-exemption, spill the rest
 
             spill.try_account_ref_mut()?.checked_add_lamports(
-                (programdata.lamports()? + buffer.lamports()?)
+                (programdata.tock()? + buffer.tock()?)
                     .saturating_sub(programdata_balance_required),
             )?;
             buffer.try_account_ref_mut()?.set_lamports(0);
@@ -727,7 +727,7 @@ fn process_loader_upgradeable_instruction(
                 UpgradeableLoaderState::Uninitialized => {
                     recipient_account
                         .try_account_ref_mut()?
-                        .checked_add_lamports(close_account.lamports()?)?;
+                        .checked_add_lamports(close_account.tock()?)?;
                     close_account.try_account_ref_mut()?.set_lamports(0);
 
                     ic_logger_msg!(
@@ -831,7 +831,7 @@ fn common_close_account(
 
     recipient_account
         .try_account_ref_mut()?
-        .checked_add_lamports(close_account.lamports()?)?;
+        .checked_add_lamports(close_account.tock()?)?;
     close_account.try_account_ref_mut()?.set_lamports(0);
     close_account.set_state(&UpgradeableLoaderState::Uninitialized)?;
     Ok(())
@@ -913,7 +913,7 @@ pub struct BpfExecutor {
     executable: Box<dyn Executable<BpfError, ThisInstructionMeter>>,
 }
 
-// Well, implement Debug for solana_rbpf::vm::Executable in solana-rbpf...
+// Well, implement Debug for solana_rbpf::vm::Executable in analog-rbpf...
 impl Debug for BpfExecutor {
     fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
         write!(f, "BpfExecutor({:p})", self)
@@ -1044,8 +1044,8 @@ mod tests {
     use rand::Rng;
     use solana_program_runtime::invoke_context::mock_process_instruction;
     use solana_rbpf::vm::SyscallRegistry;
-    use solana_runtime::{bank::Bank, bank_client::BankClient};
-    use solana_sdk::{
+    use analog_runtime::{bank::Bank, bank_client::BankClient};
+    use analog_sdk::{
         account::{
             create_account_shared_data_for_test as create_account_for_test, AccountSharedData,
         },
@@ -1056,7 +1056,7 @@ mod tests {
         genesis_config::create_genesis_config,
         instruction::{AccountMeta, Instruction, InstructionError},
         message::Message,
-        native_token::LAMPORTS_PER_SOL,
+        native_token::TOCK_PER_ANLOG,
         pubkey::Pubkey,
         rent::Rent,
         signature::{Keypair, Signer},
@@ -1604,7 +1604,7 @@ mod tests {
         let mut bank = Bank::new_for_tests(&genesis_config);
         bank.feature_set = Arc::new(FeatureSet::all_enabled());
         bank.add_builtin(
-            "solana_bpf_loader_upgradeable_program",
+            "analog_bpf_loader_upgradeable_program",
             &bpf_loader_upgradeable::id(),
             super::process_instruction,
         );
@@ -1665,7 +1665,7 @@ mod tests {
         );
 
         // Test successful deploy
-        let payer_base_balance = LAMPORTS_PER_SOL;
+        let payer_base_balance = TOCK_PER_ANLOG;
         let deploy_fees = {
             let fee_calculator = genesis_config.fee_rate_governor.create_fee_calculator();
             3 * fee_calculator.lamports_per_signature
@@ -1708,7 +1708,7 @@ mod tests {
         assert_eq!(bank.get_balance(&buffer_address), 0);
         assert_eq!(None, bank.get_account(&buffer_address));
         let post_program_account = bank.get_account(&program_keypair.pubkey()).unwrap();
-        assert_eq!(post_program_account.lamports(), min_program_balance);
+        assert_eq!(post_program_account.tock(), min_program_balance);
         assert_eq!(post_program_account.owner(), &bpf_loader_upgradeable::id());
         assert_eq!(
             post_program_account.data().len(),
@@ -1722,7 +1722,7 @@ mod tests {
             }
         );
         let post_programdata_account = bank.get_account(&programdata_address).unwrap();
-        assert_eq!(post_programdata_account.lamports(), min_programdata_balance);
+        assert_eq!(post_programdata_account.tock(), min_programdata_balance);
         assert_eq!(
             post_programdata_account.owner(),
             &bpf_loader_upgradeable::id()
@@ -2008,7 +2008,7 @@ mod tests {
         );
 
         // Test Insufficient payer funds (need more funds to cover the
-        // difference between buffer lamports and programdata lamports)
+        // difference between buffer tock and programdata tock)
         bank.clear_signatures();
         bank.store_account(
             &mint_keypair.pubkey(),
@@ -2422,12 +2422,12 @@ mod tests {
             Ok(()),
             process_instruction(&loader_id, &[], &instruction, &keyed_accounts),
         );
-        assert_eq!(0, buffer_account.borrow().lamports());
+        assert_eq!(0, buffer_account.borrow().tock());
         assert_eq!(
             min_programdata_balance,
-            programdata_account.borrow().lamports()
+            programdata_account.borrow().tock()
         );
-        assert_eq!(1, spill_account.borrow().lamports());
+        assert_eq!(1, spill_account.borrow().tock());
         let state: UpgradeableLoaderState = programdata_account.borrow().state().unwrap();
         assert_eq!(
             state,
@@ -3295,8 +3295,8 @@ mod tests {
             Ok(()),
             process_instruction(&loader_id, &[], &instruction, &keyed_accounts),
         );
-        assert_eq!(0, buffer_account.borrow().lamports());
-        assert_eq!(2, recipient_account.borrow().lamports());
+        assert_eq!(0, buffer_account.borrow().tock());
+        assert_eq!(2, recipient_account.borrow().tock());
         let state: UpgradeableLoaderState = buffer_account.borrow().state().unwrap();
         assert_eq!(state, UpgradeableLoaderState::Uninitialized);
 
@@ -3348,8 +3348,8 @@ mod tests {
             Ok(()),
             process_instruction(&loader_id, &[], &instruction, &keyed_accounts),
         );
-        assert_eq!(0, uninitialized_account.borrow().lamports());
-        assert_eq!(2, recipient_account.borrow().lamports());
+        assert_eq!(0, uninitialized_account.borrow().tock());
+        assert_eq!(2, recipient_account.borrow().tock());
         let state: UpgradeableLoaderState = uninitialized_account.borrow().state().unwrap();
         assert_eq!(state, UpgradeableLoaderState::Uninitialized);
 
@@ -3396,8 +3396,8 @@ mod tests {
             Ok(()),
             process_instruction(&loader_id, &[], &instruction, &keyed_accounts),
         );
-        assert_eq!(0, programdata_account.borrow().lamports());
-        assert_eq!(2, recipient_account.borrow().lamports());
+        assert_eq!(0, programdata_account.borrow().tock());
+        assert_eq!(2, recipient_account.borrow().tock());
         let state: UpgradeableLoaderState = programdata_account.borrow().state().unwrap();
         assert_eq!(state, UpgradeableLoaderState::Uninitialized);
 

@@ -1,7 +1,7 @@
 use {
-    solana_banks_client::BanksClient,
-    solana_program_test::{processor, ProgramTest},
-    solana_sdk::{
+    analog_banks_client::BanksClient,
+    analog_program_test::{processor, ProgramTest},
+    analog_sdk::{
         account_info::AccountInfo, entrypoint::ProgramResult, hash::Hash, instruction::Instruction,
         msg, pubkey::Pubkey, rent::Rent, signature::Keypair, signature::Signer, system_instruction,
         transaction::Transaction,
@@ -111,7 +111,7 @@ async fn run_fuzz_instructions(
             .await
             .expect("account exists")
             .unwrap();
-        assert!(account.lamports > 0);
+        assert!(account.tock > 0);
         assert!(!account.data.is_empty());
     }
 }

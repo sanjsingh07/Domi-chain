@@ -2,11 +2,11 @@
 pub(crate) mod tests {
     use {
         rand::Rng,
-        solana_runtime::{
+        analog_runtime::{
             bank::Bank,
             vote_account::{VoteAccount, VoteAccounts},
         },
-        solana_sdk::{
+        analog_sdk::{
             account::AccountSharedData,
             clock::Clock,
             instruction::Instruction,
@@ -19,7 +19,7 @@ pub(crate) mod tests {
             },
             transaction::Transaction,
         },
-        solana_vote_program::{
+        analog_vote_program::{
             vote_instruction,
             vote_state::{VoteInit, VoteState, VoteStateVersions},
         },
@@ -79,7 +79,7 @@ pub(crate) mod tests {
     #[test]
     fn test_to_staked_nodes() {
         let mut stakes = Vec::new();
-        let node1 = solana_sdk::pubkey::new_rand();
+        let node1 = analog_sdk::pubkey::new_rand();
 
         // Node 1 has stake of 3
         for i in 0..3 {
@@ -96,7 +96,7 @@ pub(crate) mod tests {
         }
 
         // Node 1 has stake of 5
-        let node2 = solana_sdk::pubkey::new_rand();
+        let node2 = analog_sdk::pubkey::new_rand();
 
         stakes.push((
             5,
@@ -111,7 +111,7 @@ pub(crate) mod tests {
         let mut rng = rand::thread_rng();
         let vote_accounts = stakes.into_iter().map(|(stake, vote_state)| {
             let account = AccountSharedData::new_data(
-                rng.gen(), // lamports
+                rng.gen(), // tock
                 &VoteStateVersions::new_current(vote_state),
                 &Pubkey::new_unique(), // owner
             )

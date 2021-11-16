@@ -36,12 +36,12 @@ where
     note = "Please use `create_account_with_data_for_test` instead"
 )]
 #[allow(deprecated)]
-pub fn create_account_with_data<'a, I>(lamports: u64, recent_blockhash_iter: I) -> AccountSharedData
+pub fn create_account_with_data<'a, I>(tock: u64, recent_blockhash_iter: I) -> AccountSharedData
 where
     I: IntoIterator<Item = IterItem<'a>>,
 {
     #[allow(deprecated)]
-    create_account_with_data_and_fields(recent_blockhash_iter, (lamports, INITIAL_RENT_EPOCH))
+    create_account_with_data_and_fields(recent_blockhash_iter, (tock, INITIAL_RENT_EPOCH))
 }
 
 #[deprecated(

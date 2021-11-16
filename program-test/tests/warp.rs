@@ -1,11 +1,11 @@
 #![allow(clippy::integer_arithmetic)]
 use {
     bincode::deserialize,
-    solana_banks_client::BanksClient,
-    solana_program_test::{
+    analog_banks_client::BanksClient,
+    analog_program_test::{
         processor, ProgramTest, ProgramTestBanksClientExt, ProgramTestContext, ProgramTestError,
     },
-    solana_sdk::{
+    analog_sdk::{
         account_info::{next_account_info, AccountInfo},
         clock::Clock,
         entrypoint::ProgramResult,
@@ -26,7 +26,7 @@ use {
         },
         transaction::{Transaction, TransactionError},
     },
-    solana_vote_program::{
+    analog_vote_program::{
         vote_instruction,
         vote_state::{VoteInit, VoteState},
     },
@@ -216,7 +216,7 @@ async fn rent_collected_from_warp() {
         .await
         .expect("account exists")
         .unwrap();
-    assert_eq!(account.lamports, account_lamports);
+    assert_eq!(account.tock, account_lamports);
 
     // Warp forward and see that rent has been collected
     // This test was a bit flaky with one warp, but two warps always works
@@ -230,7 +230,7 @@ async fn rent_collected_from_warp() {
         .await
         .expect("account exists")
         .unwrap();
-    assert!(account.lamports < account_lamports);
+    assert!(account.tock < account_lamports);
 }
 
 #[tokio::test]
@@ -251,7 +251,7 @@ async fn stake_rewards_from_warp() {
         .await
         .expect("account exists")
         .unwrap();
-    assert_eq!(account.lamports, stake_lamports);
+    assert_eq!(account.tock, stake_lamports);
 
     // warp one epoch forward for normal inflation, no rewards collected
     let first_normal_slot = context.genesis_config().epoch_schedule.first_normal_slot;
@@ -262,7 +262,7 @@ async fn stake_rewards_from_warp() {
         .await
         .expect("account exists")
         .unwrap();
-    assert_eq!(account.lamports, stake_lamports);
+    assert_eq!(account.tock, stake_lamports);
 
     context.increment_vote_account_credits(&vote_address, 100);
 
@@ -278,7 +278,7 @@ async fn stake_rewards_from_warp() {
         .await
         .expect("account exists")
         .unwrap();
-    assert!(account.lamports > stake_lamports);
+    assert!(account.tock > stake_lamports);
 
     // check that stake is fully active
     let stake_history_account = context
@@ -372,7 +372,7 @@ async fn stake_merge_immediately_after_activation() {
         .unwrap();
     let stake_state: StakeState = deserialize(&stake_account.data).unwrap();
     assert_eq!(stake_state.stake().unwrap().credits_observed, 300);
-    assert!(stake_account.lamports > stake_lamports);
+    assert!(stake_account.tock > stake_lamports);
 
     // check that new stake hasn't earned rewards, but that credits_observed have been advanced
     let stake_account = context
@@ -383,7 +383,7 @@ async fn stake_merge_immediately_after_activation() {
         .unwrap();
     let stake_state: StakeState = deserialize(&stake_account.data).unwrap();
     assert_eq!(stake_state.stake().unwrap().credits_observed, 300);
-    assert_eq!(stake_account.lamports, stake_lamports);
+    assert_eq!(stake_account.tock, stake_lamports);
 
     // sanity-check that the activation epoch was actually last epoch
     let clock_account = context

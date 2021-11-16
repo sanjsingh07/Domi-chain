@@ -1,18 +1,18 @@
 use clap::{crate_description, crate_name, value_t_or_exit, ArgMatches};
 use console::style;
-use solana_clap_utils::{
+use analog_clap_utils::{
     input_validators::normalize_to_url_if_moniker,
     keypair::{CliSigners, DefaultSigner},
     DisplayError,
 };
-use solana_cli::{
+use analog_cli::{
     clap_app::get_clap_app,
     cli::{parse_command, process_command, CliCommandInfo, CliConfig, SettingType},
 };
-use solana_cli_config::Config;
-use solana_cli_output::{display::println_name_value, OutputFormat};
-use solana_client::rpc_config::RpcSendTransactionConfig;
-use solana_remote_wallet::remote_wallet::RemoteWalletManager;
+use analog_cli_config::Config;
+use analog_cli_output::{display::println_name_value, OutputFormat};
+use analog_client::rpc_config::RpcSendTransactionConfig;
+use analog_remote_wallet::remote_wallet::RemoteWalletManager;
 use std::{collections::HashMap, error, path::PathBuf, sync::Arc, time::Duration};
 
 pub fn println_name_value_or(name: &str, value: &str, setting_type: SettingType) {
@@ -234,11 +234,11 @@ pub fn parse_args<'a>(
 }
 
 fn main() -> Result<(), Box<dyn error::Error>> {
-    solana_logger::setup_with_default("off");
+    analog_logger::setup_with_default("off");
     let matches = get_clap_app(
         crate_name!(),
         crate_description!(),
-        solana_version::version!(),
+        analog_version::version!(),
     )
     .get_matches();
 

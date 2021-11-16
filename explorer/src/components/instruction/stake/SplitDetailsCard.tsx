@@ -57,9 +57,9 @@ export function SplitDetailsCard(props: {
       </tr>
 
       <tr>
-        <td>Split Amount (SOL)</td>
+        <td>Split Amount (ANLOG)</td>
         <td className="text-lg-right">
-          <SolBalance lamports={info.lamports} />
+          <SolBalance tock={info.tock} />
         </td>
       </tr>
     </InstructionCard>

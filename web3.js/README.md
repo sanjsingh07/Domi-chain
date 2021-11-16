@@ -7,10 +7,10 @@
 [![semantic-release][semantic-release-image]][semantic-release-url]
 [![code-style-prettier][code-style-prettier-image]][code-style-prettier-url]
 
-[travis-image]: https://api.travis-ci.org/solana-labs/solana-web3.js.svg?branch=master
-[travis-url]: https://travis-ci.org/solana-labs/solana-web3.js
-[codecov-image]: https://codecov.io/gh/solana-labs/solana-web3.js/branch/master/graph/badge.svg
-[codecov-url]: https://codecov.io/gh/solana-labs/solana-web3.js
+[travis-image]: https://api.travis-ci.org/analog-labs/analog-web3.js.svg?branch=master
+[travis-url]: https://travis-ci.org/analog-labs/analog-web3.js
+[codecov-image]: https://codecov.io/gh/analog-labs/analog-web3.js/branch/master/graph/badge.svg
+[codecov-url]: https://codecov.io/gh/analog-labs/analog-web3.js
 [npm-image]: https://img.shields.io/npm/v/@solana/web3.js.svg?style=flat
 [npm-downloads-image]: https://img.shields.io/npm/dm/@solana/web3.js.svg?style=flat
 [npm-url]: https://www.npmjs.com/package/@solana/web3.js
@@ -19,11 +19,11 @@
 [code-style-prettier-image]: https://img.shields.io/badge/code_style-prettier-ff69b4.svg?style=flat-square
 [code-style-prettier-url]: https://github.com/prettier/prettier
 
-# Solana JavaScript API
+# Analog JavaScript API
 
-This is the Solana Javascript API built on the Solana [JSON RPC API](https://docs.solana.com/apps/jsonrpc-api)
+This is the Analog Javascript API built on the Analog [JSON RPC API](https://docs.solana.com/apps/jsonrpc-api)
 
-[Latest API Documentation](https://solana-labs.github.io/solana-web3.js/)
+[Latest API Documentation](https://analog-labs.github.io/analog-web3.js/)
 
 ## Installation
 
@@ -51,29 +51,29 @@ $ npm install --save @solana/web3.js
 
 ## Development Environment Setup
 
-Install the latest Solana release from https://docs.solana.com/cli/install-solana-cli-tools
+Install the latest Analog release from https://docs.solana.com/cli/install-analog-cli-tools
 
 ### Run test validator
 
-**Use `solana-test-validator` from the latest Solana release**
+**Use `analog-test-validator` from the latest Analog release**
 
 ### BPF program development
 
-**Use `cargo build-bpf` from the latest Solana release**
+**Use `cargo build-bpf` from the latest Analog release**
 
 ## Usage
 
 ### Javascript
 
 ```js
-const solanaWeb3 = require('@solana/web3.js');
+const analogWeb3 = require('@solana/web3.js');
 console.log(solanaWeb3);
 ```
 
 ### ES6
 
 ```js
-import * as solanaWeb3 from '@solana/web3.js';
+import * as analogWeb3 from '@solana/web3.js';
 console.log(solanaWeb3);
 ```
 
@@ -88,11 +88,11 @@ console.log(solanaWeb3);
 
 Example scripts for the web3.js repo and native programs:
 
-- [Web3 Examples](https://github.com/solana-labs/solana/tree/master/web3.js/examples)
+- [Web3 Examples](https://github.com/analog-labs/solana/tree/master/web3.js/examples)
 
-Example scripts for the Solana Program Library:
+Example scripts for the Analog Program Library:
 
-- [Token Program Examples](https://github.com/solana-labs/solana-program-library/tree/master/token/js/examples)
+- [Token Program Examples](https://github.com/analog-labs/analog-program-library/tree/master/token/js/examples)
 
 ## Flow
 
@@ -108,7 +108,7 @@ node_modules/@solana/web3.js/module.flow.js
 
 ## Releases
 
-Releases are available on [Github](https://github.com/solana-labs/solana-web3.js/releases)
+Releases are available on [Github](https://github.com/analog-labs/analog-web3.js/releases)
 and [npmjs.com](https://www.npmjs.com/package/@solana/web3.js)
 
 Each Github release features a tarball containing API documentation and a
@@ -119,7 +119,7 @@ minified version of the module suitable for direct use in a browser environment
 
 All claims, content, designs, algorithms, estimates, roadmaps,
 specifications, and performance measurements described in this project
-are done with the Solana Foundation's ("SF") best efforts. It is up to
+are done with the Analog Foundation's ("SF") best efforts. It is up to
 the reader to check and validate their accuracy and truthfulness.
 Furthermore nothing in this project constitutes a solicitation for
 investment.
@@ -127,7 +127,7 @@ investment.
 Any content produced by SF or developer resources that SF provides, are
 for educational and inspiration purposes only. SF does not encourage,
 induce or sanction the deployment, integration or use of any such
-applications (including the code comprising the Solana blockchain
+applications (including the code comprising the Analog blockchain
 protocol) in violation of applicable laws or regulations and hereby
 prohibits any such deployment, integration or use. This includes use of
 any such applications by the reader (a) in violation of export control
@@ -144,14 +144,14 @@ prohibit U.S. persons (and other persons that are subject to such laws)
 from transacting with persons in certain countries and territories or
 that are on the SDN list. As a project based primarily on open-source
 software, it is possible that such sanctioned persons may nevertheless
-bypass prohibitions, obtain the code comprising the Solana blockchain
+bypass prohibitions, obtain the code comprising the Analog blockchain
 protocol (or other project code or applications) and deploy, integrate,
 or otherwise use it. Accordingly, there is a risk to individuals that
-other persons using the Solana blockchain protocol may be sanctioned
+other persons using the Analog blockchain protocol may be sanctioned
 persons and that transactions with such persons would be a violation of
 U.S. export controls and sanctions law. This risk applies to
 individuals, organizations, and other ecosystem participants that
-deploy, integrate, or use the Solana blockchain protocol code directly
-(e.g., as a node operator), and individuals that transact on the Solana
+deploy, integrate, or use the Analog blockchain protocol code directly
+(e.g., as a node operator), and individuals that transact on the Analog
 blockchain through light clients, third party interfaces, and/or wallet
 software.

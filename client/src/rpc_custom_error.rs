@@ -3,7 +3,7 @@ use thiserror::Error;
 use {
     crate::rpc_response::RpcSimulateTransactionResult,
     jsonrpc_core::{Error, ErrorCode},
-    solana_sdk::clock::Slot,
+    analog_sdk::clock::Slot,
 };
 
 pub const JSON_RPC_SERVER_ERROR_BLOCK_CLEANED_UP: i64 = -32001;
@@ -40,7 +40,7 @@ pub enum RpcCustomError {
     #[error("NodeUnhealthy")]
     NodeUnhealthy { num_slots_behind: Option<Slot> },
     #[error("TransactionPrecompileVerificationFailure")]
-    TransactionPrecompileVerificationFailure(solana_sdk::transaction::TransactionError),
+    TransactionPrecompileVerificationFailure(analog_sdk::transaction::TransactionError),
     #[error("SlotSkipped")]
     SlotSkipped { slot: Slot },
     #[error("NoSnapshot")]

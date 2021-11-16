@@ -1,9 +1,9 @@
-//! The `rpc_banks_service` module implements the Solana Banks RPC API.
+//! The `rpc_banks_service` module implements the Analog Banks RPC API.
 
 use {
     crate::banks_server::start_tcp_server,
     futures::{future::FutureExt, pin_mut, prelude::stream::StreamExt, select},
-    solana_runtime::{bank_forks::BankForks, commitment::BlockCommitmentCache},
+    analog_runtime::{bank_forks::BankForks, commitment::BlockCommitmentCache},
     std::{
         net::SocketAddr,
         sync::{
@@ -81,7 +81,7 @@ impl RpcBanksService {
         let block_commitment_cache = block_commitment_cache.clone();
         let exit = exit.clone();
         let thread_hdl = Builder::new()
-            .name("solana-rpc-banks".to_string())
+            .name("analog-rpc-banks".to_string())
             .spawn(move || {
                 Self::run(
                     listen_addr,
@@ -104,7 +104,7 @@ impl RpcBanksService {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use solana_runtime::bank::Bank;
+    use analog_runtime::bank::Bank;
 
     #[test]
     fn test_rpc_banks_server_exit() {

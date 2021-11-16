@@ -6,7 +6,7 @@ use {
         iter::{IntoParallelRefIterator, ParallelIterator},
         ThreadPool,
     },
-    solana_sdk::{
+    analog_sdk::{
         account::{AccountSharedData, ReadableAccount},
         clock::Epoch,
         pubkey::Pubkey,
@@ -16,8 +16,8 @@ use {
         },
         stake_history::StakeHistory,
     },
-    solana_stake_program::stake_state,
-    solana_vote_program::vote_state::VoteState,
+    analog_stake_program::stake_state,
+    analog_vote_program::vote_state::VoteState,
     std::{collections::HashMap, sync::Arc},
 };
 
@@ -181,12 +181,12 @@ impl Stakes {
             + self
                 .vote_accounts
                 .iter()
-                .map(|(_pubkey, (_staked, vote_account))| vote_account.lamports())
+                .map(|(_pubkey, (_staked, vote_account))| vote_account.tock())
                 .sum::<u64>()
     }
 
     pub fn is_stake(account: &AccountSharedData) -> bool {
-        solana_vote_program::check_id(account.owner())
+        analog_vote_program::check_id(account.owner())
             || stake::program::check_id(account.owner())
                 && account.data().len() >= std::mem::size_of::<StakeState>()
     }
@@ -197,14 +197,14 @@ impl Stakes {
         account: &AccountSharedData,
         remove_delegation_on_inactive: bool,
     ) {
-        if solana_vote_program::check_id(account.owner()) {
+        if analog_vote_program::check_id(account.owner()) {
             // unconditionally remove existing at first; there is no dependent calculated state for
             // votes, not like stakes (stake codepath maintains calculated stake value grouped by
             // delegated vote pubkey)
             let old = self.vote_accounts.remove(pubkey);
-            // when account is removed (lamports == 0 or data uninitialized), don't read so that
+            // when account is removed (tock == 0 or data uninitialized), don't read so that
             // given `pubkey` can be used for any owner in the future, while not affecting Stakes.
-            if account.lamports() != 0 && !VoteState::is_uninitialized_no_deser(account.data()) {
+            if account.tock() != 0 && !VoteState::is_uninitialized_no_deser(account.data()) {
                 let stake = old.as_ref().map_or_else(
                     || self.calculate_stake(pubkey, self.epoch, Some(&self.stake_history)),
                     |v| v.0,
@@ -214,7 +214,7 @@ impl Stakes {
                     .insert(*pubkey, (stake, VoteAccount::from(account.clone())));
             }
         } else if stake::program::check_id(account.owner()) {
-            //  old_stake is stake lamports and voter_pubkey from the pre-store() version
+            //  old_stake is stake tock and voter_pubkey from the pre-store() version
             let old_stake = self.stake_delegations.get(pubkey).map(|delegation| {
                 (
                     delegation.voter_pubkey,
@@ -227,10 +227,10 @@ impl Stakes {
             let stake = delegation.map(|delegation| {
                 (
                     delegation.voter_pubkey,
-                    if account.lamports() != 0 {
+                    if account.tock() != 0 {
                         delegation.stake(self.epoch, Some(&self.stake_history))
                     } else {
-                        // when account is removed (lamports == 0), this special `else` clause ensures
+                        // when account is removed (tock == 0), this special `else` clause ensures
                         // resetting cached stake value below, even if the account happens to be
                         // still staked for some (odd) reason
                         0
@@ -251,11 +251,11 @@ impl Stakes {
             let remove_delegation = if remove_delegation_on_inactive {
                 delegation.is_none()
             } else {
-                account.lamports() == 0
+                account.tock() == 0
             };
 
             if remove_delegation {
-                // when account is removed (lamports == 0), remove it from Stakes as well
+                // when account is removed (tock == 0), remove it from Stakes as well
                 // so that given `pubkey` can be used for any owner in the future, while not
                 // affecting Stakes.
                 self.stake_delegations.remove(pubkey);
@@ -265,7 +265,7 @@ impl Stakes {
         } else {
             // there is no need to remove possibly existing Stakes cache entries with given
             // `pubkey` because this isn't possible, first of all.
-            // Runtime always enforces an intermediary write of account.lamports == 0,
+            // Runtime always enforces an intermediary write of account.tock == 0,
             // when not-System111-owned account.owner is swapped.
         }
     }
@@ -296,17 +296,17 @@ impl Stakes {
 pub mod tests {
     use super::*;
     use rayon::ThreadPoolBuilder;
-    use solana_sdk::{account::WritableAccount, pubkey::Pubkey, rent::Rent};
-    use solana_stake_program::stake_state;
-    use solana_vote_program::vote_state::{self, VoteState, VoteStateVersions};
+    use analog_sdk::{account::WritableAccount, pubkey::Pubkey, rent::Rent};
+    use analog_stake_program::stake_state;
+    use analog_vote_program::vote_state::{self, VoteState, VoteStateVersions};
 
     //  set up some dummies for a staked node     ((     vote      )  (     stake     ))
     pub fn create_staked_node_accounts(
         stake: u64,
     ) -> ((Pubkey, AccountSharedData), (Pubkey, AccountSharedData)) {
-        let vote_pubkey = solana_sdk::pubkey::new_rand();
+        let vote_pubkey = analog_sdk::pubkey::new_rand();
         let vote_account =
-            vote_state::create_account(&vote_pubkey, &solana_sdk::pubkey::new_rand(), 0, 1);
+            vote_state::create_account(&vote_pubkey, &analog_sdk::pubkey::new_rand(), 0, 1);
         (
             (vote_pubkey, vote_account),
             create_stake_account(stake, &vote_pubkey),
@@ -315,13 +315,13 @@ pub mod tests {
 
     //   add stake to a vote_pubkey                               (   stake    )
     pub fn create_stake_account(stake: u64, vote_pubkey: &Pubkey) -> (Pubkey, AccountSharedData) {
-        let stake_pubkey = solana_sdk::pubkey::new_rand();
+        let stake_pubkey = analog_sdk::pubkey::new_rand();
         (
             stake_pubkey,
             stake_state::create_account(
                 &stake_pubkey,
                 vote_pubkey,
-                &vote_state::create_account(vote_pubkey, &solana_sdk::pubkey::new_rand(), 0, 1),
+                &vote_state::create_account(vote_pubkey, &analog_sdk::pubkey::new_rand(), 0, 1),
                 &Rent::free(),
                 stake,
             ),
@@ -332,9 +332,9 @@ pub mod tests {
         stake: u64,
         epoch: Epoch,
     ) -> ((Pubkey, AccountSharedData), (Pubkey, AccountSharedData)) {
-        let vote_pubkey = solana_sdk::pubkey::new_rand();
+        let vote_pubkey = analog_sdk::pubkey::new_rand();
         let vote_account =
-            vote_state::create_account(&vote_pubkey, &solana_sdk::pubkey::new_rand(), 0, 1);
+            vote_state::create_account(&vote_pubkey, &analog_sdk::pubkey::new_rand(), 0, 1);
         (
             (vote_pubkey, vote_account),
             create_warming_stake_account(stake, epoch, &vote_pubkey),
@@ -347,13 +347,13 @@ pub mod tests {
         epoch: Epoch,
         vote_pubkey: &Pubkey,
     ) -> (Pubkey, AccountSharedData) {
-        let stake_pubkey = solana_sdk::pubkey::new_rand();
+        let stake_pubkey = analog_sdk::pubkey::new_rand();
         (
             stake_pubkey,
             stake_state::create_account_with_activation_epoch(
                 &stake_pubkey,
                 vote_pubkey,
-                &vote_state::create_account(vote_pubkey, &solana_sdk::pubkey::new_rand(), 0, 1),
+                &vote_state::create_account(vote_pubkey, &analog_sdk::pubkey::new_rand(), 0, 1),
                 &Rent::free(),
                 stake,
                 epoch,
@@ -684,7 +684,7 @@ pub mod tests {
             pub fn vote_balance_and_warmed_staked(&self) -> u64 {
                 self.vote_accounts
                     .iter()
-                    .map(|(_pubkey, (staked, account))| staked + account.lamports())
+                    .map(|(_pubkey, (staked, account))| staked + account.tock())
                     .sum()
             }
         }
@@ -701,7 +701,7 @@ pub mod tests {
         let thread_pool = ThreadPoolBuilder::new().num_threads(1).build().unwrap();
         for (epoch, expected_warmed_stake) in ((genesis_epoch + 1)..=3).zip(&[2, 3, 4]) {
             stakes.activate_epoch(epoch, &thread_pool);
-            // vote_balance_and_staked() always remain to return same lamports
+            // vote_balance_and_staked() always remain to return same tock
             // while vote_balance_and_warmed_staked() gradually increases
             assert_eq!(stakes.vote_balance_and_staked(), 11);
             assert_eq!(

@@ -1,5 +1,5 @@
 use crate::snapshot_utils::{self, ArchiveFormat, SnapshotVersion};
-use solana_sdk::clock::Slot;
+use analog_sdk::clock::Slot;
 use std::path::PathBuf;
 
 /// Snapshot configuration and runtime information

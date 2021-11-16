@@ -1,13 +1,13 @@
 use clap::{crate_description, crate_name, App, Arg, ArgMatches};
-use solana_faucet::faucet::FAUCET_PORT;
-use solana_sdk::fee_calculator::FeeRateGovernor;
-use solana_sdk::{
+use analog_faucet::faucet::FAUCET_PORT;
+use analog_sdk::fee_calculator::FeeRateGovernor;
+use analog_sdk::{
     pubkey::Pubkey,
     signature::{read_keypair_file, Keypair},
 };
 use std::{net::SocketAddr, process::exit, time::Duration};
 
-const NUM_LAMPORTS_PER_ACCOUNT_DEFAULT: u64 = solana_sdk::native_token::LAMPORTS_PER_SOL;
+const NUM_LAMPORTS_PER_ACCOUNT_DEFAULT: u64 = analog_sdk::native_token::TOCK_PER_ANLOG;
 
 /// Holds the configuration for a single run of the benchmark
 pub struct Config {
@@ -163,21 +163,21 @@ pub fn build_args<'a, 'b>(version: &'b str) -> App<'a, 'b> {
         )
         .arg(
             Arg::with_name("target_lamports_per_signature")
-                .long("target-lamports-per-signature")
+                .long("target-tock-per-signature")
                 .value_name("LAMPORTS")
                 .takes_value(true)
                 .help(
-                    "The cost in lamports that the cluster will charge for signature \
+                    "The cost in tock that the cluster will charge for signature \
                      verification when the cluster is operating at target-signatures-per-slot",
                 ),
         )
         .arg(
             Arg::with_name("num_lamports_per_account")
-                .long("num-lamports-per-account")
+                .long("num-tock-per-account")
                 .value_name("LAMPORTS")
                 .takes_value(true)
                 .help(
-                    "Number of lamports per account.",
+                    "Number of tock per account.",
                 ),
         )
         .arg(
@@ -200,14 +200,14 @@ pub fn extract_args(matches: &ArgMatches) -> Config {
     let mut args = Config::default();
 
     if let Some(addr) = matches.value_of("entrypoint") {
-        args.entrypoint_addr = solana_net_utils::parse_host_port(addr).unwrap_or_else(|e| {
+        args.entrypoint_addr = analog_net_utils::parse_host_port(addr).unwrap_or_else(|e| {
             eprintln!("failed to parse entrypoint address: {}", e);
             exit(1)
         });
     }
 
     if let Some(addr) = matches.value_of("faucet") {
-        args.faucet_addr = solana_net_utils::parse_host_port(addr).unwrap_or_else(|e| {
+        args.faucet_addr = analog_net_utils::parse_host_port(addr).unwrap_or_else(|e| {
             eprintln!("failed to parse faucet address: {}", e);
             exit(1)
         });
@@ -266,7 +266,7 @@ pub fn extract_args(matches: &ArgMatches) -> Config {
     }
 
     if let Some(v) = matches.value_of("target_lamports_per_signature") {
-        args.target_lamports_per_signature = v.to_string().parse().expect("can't parse lamports");
+        args.target_lamports_per_signature = v.to_string().parse().expect("can't parse tock");
     }
 
     args.multi_client = !matches.is_present("no-multi-client");
@@ -275,7 +275,7 @@ pub fn extract_args(matches: &ArgMatches) -> Config {
         .map(|target_str| target_str.parse().unwrap());
 
     if let Some(v) = matches.value_of("num_lamports_per_account") {
-        args.num_lamports_per_account = v.to_string().parse().expect("can't parse lamports");
+        args.num_lamports_per_account = v.to_string().parse().expect("can't parse tock");
     }
 
     if let Some(t) = matches.value_of("target_slots_per_epoch") {

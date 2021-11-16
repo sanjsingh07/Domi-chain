@@ -2,10 +2,10 @@
 
 extern crate test;
 use bincode::{deserialize, serialize};
-use solana_sdk::instruction::{AccountMeta, Instruction};
-use solana_sdk::message::{Message, SanitizedMessage};
-use solana_sdk::pubkey::{self, Pubkey};
-use solana_sdk::sysvar::instructions;
+use analog_sdk::instruction::{AccountMeta, Instruction};
+use analog_sdk::message::{Message, SanitizedMessage};
+use analog_sdk::pubkey::{self, Pubkey};
+use analog_sdk::sysvar::instructions;
 use std::convert::TryFrom;
 use test::Bencher;
 

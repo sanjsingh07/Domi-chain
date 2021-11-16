@@ -23,9 +23,9 @@ use {
     log::*,
     rayon::prelude::*,
     serde::{de::DeserializeOwned, Deserialize, Serialize},
-    solana_measure::measure::Measure,
+    analog_measure::measure::Measure,
     solana_program_runtime::instruction_processor::InstructionProcessor,
-    solana_sdk::{
+    analog_sdk::{
         clock::{Epoch, Slot, UnixTimestamp},
         epoch_schedule::EpochSchedule,
         fee_calculator::{FeeCalculator, FeeRateGovernor},
@@ -49,7 +49,7 @@ use {
 };
 
 #[cfg(RUSTC_WITH_SPECIALIZATION)]
-use solana_frozen_abi::abi_example::IgnoreAsHelper;
+use analog_frozen_abi::abi_example::IgnoreAsHelper;
 
 mod common;
 mod future;

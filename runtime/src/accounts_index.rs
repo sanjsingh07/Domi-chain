@@ -13,8 +13,8 @@ use log::*;
 use ouroboros::self_referencing;
 use rand::thread_rng;
 use rand::Rng;
-use solana_measure::measure::Measure;
-use solana_sdk::{
+use analog_measure::measure::Measure;
+use analog_sdk::{
     clock::{BankId, Slot},
     pubkey::{Pubkey, PUBKEY_BYTES},
 };
@@ -1509,7 +1509,7 @@ impl<T: IndexValue> AccountsIndex<T> {
             self.program_id_index.insert(account_owner, pubkey);
         }
         // Note because of the below check below on the account data length, when an
-        // account hits zero lamports and is reset to AccountSharedData::Default, then we skip
+        // account hits zero tock and is reset to AccountSharedData::Default, then we skip
         // the below updates to the secondary indexes.
         //
         // Skipping means not updating secondary index to mark the account as missing.
@@ -1632,7 +1632,7 @@ impl<T: IndexValue> AccountsIndex<T> {
                     );
 
                     if !is_zero_lamport {
-                        // zero lamports were already added to dirty_pubkeys above
+                        // zero tock were already added to dirty_pubkeys above
                         dirty_pubkeys.push(pubkey);
                     }
                 }
@@ -1933,7 +1933,7 @@ impl<T: IndexValue> AccountsIndex<T> {
 #[cfg(test)]
 pub mod tests {
     use super::*;
-    use solana_sdk::signature::{Keypair, Signer};
+    use analog_sdk::signature::{Keypair, Signer};
     use std::ops::RangeInclusive;
 
     pub enum SecondaryIndexTypes<'a> {
@@ -2023,7 +2023,7 @@ pub mod tests {
 
     #[test]
     fn test_bitfield_delete_non_excess() {
-        solana_logger::setup();
+        analog_logger::setup();
         let len = 16;
         let mut bitfield = RollingBitField::new(len);
         assert_eq!(bitfield.min(), None);
@@ -2067,7 +2067,7 @@ pub mod tests {
 
     #[test]
     fn test_bitfield_insert_excess() {
-        solana_logger::setup();
+        analog_logger::setup();
         let len = 16;
         let mut bitfield = RollingBitField::new(len);
 
@@ -2099,7 +2099,7 @@ pub mod tests {
 
     #[test]
     fn test_bitfield_permutations() {
-        solana_logger::setup();
+        analog_logger::setup();
         let mut bitfield = RollingBitField::new(2097152);
         let mut hash = HashSet::new();
 
@@ -2199,7 +2199,7 @@ pub mod tests {
 
     #[test]
     fn test_bitfield_insert_wide() {
-        solana_logger::setup();
+        analog_logger::setup();
         let width = 16;
         let start = 0;
         let mut tester = setup_wide(width, start);
@@ -2218,7 +2218,7 @@ pub mod tests {
 
     #[test]
     fn test_bitfield_insert_wide_before() {
-        solana_logger::setup();
+        analog_logger::setup();
         let width = 16;
         let start = 100;
         let mut bitfield = setup_wide(width, start).bitfield;
@@ -2233,7 +2233,7 @@ pub mod tests {
 
     #[test]
     fn test_bitfield_insert_wide_before_ok() {
-        solana_logger::setup();
+        analog_logger::setup();
         let width = 16;
         let start = 100;
         let mut bitfield = setup_wide(width, start).bitfield;
@@ -2284,7 +2284,7 @@ pub mod tests {
 
     #[test]
     fn test_bitfield_excess2() {
-        solana_logger::setup();
+        analog_logger::setup();
         let width = 16;
         let mut tester = setup_empty(width);
         let slot = 100;
@@ -2318,7 +2318,7 @@ pub mod tests {
 
     #[test]
     fn test_bitfield_excess() {
-        solana_logger::setup();
+        analog_logger::setup();
         // start at slot 0 or a separate, higher slot
         for width in [16, 4194304].iter() {
             let width = *width;
@@ -2450,7 +2450,7 @@ pub mod tests {
 
     #[test]
     fn test_bitfield_functionality() {
-        solana_logger::setup();
+        analog_logger::setup();
 
         // bitfield sizes are powers of 2, cycle through values of 1, 2, 4, .. 2^9
         for power in 0..10 {
@@ -2613,7 +2613,7 @@ pub mod tests {
     #[test]
     fn test_bitfield_smaller() {
         // smaller bitfield, fewer entries, including 0
-        solana_logger::setup();
+        analog_logger::setup();
 
         for width in 0..34 {
             let mut bitfield = RollingBitField::new(4096);
@@ -2807,7 +2807,7 @@ pub mod tests {
         );
         assert_eq!(num, 1);
 
-        // not zero lamports
+        // not zero tock
         let index = AccountsIndex::<AccountInfoTest>::default_for_tests();
         let account_info: AccountInfoTest = 0 as AccountInfoTest;
         let items = vec![(*pubkey, account_info)];
@@ -3106,7 +3106,7 @@ pub mod tests {
         let root_slot = 0;
 
         let mut pubkeys: Vec<Pubkey> = std::iter::repeat_with(|| {
-            let new_pubkey = solana_sdk::pubkey::new_rand();
+            let new_pubkey = analog_sdk::pubkey::new_rand();
             index.upsert(
                 root_slot,
                 &new_pubkey,
@@ -3269,7 +3269,7 @@ pub mod tests {
         let mut gc = vec![];
         index.upsert(
             0,
-            &solana_sdk::pubkey::new_rand(),
+            &analog_sdk::pubkey::new_rand(),
             &Pubkey::default(),
             &[],
             &AccountSecondaryIndexes::default(),
@@ -3441,7 +3441,7 @@ pub mod tests {
 
     #[test]
     fn test_update_new_slot() {
-        solana_logger::setup();
+        analog_logger::setup();
         let key = Keypair::new();
         let index = AccountsIndex::<bool>::default_for_tests();
         let ancestors = vec![(0, 0)].into_iter().collect();

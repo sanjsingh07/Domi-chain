@@ -3,8 +3,8 @@
 extern crate test;
 
 use bincode::serialize;
-use solana_runtime::status_cache::*;
-use solana_sdk::{
+use analog_runtime::status_cache::*;
+use analog_sdk::{
     hash::{hash, Hash},
     signature::Signature,
 };

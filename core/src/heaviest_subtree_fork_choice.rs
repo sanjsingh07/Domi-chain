@@ -3,9 +3,9 @@ use crate::{
     latest_validator_votes_for_frozen_banks::LatestValidatorVotesForFrozenBanks,
     progress_map::ProgressMap, tree_diff::TreeDiff,
 };
-use solana_measure::measure::Measure;
-use solana_runtime::{bank::Bank, bank_forks::BankForks, epoch_stakes::EpochStakes};
-use solana_sdk::{
+use analog_measure::measure::Measure;
+use analog_runtime::{bank::Bank, bank_forks::BankForks, epoch_stakes::EpochStakes};
+use analog_sdk::{
     clock::{Epoch, Slot},
     epoch_schedule::EpochSchedule,
     hash::Hash,
@@ -1078,8 +1078,8 @@ impl<'a> Iterator for AncestorIterator<'a> {
 mod test {
     use super::*;
     use crate::vote_simulator::VoteSimulator;
-    use solana_runtime::{bank::Bank, bank_utils};
-    use solana_sdk::{hash::Hash, slot_history::SlotHistory};
+    use analog_runtime::{bank::Bank, bank_utils};
+    use analog_sdk::{hash::Hash, slot_history::SlotHistory};
     use std::{collections::HashSet, ops::Range};
     use trees::tr;
 

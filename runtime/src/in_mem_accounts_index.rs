@@ -6,9 +6,9 @@ use crate::bucket_map_holder::{Age, BucketMapHolder};
 use crate::bucket_map_holder_stats::BucketMapHolderStats;
 use rand::thread_rng;
 use rand::Rng;
-use solana_bucket_map::bucket_api::BucketApi;
-use solana_measure::measure::Measure;
-use solana_sdk::{clock::Slot, pubkey::Pubkey};
+use analog_bucket_map::bucket_api::BucketApi;
+use analog_measure::measure::Measure;
+use analog_sdk::{clock::Slot, pubkey::Pubkey};
 use std::collections::{hash_map::Entry, HashMap};
 use std::ops::{Bound, RangeBounds, RangeInclusive};
 use std::sync::atomic::{AtomicBool, AtomicU64, AtomicU8, Ordering};
@@ -879,7 +879,7 @@ mod tests {
 
     #[test]
     fn test_should_remove_from_mem() {
-        solana_logger::setup();
+        analog_logger::setup();
         let bucket = new_for_test::<u64>();
         let mut startup = false;
         let mut current_age = 0;
@@ -1016,7 +1016,7 @@ mod tests {
 
     #[test]
     fn test_age() {
-        solana_logger::setup();
+        analog_logger::setup();
         let test = new_for_test::<u64>();
         assert!(test.get_should_age(test.storage.current_age()));
         assert_eq!(test.storage.count_ages_flushed(), 0);

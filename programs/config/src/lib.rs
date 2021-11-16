@@ -5,14 +5,14 @@ pub mod date_instruction;
 
 use bincode::{deserialize, serialize, serialized_size};
 use serde_derive::{Deserialize, Serialize};
-use solana_sdk::{
+use analog_sdk::{
     account::{Account, AccountSharedData},
     pubkey::Pubkey,
     short_vec,
     stake::config::Config as StakeConfig,
 };
 
-pub use solana_sdk::config::program::id;
+pub use analog_sdk::config::program::id;
 
 pub trait ConfigState: serde::Serialize + Default {
     /// Maximum space that the serialized representation will require
@@ -51,12 +51,12 @@ pub fn get_config_data(bytes: &[u8]) -> Result<&[u8], bincode::Error> {
 pub fn create_config_account<T: ConfigState>(
     keys: Vec<(Pubkey, bool)>,
     config_data: &T,
-    lamports: u64,
+    tock: u64,
 ) -> AccountSharedData {
     let mut data = serialize(&ConfigKeys { keys }).unwrap();
     data.extend_from_slice(&serialize(config_data).unwrap());
     AccountSharedData::from(Account {
-        lamports,
+        tock,
         data,
         owner: id(),
         ..Account::default()

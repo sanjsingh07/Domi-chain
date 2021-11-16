@@ -5,7 +5,7 @@ use crate::{id, vote_instruction::VoteError};
 use bincode::{deserialize, serialize_into, serialized_size, ErrorKind};
 use log::*;
 use serde_derive::{Deserialize, Serialize};
-use solana_sdk::{
+use analog_sdk::{
     account::{AccountSharedData, ReadableAccount, WritableAccount},
     account_utils::State,
     clock::{Epoch, Slot, UnixTimestamp},
@@ -271,8 +271,8 @@ impl VoteState {
                 // Calculate mine and theirs independently and symmetrically instead of
                 // using the remainder of the other to treat them strictly equally.
                 // This is also to cancel the rewarding if either of the parties
-                // should receive only fractional lamports, resulting in not being rewarded at all.
-                // Thus, note that we intentionally discard any residual fractional lamports.
+                // should receive only fractional tock, resulting in not being rewarded at all.
+                // Thus, note that we intentionally discard any residual fractional tock.
                 let mine = on * u128::from(split) / 100u128;
                 let theirs = on * u128::from(100 - split) / 100u128;
 
@@ -284,7 +284,7 @@ impl VoteState {
     fn get_max_sized_vote_state() -> VoteState {
         let mut authorized_voters = AuthorizedVoters::default();
         for i in 0..=MAX_LEADER_SCHEDULE_EPOCH_OFFSET {
-            authorized_voters.insert(i, solana_sdk::pubkey::new_rand());
+            authorized_voters.insert(i, analog_sdk::pubkey::new_rand());
         }
 
         VoteState {
@@ -455,7 +455,7 @@ impl VoteState {
     }
 
     /// Number of "credits" owed to this account from the mining pool. Submit this
-    /// VoteState to the Rewards program to trade credits for lamports.
+    /// VoteState to the Rewards program to trade credits for tock.
     pub fn credits(&self) -> u64 {
         if self.epoch_credits.is_empty() {
             0
@@ -676,7 +676,7 @@ fn verify_authorized_signer<S: std::hash::BuildHasher>(
 /// Withdraw funds from the vote account
 pub fn withdraw<S: std::hash::BuildHasher>(
     vote_account: &KeyedAccount,
-    lamports: u64,
+    tock: u64,
     to_account: &KeyedAccount,
     signers: &HashSet<Pubkey, S>,
 ) -> Result<(), InstructionError> {
@@ -685,7 +685,7 @@ pub fn withdraw<S: std::hash::BuildHasher>(
 
     verify_authorized_signer(&vote_state.authorized_withdrawer, signers)?;
 
-    match vote_account.lamports()?.cmp(&lamports) {
+    match vote_account.tock()?.cmp(&tock) {
         Ordering::Less => return Err(InstructionError::InsufficientFunds),
         Ordering::Equal => {
             // Deinitialize upon zero-balance
@@ -695,10 +695,10 @@ pub fn withdraw<S: std::hash::BuildHasher>(
     }
     vote_account
         .try_account_ref_mut()?
-        .checked_sub_lamports(lamports)?;
+        .checked_sub_lamports(tock)?;
     to_account
         .try_account_ref_mut()?
-        .checked_add_lamports(lamports)?;
+        .checked_add_lamports(tock)?;
     Ok(())
 }
 
@@ -761,9 +761,9 @@ pub fn create_account_with_authorized(
     authorized_voter: &Pubkey,
     authorized_withdrawer: &Pubkey,
     commission: u8,
-    lamports: u64,
+    tock: u64,
 ) -> AccountSharedData {
-    let mut vote_account = AccountSharedData::new(lamports, VoteState::size_of(), &id());
+    let mut vote_account = AccountSharedData::new(tock, VoteState::size_of(), &id());
 
     let vote_state = VoteState::new(
         &VoteInit {
@@ -786,16 +786,16 @@ pub fn create_account(
     vote_pubkey: &Pubkey,
     node_pubkey: &Pubkey,
     commission: u8,
-    lamports: u64,
+    tock: u64,
 ) -> AccountSharedData {
-    create_account_with_authorized(node_pubkey, vote_pubkey, vote_pubkey, commission, lamports)
+    create_account_with_authorized(node_pubkey, vote_pubkey, vote_pubkey, commission, tock)
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
     use crate::vote_state;
-    use solana_sdk::{
+    use analog_sdk::{
         account::AccountSharedData,
         account_utils::StateMut,
         hash::hash,
@@ -809,7 +809,7 @@ mod tests {
         pub fn new_for_test(auth_pubkey: &Pubkey) -> Self {
             Self::new(
                 &VoteInit {
-                    node_pubkey: solana_sdk::pubkey::new_rand(),
+                    node_pubkey: analog_sdk::pubkey::new_rand(),
                     authorized_voter: *auth_pubkey,
                     authorized_withdrawer: *auth_pubkey,
                     commission: 0,
@@ -821,11 +821,11 @@ mod tests {
 
     #[test]
     fn test_initialize_vote_account() {
-        let vote_account_pubkey = solana_sdk::pubkey::new_rand();
+        let vote_account_pubkey = analog_sdk::pubkey::new_rand();
         let vote_account = AccountSharedData::new_ref(100, VoteState::size_of(), &id());
         let vote_account = KeyedAccount::new(&vote_account_pubkey, false, &vote_account);
 
-        let node_pubkey = solana_sdk::pubkey::new_rand();
+        let node_pubkey = analog_sdk::pubkey::new_rand();
         let node_account = RefCell::new(AccountSharedData::default());
         let keyed_accounts = &[];
         let signers: HashSet<Pubkey> = get_signers(keyed_accounts);
@@ -894,12 +894,12 @@ mod tests {
     }
 
     fn create_test_account() -> (Pubkey, RefCell<AccountSharedData>) {
-        let vote_pubkey = solana_sdk::pubkey::new_rand();
+        let vote_pubkey = analog_sdk::pubkey::new_rand();
         (
             vote_pubkey,
             RefCell::new(vote_state::create_account(
                 &vote_pubkey,
-                &solana_sdk::pubkey::new_rand(),
+                &analog_sdk::pubkey::new_rand(),
                 0,
                 100,
             )),
@@ -908,16 +908,16 @@ mod tests {
 
     fn create_test_account_with_authorized() -> (Pubkey, Pubkey, Pubkey, RefCell<AccountSharedData>)
     {
-        let vote_pubkey = solana_sdk::pubkey::new_rand();
-        let authorized_voter = solana_sdk::pubkey::new_rand();
-        let authorized_withdrawer = solana_sdk::pubkey::new_rand();
+        let vote_pubkey = analog_sdk::pubkey::new_rand();
+        let authorized_voter = analog_sdk::pubkey::new_rand();
+        let authorized_withdrawer = analog_sdk::pubkey::new_rand();
 
         (
             vote_pubkey,
             authorized_voter,
             authorized_withdrawer,
             RefCell::new(vote_state::create_account_with_authorized(
-                &solana_sdk::pubkey::new_rand(),
+                &analog_sdk::pubkey::new_rand(),
                 &authorized_voter,
                 &authorized_withdrawer,
                 0,
@@ -1046,7 +1046,7 @@ mod tests {
         let (vote_pubkey, _authorized_voter, authorized_withdrawer, vote_account) =
             create_test_account_with_authorized();
 
-        let node_pubkey = solana_sdk::pubkey::new_rand();
+        let node_pubkey = analog_sdk::pubkey::new_rand();
         let node_account = RefCell::new(AccountSharedData::default());
         let authorized_withdrawer_account = RefCell::new(AccountSharedData::default());
 
@@ -1174,7 +1174,7 @@ mod tests {
         // another voter, unsigned
         let keyed_accounts = &[KeyedAccount::new(&vote_pubkey, false, &vote_account)];
         let signers: HashSet<Pubkey> = get_signers(keyed_accounts);
-        let authorized_voter_pubkey = solana_sdk::pubkey::new_rand();
+        let authorized_voter_pubkey = analog_sdk::pubkey::new_rand();
         let res = authorize(
             &keyed_accounts[0],
             &authorized_voter_pubkey,
@@ -1244,7 +1244,7 @@ mod tests {
         // another voter
         let keyed_accounts = &[KeyedAccount::new(&vote_pubkey, true, &vote_account)];
         let signers: HashSet<Pubkey> = get_signers(keyed_accounts);
-        let authorized_withdrawer_pubkey = solana_sdk::pubkey::new_rand();
+        let authorized_withdrawer_pubkey = analog_sdk::pubkey::new_rand();
         let res = authorize(
             &keyed_accounts[0],
             &authorized_withdrawer_pubkey,
@@ -1319,7 +1319,7 @@ mod tests {
 
     #[test]
     fn test_vote_without_initialization() {
-        let vote_pubkey = solana_sdk::pubkey::new_rand();
+        let vote_pubkey = analog_sdk::pubkey::new_rand();
         let vote_account = RefCell::new(AccountSharedData::new(100, VoteState::size_of(), &id()));
 
         let res = simulate_process_vote_unchecked(
@@ -1365,7 +1365,7 @@ mod tests {
 
     #[test]
     fn test_vote_double_lockout_after_expiration() {
-        let voter_pubkey = solana_sdk::pubkey::new_rand();
+        let voter_pubkey = analog_sdk::pubkey::new_rand();
         let mut vote_state = VoteState::new_for_test(&voter_pubkey);
 
         for i in 0..3 {
@@ -1393,7 +1393,7 @@ mod tests {
 
     #[test]
     fn test_expire_multiple_votes() {
-        let voter_pubkey = solana_sdk::pubkey::new_rand();
+        let voter_pubkey = analog_sdk::pubkey::new_rand();
         let mut vote_state = VoteState::new_for_test(&voter_pubkey);
 
         for i in 0..3 {
@@ -1424,7 +1424,7 @@ mod tests {
 
     #[test]
     fn test_vote_credits() {
-        let voter_pubkey = solana_sdk::pubkey::new_rand();
+        let voter_pubkey = analog_sdk::pubkey::new_rand();
         let mut vote_state = VoteState::new_for_test(&voter_pubkey);
 
         for i in 0..MAX_LOCKOUT_HISTORY {
@@ -1443,7 +1443,7 @@ mod tests {
 
     #[test]
     fn test_duplicate_vote() {
-        let voter_pubkey = solana_sdk::pubkey::new_rand();
+        let voter_pubkey = analog_sdk::pubkey::new_rand();
         let mut vote_state = VoteState::new_for_test(&voter_pubkey);
         vote_state.process_slot_vote_unchecked(0);
         vote_state.process_slot_vote_unchecked(1);
@@ -1455,7 +1455,7 @@ mod tests {
 
     #[test]
     fn test_nth_recent_vote() {
-        let voter_pubkey = solana_sdk::pubkey::new_rand();
+        let voter_pubkey = analog_sdk::pubkey::new_rand();
         let mut vote_state = VoteState::new_for_test(&voter_pubkey);
         for i in 0..MAX_LOCKOUT_HISTORY {
             vote_state.process_slot_vote_unchecked(i as u64);
@@ -1486,9 +1486,9 @@ mod tests {
     /// check that two accounts with different data can be brought to the same state with one vote submission
     #[test]
     fn test_process_missed_votes() {
-        let account_a = solana_sdk::pubkey::new_rand();
+        let account_a = analog_sdk::pubkey::new_rand();
         let mut vote_state_a = VoteState::new_for_test(&account_a);
-        let account_b = solana_sdk::pubkey::new_rand();
+        let account_b = analog_sdk::pubkey::new_rand();
         let mut vote_state_b = VoteState::new_for_test(&account_b);
 
         // process some votes on account a
@@ -1657,7 +1657,7 @@ mod tests {
             &keyed_accounts[0],
             0,
             &KeyedAccount::new(
-                &solana_sdk::pubkey::new_rand(),
+                &analog_sdk::pubkey::new_rand(),
                 false,
                 &RefCell::new(AccountSharedData::default()),
             ),
@@ -1672,7 +1672,7 @@ mod tests {
             &keyed_accounts[0],
             101,
             &KeyedAccount::new(
-                &solana_sdk::pubkey::new_rand(),
+                &analog_sdk::pubkey::new_rand(),
                 false,
                 &RefCell::new(AccountSharedData::default()),
             ),
@@ -1682,29 +1682,29 @@ mod tests {
 
         // all good
         let to_account = RefCell::new(AccountSharedData::default());
-        let lamports = vote_account.borrow().lamports();
+        let tock = vote_account.borrow().tock();
         let keyed_accounts = &[KeyedAccount::new(&vote_pubkey, true, &vote_account)];
         let signers: HashSet<Pubkey> = get_signers(keyed_accounts);
         let pre_state: VoteStateVersions = vote_account.borrow().state().unwrap();
         let res = withdraw(
             &keyed_accounts[0],
-            lamports,
-            &KeyedAccount::new(&solana_sdk::pubkey::new_rand(), false, &to_account),
+            tock,
+            &KeyedAccount::new(&analog_sdk::pubkey::new_rand(), false, &to_account),
             &signers,
         );
         assert_eq!(res, Ok(()));
-        assert_eq!(vote_account.borrow().lamports(), 0);
-        assert_eq!(to_account.borrow().lamports(), lamports);
+        assert_eq!(vote_account.borrow().tock(), 0);
+        assert_eq!(to_account.borrow().tock(), tock);
         let post_state: VoteStateVersions = vote_account.borrow().state().unwrap();
         // State has been deinitialized since balance is zero
         assert!(post_state.is_uninitialized());
 
         // reset balance and restore state, verify that authorized_withdrawer works
-        vote_account.borrow_mut().set_lamports(lamports);
+        vote_account.borrow_mut().set_lamports(tock);
         vote_account.borrow_mut().set_state(&pre_state).unwrap();
 
         // authorize authorized_withdrawer
-        let authorized_withdrawer_pubkey = solana_sdk::pubkey::new_rand();
+        let authorized_withdrawer_pubkey = analog_sdk::pubkey::new_rand();
         let keyed_accounts = &[KeyedAccount::new(&vote_pubkey, true, &vote_account)];
         let signers: HashSet<Pubkey> = get_signers(keyed_accounts);
         let res = authorize(
@@ -1727,13 +1727,13 @@ mod tests {
         let withdrawer_keyed_account = keyed_account_at_index(keyed_accounts, 1).unwrap();
         let res = withdraw(
             vote_keyed_account,
-            lamports,
+            tock,
             withdrawer_keyed_account,
             &signers,
         );
         assert_eq!(res, Ok(()));
-        assert_eq!(vote_account.borrow().lamports(), 0);
-        assert_eq!(withdrawer_account.borrow().lamports(), lamports);
+        assert_eq!(vote_account.borrow().tock(), 0);
+        assert_eq!(withdrawer_account.borrow().tock(), tock);
         let post_state: VoteStateVersions = vote_account.borrow().state().unwrap();
         // State has been deinitialized since balance is zero
         assert!(post_state.is_uninitialized());
@@ -1845,7 +1845,7 @@ mod tests {
 
     #[test]
     fn test_get_and_update_authorized_voter() {
-        let original_voter = solana_sdk::pubkey::new_rand();
+        let original_voter = analog_sdk::pubkey::new_rand();
         let mut vote_state = VoteState::new(
             &VoteInit {
                 node_pubkey: original_voter,
@@ -1881,7 +1881,7 @@ mod tests {
         }
 
         // Set an authorized voter change at slot 7
-        let new_authorized_voter = solana_sdk::pubkey::new_rand();
+        let new_authorized_voter = analog_sdk::pubkey::new_rand();
         vote_state
             .set_new_authorized_voter(&new_authorized_voter, 5, 7, |_| Ok(()))
             .unwrap();
@@ -1905,7 +1905,7 @@ mod tests {
 
     #[test]
     fn test_set_new_authorized_voter() {
-        let original_voter = solana_sdk::pubkey::new_rand();
+        let original_voter = analog_sdk::pubkey::new_rand();
         let epoch_offset = 15;
         let mut vote_state = VoteState::new(
             &VoteInit {
@@ -1919,7 +1919,7 @@ mod tests {
 
         assert!(vote_state.prior_voters.last().is_none());
 
-        let new_voter = solana_sdk::pubkey::new_rand();
+        let new_voter = analog_sdk::pubkey::new_rand();
         // Set a new authorized voter
         vote_state
             .set_new_authorized_voter(&new_voter, 0, epoch_offset, |_| Ok(()))
@@ -1943,7 +1943,7 @@ mod tests {
             .unwrap();
 
         // Set a third and fourth authorized voter
-        let new_voter2 = solana_sdk::pubkey::new_rand();
+        let new_voter2 = analog_sdk::pubkey::new_rand();
         vote_state
             .set_new_authorized_voter(&new_voter2, 3, 3 + epoch_offset, |_| Ok(()))
             .unwrap();
@@ -1953,7 +1953,7 @@ mod tests {
             Some(&(new_voter, epoch_offset, 3 + epoch_offset))
         );
 
-        let new_voter3 = solana_sdk::pubkey::new_rand();
+        let new_voter3 = analog_sdk::pubkey::new_rand();
         vote_state
             .set_new_authorized_voter(&new_voter3, 6, 6 + epoch_offset, |_| Ok(()))
             .unwrap();
@@ -2004,7 +2004,7 @@ mod tests {
 
     #[test]
     fn test_authorized_voter_is_locked_within_epoch() {
-        let original_voter = solana_sdk::pubkey::new_rand();
+        let original_voter = analog_sdk::pubkey::new_rand();
         let mut vote_state = VoteState::new(
             &VoteInit {
                 node_pubkey: original_voter,
@@ -2018,7 +2018,7 @@ mod tests {
         // Test that it's not possible to set a new authorized
         // voter within the same epoch, even if none has been
         // explicitly set before
-        let new_voter = solana_sdk::pubkey::new_rand();
+        let new_voter = analog_sdk::pubkey::new_rand();
         assert_eq!(
             vote_state.set_new_authorized_voter(&new_voter, 1, 1, |_| Ok(())),
             Err(VoteError::TooSoonToReauthorize.into())
@@ -2055,7 +2055,7 @@ mod tests {
         for i in start_current_epoch..start_current_epoch + 2 * MAX_LEADER_SCHEDULE_EPOCH_OFFSET {
             vote_state.as_mut().map(|vote_state| {
                 vote_state.set_new_authorized_voter(
-                    &solana_sdk::pubkey::new_rand(),
+                    &analog_sdk::pubkey::new_rand(),
                     i,
                     i + MAX_LEADER_SCHEDULE_EPOCH_OFFSET,
                     |_| Ok(()),

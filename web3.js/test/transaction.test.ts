@@ -119,7 +119,7 @@ describe('Transaction', () => {
     const transfer = SystemProgram.transfer({
       fromPubkey: account1.publicKey,
       toPubkey: account2.publicKey,
-      lamports: 123,
+      tock: 123,
     });
 
     const transaction = new Transaction({recentBlockhash}).add(transfer);
@@ -228,12 +228,12 @@ describe('Transaction', () => {
     const transfer1 = SystemProgram.transfer({
       fromPubkey: account1.publicKey,
       toPubkey: account2.publicKey,
-      lamports: 123,
+      tock: 123,
     });
     const transfer2 = SystemProgram.transfer({
       fromPubkey: account2.publicKey,
       toPubkey: account1.publicKey,
-      lamports: 123,
+      tock: 123,
     });
 
     const orgTransaction = new Transaction({recentBlockhash}).add(
@@ -257,12 +257,12 @@ describe('Transaction', () => {
     const transfer1 = SystemProgram.transfer({
       fromPubkey: account1.publicKey,
       toPubkey: account2.publicKey,
-      lamports: 123,
+      tock: 123,
     });
     const transfer2 = SystemProgram.transfer({
       fromPubkey: account1.publicKey,
       toPubkey: account2.publicKey,
-      lamports: 123,
+      tock: 123,
     });
 
     const orgTransaction = new Transaction({recentBlockhash}).add(
@@ -290,7 +290,7 @@ describe('Transaction', () => {
       SystemProgram.transfer({
         fromPubkey: account1.publicKey,
         toPubkey: account2.publicKey,
-        lamports: 123,
+        tock: 123,
       }),
     );
     transferTransaction.sign(account1);
@@ -333,7 +333,7 @@ describe('Transaction', () => {
     const transfer = SystemProgram.transfer({
       fromPubkey: sender.publicKey,
       toPubkey: recipient,
-      lamports: 49,
+      tock: 49,
     });
     const expectedTransaction = new Transaction({
       recentBlockhash,
@@ -396,7 +396,7 @@ describe('Transaction', () => {
     const transfer = SystemProgram.transfer({
       fromPubkey: sender.publicKey,
       toPubkey: recipient,
-      lamports: 49,
+      tock: 49,
     });
     const expectedTransaction = new Transaction({recentBlockhash}).add(
       transfer,

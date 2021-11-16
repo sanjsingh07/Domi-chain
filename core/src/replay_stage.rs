@@ -26,28 +26,28 @@ use {
         voting_service::VoteOp,
         window_service::DuplicateSlotReceiver,
     },
-    solana_client::rpc_response::SlotUpdate,
-    solana_entry::entry::VerifyRecyclers,
-    solana_gossip::cluster_info::ClusterInfo,
-    solana_ledger::{
+    analog_client::rpc_response::SlotUpdate,
+    analog_entry::entry::VerifyRecyclers,
+    analog_gossip::cluster_info::ClusterInfo,
+    analog_ledger::{
         block_error::BlockError,
         blockstore::Blockstore,
         blockstore_processor::{self, BlockstoreProcessorError, TransactionStatusSender},
         leader_schedule_cache::LeaderScheduleCache,
     },
-    solana_measure::measure::Measure,
-    solana_metrics::inc_new_counter_info,
-    solana_poh::poh_recorder::{PohRecorder, GRACE_TICKS_FACTOR, MAX_GRACE_SLOTS},
-    solana_rpc::{
+    analog_measure::measure::Measure,
+    analog_metrics::inc_new_counter_info,
+    analog_poh::poh_recorder::{PohRecorder, GRACE_TICKS_FACTOR, MAX_GRACE_SLOTS},
+    analog_rpc::{
         optimistically_confirmed_bank_tracker::{BankNotification, BankNotificationSender},
         rpc_subscriptions::RpcSubscriptions,
     },
-    solana_runtime::{
+    analog_runtime::{
         accounts_background_service::AbsRequestSender, bank::Bank, bank::ExecuteTimings,
         bank::NewBankOptions, bank_forks::BankForks, commitment::BlockCommitmentCache,
         vote_sender_types::ReplayVoteSender,
     },
-    solana_sdk::{
+    analog_sdk::{
         clock::{BankId, Slot, MAX_PROCESSING_AGE, NUM_CONSECUTIVE_LEADER_SLOTS},
         genesis_config::ClusterType,
         hash::Hash,
@@ -57,7 +57,7 @@ use {
         timing::timestamp,
         transaction::Transaction,
     },
-    solana_vote_program::vote_state::Vote,
+    analog_vote_program::vote_state::Vote,
     std::{
         collections::{HashMap, HashSet},
         result,
@@ -356,7 +356,7 @@ impl ReplayStage {
 
         #[allow(clippy::cognitive_complexity)]
         let t_replay = Builder::new()
-            .name("solana-replay-stage".to_string())
+            .name("analog-replay-stage".to_string())
             .spawn(move || {
                 let verify_recyclers = VerifyRecyclers::default();
                 let _exit = Finalizer::new(exit.clone());
@@ -2882,9 +2882,9 @@ pub mod tests {
         vote_simulator::{self, VoteSimulator},
     };
     use crossbeam_channel::unbounded;
-    use solana_entry::entry::{self, Entry};
-    use solana_gossip::{cluster_info::Node, crds::Cursor};
-    use solana_ledger::{
+    use analog_entry::entry::{self, Entry};
+    use analog_gossip::{cluster_info::Node, crds::Cursor};
+    use analog_ledger::{
         blockstore::make_slot_entries,
         blockstore::{entries_to_test_shreds, BlockstoreError},
         create_new_tmp_ledger,
@@ -2895,16 +2895,16 @@ pub mod tests {
             SIZE_OF_COMMON_SHRED_HEADER, SIZE_OF_DATA_SHRED_HEADER, SIZE_OF_DATA_SHRED_PAYLOAD,
         },
     };
-    use solana_rpc::{
+    use analog_rpc::{
         optimistically_confirmed_bank_tracker::OptimisticallyConfirmedBank,
         rpc::create_test_transactions_and_populate_blockstore,
     };
-    use solana_runtime::{
+    use analog_runtime::{
         accounts_background_service::AbsRequestSender,
         commitment::BlockCommitment,
         genesis_utils::{GenesisConfigInfo, ValidatorVoteKeypairs},
     };
-    use solana_sdk::{
+    use analog_sdk::{
         clock::NUM_CONSECUTIVE_LEADER_SLOTS,
         genesis_config,
         hash::{hash, Hash},
@@ -2915,9 +2915,9 @@ pub mod tests {
         system_transaction,
         transaction::TransactionError,
     };
-    use solana_streamer::socket::SocketAddrSpace;
-    use solana_transaction_status::TransactionWithStatusMeta;
-    use solana_vote_program::{
+    use analog_streamer::socket::SocketAddrSpace;
+    use analog_transaction_status::TransactionWithStatusMeta;
+    use analog_vote_program::{
         vote_state::{VoteState, VoteStateVersions},
         vote_transaction,
     };
@@ -3393,7 +3393,7 @@ pub mod tests {
 
     #[test]
     fn test_dead_fork_invalid_slot_tick_count() {
-        solana_logger::setup();
+        analog_logger::setup();
         // Too many ticks per slot
         let res = check_dead_fork(|_keypair, bank| {
             let blockhash = bank.last_blockhash();
@@ -3611,7 +3611,7 @@ pub mod tests {
             bank.store_account(pubkey, &leader_vote_account);
         }
 
-        let leader_pubkey = solana_sdk::pubkey::new_rand();
+        let leader_pubkey = analog_sdk::pubkey::new_rand();
         let leader_lamports = 3;
         let genesis_config_info =
             create_genesis_config_with_leader(50, &leader_pubkey, leader_lamports);
@@ -3658,7 +3658,7 @@ pub mod tests {
             let _res = bank.transfer(
                 10,
                 &genesis_config_info.mint_keypair,
-                &solana_sdk::pubkey::new_rand(),
+                &analog_sdk::pubkey::new_rand(),
             );
             for _ in 0..genesis_config.ticks_per_slot {
                 bank.register_tick(&Hash::default());

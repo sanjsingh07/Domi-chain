@@ -1,12 +1,12 @@
-use solana_cli::cli::{process_command, CliCommand, CliConfig};
-use solana_client::rpc_client::RpcClient;
-use solana_faucet::faucet::run_local_faucet;
-use solana_sdk::{
+use analog_cli::cli::{process_command, CliCommand, CliConfig};
+use analog_client::rpc_client::RpcClient;
+use analog_faucet::faucet::run_local_faucet;
+use analog_sdk::{
     commitment_config::CommitmentConfig,
     signature::{Keypair, Signer},
 };
-use solana_streamer::socket::SocketAddrSpace;
-use solana_test_validator::TestValidator;
+use analog_streamer::socket::SocketAddrSpace;
+use analog_test_validator::TestValidator;
 
 #[test]
 fn test_cli_request_airdrop() {
@@ -20,7 +20,7 @@ fn test_cli_request_airdrop() {
     bob_config.json_rpc_url = test_validator.rpc_url();
     bob_config.command = CliCommand::Airdrop {
         pubkey: None,
-        lamports: 50,
+        tock: 50,
     };
     let keypair = Keypair::new();
     bob_config.signers = vec![&keypair];

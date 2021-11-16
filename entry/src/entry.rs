@@ -10,16 +10,16 @@ use rand::{thread_rng, Rng};
 use rayon::prelude::*;
 use rayon::ThreadPool;
 use serde::{Deserialize, Serialize};
-use solana_measure::measure::Measure;
-use solana_merkle_tree::MerkleTree;
-use solana_metrics::*;
-use solana_perf::cuda_runtime::PinnedVec;
-use solana_perf::perf_libs;
-use solana_perf::recycler::Recycler;
-use solana_rayon_threadlimit::get_thread_count;
-use solana_sdk::hash::Hash;
-use solana_sdk::timing;
-use solana_sdk::transaction::{Result, SanitizedTransaction, Transaction, VersionedTransaction};
+use analog_measure::measure::Measure;
+use analog_merkle_tree::MerkleTree;
+use analog_metrics::*;
+use analog_perf::cuda_runtime::PinnedVec;
+use analog_perf::perf_libs;
+use analog_perf::recycler::Recycler;
+use analog_rayon_threadlimit::get_thread_count;
+use analog_sdk::hash::Hash;
+use analog_sdk::timing;
+use analog_sdk::transaction::{Result, SanitizedTransaction, Transaction, VersionedTransaction};
 use std::cell::RefCell;
 use std::ffi::OsStr;
 use std::sync::mpsc::{Receiver, Sender};
@@ -51,9 +51,9 @@ fn init(name: &OsStr) {
     unsafe {
         INIT_HOOK.call_once(|| {
             let path;
-            let lib_name = if let Some(perf_libs_path) = solana_perf::perf_libs::locate_perf_libs()
+            let lib_name = if let Some(perf_libs_path) = analog_perf::perf_libs::locate_perf_libs()
             {
-                solana_perf::perf_libs::append_to_ld_library_path(
+                analog_perf::perf_libs::append_to_ld_library_path(
                     perf_libs_path.to_str().unwrap_or("").to_string(),
                 );
                 path = perf_libs_path.join(name);
@@ -414,7 +414,7 @@ impl EntrySlice for [Entry] {
     }
 
     fn verify_cpu_x86_simd(&self, start_hash: &Hash, simd_len: usize) -> EntryVerificationState {
-        use solana_sdk::hash::HASH_BYTES;
+        use analog_sdk::hash::HASH_BYTES;
         let now = Instant::now();
         let genesis = [Entry {
             num_hashes: 0,
@@ -685,7 +685,7 @@ pub fn next_entry(prev_hash: &Hash, num_hashes: u64, transactions: Vec<Transacti
 #[cfg(test)]
 mod tests {
     use super::*;
-    use solana_sdk::{
+    use analog_sdk::{
         hash::{hash, Hash},
         pubkey::Pubkey,
         signature::{Keypair, Signer},
@@ -721,7 +721,7 @@ mod tests {
 
     #[test]
     fn test_transaction_signing() {
-        use solana_sdk::signature::Signature;
+        use analog_sdk::signature::Signature;
         let zero = Hash::default();
 
         let keypair = Keypair::new();
@@ -782,7 +782,7 @@ mod tests {
 
     #[test]
     fn test_verify_slice1() {
-        solana_logger::setup();
+        analog_logger::setup();
         let zero = Hash::default();
         let one = hash(zero.as_ref());
         assert!(vec![][..].verify(&zero)); // base case
@@ -797,7 +797,7 @@ mod tests {
 
     #[test]
     fn test_verify_slice_with_hashes1() {
-        solana_logger::setup();
+        analog_logger::setup();
         let zero = Hash::default();
         let one = hash(zero.as_ref());
         let two = hash(one.as_ref());
@@ -817,7 +817,7 @@ mod tests {
 
     #[test]
     fn test_verify_slice_with_hashes_and_transactions() {
-        solana_logger::setup();
+        analog_logger::setup();
         let zero = Hash::default();
         let one = hash(zero.as_ref());
         let two = hash(one.as_ref());
@@ -962,7 +962,7 @@ mod tests {
 
     #[test]
     fn test_poh_verify_fuzz() {
-        solana_logger::setup();
+        analog_logger::setup();
         for _ in 0..100 {
             let mut time = Measure::start("ticks");
             let num_ticks = thread_rng().gen_range(1, 100);

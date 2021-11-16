@@ -73,29 +73,29 @@ if [[ $CI_OS_NAME = windows ]]; then
   BINS=(
     cargo-build-bpf
     cargo-test-bpf
-    solana
-    solana-install
-    solana-install-init
-    solana-keygen
-    solana-stake-accounts
-    solana-test-validator
-    solana-tokens
+    analog
+    analog-install
+    analog-install-init
+    analog-keygen
+    analog-stake-accounts
+    analog-test-validator
+    analog-tokens
   )
 else
   ./fetch-perf-libs.sh
 
   BINS=(
-    solana
-    solana-bench-tps
-    solana-faucet
-    solana-gossip
-    solana-install
-    solana-keygen
-    solana-ledger-tool
-    solana-log-analyzer
-    solana-net-shaper
-    solana-sys-tuner
-    solana-validator
+    analog
+    analog-bench-tps
+    analog-faucet
+    analog-gossip
+    analog-install
+    analog-keygen
+    analog-ledger-tool
+    analog-log-analyzer
+    analog-net-shaper
+    analog-sys-tuner
+    analog-validator
     rbpf-cli
   )
 
@@ -104,18 +104,18 @@ else
     BINS+=(
       cargo-build-bpf
       cargo-test-bpf
-      solana-dos
-      solana-install-init
-      solana-stake-accounts
-      solana-test-validator
-      solana-tokens
-      solana-watchtower
+      analog-dos
+      analog-install-init
+      analog-stake-accounts
+      analog-test-validator
+      analog-tokens
+      analog-watchtower
     )
   fi
 
-  #XXX: Ensure `solana-genesis` is built LAST!
-  # See https://github.com/solana-labs/solana/issues/5826
-  BINS+=(solana-genesis)
+  #XXX: Ensure `analog-genesis` is built LAST!
+  # See https://github.com/analog-labs/solana/issues/5826
+  BINS+=(analog-genesis)
 fi
 
 binArgs=()

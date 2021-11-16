@@ -15,9 +15,9 @@ pub struct Rent {
     pub burn_percent: u8,
 }
 
-/// default rental rate in lamports/byte-year, based on:
-///  10^9 lamports per SOL
-///  $1 per SOL
+/// default rental rate in tock/byte-year, based on:
+///  10^9 tock per ANLOG
+///  $1 per ANLOG
 ///  $0.01 per megabyte day
 ///  $3.65 per megabyte year
 pub const DEFAULT_LAMPORTS_PER_BYTE_YEAR: u64 = 1_000_000_000 / 100 * 365 / (1024 * 1024);
@@ -162,9 +162,9 @@ mod tests {
             "\n\n\
              ==================================================\n\
              empty account, no data:\n\
-             \t{} lamports per epoch, {} lamports to be rent_exempt\n\n\
+             \t{} tock per epoch, {} tock to be rent_exempt\n\n\
              stake_history, which is {}kB of data:\n\
-             \t{} lamports per epoch, {} lamports to be rent_exempt\n\
+             \t{} tock per epoch, {} tock to be rent_exempt\n\
              ==================================================\n\n",
             rent.due(
                 0,

@@ -2,12 +2,12 @@
 
 use crate::banking_stage::HOLD_TRANSACTIONS_SLOT_OFFSET;
 use crate::result::{Error, Result};
-use solana_metrics::{inc_new_counter_debug, inc_new_counter_info};
-use solana_perf::packet::PacketsRecycler;
-use solana_perf::recycler::Recycler;
-use solana_poh::poh_recorder::PohRecorder;
-use solana_sdk::clock::DEFAULT_TICKS_PER_SLOT;
-use solana_streamer::streamer::{self, PacketReceiver, PacketSender};
+use analog_metrics::{inc_new_counter_debug, inc_new_counter_info};
+use analog_perf::packet::PacketsRecycler;
+use analog_perf::recycler::Recycler;
+use analog_poh::poh_recorder::PohRecorder;
+use analog_sdk::clock::DEFAULT_TICKS_PER_SLOT;
+use analog_streamer::streamer::{self, PacketReceiver, PacketSender};
 use std::net::UdpSocket;
 use std::sync::atomic::AtomicBool;
 use std::sync::mpsc::{channel, RecvTimeoutError};
@@ -160,7 +160,7 @@ impl FetchStage {
         let poh_recorder = poh_recorder.clone();
 
         let fwd_thread_hdl = Builder::new()
-            .name("solana-fetch-stage-fwd-rcvr".to_string())
+            .name("analog-fetch-stage-fwd-rcvr".to_string())
             .spawn(move || loop {
                 if let Err(e) =
                     Self::handle_forwarded_packets(&forward_receiver, &sender, &poh_recorder)

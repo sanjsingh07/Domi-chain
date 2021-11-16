@@ -8,7 +8,7 @@ import {
   MetadataJsonFile,
 } from "@metaplex/js";
 import ContentLoader from "react-content-loader";
-import ErrorLogo from "img/logos-solana/dark-solana-logo.svg";
+import ErrorLogo from "img/logos-solana/dark-analog-logo.svg";
 import { getLast, pubkeyToString } from "utils";
 
 const MAX_TIME_LOADING_IMAGE = 5000; /* 5 seconds */
@@ -27,7 +27,7 @@ const LoadingPlaceholder = () => (
 );
 
 const ErrorPlaceHolder = () => (
-  <img src={ErrorLogo} width="120" height="120" alt="Solana Logo" />
+  <img src={ErrorLogo} width="120" height="120" alt="Analog Logo" />
 );
 
 const ViewOriginalArtContentLink = ({ src }: { src: string }) => {

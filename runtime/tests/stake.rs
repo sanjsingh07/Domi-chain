@@ -1,10 +1,10 @@
 #![allow(clippy::integer_arithmetic)]
-use solana_runtime::{
+use analog_runtime::{
     bank::Bank,
     bank_client::BankClient,
     genesis_utils::{create_genesis_config_with_leader, GenesisConfigInfo},
 };
-use solana_sdk::{
+use analog_sdk::{
     account::from_account,
     account_utils::StateMut,
     client::SyncClient,
@@ -17,8 +17,8 @@ use solana_sdk::{
     },
     sysvar::{self, stake_history::StakeHistory},
 };
-use solana_stake_program::stake_state;
-use solana_vote_program::{
+use analog_stake_program::stake_state;
+use analog_vote_program::{
     vote_instruction,
     vote_state::{Vote, VoteInit, VoteState, VoteStateVersions},
 };
@@ -100,7 +100,7 @@ fn get_staked(bank: &Bank, stake_pubkey: &Pubkey) -> u64 {
 
 #[test]
 fn test_stake_create_and_split_single_signature() {
-    solana_logger::setup();
+    analog_logger::setup();
 
     let GenesisConfigInfo {
         genesis_config,
@@ -108,7 +108,7 @@ fn test_stake_create_and_split_single_signature() {
         ..
     } = create_genesis_config_with_leader(
         100_000_000_000,
-        &solana_sdk::pubkey::new_rand(),
+        &analog_sdk::pubkey::new_rand(),
         1_000_000,
     );
 
@@ -121,7 +121,7 @@ fn test_stake_create_and_split_single_signature() {
 
     let authorized = Authorized::auto(&staker_pubkey);
 
-    let lamports = 1_000_000;
+    let tock = 1_000_000;
 
     // Create stake account with seed
     let message = Message::new(
@@ -132,7 +132,7 @@ fn test_stake_create_and_split_single_signature() {
             "stake",        // seed
             &authorized,
             &Lockup::default(),
-            lamports,
+            tock,
         ),
         Some(&staker_pubkey),
     );
@@ -150,7 +150,7 @@ fn test_stake_create_and_split_single_signature() {
         &stake_instruction::split_with_seed(
             &stake_address, // original
             &staker_pubkey, // authorized
-            lamports / 2,
+            tock / 2,
             &split_stake_address, // new address
             &staker_pubkey,       // base
             "split_stake",        // seed
@@ -170,7 +170,7 @@ fn test_stake_create_and_split_to_existing_system_account() {
     // Ensure stake-split allows the user to promote an existing system account into
     // a stake account.
 
-    solana_logger::setup();
+    analog_logger::setup();
 
     let GenesisConfigInfo {
         genesis_config,
@@ -178,7 +178,7 @@ fn test_stake_create_and_split_to_existing_system_account() {
         ..
     } = create_genesis_config_with_leader(
         100_000_000_000,
-        &solana_sdk::pubkey::new_rand(),
+        &analog_sdk::pubkey::new_rand(),
         1_000_000,
     );
 
@@ -191,7 +191,7 @@ fn test_stake_create_and_split_to_existing_system_account() {
 
     let authorized = Authorized::auto(&staker_pubkey);
 
-    let lamports = 1_000_000;
+    let tock = 1_000_000;
 
     // Create stake account with seed
     let message = Message::new(
@@ -202,7 +202,7 @@ fn test_stake_create_and_split_to_existing_system_account() {
             "stake",        // seed
             &authorized,
             &Lockup::default(),
-            lamports,
+            tock,
         ),
         Some(&staker_pubkey),
     );
@@ -224,12 +224,12 @@ fn test_stake_create_and_split_to_existing_system_account() {
         existing_lamports
     );
 
-    // Verify the split succeeds with lamports in the destination account
+    // Verify the split succeeds with tock in the destination account
     let message = Message::new(
         &stake_instruction::split_with_seed(
             &stake_address, // original
             &staker_pubkey, // authorized
-            lamports / 2,
+            tock / 2,
             &split_stake_address, // new address
             &staker_pubkey,       // base
             "split_stake",        // seed
@@ -238,10 +238,10 @@ fn test_stake_create_and_split_to_existing_system_account() {
     );
     bank_client
         .send_and_confirm_message(&[&staker_keypair], message)
-        .expect("failed to split into account with lamports");
+        .expect("failed to split into account with tock");
     assert_eq!(
         bank_client.get_balance(&split_stake_address).unwrap(),
-        existing_lamports + lamports / 2
+        existing_lamports + tock / 2
     );
 }
 
@@ -260,7 +260,7 @@ fn test_stake_account_lifetime() {
         ..
     } = create_genesis_config_with_leader(
         100_000_000_000,
-        &solana_sdk::pubkey::new_rand(),
+        &analog_sdk::pubkey::new_rand(),
         1_000_000,
     );
     let bank = Bank::new_for_tests(&genesis_config);
@@ -304,7 +304,7 @@ fn test_stake_account_lifetime() {
         .send_and_confirm_message(&[&mint_keypair, &stake_keypair], message)
         .expect("failed to create and delegate stake account");
 
-    // Test that correct lamports are staked
+    // Test that correct tock are staked
     let account = bank.get_account(&stake_pubkey).expect("account not found");
     let stake_state = account.state().expect("couldn't unpack account data");
     if let StakeState::Stake(_meta, stake) = stake_state {
@@ -318,7 +318,7 @@ fn test_stake_account_lifetime() {
         &[stake_instruction::withdraw(
             &stake_pubkey,
             &stake_pubkey,
-            &solana_sdk::pubkey::new_rand(),
+            &analog_sdk::pubkey::new_rand(),
             1,
             None,
         )],
@@ -328,7 +328,7 @@ fn test_stake_account_lifetime() {
         .send_and_confirm_message(&[&mint_keypair, &stake_keypair], message)
         .is_err());
 
-    // Test that lamports are still staked
+    // Test that tock are still staked
     let account = bank.get_account(&stake_pubkey).expect("account not found");
     let stake_state = account.state().expect("couldn't unpack account data");
     if let StakeState::Stake(_meta, stake) = stake_state {
@@ -368,9 +368,9 @@ fn test_stake_account_lifetime() {
 
     // Test that balance increased, and that the balance got staked
     let staked = get_staked(&bank, &stake_pubkey);
-    let lamports = bank.get_balance(&stake_pubkey);
+    let tock = bank.get_balance(&stake_pubkey);
     assert!(staked > pre_staked);
-    assert!(lamports > 1_000_000);
+    assert!(tock > 1_000_000);
 
     // split the stake
     let split_stake_keypair = Keypair::new();
@@ -382,7 +382,7 @@ fn test_stake_account_lifetime() {
         &stake_instruction::split(
             &stake_pubkey,
             &stake_pubkey,
-            lamports / 2,
+            tock / 2,
             &split_stake_pubkey,
         ),
         Some(&mint_pubkey),
@@ -413,8 +413,8 @@ fn test_stake_account_lifetime() {
         &[stake_instruction::withdraw(
             &split_stake_pubkey,
             &stake_pubkey,
-            &solana_sdk::pubkey::new_rand(),
-            lamports / 2 - split_staked + 1,
+            &analog_sdk::pubkey::new_rand(),
+            tock / 2 - split_staked + 1,
             None,
         )],
         Some(&mint_pubkey),
@@ -435,8 +435,8 @@ fn test_stake_account_lifetime() {
         &[stake_instruction::withdraw(
             &split_stake_pubkey,
             &stake_pubkey,
-            &solana_sdk::pubkey::new_rand(),
-            lamports / 2,
+            &analog_sdk::pubkey::new_rand(),
+            tock / 2,
             None,
         )],
         Some(&mint_pubkey),
@@ -451,8 +451,8 @@ fn test_stake_account_lifetime() {
         &[stake_instruction::withdraw(
             &split_stake_pubkey,
             &stake_pubkey,
-            &solana_sdk::pubkey::new_rand(),
-            lamports / 2 - split_staked,
+            &analog_sdk::pubkey::new_rand(),
+            tock / 2 - split_staked,
             None,
         )],
         Some(&mint_pubkey),
@@ -476,7 +476,7 @@ fn test_stake_account_lifetime() {
         &[stake_instruction::withdraw(
             &split_stake_pubkey,
             &stake_pubkey,
-            &solana_sdk::pubkey::new_rand(),
+            &analog_sdk::pubkey::new_rand(),
             split_staked,
             None,
         )],
@@ -488,7 +488,7 @@ fn test_stake_account_lifetime() {
 
     // verify all the math sums to zero
     assert_eq!(bank.get_balance(&split_stake_pubkey), 0);
-    assert_eq!(bank.get_balance(&stake_pubkey), lamports - lamports / 2);
+    assert_eq!(bank.get_balance(&stake_pubkey), tock - tock / 2);
 }
 
 #[test]
@@ -504,7 +504,7 @@ fn test_create_stake_account_from_seed() {
         ..
     } = create_genesis_config_with_leader(
         100_000_000_000,
-        &solana_sdk::pubkey::new_rand(),
+        &analog_sdk::pubkey::new_rand(),
         1_000_000,
     );
     let bank = Bank::new_for_tests(&genesis_config);
@@ -553,7 +553,7 @@ fn test_create_stake_account_from_seed() {
         .send_and_confirm_message(&[&mint_keypair], message)
         .expect("failed to create and delegate stake account");
 
-    // Test that correct lamports are staked
+    // Test that correct tock are staked
     let account = bank.get_account(&stake_pubkey).expect("account not found");
     let stake_state = account.state().expect("couldn't unpack account data");
     if let StakeState::Stake(_meta, stake) = stake_state {

@@ -5,20 +5,20 @@ use crate::{
 use clap::{value_t, value_t_or_exit, App, AppSettings, Arg, ArgMatches, SubCommand};
 use console::{style, Emoji};
 use serde::{Deserialize, Serialize};
-use solana_clap_utils::{
+use analog_clap_utils::{
     input_parsers::*,
     input_validators::*,
     keypair::DefaultSigner,
     offline::{blockhash_arg, BLOCKHASH_ARG},
 };
-use solana_cli_output::{
+use analog_cli_output::{
     display::{
         build_balance_message, format_labeled_address, new_spinner_progress_bar,
         println_name_value, println_transaction, unix_timestamp_to_string, writeln_name_value,
     },
     *,
 };
-use solana_client::{
+use analog_client::{
     client_error::ClientErrorKind,
     pubsub_client::PubsubClient,
     rpc_client::{GetConfirmedSignaturesForAddress2Config, RpcClient},
@@ -31,8 +31,8 @@ use solana_client::{
     rpc_request::DELINQUENT_VALIDATOR_SLOT_DISTANCE,
     rpc_response::SlotInfo,
 };
-use solana_remote_wallet::remote_wallet::RemoteWalletManager;
-use solana_sdk::{
+use analog_remote_wallet::remote_wallet::RemoteWalletManager;
+use analog_sdk::{
     account::from_account,
     account_utils::StateMut,
     clock::{self, Clock, Slot},
@@ -40,7 +40,7 @@ use solana_sdk::{
     epoch_schedule::Epoch,
     hash::Hash,
     message::Message,
-    native_token::lamports_to_sol,
+    native_token::tock_to_anlog,
     nonce::State as NonceState,
     pubkey::{self, Pubkey},
     rent::Rent,
@@ -57,8 +57,8 @@ use solana_sdk::{
     timing,
     transaction::Transaction,
 };
-use solana_transaction_status::UiTransactionEncoding;
-use solana_vote_program::vote_state::VoteState;
+use analog_transaction_status::UiTransactionEncoding;
+use analog_vote_program::vote_state::VoteState;
 use std::{
     collections::{BTreeMap, HashMap, VecDeque},
     fmt,
@@ -217,7 +217,7 @@ impl ClusterQuerySubCommands for App<'_, '_> {
             ),
         )
         .subcommand(
-            SubCommand::with_name("supply").about("Get information about the cluster supply of SOL")
+            SubCommand::with_name("supply").about("Get information about the cluster supply of ANLOG")
             .arg(
                 Arg::with_name("print_accounts")
                     .long("print-accounts")
@@ -226,7 +226,7 @@ impl ClusterQuerySubCommands for App<'_, '_> {
             ),
         )
         .subcommand(
-            SubCommand::with_name("total-supply").about("Get total number of SOL")
+            SubCommand::with_name("total-supply").about("Get total number of ANLOG")
             .setting(AppSettings::Hidden),
         )
         .subcommand(
@@ -261,13 +261,13 @@ impl ClusterQuerySubCommands for App<'_, '_> {
                         .help("Print timestamp (unix time + microseconds as in gettimeofday) before each line"),
                 )
                 .arg(
-                    Arg::with_name("lamports")
-                        .long("lamports")
+                    Arg::with_name("tock")
+                        .long("tock")
                         .value_name("NUMBER")
                         .takes_value(true)
                         .default_value("1")
                         .validator(is_amount)
-                        .help("Number of lamports to transfer for each transaction"),
+                        .help("Number of tock to transfer for each transaction"),
                 )
                 .arg(
                     Arg::with_name("timeout")
@@ -336,10 +336,10 @@ impl ClusterQuerySubCommands for App<'_, '_> {
                         "Only show stake accounts delegated to the provided vote accounts. "),
                 )
                 .arg(
-                    Arg::with_name("lamports")
-                        .long("lamports")
+                    Arg::with_name("tock")
+                        .long("tock")
                         .takes_value(false)
-                        .help("Display balance in lamports instead of SOL"),
+                        .help("Display balance in tock instead of ANLOG"),
                 ),
         )
         .subcommand(
@@ -347,10 +347,10 @@ impl ClusterQuerySubCommands for App<'_, '_> {
                 .about("Show summary information about the current validators")
                 .alias("show-validators")
                 .arg(
-                    Arg::with_name("lamports")
-                        .long("lamports")
+                    Arg::with_name("tock")
+                        .long("tock")
                         .takes_value(false)
-                        .help("Display balance in lamports instead of SOL"),
+                        .help("Display balance in tock instead of ANLOG"),
                 )
                 .arg(
                     Arg::with_name("number")
@@ -465,10 +465,10 @@ impl ClusterQuerySubCommands for App<'_, '_> {
                         .help("Length of data in the account to calculate rent for, or moniker: [nonce, stake, system, vote]"),
                 )
                 .arg(
-                    Arg::with_name("lamports")
-                        .long("lamports")
+                    Arg::with_name("tock")
+                        .long("tock")
                         .takes_value(false)
-                        .help("Display rent in lamports instead of SOL"),
+                        .help("Display rent in tock instead of ANLOG"),
                 ),
         )
     }
@@ -513,7 +513,7 @@ pub fn parse_cluster_ping(
     default_signer: &DefaultSigner,
     wallet_manager: &mut Option<Arc<RemoteWalletManager>>,
 ) -> Result<CliCommandInfo, CliError> {
-    let lamports = value_t_or_exit!(matches, "lamports", u64);
+    let tock = value_t_or_exit!(matches, "tock", u64);
     let interval = Duration::from_secs(value_t_or_exit!(matches, "interval", u64));
     let count = if matches.is_present("count") {
         Some(value_t_or_exit!(matches, "count", u64))
@@ -525,7 +525,7 @@ pub fn parse_cluster_ping(
     let print_timestamp = matches.is_present("print_timestamp");
     Ok(CliCommandInfo {
         command: CliCommand::Ping {
-            lamports,
+            tock,
             interval,
             count,
             timeout,
@@ -620,7 +620,7 @@ pub fn parse_show_stakes(
     matches: &ArgMatches<'_>,
     wallet_manager: &mut Option<Arc<RemoteWalletManager>>,
 ) -> Result<CliCommandInfo, CliError> {
-    let use_lamports_unit = matches.is_present("lamports");
+    let use_lamports_unit = matches.is_present("tock");
     let vote_account_pubkeys =
         pubkeys_of_multiple_signers(matches, "vote_account_pubkeys", wallet_manager)?;
 
@@ -634,7 +634,7 @@ pub fn parse_show_stakes(
 }
 
 pub fn parse_show_validators(matches: &ArgMatches<'_>) -> Result<CliCommandInfo, CliError> {
-    let use_lamports_unit = matches.is_present("lamports");
+    let use_lamports_unit = matches.is_present("tock");
     let number_validators = matches.is_present("number");
     let reverse_sort = matches.is_present("reverse");
     let keep_unstaked_delinquents = matches.is_present("keep_unstaked_delinquents");
@@ -1345,7 +1345,7 @@ pub fn process_supply(
 
 pub fn process_total_supply(rpc_client: &RpcClient, _config: &CliConfig) -> ProcessResult {
     let supply = rpc_client.supply()?.value;
-    Ok(format!("{} SOL", lamports_to_sol(supply.total)))
+    Ok(format!("{} ANLOG",tock_to_anlog(supply.total)))
 }
 
 pub fn process_get_transaction_count(rpc_client: &RpcClient, _config: &CliConfig) -> ProcessResult {
@@ -1356,7 +1356,7 @@ pub fn process_get_transaction_count(rpc_client: &RpcClient, _config: &CliConfig
 pub fn process_ping(
     rpc_client: &RpcClient,
     config: &CliConfig,
-    lamports: u64,
+    tock: u64,
     interval: &Duration,
     count: &Option<u64>,
     timeout: &Duration,
@@ -1407,14 +1407,14 @@ pub fn process_ping(
             .unwrap();
         blockhash_transaction_count += 1;
 
-        let build_message = |lamports| {
-            let ix = system_instruction::transfer(&config.signers[0].pubkey(), &to, lamports);
+        let build_message = |tock| {
+            let ix = system_instruction::transfer(&config.signers[0].pubkey(), &to, tock);
             Message::new(&[ix], Some(&config.signers[0].pubkey()))
         };
         let (message, _) = resolve_spend_tx_and_check_account_balance(
             rpc_client,
             false,
-            SpendAmount::Some(lamports),
+            SpendAmount::Some(tock),
             &blockhash,
             &config.signers[0].pubkey(),
             build_message,
@@ -1449,7 +1449,7 @@ pub fn process_ping(
                                 println!(
                                     "{}{}{} lamport(s) transferred: seq={:<3} time={:>4}ms signature={}",
                                     timestamp(),
-                                    CHECK_MARK, lamports, seq, elapsed_time_millis, signature
+                                    CHECK_MARK, tock, seq, elapsed_time_millis, signature
                                 );
                                 confirmed_count += 1;
                             }
@@ -1707,7 +1707,7 @@ pub fn process_show_stakes(
 
     let mut program_accounts_config = RpcProgramAccountsConfig {
         account_config: RpcAccountInfoConfig {
-            encoding: Some(solana_account_decoder::UiAccountEncoding::Base64),
+            encoding: Some(analog_account_decoder::UiAccountEncoding::Base64),
             ..RpcAccountInfoConfig::default()
         },
         ..RpcProgramAccountsConfig::default()
@@ -1758,7 +1758,7 @@ pub fn process_show_stakes(
                         stake_accounts.push(CliKeyedStakeState {
                             stake_pubkey: stake_pubkey.to_string(),
                             stake_state: build_stake_state(
-                                stake_account.lamports,
+                                stake_account.tock,
                                 &stake_state,
                                 use_lamports_unit,
                                 &stake_history,
@@ -1776,7 +1776,7 @@ pub fn process_show_stakes(
                         stake_accounts.push(CliKeyedStakeState {
                             stake_pubkey: stake_pubkey.to_string(),
                             stake_state: build_stake_state(
-                                stake_account.lamports,
+                                stake_account.tock,
                                 &stake_state,
                                 use_lamports_unit,
                                 &stake_history,
@@ -2051,8 +2051,8 @@ struct CliRentCalculation {
 }
 
 impl CliRentCalculation {
-    fn build_balance_message(&self, lamports: u64) -> String {
-        build_balance_message(lamports, self.use_lamports_unit, true)
+    fn build_balance_message(&self, tock: u64) -> String {
+        build_balance_message(tock, self.use_lamports_unit, true)
     }
 }
 
@@ -2141,7 +2141,7 @@ pub fn process_calculate_rent(
 mod tests {
     use super::*;
     use crate::{clap_app::get_clap_app, cli::parse_command};
-    use solana_sdk::signature::{write_keypair, Keypair};
+    use analog_sdk::signature::{write_keypair, Keypair};
     use std::str::FromStr;
     use tempfile::NamedTempFile;
 
@@ -2300,7 +2300,7 @@ mod tests {
             parse_command(&test_ping, &default_signer, &mut None).unwrap(),
             CliCommandInfo {
                 command: CliCommand::Ping {
-                    lamports: 1,
+                    tock: 1,
                     interval: Duration::from_secs(1),
                     count: Some(2),
                     timeout: Duration::from_secs(3),

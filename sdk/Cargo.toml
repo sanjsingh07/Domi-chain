@@ -1,11 +1,11 @@
 [package]
-name = "solana-sdk"
+name = "analog-sdk"
 version = "1.9.0"
-description = "Solana SDK"
-authors = ["Solana Maintainers <maintainers@solana.foundation>"]
-repository = "https://github.com/solana-labs/solana"
-homepage = "https://solana.com/"
-documentation = "https://docs.rs/solana-sdk"
+description = "Analog SDK"
+authors = ["Analog Maintainers <maintainers@analog.foundation>"]
+repository = "https://github.com/analog-labs/analog"
+homepage = "https://analog.com/"
+documentation = "https://docs.rs/analog-sdk"
 readme = "README.md"
 license = "Apache-2.0"
 edition = "2018"
@@ -13,7 +13,7 @@ edition = "2018"
 [features]
 # "program" feature is a legacy feature retained to support v1.3 and older
 # programs.  New development should not use this feature.  Instead use the
-# solana-program crate
+# solana-programcrate
 program = []
 
 default = [
@@ -30,8 +30,8 @@ full = [
     "serde_json",
     "ed25519-dalek",
     "ed25519-dalek-bip32",
-    "solana-logger",
-    "solana-crate-features",
+    "analog-logger",
+    "analog-crate-features",
     "libsecp256k1",
     "sha3",
     "digest",
@@ -72,12 +72,12 @@ serde_derive = "1.0.103"
 serde_json = { version = "1.0.69", optional = true }
 sha2 = "0.9.8"
 sha3 = { version = "0.9.1", optional = true }
-solana-crate-features = { path = "../crate-features", version = "=1.9.0", optional = true }
-solana-logger = { path = "../logger", version = "=1.9.0", optional = true }
-solana-frozen-abi = { path = "../frozen-abi", version = "=1.9.0" }
-solana-frozen-abi-macro = { path = "../frozen-abi/macro", version = "=1.9.0" }
-solana-program = { path = "program", version = "=1.9.0" }
-solana-sdk-macro = { path = "macro", version = "=1.9.0" }
+analog-crate-features = { path = "../crate-features", version = "=1.9.0", optional = true }
+analog-logger = { path = "../logger", version = "=1.9.0", optional = true }
+analog-frozen-abi = { path = "../frozen-abi", version = "=1.9.0" }
+analog-frozen-abi-macro = { path = "../frozen-abi/macro", version = "=1.9.0" }
+solana-program= { path = "program", version = "=1.9.0" }
+analog-sdk-macro = { path = "macro", version = "=1.9.0" }
 thiserror = "1.0"
 uriparse = "0.6.3"
 

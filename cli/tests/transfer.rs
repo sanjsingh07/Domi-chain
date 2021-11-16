@@ -1,29 +1,29 @@
 #![allow(clippy::redundant_closure)]
-use solana_cli::{
+use analog_cli::{
     cli::{process_command, request_and_confirm_airdrop, CliCommand, CliConfig},
     spend_utils::SpendAmount,
     test_utils::{check_ready, check_recent_balance},
 };
-use solana_cli_output::{parse_sign_only_reply_string, OutputFormat};
-use solana_client::{
+use analog_cli_output::{parse_sign_only_reply_string, OutputFormat};
+use analog_client::{
     blockhash_query::{self, BlockhashQuery},
     nonce_utils,
     rpc_client::RpcClient,
 };
-use solana_faucet::faucet::run_local_faucet;
-use solana_sdk::{
+use analog_faucet::faucet::run_local_faucet;
+use analog_sdk::{
     commitment_config::CommitmentConfig,
     nonce::State as NonceState,
     pubkey::Pubkey,
     signature::{keypair_from_seed, Keypair, NullSigner, Signer},
     stake,
 };
-use solana_streamer::socket::SocketAddrSpace;
-use solana_test_validator::TestValidator;
+use analog_streamer::socket::SocketAddrSpace;
+use analog_test_validator::TestValidator;
 
 #[test]
 fn test_transfer() {
-    solana_logger::setup();
+    analog_logger::setup();
     let mint_keypair = Keypair::new();
     let mint_pubkey = mint_keypair.pubkey();
     let faucet_addr = run_local_faucet(mint_keypair, None);
@@ -280,7 +280,7 @@ fn test_transfer() {
 
 #[test]
 fn test_transfer_multisession_signing() {
-    solana_logger::setup();
+    analog_logger::setup();
     let mint_keypair = Keypair::new();
     let mint_pubkey = mint_keypair.pubkey();
     let faucet_addr = run_local_faucet(mint_keypair, None);
@@ -412,7 +412,7 @@ fn test_transfer_multisession_signing() {
 
 #[test]
 fn test_transfer_all() {
-    solana_logger::setup();
+    analog_logger::setup();
     let mint_keypair = Keypair::new();
     let mint_pubkey = mint_keypair.pubkey();
     let faucet_addr = run_local_faucet(mint_keypair, None);
@@ -465,7 +465,7 @@ fn test_transfer_all() {
 
 #[test]
 fn test_transfer_unfunded_recipient() {
-    solana_logger::setup();
+    analog_logger::setup();
     let mint_keypair = Keypair::new();
     let mint_pubkey = mint_keypair.pubkey();
     let faucet_addr = run_local_faucet(mint_keypair, None);
@@ -518,7 +518,7 @@ fn test_transfer_unfunded_recipient() {
 
 #[test]
 fn test_transfer_with_seed() {
-    solana_logger::setup();
+    analog_logger::setup();
     let mint_keypair = Keypair::new();
     let mint_pubkey = mint_keypair.pubkey();
     let faucet_addr = run_local_faucet(mint_keypair, None);

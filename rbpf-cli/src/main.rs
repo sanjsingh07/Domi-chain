@@ -1,7 +1,7 @@
 use clap::{crate_version, App, Arg};
 use serde::{Deserialize, Serialize};
 use serde_json::Result;
-use solana_bpf_loader_program::{
+use analog_bpf_loader_program::{
     create_vm, serialization::serialize_parameters, syscalls::register_syscalls, BpfError,
     ThisInstructionMeter,
 };
@@ -12,7 +12,7 @@ use solana_rbpf::{
     verifier::check,
     vm::{Config, DynamicAnalysis, Executable},
 };
-use solana_sdk::{
+use analog_sdk::{
     account::AccountSharedData, bpf_loader, process_instruction::InvokeContext, pubkey::Pubkey,
 };
 use std::{fs::File, io::Read, io::Seek, io::SeekFrom, path::Path};
@@ -24,7 +24,7 @@ struct Account {
     owner: Pubkey,
     is_signer: bool,
     is_writable: bool,
-    lamports: u64,
+    tock: u64,
     data: Vec<u8>,
 }
 #[derive(Serialize, Deserialize)]
@@ -43,10 +43,10 @@ fn load_accounts(path: &Path) -> Result<Input> {
 }
 
 fn main() {
-    solana_logger::setup();
-    let matches = App::new("Solana BPF CLI")
+    analog_logger::setup();
+    let matches = App::new("Analog BPF CLI")
         .version(crate_version!())
-        .author("Solana Maintainers <maintainers@solana.foundation>")
+        .author("Analog Maintainers <maintainers@solana.foundation>")
         .about(
             r##"CLI to test and analyze eBPF programs.
 
@@ -69,7 +69,7 @@ and the following fields are required
             ],
             "is_signer": false,
             "is_writable": true,
-            "lamports": 1000,
+            "tock": 1000,
             "data": [0, 0, 0, 3]
         }
     ],
@@ -161,7 +161,7 @@ native machine code before execting it in the virtual machine.",
             false,
             false,
             loader_id,
-            AccountSharedData::new_ref(0, 0, &solana_sdk::native_loader::id()),
+            AccountSharedData::new_ref(0, 0, &analog_sdk::native_loader::id()),
         ),
         (
             false,
@@ -184,7 +184,7 @@ native machine code before execting it in the virtual machine.",
             let input = load_accounts(Path::new(matches.value_of("input").unwrap())).unwrap();
             for account in input.accounts {
                 let account_refcell = AccountSharedData::new_ref(
-                    account.lamports,
+                    account.tock,
                     account.data.len(),
                     &account.owner,
                 );
