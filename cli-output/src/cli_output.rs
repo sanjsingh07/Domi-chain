@@ -1929,20 +1929,7 @@ pub struct CliUpgradeableProgram {
     pub programdata_address: String,
     pub authority: String,
     pub last_deploy_slot: u64,
-    pub data_len: usize,
-    pub tock: u64,
-    #[serde(skip_serializing)]
-    pub use_lamports_unit: bool,
-}
-impl QuietDisplay for CliUpgradeableProgram {}
-impl VerboseDisplay for CliUpgradeableProgram {}
-impl fmt::Display for CliUpgradeableProgram {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        writeln!(f)?;
-        writeln_name_value(f, "Program Id:", &self.program_id)?;
-        writeln_name_value(f, "Owner:", &self.owner)?;
-        writeln_name_value(f, "ProgramData Address:", &self.programdata_address)?;
-        writeln_name_value(f, "Authority:", &self.authority)?;
+    pub data_len: usize,&self.authority)?;
         writeln_name_value(
             f,
             "Last Deployed In Slot:",
@@ -1995,6 +1982,19 @@ impl fmt::Display for CliUpgradeablePrograms {
                     build_balance_message(program.tock, self.use_lamports_unit, true)
                 )
             )?;
+    pub tock: u64,
+    #[serde(skip_serializing)]
+    pub use_lamports_unit: bool,
+}
+impl QuietDisplay for CliUpgradeableProgram {}
+impl VerboseDisplay for CliUpgradeableProgram {}
+impl fmt::Display for CliUpgradeableProgram {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        writeln!(f)?;
+        writeln_name_value(f, "Program Id:", &self.program_id)?;
+        writeln_name_value(f, "Owner:", &self.owner)?;
+        writeln_name_value(f, "ProgramData Address:", &self.programdata_address)?;
+        writeln_name_value(f, "Authority:", 
         }
         Ok(())
     }
