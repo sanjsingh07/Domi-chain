@@ -4,7 +4,7 @@ import {Buffer} from 'buffer';
 import nacl from 'tweetnacl';
 import {sha256} from '@ethersproject/sha2';
 
-import {Struct, SOLANA_SCHEMA} from './util/borsh-schema';
+import {Struct, ANALOG_SCHEMA} from './util/borsh-schema';
 import {toBuffer} from './util/to-buffer';
 
 /**
@@ -200,7 +200,7 @@ export class PublicKey extends Struct {
   }
 }
 
-SOLANA_SCHEMA.set(PublicKey, {
+ANALOG_SCHEMA.set(PublicKey, {
   kind: 'struct',
   fields: [['_bn', 'u256']],
 });

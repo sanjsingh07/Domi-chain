@@ -40,7 +40,7 @@ export RUST_BACKTRACE=1
 dataDir=$PWD/config/"$(basename "$0" .sh)"
 ledgerDir=$PWD/config/ledger
 
-SOLANA_RUN_SH_CLUSTER_TYPE=${SOLANA_RUN_SH_CLUSTER_TYPE:-development}
+ANALOG_RUN_SH_CLUSTER_TYPE=${ANALOG_RUN_SH_CLUSTER_TYPE:-development}
 
 set -x
 if ! analog address; then
@@ -83,9 +83,9 @@ else
       "$validator_vote_account" \
       "$validator_stake_account" \
     --ledger "$ledgerDir" \
-    --cluster-type "$SOLANA_RUN_SH_CLUSTER_TYPE" \
+    --cluster-type "$ANALOG_RUN_SH_CLUSTER_TYPE" \
     $SPL_GENESIS_ARGS \
-    $SOLANA_RUN_SH_GENESIS_ARGS
+    $ANALOG_RUN_SH_GENESIS_ARGS
 fi
 
 abort() {
@@ -114,7 +114,7 @@ args=(
   --no-wait-for-vote-to-start-leader
 )
 # shellcheck disable=SC2086
-analog-validator "${args[@]}" $SOLANA_RUN_SH_VALIDATOR_ARGS &
+analog-validator "${args[@]}" $ANALOG_RUN_SH_VALIDATOR_ARGS &
 validator=$!
 
 wait "$validator"

@@ -614,7 +614,7 @@ pub fn parse_command(
                 crate_description!(),
                 analog_version::version!(),
             )
-            .gen_completions_to("solana", shell_choice, &mut stdout());
+            .gen_completions_to("analog", shell_choice, &mut stdout());
             std::process::exit(0);
         }
         // Cluster Query Commands

@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 
 # These variable must be set before the main body is called
-SOLANA_LOCK_FILE="${SOLANA_LOCK_FILE:?}"
+ANALOG_LOCK_FILE="${ANALOG_LOCK_FILE:?}"
 INSTANCE_NAME="${INSTANCE_NAME:?}"
 PREEMPTIBLE="${PREEMPTIBLE:?}"
 SSH_AUTHORIZED_KEYS="${SSH_AUTHORIZED_KEYS:?}"
@@ -10,13 +10,13 @@ SSH_PUBLIC_KEY_TEXT="${SSH_PUBLIC_KEY_TEXT:?}"
 NETWORK_INFO="${NETWORK_INFO:-"Network info unavailable"}"
 CREATION_INFO="${CREATION_INFO:-"Creation info unavailable"}"
 
-if [[ ! -f "${SOLANA_LOCK_FILE}" ]]; then
-  exec 9>>"${SOLANA_LOCK_FILE}"
+if [[ ! -f "${ANALOG_LOCK_FILE}" ]]; then
+  exec 9>>"${ANALOG_LOCK_FILE}"
   flock -x -n 9 || ( echo "Failed to acquire lock!" 1>&2 && exit 1 )
-  SOLANA_USER="${SOLANA_USER:?"SOLANA_USER undefined"}"
+  ANALOG_USER="${ANALOG_USER:?"ANALOG_USER undefined"}"
   {
-    echo "export SOLANA_LOCK_USER=${SOLANA_USER}"
-    echo "export SOLANA_LOCK_INSTANCENAME=${INSTANCE_NAME}"
+    echo "export ANALOG_LOCK_USER=${ANALOG_USER}"
+    echo "export ANALOG_LOCK_INSTANCENAME=${INSTANCE_NAME}"
     echo "export PREEMPTIBLE=${PREEMPTIBLE}"
     echo "[[ -v SSH_TTY && -f \"${HOME}/.analog-motd\" ]] && cat \"${HOME}/.analog-motd\" 1>&2"
   } >&9
@@ -46,7 +46,7 @@ EOF
   touch /analog-scratch/.instance-startup-complete
 else
   # shellcheck disable=SC1090
-  exec 9<"${SOLANA_LOCK_FILE}" && flock -s 9 && . "${SOLANA_LOCK_FILE}" && exec 9>&-
-  echo "${INSTANCE_NAME} candidate is already ${SOLANA_LOCK_INSTANCENAME}" 1>&2
+  exec 9<"${ANALOG_LOCK_FILE}" && flock -s 9 && . "${ANALOG_LOCK_FILE}" && exec 9>&-
+  echo "${INSTANCE_NAME} candidate is already ${ANALOG_LOCK_INSTANCENAME}" 1>&2
   false
 fi

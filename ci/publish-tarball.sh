@@ -144,9 +144,9 @@ if [[ -n $DO_NOT_PUBLISH_TAR ]]; then
   echo "Skipping publishing install wrapper"
 elif [[ -n $BUILDKITE ]]; then
   cat > release.solana.com-install <<EOF
-SOLANA_RELEASE=$CHANNEL_OR_TAG
-SOLANA_INSTALL_INIT_ARGS=$CHANNEL_OR_TAG
-SOLANA_DOWNLOAD_ROOT=http://release.solana.com
+ANALOG_RELEASE=$CHANNEL_OR_TAG
+ANALOG_INSTALL_INIT_ARGS=$CHANNEL_OR_TAG
+ANALOG_DOWNLOAD_ROOT=http://release.solana.com
 EOF
   cat install/analog-install-init.sh >> release.solana.com-install
 

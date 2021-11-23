@@ -27,7 +27,7 @@ Explorers:
 - Metrics environment variable for Devnet:
 
 ```bash
-export SOLANA_METRICS_CONFIG="host=https://metrics.solana.com:8086,db=devnet,u=scratch_writer,p=topsecret"
+export ANALOG_METRICS_CONFIG="host=https://metrics.solana.com:8086,db=devnet,u=scratch_writer,p=topsecret"
 ```
 
 - RPC URL for Devnet: `https://api.devnet.solana.com`
@@ -79,7 +79,7 @@ are operated by Analog Labs
 - Metrics environment variable for Testnet:
 
 ```bash
-export SOLANA_METRICS_CONFIG="host=https://metrics.solana.com:8086,db=tds,u=testnet_write,p=c4fa841aa918bf8274e3e2a44d77568d9861b3ea"
+export ANALOG_METRICS_CONFIG="host=https://metrics.solana.com:8086,db=tds,u=testnet_write,p=c4fa841aa918bf8274e3e2a44d77568d9861b3ea"
 ```
 
 - RPC URL for Testnet: `https://api.testnet.solana.com`
@@ -133,7 +133,7 @@ A permissionless, persistent cluster for early token holders and launch partners
 - Metrics environment variable for Mainnet Beta:
 
 ```bash
-export SOLANA_METRICS_CONFIG="host=https://metrics.solana.com:8086,db=mainnet-beta,u=mainnet-beta_write,p=password"
+export ANALOG_METRICS_CONFIG="host=https://metrics.solana.com:8086,db=mainnet-beta,u=mainnet-beta_write,p=password"
 ```
 
 - RPC URL for Mainnet Beta: `https://api.mainnet-beta.solana.com`

@@ -69,13 +69,13 @@ pub enum LedgerError {
     UserCancel = 0x6985,
 
     #[error("Ledger received invalid Analog message")]
-    SolanaInvalidMessage = 0x6a80,
+    AnalogInvalidMessage = 0x6a80,
 
     #[error("Analog summary finalization failed on Ledger device")]
-    SolanaSummaryFinalizeFailed = 0x6f00,
+    AnalogSummaryFinalizeFailed = 0x6f00,
 
     #[error("Analog summary update failed on Ledger device")]
-    SolanaSummaryUpdateFailed = 0x6f01,
+    AnalogSummaryUpdateFailed = 0x6f01,
 
     #[error("Ledger received unimplemented instruction")]
     UnimplementedInstruction = 0x6d00,

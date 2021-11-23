@@ -18,17 +18,17 @@ fi
 if [[ $(uname) != Linux ]]; then
   # Protect against unsupported configurations to prevent non-obvious errors
   # later. Arguably these should be fatal errors but for now prefer tolerance.
-  if [[ -n $SOLANA_CUDA ]]; then
+  if [[ -n $ANALOG_CUDA ]]; then
     echo "Warning: CUDA is not supported on $(uname)"
-    SOLANA_CUDA=
+    ANALOG_CUDA=
   fi
 fi
 
-if [[ -n $USE_INSTALL || ! -f "$SOLANA_ROOT"/Cargo.toml ]]; then
+if [[ -n $USE_INSTALL || ! -f "$ANALOG_ROOT"/Cargo.toml ]]; then
   solana_program() {
     declare program="$1"
     if [[ -z $program ]]; then
-      printf "solana"
+      printf "analog"
     else
       printf "analog-%s" "$program"
     fi
@@ -39,7 +39,7 @@ else
     declare crate="$program"
     if [[ -z $program ]]; then
       crate="cli"
-      program="solana"
+      program="analog"
     else
       program="analog-$program"
     fi

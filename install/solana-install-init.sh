@@ -15,8 +15,8 @@
 
 { # this ensures the entire script is downloaded #
 
-if [ -z "$SOLANA_DOWNLOAD_ROOT" ]; then
-    SOLANA_DOWNLOAD_ROOT="https://github.com/analog-labs/analog/releases/download/"
+if [ -z "$ANALOG_DOWNLOAD_ROOT" ]; then
+    ANALOG_DOWNLOAD_ROOT="https://github.com/analog-labs/analog/releases/download/"
 fi
 GH_LATEST_RELEASE="https://api.github.com/repos/analog-labs/analog/releases/latest"
 
@@ -77,10 +77,10 @@ main() {
     temp_dir="$(mktemp -d 2>/dev/null || ensure mktemp -d -t analog-install-init)"
     ensure mkdir -p "$temp_dir"
 
-    # Check for SOLANA_RELEASE environment variable override.  Otherwise fetch
+    # Check for ANALOG_RELEASE environment variable override.  Otherwise fetch
     # the latest release tag from github
-    if [ -n "$SOLANA_RELEASE" ]; then
-      release="$SOLANA_RELEASE"
+    if [ -n "$ANALOG_RELEASE" ]; then
+      release="$ANALOG_RELEASE"
     else
       release_file="$temp_dir/release"
       printf 'looking for latest release\n' 1>&2
@@ -94,7 +94,7 @@ main() {
       fi
     fi
 
-    download_url="$SOLANA_DOWNLOAD_ROOT/$release/analog-install-init-$TARGET"
+    download_url="$ANALOG_DOWNLOAD_ROOT/$release/analog-install-init-$TARGET"
     analog_install_init="$temp_dir/analog-install-init"
 
     printf 'downloading %s installer\n' "$release" 1>&2
@@ -110,7 +110,7 @@ main() {
 
     if [ -z "$1" ]; then
       #shellcheck disable=SC2086
-      ignore "$analog_install_init" $SOLANA_INSTALL_INIT_ARGS
+      ignore "$analog_install_init" $ANALOG_INSTALL_INIT_ARGS
     else
       ignore "$analog_install_init" "$@"
     fi

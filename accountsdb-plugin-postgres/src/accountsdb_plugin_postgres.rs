@@ -94,7 +94,7 @@ impl AccountsDbPlugin for AccountsDbPluginPostgres {
     /// {
     ///    "libpath": "/home/solana/target/release/libanalog_accountsdb_plugin_postgres.so",
     ///    "host": "host_foo",
-    ///    "user": "solana",
+    ///    "user": "analog",
     ///    "threads": 10,
     ///    "accounts_selector" : {
     ///       "owners" : ["9oT9R5ZyRovSVnt37QvVoBttGpNqR3J7unkb567NP8k3"]

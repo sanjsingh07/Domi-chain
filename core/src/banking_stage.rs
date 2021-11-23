@@ -774,7 +774,7 @@ impl BankingStage {
 
     pub fn num_threads() -> u32 {
         cmp::max(
-            env::var("SOLANA_BANKING_THREADS")
+            env::var("ANALOG_BANKING_THREADS")
                 .map(|x| x.parse().unwrap_or(NUM_THREADS))
                 .unwrap_or(NUM_THREADS),
             NUM_VOTE_PROCESSING_THREADS + MIN_THREADS_BANKING,

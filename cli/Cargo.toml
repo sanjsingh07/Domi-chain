@@ -52,7 +52,7 @@ analog-test-validator = { path = "../test-validator", version = "=1.9.0" }
 tempfile = "3.2.0"
 
 [[bin]]
-name = "solana"
+name = "analog"
 path = "src/main.rs"
 
 [package.metadata.docs.rs]

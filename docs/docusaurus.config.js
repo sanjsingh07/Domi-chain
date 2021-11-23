@@ -8,7 +8,7 @@ module.exports = {
   baseUrl: "/",
   favicon: "img/favicon.ico",
   organizationName: "analog-labs", // Usually your GitHub org/user name.
-  projectName: "solana", // Usually your repo name.
+  projectName: "analog", // Usually your repo name.
   onBrokenLinks: "throw",
   stylesheets: [
     {
@@ -96,7 +96,7 @@ module.exports = {
     algolia: {
       // This API key is "search-only" and safe to be published
       apiKey: "d58e0d68c875346d52645d68b13f3ac0",
-      indexName: "solana",
+      indexName: "analog",
       contextualSearch: true,
     },
     footer: {

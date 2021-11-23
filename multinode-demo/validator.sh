@@ -184,7 +184,7 @@ while [[ -n $1 ]]; do
   fi
 done
 
-if [[ "$SOLANA_GPU_MISSING" -eq 1 ]]; then
+if [[ "$ANALOG_GPU_MISSING" -eq 1 ]]; then
   echo "Testnet requires GPUs, but none were found!  Aborting..."
   exit 1
 fi
@@ -197,7 +197,7 @@ if [[ -n $REQUIRE_LEDGER_DIR ]]; then
   if [[ -z $ledger_dir ]]; then
     usage "Error: --ledger not specified"
   fi
-  SOLANA_CONFIG_DIR="$ledger_dir"
+  ANALOG_CONFIG_DIR="$ledger_dir"
 fi
 
 if [[ -n $REQUIRE_KEYPAIRS ]]; then
@@ -213,7 +213,7 @@ if [[ -n $REQUIRE_KEYPAIRS ]]; then
 fi
 
 if [[ -z "$ledger_dir" ]]; then
-  ledger_dir="$SOLANA_CONFIG_DIR/validator$label"
+  ledger_dir="$ANALOG_CONFIG_DIR/validator$label"
 fi
 mkdir -p "$ledger_dir"
 
@@ -253,7 +253,7 @@ if [[ $maybeRequireTower = true ]]; then
   default_arg --require-tower
 fi
 
-if [[ -n $SOLANA_CUDA ]]; then
+if [[ -n $ANALOG_CUDA ]]; then
   program=$analog_validator_cuda
 else
   program=$analog_validator
@@ -302,7 +302,7 @@ setup_validator_accounts() {
       (
         set -x
         $analog_cli \
-          --keypair "$SOLANA_CONFIG_DIR/faucet.json" --url "$rpc_url" \
+          --keypair "$ANALOG_CONFIG_DIR/faucet.json" --url "$rpc_url" \
           transfer --allow-unfunded-recipient "$identity" "$node_anlog"
       ) || return $?
     fi

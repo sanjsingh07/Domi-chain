@@ -2,7 +2,7 @@
 
 set -e
 cd "$(dirname "$0")"
-SOLANA_ROOT="$(cd ../..; pwd)"
+ANALOG_ROOT="$(cd ../..; pwd)"
 
 logDir="$PWD"/logs
 rm -rf "$logDir"
@@ -19,7 +19,7 @@ analogInstallGlobalOpts=(
 bootstrapInstall() {
   declare v=$1
   if [[ ! -h $analogInstallDataDir/active_release ]]; then
-    sh "$SOLANA_ROOT"/install/analog-install-init.sh "$v" "${analogInstallGlobalOpts[@]}"
+    sh "$ANALOG_ROOT"/install/analog-install-init.sh "$v" "${analogInstallGlobalOpts[@]}"
   fi
   export PATH="$analogInstallDataDir/active_release/bin/:$PATH"
 }
