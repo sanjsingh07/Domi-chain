@@ -15,5 +15,5 @@ serde_json = "1.0.68"
 analog-bpf-loader-program = { path = "../programs/bpf_loader", version = "=1.8.2" }
 analog-logger = { path = "../logger", version = "=1.8.2" }
 analog-sdk = { path = "../sdk", version = "=1.8.2" }
-analog_rbpf = "=0.2.14"
+solana_rbpf = "=0.2.14"
 time = "0.3.2"

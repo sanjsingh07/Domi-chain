@@ -15,7 +15,7 @@ use crate::{
 use log::{log_enabled, trace, Level::Trace};
 use analog_measure::measure::Measure;
 use analog_program_runtime::InstructionProcessor;
-use analog_rbpf::{
+use solana_rbpf::{
     aligned_memory::AlignedMemory,
     ebpf::HOST_ALIGN,
     error::{EbpfError, UserDefinedError},
@@ -866,7 +866,7 @@ pub struct BpfExecutor {
     executable: Box<dyn Executable<BpfError, ThisInstructionMeter>>,
 }
 
-// Well, implement Debug for analog_rbpf::vm::Executable in analog-rbpf...
+// Well, implement Debug for solana_rbpf::vm::Executable in analog-rbpf...
 impl Debug for BpfExecutor {
     fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
         write!(f, "BpfExecutor({:p})", self)
@@ -996,7 +996,7 @@ impl Executor for BpfExecutor {
 mod tests {
     use super::*;
     use rand::Rng;
-    use analog_rbpf::vm::SyscallRegistry;
+    use solana_rbpf::vm::SyscallRegistry;
     use analog_runtime::{bank::Bank, bank_client::BankClient};
     use analog_sdk::{
         account::{
@@ -1044,7 +1044,7 @@ mod tests {
         ];
         let input = &mut [0x00];
         let mut bpf_functions = std::collections::BTreeMap::<u32, (usize, String)>::new();
-        analog_rbpf::elf::register_bpf_function(&mut bpf_functions, 0, "entrypoint").unwrap();
+        solana_rbpf::elf::register_bpf_function(&mut bpf_functions, 0, "entrypoint").unwrap();
         let program = <dyn Executable<BpfError, TestInstructionMeter>>::from_text_bytes(
             program,
             None,

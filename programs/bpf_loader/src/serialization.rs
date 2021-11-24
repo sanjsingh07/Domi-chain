@@ -1,5 +1,5 @@
 use byteorder::{ByteOrder, LittleEndian, WriteBytesExt};
-use analog_rbpf::{aligned_memory::AlignedMemory, ebpf::HOST_ALIGN};
+use solana_rbpf::{aligned_memory::AlignedMemory, ebpf::HOST_ALIGN};
 use analog_sdk::{
     account::{ReadableAccount, WritableAccount},
     bpf_loader_deprecated,

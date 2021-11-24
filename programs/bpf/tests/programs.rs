@@ -15,7 +15,7 @@ use analog_bpf_loader_program::{
     BpfError, ThisInstructionMeter,
 };
 use analog_cli_output::display::println_transaction;
-use analog_rbpf::{
+use solana_rbpf::{
     static_analysis::Analysis,
     vm::{Config, Executable, Tracer},
 };

@@ -30,7 +30,7 @@ analog-bpf-loader-program = { path = "../bpf_loader", version = "=1.8.2" }
 analog-cli-output = { path = "../../cli-output", version = "=1.8.2" }
 analog-logger = { path = "../../logger", version = "=1.8.2" }
 analog-measure = { path = "../../measure", version = "=1.8.2" }
-analog_rbpf = "=0.2.14"
+solana_rbpf = "=0.2.14"
 analog-runtime = { path = "../../runtime", version = "=1.8.2" }
 analog-sdk = { path = "../../sdk", version = "=1.8.2" }
 analog-transaction-status = { path = "../../transaction-status", version = "=1.8.2" }

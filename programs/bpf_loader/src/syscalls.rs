@@ -1,7 +1,7 @@
 use crate::{alloc, BpfError};
 use alloc::Alloc;
 use analog_program_runtime::InstructionProcessor;
-use analog_rbpf::{
+use solana_rbpf::{
     aligned_memory::AlignedMemory,
     ebpf,
     error::EbpfError,
@@ -2467,7 +2467,7 @@ impl<'a> SyscallObject<BpfError> for SyscallLogData<'a> {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use analog_rbpf::{
+    use solana_rbpf::{
         ebpf::HOST_ALIGN, memory_region::MemoryRegion, user_error::UserError, vm::Config,
     };
     use analog_sdk::{

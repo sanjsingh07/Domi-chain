@@ -11,7 +11,7 @@ use analog_bpf_loader_program::{
     ThisInstructionMeter,
 };
 use analog_measure::measure::Measure;
-use analog_rbpf::vm::{Config, Executable, InstructionMeter, SyscallRegistry};
+use solana_rbpf::vm::{Config, Executable, InstructionMeter, SyscallRegistry};
 use analog_runtime::{
     bank::Bank,
     bank_client::BankClient,

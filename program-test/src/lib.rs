@@ -485,7 +485,7 @@ impl Default for ProgramTest {
     ///
     fn default() -> Self {
         analog_logger::setup_with_default(
-            "analog_rbpf::vm=debug,\
+            "solana_rbpf::vm=debug,\
              analog_runtime::message_processor=debug,\
              analog_runtime::system_instruction_processor=trace,\
              analog_program_test=info",

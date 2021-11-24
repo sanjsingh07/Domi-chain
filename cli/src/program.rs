@@ -25,7 +25,7 @@ use analog_client::{
     rpc_request::MAX_GET_SIGNATURE_STATUSES_QUERY_ITEMS,
     tpu_client::{TpuClient, TpuClientConfig},
 };
-use analog_rbpf::{
+use solana_rbpf::{
     verifier,
     vm::{Config, Executable},
 };

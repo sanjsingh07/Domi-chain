@@ -1,7 +1,7 @@
 use crate::alloc;
 
 use alloc::{Alloc, AllocErr};
-use analog_rbpf::aligned_memory::AlignedMemory;
+use solana_rbpf::aligned_memory::AlignedMemory;
 use std::alloc::Layout;
 
 #[derive(Debug)]

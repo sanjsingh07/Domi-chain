@@ -34,7 +34,7 @@ analog-client = { path = "../client", version = "=1.8.2" }
 analog-config-program = { path = "../programs/config", version = "=1.8.2" }
 analog-faucet = { path = "../faucet", version = "=1.8.2" }
 analog-logger = { path = "../logger", version = "=1.8.2" }
-analog_rbpf = "=0.2.14"
+solana_rbpf = "=0.2.14"
 analog-remote-wallet = { path = "../remote-wallet", version = "=1.8.2" }
 analog-sdk = { path = "../sdk", version = "=1.8.2" }
 analog-transaction-status = { path = "../transaction-status", version = "=1.8.2" }

@@ -5,7 +5,7 @@ use analog_bpf_loader_program::{
     create_vm, serialization::serialize_parameters, syscalls::register_syscalls, BpfError,
     ThisInstructionMeter,
 };
-use analog_rbpf::{
+use solana_rbpf::{
     assembler::assemble,
     static_analysis::Analysis,
     verifier::check,
