@@ -9,7 +9,7 @@ use {
     log::*,
     analog_banks_client::start_client,
     analog_banks_server::banks_server::start_local_server,
-    solana_program_runtime::instruction_processor::InstructionProcessor,
+    analog_program_runtime::InstructionProcessor,
     analog_runtime::{
         bank::{Bank, ExecuteTimings},
         bank_forks::BankForks,
@@ -31,8 +31,7 @@ use {
         instruction::Instruction,
         instruction::InstructionError,
         message::Message,
-        native_token::anlog_to_tock,
-        poh_config::PohConfig,
+        native_token::anlog_to_tocks,
         process_instruction::{stable_log, InvokeContext, ProcessInstructionWithContext},
         program_error::{ProgramError, ACCOUNT_BORROW_FAILED, UNSUPPORTED_SYSVAR},
         pubkey::Pubkey,
@@ -101,18 +100,16 @@ fn get_invoke_context<'a>() -> &'a mut dyn InvokeContext {
 
 pub fn builtin_process_instruction(
     process_instruction: analog_sdk::entrypoint::ProcessInstruction,
-    _first_instruction_account: usize,
+    program_id: &Pubkey,
     input: &[u8],
     invoke_context: &mut dyn InvokeContext,
 ) -> Result<(), InstructionError> {
     set_invoke_context(invoke_context);
 
     let logger = invoke_context.get_logger();
-    let program_id = invoke_context.get_caller()?;
     stable_log::program_invoke(&logger, program_id, invoke_context.invoke_depth());
 
-    // Skip the processor account
-    let keyed_accounts = &invoke_context.get_keyed_accounts()?[1..];
+    let keyed_accounts = invoke_context.get_keyed_accounts()?;
 
     // Copy all the accounts into a HashMap to ensure there are no duplicates
     let mut accounts: HashMap<Pubkey, Account> = keyed_accounts
@@ -125,14 +122,14 @@ pub fn builtin_process_instruction(
         })
         .collect();
 
-    // Create shared references to each account's tock/data/owner
+    // Create shared references to each account's tocks/data/owner
     let account_refs: HashMap<_, _> = accounts
         .iter_mut()
         .map(|(key, account)| {
             (
                 *key,
                 (
-                    Rc::new(RefCell::new(&mut account.tock)),
+                    Rc::new(RefCell::new(&mut account.tocks)),
                     Rc::new(RefCell::new(&mut account.data[..])),
                     &account.owner,
                 ),
@@ -145,12 +142,12 @@ pub fn builtin_process_instruction(
         .iter()
         .map(|keyed_account| {
             let key = keyed_account.unsigned_key();
-            let (tock, data, owner) = &account_refs[key];
+            let (tocks, data, owner) = &account_refs[key];
             AccountInfo {
                 key,
                 is_signer: keyed_account.signer_key().is_some(),
                 is_writable: keyed_account.is_writable(),
-                tock: tock.clone(),
+                tocks: tocks.clone(),
                 data: data.clone(),
                 owner,
                 executable: keyed_account.executable().unwrap(),
@@ -171,8 +168,8 @@ pub fn builtin_process_instruction(
     for keyed_account in keyed_accounts {
         let mut account = keyed_account.account.borrow_mut();
         let key = keyed_account.unsigned_key();
-        let (tock, data, _owner) = &account_refs[key];
-        account.set_lamports(**tock.borrow());
+        let (tocks, data, _owner) = &account_refs[key];
+        account.set_tocks(**tocks.borrow());
         account.set_data(data.borrow().to_vec());
     }
 
@@ -185,12 +182,12 @@ pub fn builtin_process_instruction(
 macro_rules! processor {
     ($process_instruction:expr) => {
         Some(
-            |first_instruction_account: usize,
+            |program_id: &Pubkey,
              input: &[u8],
              invoke_context: &mut dyn analog_sdk::process_instruction::InvokeContext| {
                 $crate::builtin_process_instruction(
                     $process_instruction,
-                    first_instruction_account,
+                    program_id,
                     input,
                     invoke_context,
                 )
@@ -204,6 +201,24 @@ fn get_sysvar<T: Default + Sysvar + Sized + serde::de::DeserializeOwned>(
     var_addr: *mut u8,
 ) -> u64 {
     let invoke_context = get_invoke_context();
+
+    let sysvar_data = match invoke_context.get_sysvar_data(id).ok_or_else(|| {
+        ic_msg!(invoke_context, "Unable to get Sysvar {}", id);
+        UNSUPPORTED_SYSVAR
+    }) {
+        Ok(sysvar_data) => sysvar_data,
+        Err(err) => return err,
+    };
+
+    let var: T = match bincode::deserialize(&sysvar_data) {
+        Ok(sysvar_data) => sysvar_data,
+        Err(_) => return UNSUPPORTED_SYSVAR,
+    };
+
+    unsafe {
+        *(var_addr as *mut _ as *mut T) = var;
+    }
+
     if invoke_context
         .get_compute_meter()
         .try_borrow_mut()
@@ -215,13 +230,7 @@ fn get_sysvar<T: Default + Sysvar + Sized + serde::de::DeserializeOwned>(
         panic!("Exceeded compute budget");
     }
 
-    match solana_program_runtime::invoke_context::get_sysvar::<T>(invoke_context, id) {
-        Ok(sysvar_data) => unsafe {
-            *(var_addr as *mut _ as *mut T) = sysvar_data;
-            SUCCESS
-        },
-        Err(_) => UNSUPPORTED_SYSVAR,
-    }
+    SUCCESS
 }
 
 struct SyscallStubs {}
@@ -282,7 +291,7 @@ impl analog_sdk::program_stubs::SyscallStubs for SyscallStubs {
                 let mut account = account.borrow_mut();
                 account.copy_into_owner_from_slice(account_info.owner.as_ref());
                 account.set_data_from_slice(&account_info.try_borrow_data().unwrap());
-                account.set_lamports(account_info.tock());
+                account.set_tocks(account_info.tocks());
                 account.set_executable(account_info.executable);
                 account.set_rent_epoch(account_info.rent_epoch);
             }
@@ -313,11 +322,9 @@ impl analog_sdk::program_stubs::SyscallStubs for SyscallStubs {
                             break;
                         }
                     }
-                    assert!(
-                        program_signer,
-                        "Missing signer for {}",
-                        instruction_account.pubkey
-                    );
+                    if !program_signer {
+                        panic!("Missing signer for {}", instruction_account.pubkey);
+                    }
                 }
             }
         }
@@ -336,7 +343,7 @@ impl analog_sdk::program_stubs::SyscallStubs for SyscallStubs {
         // Copy writeable account modifications back into the caller's AccountInfos
         for (account, account_info) in accounts.iter() {
             if let Some(account_info) = account_info {
-                **account_info.try_borrow_mut_lamports().unwrap() = account.borrow().tock();
+                **account_info.try_borrow_mut_tocks().unwrap() = account.borrow().tocks();
                 let mut data = account_info.try_borrow_mut_data()?;
                 let account_borrow = account.borrow();
                 let new_data = account_borrow.data();
@@ -348,14 +355,15 @@ impl analog_sdk::program_stubs::SyscallStubs for SyscallStubs {
                         unsafe { transmute::<&Pubkey, &mut Pubkey>(account_info.owner) };
                     *account_info_mut = *account.borrow().owner();
                 }
-                // TODO: Figure out how to allow the System Program to resize the account data
-                assert!(
-                    data.len() == new_data.len(),
-                    "Account data resizing not supported yet: {} -> {}. \
+                if data.len() != new_data.len() {
+                    // TODO: Figure out how to allow the System Program to resize the account data
+                    panic!(
+                        "Account data resizing not supported yet: {} -> {}. \
                         Consider making this test conditional on `#[cfg(feature = \"test-bpf\")]`",
-                    data.len(),
-                    new_data.len()
-                );
+                        data.len(),
+                        new_data.len()
+                    );
+                }
                 data.clone_from_slice(new_data);
             }
         }
@@ -416,9 +424,9 @@ pub fn read_file<P: AsRef<Path>>(path: P) -> Vec<u8> {
     file_data
 }
 
-fn setup_fees(bank: Bank) -> Bank {
-    // Realistic fees part 1: Fake a single signature by calling
-    // `bank.commit_transactions()` so that the fee in the child bank will be
+fn setup_fee_calculator(bank: Bank) -> Bank {
+    // Realistic fee_calculator part 1: Fake a single signature by calling
+    // `bank.commit_transactions()` so that the fee calculator in the child bank will be
     // initialized with a non-zero fee.
     assert_eq!(bank.signature_count(), 0);
     bank.commit_transactions(
@@ -436,16 +444,20 @@ fn setup_fees(bank: Bank) -> Bank {
     let bank = Bank::new_from_parent(&bank, bank.collector_id(), bank.slot() + 1);
     debug!("Bank slot: {}", bank.slot());
 
-    // Realistic fees part 2: Tick until a new blockhash is produced to pick up the
-    // non-zero fees
+    // Realistic fee_calculator part 2: Tick until a new blockhash is produced to pick up the
+    // non-zero fee calculator
     let last_blockhash = bank.last_blockhash();
     while last_blockhash == bank.last_blockhash() {
         bank.register_tick(&Hash::new_unique());
     }
-
-    // Make sure a fee is now required
-    let lamports_per_signature = bank.get_lamports_per_signature();
-    assert_ne!(lamports_per_signature, 0);
+    let last_blockhash = bank.last_blockhash();
+    // Make sure the new last_blockhash now requires a fee
+    #[allow(deprecated)]
+    let tocks_per_signature = bank
+        .get_fee_calculator(&last_blockhash)
+        .expect("fee_calculator")
+        .tocks_per_signature;
+    assert_ne!(tocks_per_signature, 0);
 
     bank
 }
@@ -473,7 +485,7 @@ impl Default for ProgramTest {
     ///
     fn default() -> Self {
         analog_logger::setup_with_default(
-            "solana_rbpf::vm=debug,\
+            "analog_rbpf::vm=debug,\
              analog_runtime::message_processor=debug,\
              analog_runtime::system_instruction_processor=trace,\
              analog_program_test=info",
@@ -540,14 +552,14 @@ impl ProgramTest {
     pub fn add_account_with_file_data(
         &mut self,
         address: Pubkey,
-        tock: u64,
+        tocks: u64,
         owner: Pubkey,
         filename: &str,
     ) {
         self.add_account(
             address,
             Account {
-                tock,
+                tocks,
                 data: read_file(find_file(filename).unwrap_or_else(|| {
                     panic!("Unable to locate {}", filename);
                 })),
@@ -563,14 +575,14 @@ impl ProgramTest {
     pub fn add_account_with_base64_data(
         &mut self,
         address: Pubkey,
-        tock: u64,
+        tocks: u64,
         owner: Pubkey,
         data_base64: &str,
     ) {
         self.add_account(
             address,
             Account {
-                tock,
+                tocks,
                 data: base64::decode(data_base64)
                     .unwrap_or_else(|err| panic!("Failed to base64 decode: {}", err)),
                 owner,
@@ -620,7 +632,7 @@ impl ProgramTest {
             this.add_account(
                 program_id,
                 Account {
-                    tock: Rent::default().minimum_balance(data.len()).min(1),
+                    tocks: Rent::default().minimum_balance(data.len()).min(1),
                     data,
                     owner: analog_sdk::bpf_loader::id(),
                     executable: true,
@@ -735,27 +747,25 @@ impl ProgramTest {
         let rent = Rent::default();
         let fee_rate_governor = FeeRateGovernor::default();
         let bootstrap_validator_pubkey = Pubkey::new_unique();
-        let bootstrap_validator_stake_lamports =
-            rent.minimum_balance(VoteState::size_of()) + anlog_to_tock(1_000_000.0);
+        let bootstrap_validator_stake_tocks =
+            rent.minimum_balance(VoteState::size_of()) + anlog_to_tocks(1_000_000.0);
 
         let mint_keypair = Keypair::new();
         let voting_keypair = Keypair::new();
 
-        let mut genesis_config = create_genesis_config_with_leader_ex(
-            anlog_to_tock(1_000_000.0),
+        let genesis_config = create_genesis_config_with_leader_ex(
+            anlog_to_tocks(1_000_000.0),
             &mint_keypair.pubkey(),
             &bootstrap_validator_pubkey,
             &voting_keypair.pubkey(),
             &Pubkey::new_unique(),
-            bootstrap_validator_stake_lamports,
+            bootstrap_validator_stake_tocks,
             42,
             fee_rate_governor,
             rent,
             ClusterType::Development,
             vec![],
         );
-        let target_tick_duration = Duration::from_micros(100);
-        genesis_config.poh_config = PohConfig::new_sleep(target_tick_duration);
         debug!("Payer address: {}", mint_keypair.pubkey());
         debug!("Genesis config: {}", genesis_config);
 
@@ -764,7 +774,7 @@ impl ProgramTest {
         // Add loaders
         macro_rules! add_builtin {
             ($b:expr) => {
-                bank.add_builtin(&$b.0, &$b.1, $b.2)
+                bank.add_builtin(&$b.0, $b.1, $b.2)
             };
         }
         add_builtin!(analog_bpf_loader_deprecated_program!());
@@ -785,7 +795,7 @@ impl ProgramTest {
         for builtin in self.builtins.iter() {
             bank.add_builtin(
                 &builtin.name,
-                &builtin.id,
+                builtin.id,
                 builtin.process_instruction_with_context,
             );
         }
@@ -803,7 +813,7 @@ impl ProgramTest {
                 ..ComputeBudget::default()
             }));
         }
-        let bank = setup_fees(bank);
+        let bank = setup_fee_calculator(bank);
         let slot = bank.slot();
         let last_blockhash = bank.last_blockhash();
         let bank_forks = Arc::new(RwLock::new(BankForks::new(bank)));
@@ -825,13 +835,8 @@ impl ProgramTest {
 
     pub async fn start(self) -> (BanksClient, Keypair, Hash) {
         let (bank_forks, block_commitment_cache, last_blockhash, gci) = self.setup_bank();
-        let target_tick_duration = gci.genesis_config.poh_config.target_tick_duration;
-        let transport = start_local_server(
-            bank_forks.clone(),
-            block_commitment_cache.clone(),
-            target_tick_duration,
-        )
-        .await;
+        let transport =
+            start_local_server(bank_forks.clone(), block_commitment_cache.clone()).await;
         let banks_client = start_client(transport)
             .await
             .unwrap_or_else(|err| panic!("Failed to start banks client: {}", err));
@@ -839,6 +844,7 @@ impl ProgramTest {
         // Run a simulated PohService to provide the client with new blockhashes.  New blockhashes
         // are required when sending multiple otherwise identical transactions in series from a
         // test
+        let target_tick_duration = gci.genesis_config.poh_config.target_tick_duration;
         tokio::spawn(async move {
             loop {
                 bank_forks
@@ -859,13 +865,8 @@ impl ProgramTest {
     /// with ANLOG for sending transactions
     pub async fn start_with_context(self) -> ProgramTestContext {
         let (bank_forks, block_commitment_cache, last_blockhash, gci) = self.setup_bank();
-        let target_tick_duration = gci.genesis_config.poh_config.target_tick_duration;
-        let transport = start_local_server(
-            bank_forks.clone(),
-            block_commitment_cache.clone(),
-            target_tick_duration,
-        )
-        .await;
+        let transport =
+            start_local_server(bank_forks.clone(), block_commitment_cache.clone()).await;
         let banks_client = start_client(transport)
             .await
             .unwrap_or_else(|err| panic!("Failed to start banks client: {}", err));
@@ -882,54 +883,22 @@ impl ProgramTest {
 
 #[async_trait]
 pub trait ProgramTestBanksClientExt {
-    /// Get a new blockhash, similar in spirit to RpcClient::get_new_blockhash()
-    ///
-    /// This probably should eventually be moved into BanksClient proper in some form
-    #[deprecated(
-        since = "1.9.0",
-        note = "Please use `get_new_latest_blockhash `instead"
-    )]
     async fn get_new_blockhash(&mut self, blockhash: &Hash) -> io::Result<(Hash, FeeCalculator)>;
-    /// Get a new latest blockhash, similar in spirit to RpcClient::get_latest_blockhash()
-    async fn get_new_latest_blockhash(&mut self, blockhash: &Hash) -> io::Result<Hash>;
 }
 
 #[async_trait]
 impl ProgramTestBanksClientExt for BanksClient {
+    /// Get a new blockhash, similar in spirit to RpcClient::get_new_blockhash()
+    ///
+    /// This probably should eventually be moved into BanksClient proper in some form
     async fn get_new_blockhash(&mut self, blockhash: &Hash) -> io::Result<(Hash, FeeCalculator)> {
         let mut num_retries = 0;
         let start = Instant::now();
         while start.elapsed().as_secs() < 5 {
-            #[allow(deprecated)]
             if let Ok((fee_calculator, new_blockhash, _slot)) = self.get_fees().await {
                 if new_blockhash != *blockhash {
                     return Ok((new_blockhash, fee_calculator));
                 }
-            }
-            debug!("Got same blockhash ({:?}), will retry...", blockhash);
-
-            tokio::time::sleep(Duration::from_millis(200)).await;
-            num_retries += 1;
-        }
-
-        Err(io::Error::new(
-            io::ErrorKind::Other,
-            format!(
-                "Unable to get new blockhash after {}ms (retried {} times), stuck at {}",
-                start.elapsed().as_millis(),
-                num_retries,
-                blockhash
-            ),
-        ))
-    }
-
-    async fn get_new_latest_blockhash(&mut self, blockhash: &Hash) -> io::Result<Hash> {
-        let mut num_retries = 0;
-        let start = Instant::now();
-        while start.elapsed().as_secs() < 5 {
-            let new_blockhash = self.get_latest_blockhash().await?;
-            if new_blockhash != *blockhash {
-                return Ok(new_blockhash);
             }
             debug!("Got same blockhash ({:?}), will retry...", blockhash);
 
@@ -1066,7 +1035,7 @@ impl ProgramTestContext {
         bank_forks.set_root(
             pre_warp_slot,
             &analog_runtime::accounts_background_service::AbsRequestSender::default(),
-            Some(pre_warp_slot),
+            Some(warp_slot),
         );
 
         // warp bank is frozen, so go forward one slot from it
@@ -1079,11 +1048,7 @@ impl ProgramTestContext {
         // Update block commitment cache, otherwise banks server will poll at
         // the wrong slot
         let mut w_block_commitment_cache = self.block_commitment_cache.write().unwrap();
-        // HACK: The root set here should be `pre_warp_slot`, but since we're
-        // in a testing environment, the root bank never updates after a warp.
-        // The ticking thread only updates the working bank, and never the root
-        // bank.
-        w_block_commitment_cache.set_all_slots(warp_slot, warp_slot);
+        w_block_commitment_cache.set_all_slots(pre_warp_slot, warp_slot);
 
         let bank = bank_forks.working_bank();
         self.last_blockhash = bank.last_blockhash();

@@ -1,12 +1,12 @@
+import React from "react";
 import BN from "bn.js";
 import {
   HumanizeDuration,
   HumanizeDurationLanguage,
 } from "humanize-duration-ts";
-import { PublicKey } from "@solana/web3.js";
 
 // Switch to web3 constant when web3 updates superstruct
-export const TOCK_PER_ANLOG = 1000000000;
+export const TOCKS_PER_ANLOG = 1000000000;
 
 export const NUM_TICKS_PER_SECOND = 160;
 export const DEFAULT_TICKS_PER_SLOT = 64;
@@ -28,46 +28,46 @@ export function normalizeTokenAmount(
   return rawTokens / Math.pow(10, decimals);
 }
 
-export function lamportsToSol(tock: number | BN): number {
-  if (typeof tock === "number") {
-    return Math.abs(tock) / TOCK_PER_ANLOG;
+export function tocksToAnlog(tocks: number | BN): number {
+  if (typeof tocks === "number") {
+    return Math.abs(tocks) / TOCKS_PER_ANLOG;
   }
 
   let signMultiplier = 1;
-  if (tock.isNeg()) {
+  if (tocks.isNeg()) {
     signMultiplier = -1;
   }
 
-  const absLamports = tock.abs();
-  const lamportsString = absLamports.toString(10).padStart(10, "0");
-  const splitIndex = lamportsString.length - 9;
-  const solString =
-    lamportsString.slice(0, splitIndex) +
+  const absTocks = tocks.abs();
+  const tocksString = absTocks.toString(10).padStart(10, "0");
+  const splitIndex = tocksString.length - 9;
+  const anlogString =
+    tocksString.slice(0, splitIndex) +
     "." +
-    lamportsString.slice(splitIndex);
-  return signMultiplier * parseFloat(solString);
+    tocksString.slice(splitIndex);
+  return signMultiplier * parseFloat(anlogString);
 }
 
-export function lamportsToSolString(
-  tock: number | BN,
+export function tocksToAnlogString(
+  tocks: number | BN,
   maximumFractionDigits: number = 9
 ): string {
-  const anlog = lamportsToSol(tock);
+  const anlog = tocksToAnlog(tocks);
   return new Intl.NumberFormat("en-US", { maximumFractionDigits }).format(anlog);
 }
 
-export function SolBalance({
-  tock,
+export function AnlogBalance({
+  tocks,
   maximumFractionDigits = 9,
 }: {
-  tock: number | BN;
+  tocks: number | BN;
   maximumFractionDigits?: number;
 }) {
   return (
     <span>
-      ◎
+      
       <span className="text-monospace">
-        {lamportsToSolString(tock, maximumFractionDigits)}
+        {tocksToAnlogString(tocks, maximumFractionDigits)}
       </span>
     </span>
   );
@@ -133,15 +133,3 @@ export function abbreviatedNumber(value: number, fixed = 1) {
   if (value >= 1e9 && value < 1e12) return +(value / 1e9).toFixed(fixed) + "B";
   if (value >= 1e12) return +(value / 1e12).toFixed(fixed) + "T";
 }
-
-export const pubkeyToString = (key: PublicKey | string = "") => {
-  return typeof key === "string" ? key : key?.toBase58() || "";
-};
-
-export const getLast = (arr: string[]) => {
-  if (arr.length <= 0) {
-    return undefined;
-  }
-
-  return arr[arr.length - 1];
-};

@@ -19,7 +19,7 @@ pub trait ConfigState: serde::Serialize + Default {
     fn max_space() -> u64;
 }
 
-// TODO move ConfigState into `solana_program` to implement trait locally
+// TODO move ConfigState into `analog_program` to implement trait locally
 impl ConfigState for StakeConfig {
     fn max_space() -> u64 {
         serialized_size(&StakeConfig::default()).unwrap()
@@ -51,12 +51,12 @@ pub fn get_config_data(bytes: &[u8]) -> Result<&[u8], bincode::Error> {
 pub fn create_config_account<T: ConfigState>(
     keys: Vec<(Pubkey, bool)>,
     config_data: &T,
-    tock: u64,
+    tocks: u64,
 ) -> AccountSharedData {
     let mut data = serialize(&ConfigKeys { keys }).unwrap();
     data.extend_from_slice(&serialize(config_data).unwrap());
     AccountSharedData::from(Account {
-        tock,
+        tocks,
         data,
         owner: id(),
         ..Account::default()

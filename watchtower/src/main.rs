@@ -14,7 +14,7 @@ use {
     analog_notifier::Notifier,
     analog_sdk::{
         hash::Hash,
-        native_token::{anlog_to_tock, Anlog},
+        native_token::{anlog_to_tocks, Anlog},
         pubkey::Pubkey,
     },
     std::{
@@ -144,7 +144,7 @@ fn get_config() -> Config {
 
     let interval = Duration::from_secs(value_t_or_exit!(matches, "interval", u64));
     let unhealthy_threshold = value_t_or_exit!(matches, "unhealthy_threshold", usize);
-    let minimum_validator_identity_balance = anlog_to_tock(value_t_or_exit!(
+    let minimum_validator_identity_balance = anlog_to_tocks(value_t_or_exit!(
         matches,
         "minimum_validator_identity_balance",
         f64

@@ -12,7 +12,7 @@ use analog_clap_utils::{
 };
 use analog_cli_config::CONFIG_FILE;
 use analog_remote_wallet::remote_wallet::maybe_wallet_manager;
-use analog_sdk::native_token::anlog_to_tock;
+use analog_sdk::native_token::anlog_to_tocks;
 use std::{error::Error, ffi::OsString, process::exit};
 
 fn get_matches<'a, I, T>(args: I) -> ArgMatches<'a>
@@ -431,7 +431,7 @@ fn parse_distribute_tokens_args(
         fee_payer,
         stake_args: None,
         spl_token_args: None,
-        transfer_amount: value_of(matches, "transfer_amount").map(anlog_to_tock),
+        transfer_amount: value_of(matches, "transfer_amount").map(anlog_to_tocks),
     })
 }
 
@@ -470,7 +470,7 @@ fn parse_create_stake_args(
         .transpose()?;
 
     let stake_args = StakeArgs {
-        unlocked_anlog: anlog_to_tock(value_t_or_exit!(matches, "unlocked_anlog", f64)),
+        unlocked_anlog: anlog_to_tocks(value_t_or_exit!(matches, "unlocked_anlog", f64)),
         lockup_authority,
         sender_stake_args: None,
     };
@@ -553,7 +553,7 @@ fn parse_distribute_stake_args(
         lockup_authority,
     };
     let stake_args = StakeArgs {
-        unlocked_anlog: anlog_to_tock(value_t_or_exit!(matches, "unlocked_anlog", f64)),
+        unlocked_anlog: anlog_to_tocks(value_t_or_exit!(matches, "unlocked_anlog", f64)),
         lockup_authority: lockup_authority_address,
         sender_stake_args: Some(sender_stake_args),
     };

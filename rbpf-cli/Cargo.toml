@@ -1,20 +1,19 @@
 [package]
 name = "rbpf-cli"
-version = "1.9.0"
+version = "1.8.2"
 description = "CLI to test and analyze eBPF programs"
-authors = ["Analog Maintainers <maintainers@solana.foundation>"]
-repository = "https://github.com/analog-labs/rbpf"
-homepage = "https://solana.com/"
+authors = ["Analog Maintainers <maintainers@analog.foundation>"]
+repository = "https://github.com/analog/rbpf"
+homepage = "https://analog.com/"
 keywords = ["BPF", "eBPF", "interpreter", "JIT"]
 edition = "2018"
 
 [dependencies]
 clap = "3.0.0-beta.2"
 serde = "1.0.130"
-serde_json = "1.0.69"
-analog-bpf-loader-program = { path = "../programs/bpf_loader", version = "=1.9.0" }
-analog-logger = { path = "../logger", version = "=1.9.0" }
-analog-program-runtime = { path = "../program-runtime", version = "=1.9.0" }
-analog-sdk = { path = "../sdk", version = "=1.9.0" }
-solana_rbpf = "=0.2.14"
-time = "0.3.4"
+serde_json = "1.0.68"
+analog-bpf-loader-program = { path = "../programs/bpf_loader", version = "=1.8.2" }
+analog-logger = { path = "../logger", version = "=1.8.2" }
+analog-sdk = { path = "../sdk", version = "=1.8.2" }
+analog_rbpf = "=0.2.14"
+time = "0.3.2"

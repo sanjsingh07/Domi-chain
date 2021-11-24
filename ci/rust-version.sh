@@ -18,21 +18,21 @@
 if [[ -n $RUST_STABLE_VERSION ]]; then
   stable_version="$RUST_STABLE_VERSION"
 else
-  stable_version=1.56.0
+  stable_version=1.54.0
 fi
 
 if [[ -n $RUST_NIGHTLY_VERSION ]]; then
   nightly_version="$RUST_NIGHTLY_VERSION"
 else
-  nightly_version=2021-10-22
+  nightly_version=2021-08-02
 fi
 
 
 export rust_stable="$stable_version"
-export rust_stable_docker_image=solanalabs/rust:"$stable_version"
+export rust_stable_docker_image=analoglabs/rust:"$stable_version"
 
 export rust_nightly=nightly-"$nightly_version"
-export rust_nightly_docker_image=solanalabs/rust-nightly:"$nightly_version"
+export rust_nightly_docker_image=analoglabs/rust-nightly:"$nightly_version"
 
 [[ -z $1 ]] || (
 

@@ -24,7 +24,7 @@ impl ReplicaAccountInfo {
     fn from_stored_account_meta(stored_account_meta: &StoredAccountMeta) -> Self {
         let account_meta = Some(ReplicaAccountMeta {
             pubkey: stored_account_meta.meta.pubkey.to_bytes().to_vec(),
-            tock: stored_account_meta.account_meta.tock,
+            tocks: stored_account_meta.account_meta.tocks,
             owner: stored_account_meta.account_meta.owner.to_bytes().to_vec(),
             executable: stored_account_meta.account_meta.executable,
             rent_epoch: stored_account_meta.account_meta.rent_epoch,
@@ -34,7 +34,7 @@ impl ReplicaAccountInfo {
         });
         ReplicaAccountInfo {
             account_meta,
-            hash: stored_account_meta.hash.as_ref().to_vec(),
+            hash: stored_account_meta.hash.0.to_vec(),
             data,
         }
     }
@@ -43,7 +43,7 @@ impl ReplicaAccountInfo {
         let account = Account::from(cached_account.account.clone());
         let account_meta = Some(ReplicaAccountMeta {
             pubkey: cached_account.pubkey().to_bytes().to_vec(),
-            tock: account.tock,
+            tocks: account.tocks,
             owner: account.owner.to_bytes().to_vec(),
             executable: account.executable,
             rent_epoch: account.rent_epoch,
@@ -53,7 +53,7 @@ impl ReplicaAccountInfo {
         });
         ReplicaAccountInfo {
             account_meta,
-            hash: cached_account.hash().as_ref().to_vec(),
+            hash: cached_account.hash().0.to_vec(),
             data,
         }
     }
@@ -73,7 +73,7 @@ impl ReplicaAccountsServer for ReplicaAccountsServerImpl {
                     LoadedAccount::Stored(stored_account_meta) => Some(
                         ReplicaAccountInfo::from_stored_account_meta(&stored_account_meta),
                     ),
-                    LoadedAccount::Cached(cached_account) => {
+                    LoadedAccount::Cached((_pubkey, cached_account)) => {
                         Some(ReplicaAccountInfo::from_cached_account(&cached_account))
                     }
                 });

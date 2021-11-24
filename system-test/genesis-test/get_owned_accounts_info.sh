@@ -33,7 +33,7 @@ function parse_stake_account_data_to_file {
   staker="$(echo "$account_data" | grep -i 'authorized staker' | cut -f3 -d " ")"
   lockup_epoch="$(echo "$account_data" | grep -i 'lockup epoch' | cut -f3 -d " ")"
   if [[ "$staker" == "$filter_key" ]] ; then
-    echo STAKE,"$account_key","$tock","$lockup_epoch" >> "$csvfile"
+    echo STAKE,"$account_key","$lamports","$lockup_epoch" >> "$csvfile"
   fi
 }
 
@@ -42,13 +42,13 @@ function display_results_summary {
   num_stake_accounts=0
   {
   read -r
-  while IFS=, read -r program account_pubkey tock lockup_epoch; do
+  while IFS=, read -r program account_pubkey lamports lockup_epoch; do
     case $program in
       SYSTEM)
-        system_account_balance=$tock
+        system_account_balance=$lamports
         ;;
       STAKE)
-        stake_account_balance_total=$((stake_account_balance_total + tock))
+        stake_account_balance_total=$((stake_account_balance_total + lamports))
         num_stake_accounts=$((num_stake_accounts + 1))
         ;;
       *)
@@ -59,11 +59,11 @@ function display_results_summary {
   done
   } < "$results_file"
 
-  stake_account_balance_total_anlog="$(bc <<< "scale=3; $stake_account_balance_total/$TOCK_PER_ANLOG")"
-  system_account_balance_anlog="$(bc <<< "scale=3; $system_account_balance/$TOCK_PER_ANLOG")"
+  stake_account_balance_total_sol="$(bc <<< "scale=3; $stake_account_balance_total/$LAMPORTS_PER_SOL")"
+  system_account_balance_sol="$(bc <<< "scale=3; $system_account_balance/$LAMPORTS_PER_SOL")"
 
   all_account_total_balance="$(bc <<< "scale=3; $system_account_balance+$stake_account_balance_total")"
-  all_account_total_balance_anlog="$(bc <<< "scale=3; ($system_account_balance+$stake_account_balance_total)/$TOCK_PER_ANLOG")"
+  all_account_total_balance_sol="$(bc <<< "scale=3; ($system_account_balance+$stake_account_balance_total)/$LAMPORTS_PER_SOL")"
 
   echo "--------------------------------------------------------------------------------------"
   echo "Results written to: $results_file"
@@ -71,14 +71,14 @@ function display_results_summary {
   echo "Summary of accounts owned by $filter_pubkey"
   echo ""
   printf "Number of STAKE accounts: %'d\n" "$num_stake_accounts"
-  printf "Balance of all STAKE accounts: %'d tock\n" "$stake_account_balance_total"
-  printf "Balance of all STAKE accounts: %'.3f ANLOG\n" "$stake_account_balance_total_anlog"
+  printf "Balance of all STAKE accounts: %'d lamports\n" "$stake_account_balance_total"
+  printf "Balance of all STAKE accounts: %'.3f ANLOG\n" "$stake_account_balance_total_sol"
   printf "\n"
-  printf "Balance of SYSTEM account: %'d tock\n" "$system_account_balance"
-  printf "Balance of SYSTEM account: %'.3f ANLOG\n" "$system_account_balance_anlog"
+  printf "Balance of SYSTEM account: %'d lamports\n" "$system_account_balance"
+  printf "Balance of SYSTEM account: %'.3f ANLOG\n" "$system_account_balance_sol"
   printf "\n"
-  printf "Total Balance of ALL accounts: %'d tock\n" "$all_account_total_balance"
-  printf "Total Balance of ALL accounts: %'.3f ANLOG\n" "$all_account_total_balance_anlog"
+  printf "Total Balance of ALL accounts: %'d lamports\n" "$all_account_total_balance"
+  printf "Total Balance of ALL accounts: %'.3f ANLOG\n" "$all_account_total_balance_sol"
   echo "--------------------------------------------------------------------------------------"
 }
 
@@ -87,7 +87,7 @@ function display_results_details {
   cat "$results_file" | column -t -s,
 }
 
-TOCK_PER_ANLOG=1000000000 # 1 billion
+LAMPORTS_PER_SOL=1000000000 # 1 billion
 all_stake_accounts_json_file=all_stake_accounts_data.json
 all_stake_accounts_csv_file=all_stake_accounts_data.csv
 
@@ -106,7 +106,7 @@ echo "Program,Account_Pubkey,Lamports,Lockup_Epoch" > "$results_file"
 echo "Getting system account data"
 get_account_info "$filter_pubkey" "$url" "$system_account_json_file"
 # shellcheck disable=SC2002
-system_account_balance="$(cat "$system_account_json_file" | jq -r '(.result | .value | .tock)')"
+system_account_balance="$(cat "$system_account_json_file" | jq -r '(.result | .value | .lamports)')"
 if [[ "$system_account_balance" == "null" ]]; then
   echo "The provided pubkey is not found in the system program: $filter_pubkey"
   exit 1
@@ -121,7 +121,7 @@ echo "Querying cluster at $url for stake accounts with authorized staker: $filte
 last_tick=$SECONDS
 {
 read -r
-while IFS=, read -r account_pubkey tock; do
+while IFS=, read -r account_pubkey lamports; do
   parse_stake_account_data_to_file "$account_pubkey" "$filter_pubkey" "$results_file" &
   sleep 0.01
   if [[ $((SECONDS - last_tick)) == 1 ]]; then

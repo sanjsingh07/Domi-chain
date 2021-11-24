@@ -12,7 +12,7 @@ use analog_sdk::{
 
 #[deprecated(
     since = "1.8.0",
-    note = "Please use `analog_sdk::stake::config` or `solana_program::stake::config` instead"
+    note = "Please use `analog_sdk::stake::config` or `analog_program::stake::config` instead"
 )]
 pub use analog_sdk::stake::config::*;
 
@@ -29,19 +29,19 @@ pub fn from_keyed_account(account: &KeyedAccount) -> Result<Config, InstructionE
     from(&*account.try_account_ref()?).ok_or(InstructionError::InvalidArgument)
 }
 
-pub fn create_account(tock: u64, config: &Config) -> AccountSharedData {
-    create_config_account(vec![], config, tock)
+pub fn create_account(tocks: u64, config: &Config) -> AccountSharedData {
+    create_config_account(vec![], config, tocks)
 }
 
 pub fn add_genesis_account(genesis_config: &mut GenesisConfig) -> u64 {
     let mut account = create_config_account(vec![], &Config::default(), 0);
-    let tock = genesis_config.rent.minimum_balance(account.data().len());
+    let tocks = genesis_config.rent.minimum_balance(account.data().len());
 
-    account.set_lamports(tock.max(1));
+    account.set_tocks(tocks.max(1));
 
     genesis_config.add_account(config::id(), account);
 
-    tock
+    tocks
 }
 
 #[cfg(test)]

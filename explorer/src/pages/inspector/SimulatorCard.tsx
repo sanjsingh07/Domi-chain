@@ -1,6 +1,6 @@
 import React from "react";
 import bs58 from "bs58";
-import { Connection, Message, Transaction } from "@solana/web3.js";
+import { Connection, Message, Transaction } from "@analog/web3.js";
 import { useCluster } from "providers/cluster";
 import { TableCardBody } from "components/common/TableCardBody";
 import { programLabel } from "utils/tx";

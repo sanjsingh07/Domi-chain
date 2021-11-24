@@ -124,26 +124,26 @@ impl ToTokens for IdDeprecated {
 struct ProgramSdkId(proc_macro2::TokenStream);
 impl Parse for ProgramSdkId {
     fn parse(input: ParseStream) -> Result<Self> {
-        parse_id(input, quote! { ::solana_program::pubkey::Pubkey }).map(Self)
+        parse_id(input, quote! { ::analog_program::pubkey::Pubkey }).map(Self)
     }
 }
 
 impl ToTokens for ProgramSdkId {
     fn to_tokens(&self, tokens: &mut proc_macro2::TokenStream) {
-        id_to_tokens(&self.0, quote! { ::solana_program::pubkey::Pubkey }, tokens)
+        id_to_tokens(&self.0, quote! { ::analog_program::pubkey::Pubkey }, tokens)
     }
 }
 
 struct ProgramSdkIdDeprecated(proc_macro2::TokenStream);
 impl Parse for ProgramSdkIdDeprecated {
     fn parse(input: ParseStream) -> Result<Self> {
-        parse_id(input, quote! { ::solana_program::pubkey::Pubkey }).map(Self)
+        parse_id(input, quote! { ::analog_program::pubkey::Pubkey }).map(Self)
     }
 }
 
 impl ToTokens for ProgramSdkIdDeprecated {
     fn to_tokens(&self, tokens: &mut proc_macro2::TokenStream) {
-        deprecated_id_to_tokens(&self.0, quote! { ::solana_program::pubkey::Pubkey }, tokens)
+        deprecated_id_to_tokens(&self.0, quote! { ::analog_program::pubkey::Pubkey }, tokens)
     }
 }
 

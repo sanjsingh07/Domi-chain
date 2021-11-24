@@ -1,15 +1,16 @@
 use crate::{
     account::{AccountSharedData, ReadableAccount},
     account_utils::StateMut,
+    fee_calculator::FeeCalculator,
     hash::Hash,
     nonce::{state::Versions, State},
 };
 use std::cell::RefCell;
 
-pub fn create_account(tock: u64) -> RefCell<AccountSharedData> {
+pub fn create_account(tocks: u64) -> RefCell<AccountSharedData> {
     RefCell::new(
         AccountSharedData::new_data_with_space(
-            tock,
+            tocks,
             &Versions::new_current(State::Uninitialized),
             State::size(),
             &crate::system_program::id(),
@@ -28,12 +29,12 @@ pub fn verify_nonce_account(acc: &AccountSharedData, hash: &Hash) -> bool {
     }
 }
 
-pub fn lamports_per_signature_of(account: &AccountSharedData) -> Option<u64> {
+pub fn fee_calculator_of(account: &AccountSharedData) -> Option<FeeCalculator> {
     let state = StateMut::<Versions>::state(account)
         .ok()?
         .convert_to_current();
     match state {
-        State::Initialized(data) => Some(data.fee_calculator.lamports_per_signature),
+        State::Initialized(data) => Some(data.fee_calculator),
         _ => None,
     }
 }

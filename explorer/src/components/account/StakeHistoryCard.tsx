@@ -1,6 +1,5 @@
 import React from "react";
-import { SolBalance } from "utils";
-import { Epoch } from "components/common/Epoch";
+import { AnlogBalance } from "utils";
 import {
   SysvarAccount,
   StakeHistoryInfo,
@@ -29,9 +28,9 @@ export function StakeHistoryCard({
             <thead>
               <tr>
                 <th className="w-1 text-muted">Epoch</th>
-                <th className="text-muted">Effective (ANLOG)</th>
-                <th className="text-muted">Activating (ANLOG)</th>
-                <th className="text-muted">Deactivating (ANLOG)</th>
+                <th className="text-muted">Effective (GM)</th>
+                <th className="text-muted">Activating (GM)</th>
+                <th className="text-muted">Deactivating (GM)</th>
               </tr>
             </thead>
             <tbody className="list">
@@ -56,17 +55,15 @@ export function StakeHistoryCard({
 const renderAccountRow = (entry: StakeHistoryEntry, index: number) => {
   return (
     <tr key={index}>
-      <td className="w-1 text-monospace">
-        <Epoch epoch={entry.epoch} link />
+      <td className="w-1 text-monospace">{entry.epoch}</td>
+      <td className="text-monospace">
+        <AnlogBalance tocks={entry.stakeHistory.effective} />
       </td>
       <td className="text-monospace">
-        <SolBalance tock={entry.stakeHistory.effective} />
+        <AnlogBalance tocks={entry.stakeHistory.activating} />
       </td>
       <td className="text-monospace">
-        <SolBalance tock={entry.stakeHistory.activating} />
-      </td>
-      <td className="text-monospace">
-        <SolBalance tock={entry.stakeHistory.deactivating} />
+        <AnlogBalance tocks={entry.stakeHistory.deactivating} />
       </td>
     </tr>
   );

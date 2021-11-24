@@ -1,19 +1,19 @@
 [package]
-authors = ["Analog Maintainers <maintainers@solana.foundation>"]
+authors = ["Analog Maintainers <maintainers@analog.foundation>"]
 edition = "2018"
 name = "analog-store-tool"
 description = "Tool to inspect append vecs"
-version = "1.9.0"
-repository = "https://github.com/analog-labs/solana"
+version = "1.8.2"
+repository = "https://github.com/analog/testnet"
 license = "Apache-2.0"
-homepage = "https://solana.com/"
+homepage = "https://analog.com/"
 publish = false
 
 [dependencies]
 log = { version = "0.4.14" }
-analog-logger = { path = "../../logger", version = "=1.9.0" }
-analog-version = { path = "../../version", version = "=1.9.0" }
-analog-runtime = { path = "..", version = "=1.9.0" }
+analog-logger = { path = "../../logger", version = "=1.8.2" }
+analog-version = { path = "../../version", version = "=1.8.2" }
+analog-runtime = { path = "..", version = "=1.8.2" }
 clap = "2.33.1"
 
 [package.metadata.docs.rs]

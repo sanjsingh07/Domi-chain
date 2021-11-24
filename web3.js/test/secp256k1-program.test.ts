@@ -6,7 +6,7 @@ import {
   Connection,
   Keypair,
   sendAndConfirmTransaction,
-  TOCK_PER_ANLOG,
+  TOCKS_PER_ANLOG,
   Transaction,
   Secp256k1Program,
 } from '../src';
@@ -30,7 +30,7 @@ if (process.env.TEST_LIVE) {
 
     before(async function () {
       await connection.confirmTransaction(
-        await connection.requestAirdrop(from.publicKey, 10 * TOCK_PER_ANLOG),
+        await connection.requestAirdrop(from.publicKey, 10 * TOCKS_PER_ANLOG),
       );
     });
 

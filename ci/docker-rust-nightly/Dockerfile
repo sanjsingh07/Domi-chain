@@ -1,4 +1,4 @@
-FROM analoglabs/rust:1.56.0
+FROM analoglabs/rust:1.54.0
 ARG date
 
 RUN set -x \

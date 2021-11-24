@@ -1,4 +1,4 @@
-import * as web3 from '@solana/web3.js';
+import * as web3 from '@analog/web3.js';
 
 (async () => {
   // Connect to cluster
@@ -11,7 +11,7 @@ import * as web3 from '@solana/web3.js';
   var from = web3.Keypair.generate();
   var airdropSignature = await connection.requestAirdrop(
     from.publicKey,
-    web3.TOCK_PER_ANLOG,
+    web3.TOCKS_PER_ANLOG,
   );
   await connection.confirmTransaction(airdropSignature);
 
@@ -23,7 +23,7 @@ import * as web3 from '@solana/web3.js';
     web3.SystemProgram.transfer({
       fromPubkey: from.publicKey,
       toPubkey: to.publicKey,
-      tock: web3.TOCK_PER_ANLOG / 100,
+      tocks: web3.TOCKS_PER_ANLOG / 100,
     }),
   );
 

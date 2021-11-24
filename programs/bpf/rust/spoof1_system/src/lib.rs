@@ -1,4 +1,4 @@
-use solana_program::{
+use analog_program::{
     account_info::AccountInfo, entrypoint, entrypoint::ProgramResult, pubkey::Pubkey,
 };
 
@@ -12,9 +12,9 @@ fn process_instruction(
     let from = &accounts[0];
     let to = &accounts[1];
 
-    let to_balance = to.tock();
-    **to.tock.borrow_mut() = to_balance + from.tock();
-    **from.tock.borrow_mut() = 0u64;
+    let to_balance = to.tocks();
+    **to.tocks.borrow_mut() = to_balance + from.tocks();
+    **from.tocks.borrow_mut() = 0u64;
 
     Ok(())
 }

@@ -1,0 +1,25 @@
+[package]
+name = "analog-ed25519-program"
+description = "Analog Ed25519 program"
+version = "1.8.2"
+homepage = "https://analog.com/"
+documentation = "https://docs.rs/analog-ed25519-program"
+repository = "https://github.com/analog/testnet"
+authors = ["Analog Maintainers <maintainers@analog.foundation>"]
+license = "Apache-2.0"
+edition = "2018"
+
+[dependencies]
+analog-sdk = { path = "../../sdk", version = "=1.8.2" }
+
+[dev-dependencies]
+ed25519-dalek = "=1.0.1"
+rand = "0.7.0"
+analog-logger = { path = "../../logger", version = "=1.8.2" }
+
+[lib]
+crate-type = ["lib"]
+name = "analog_ed25519_program"
+
+[package.metadata.docs.rs]
+targets = ["x86_64-unknown-linux-gnu"]

@@ -77,17 +77,13 @@ where
         snapshot_accounts_db_fields,
         account_paths,
         unpacked_append_vec_map,
-        &GenesisConfig {
-            cluster_type: ClusterType::Development,
-            ..GenesisConfig::default()
-        },
+        &ClusterType::Development,
         AccountSecondaryIndexes::default(),
         false,
         None,
         AccountShrinkThreshold::default(),
         false,
         Some(crate::accounts_db::ACCOUNTS_DB_CONFIG_FOR_TESTING),
-        None,
     )
 }
 
@@ -250,7 +246,6 @@ fn test_bank_serialize_style(serde_style: SerdeStyle) {
         AccountShrinkThreshold::default(),
         false,
         Some(crate::accounts_db::ACCOUNTS_DB_CONFIG_FOR_TESTING),
-        None,
     )
     .unwrap();
     dbank.src = ref_sc;

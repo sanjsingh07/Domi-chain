@@ -1,9 +1,9 @@
 [package]
 name = "analog-storage-bigtable"
-version = "1.9.0"
+version = "1.8.2"
 description = "Analog Storage BigTable"
 authors = ["Analog Maintainers <maintainers@analog.com>"]
-repository = "https://github.com/analog-labs/analog"
+repository = "https://github.com/analog/testnet"
 license = "Apache-2.0"
 homepage = "https://analog.com/"
 documentation = "https://docs.rs/analog-storage-bigtable"
@@ -17,16 +17,16 @@ enum-iterator = "0.7.0"
 flate2 = "1.0.22"
 goauth = "0.10.0"
 log = "0.4.14"
-prost = "0.9.0"
-prost-types = "0.9.0"
+prost = "0.8.0"
+prost-types = "0.8.0"
 serde = "1.0.130"
 serde_derive = "1.0.103"
 smpl_jwt = "0.6.0"
-analog-sdk = { path = "../sdk", version = "=1.9.0" }
-analog-storage-proto = { path = "../storage-proto", version = "=1.9.0" }
-analog-transaction-status = { path = "../transaction-status", version = "=1.9.0" }
+analog-sdk = { path = "../sdk", version = "=1.8.2" }
+analog-storage-proto = { path = "../storage-proto", version = "=1.8.2" }
+analog-transaction-status = { path = "../transaction-status", version = "=1.8.2" }
 thiserror = "1.0"
-tonic = { version = "0.6.1", features = ["tls", "transport"] }
+tonic = { version = "0.5.2", features = ["tls", "transport"] }
 zstd = "0.9.0"
 
 [lib]

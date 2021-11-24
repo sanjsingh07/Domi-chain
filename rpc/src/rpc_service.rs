@@ -6,7 +6,7 @@ use {
         max_slots::MaxSlots,
         optimistically_confirmed_bank_tracker::OptimisticallyConfirmedBank,
         rpc::{
-            rpc_accounts::*, rpc_bank::*, rpc_deprecated_v1_7::*, rpc_deprecated_v1_9::*,
+            rpc_accounts::*, rpc_bank::*, rpc_deprecated_v1_7::*, rpc_deprecated_v1_8::*,
             rpc_full::*, rpc_minimal::*, rpc_obsolete_v1_7::*, *,
         },
         rpc_health::*,
@@ -24,7 +24,6 @@ use {
         leader_schedule_cache::LeaderScheduleCache,
     },
     analog_metrics::inc_new_counter_info,
-    analog_perf::thread::renice_this_thread,
     analog_poh::poh_recorder::PohRecorder,
     analog_runtime::{
         bank_forks::BankForks, commitment::BlockCommitmentCache,
@@ -33,9 +32,9 @@ use {
     },
     analog_sdk::{
         exit::Exit, genesis_config::DEFAULT_GENESIS_DOWNLOAD_PATH, hash::Hash,
-        native_token::tock_to_anlog, pubkey::Pubkey,
+        native_token::tocks_to_anlog, pubkey::Pubkey,
     },
-    analog_send_transaction_service::send_transaction_service::{self, SendTransactionService},
+    analog_send_transaction_service::send_transaction_service::SendTransactionService,
     std::{
         collections::HashSet,
         net::SocketAddr,
@@ -265,17 +264,17 @@ fn process_rest(bank_forks: &Arc<RwLock<BankForks>>, path: &str) -> Option<Strin
             let non_circulating_supply =
                 analog_runtime::non_circulating_supply::calculate_non_circulating_supply(&bank)
                     .expect("Scan should not error on root banks")
-                    .tock;
+                    .tocks;
             Some(format!(
                 "{}",
-               tock_to_anlog(total_supply - non_circulating_supply)
+                tocks_to_anlog(total_supply - non_circulating_supply)
             ))
         }
         "/v0/total-supply" => {
             let r_bank_forks = bank_forks.read().unwrap();
             let bank = r_bank_forks.root_bank();
             let total_supply = bank.capitalization();
-            Some(format!("{}",tock_to_anlog(total_supply)))
+            Some(format!("{}", tocks_to_anlog(total_supply)))
         }
         _ => None,
     }
@@ -298,7 +297,8 @@ impl JsonRpcService {
         trusted_validators: Option<HashSet<Pubkey>>,
         override_health_check: Arc<AtomicBool>,
         optimistically_confirmed_bank: Arc<RwLock<OptimisticallyConfirmedBank>>,
-        send_transaction_service_config: send_transaction_service::Config,
+        send_transaction_retry_ms: u64,
+        send_transaction_leader_forward_count: u64,
         max_slots: Arc<MaxSlots>,
         leader_schedule_cache: Arc<LeaderScheduleCache>,
         current_transaction_status_slot: Arc<AtomicU64>,
@@ -306,7 +306,6 @@ impl JsonRpcService {
         info!("rpc bound to {:?}", rpc_addr);
         info!("rpc configuration: {:?}", config);
         let rpc_threads = 1.max(config.rpc_threads);
-        let rpc_niceness_adj = config.rpc_niceness_adj;
 
         let health = Arc::new(RpcHealth::new(
             cluster_info.clone(),
@@ -330,8 +329,7 @@ impl JsonRpcService {
         let runtime = Arc::new(
             tokio::runtime::Builder::new_multi_thread()
                 .worker_threads(rpc_threads)
-                .on_thread_start(move || renice_this_thread(rpc_niceness_adj).unwrap())
-                .thread_name("anlog-rpc-el")
+                .thread_name("sol-rpc-el")
                 .enable_all()
                 .build()
                 .expect("Runtime"),
@@ -397,12 +395,13 @@ impl JsonRpcService {
 
         let leader_info =
             poh_recorder.map(|recorder| ClusterTpuInfo::new(cluster_info.clone(), recorder));
-        let _send_transaction_service = Arc::new(SendTransactionService::new_with_config(
+        let _send_transaction_service = Arc::new(SendTransactionService::new(
             tpu_address,
             &bank_forks,
             leader_info,
             receiver,
-            send_transaction_service_config,
+            send_transaction_retry_ms,
+            send_transaction_leader_forward_count,
         ));
 
         #[cfg(test)]
@@ -414,8 +413,6 @@ impl JsonRpcService {
         let thread_hdl = Builder::new()
             .name("analog-jsonrpc".to_string())
             .spawn(move || {
-                renice_this_thread(rpc_niceness_adj).unwrap();
-
                 let mut io = MetaIoHandler::default();
 
                 io.extend_with(rpc_minimal::MinimalImpl.to_delegate());
@@ -424,7 +421,7 @@ impl JsonRpcService {
                     io.extend_with(rpc_accounts::AccountsDataImpl.to_delegate());
                     io.extend_with(rpc_full::FullImpl.to_delegate());
                     io.extend_with(rpc_deprecated_v1_7::DeprecatedV1_7Impl.to_delegate());
-                    io.extend_with(rpc_deprecated_v1_9::DeprecatedV1_9Impl.to_delegate());
+                    io.extend_with(rpc_deprecated_v1_8::DeprecatedV1_8Impl.to_delegate());
                 }
                 if obsolete_v1_7_api {
                     io.extend_with(rpc_obsolete_v1_7::ObsoleteV1_7Impl.to_delegate());
@@ -499,8 +496,7 @@ mod tests {
         crate::rpc::create_validator_exit,
         analog_gossip::{
             contact_info::ContactInfo,
-            crds::GossipRoute,
-            crds_value::{CrdsData, CrdsValue, SnapshotHashes},
+            crds_value::{CrdsData, CrdsValue, SnapshotHash},
         },
         analog_ledger::{
             genesis_utils::{create_genesis_config, GenesisConfigInfo},
@@ -561,11 +557,8 @@ mod tests {
             None,
             Arc::new(AtomicBool::new(false)),
             optimistically_confirmed_bank,
-            send_transaction_service::Config {
-                retry_rate_ms: 1000,
-                leader_forward_count: 1,
-                ..send_transaction_service::Config::default()
-            },
+            1000,
+            1,
             Arc::new(MaxSlots::default()),
             Arc::new(LeaderScheduleCache::default()),
             Arc::new(AtomicU64::default()),
@@ -791,7 +784,7 @@ mod tests {
             .write()
             .unwrap()
             .insert(
-                CrdsValue::new_unsigned(CrdsData::AccountsHashes(SnapshotHashes::new(
+                CrdsValue::new_unsigned(CrdsData::AccountsHashes(SnapshotHash::new(
                     trusted_validators[0],
                     vec![
                         (1, Hash::default()),
@@ -800,7 +793,6 @@ mod tests {
                     ],
                 ))),
                 1,
-                GossipRoute::LocalMessage,
             )
             .unwrap();
         assert_eq!(rm.health_check(), "ok");
@@ -812,12 +804,11 @@ mod tests {
             .write()
             .unwrap()
             .insert(
-                CrdsValue::new_unsigned(CrdsData::AccountsHashes(SnapshotHashes::new(
+                CrdsValue::new_unsigned(CrdsData::AccountsHashes(SnapshotHash::new(
                     trusted_validators[1],
                     vec![(1000 + health_check_slot_distance - 1, Hash::default())],
                 ))),
                 1,
-                GossipRoute::LocalMessage,
             )
             .unwrap();
         assert_eq!(rm.health_check(), "ok");
@@ -829,12 +820,11 @@ mod tests {
             .write()
             .unwrap()
             .insert(
-                CrdsValue::new_unsigned(CrdsData::AccountsHashes(SnapshotHashes::new(
+                CrdsValue::new_unsigned(CrdsData::AccountsHashes(SnapshotHash::new(
                     trusted_validators[2],
                     vec![(1000 + health_check_slot_distance, Hash::default())],
                 ))),
                 1,
-                GossipRoute::LocalMessage,
             )
             .unwrap();
         assert_eq!(rm.health_check(), "behind");

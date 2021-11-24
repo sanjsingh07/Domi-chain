@@ -4,7 +4,7 @@ use analog_sdk::genesis_config::GenesisConfig;
 
 #[deprecated(
     since = "1.8.0",
-    note = "Please use `analog_sdk::stake::program::id` or `solana_program::stake::program::id` instead"
+    note = "Please use `analog_sdk::stake::program::id` or `analog_program::stake::program::id` instead"
 )]
 pub use analog_sdk::stake::program::{check_id, id};
 

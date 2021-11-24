@@ -438,7 +438,7 @@ pub fn multi_bind_in_range(
     mut num: usize,
 ) -> io::Result<(u16, Vec<UdpSocket>)> {
     if cfg!(windows) && num != 1 {
-        // See https://github.com/analog-labs/solana/issues/4607
+        // See https://github.com/analog/testnet/issues/4607
         warn!(
             "multi_bind_in_range() only supports 1 socket in windows ({} requested)",
             num

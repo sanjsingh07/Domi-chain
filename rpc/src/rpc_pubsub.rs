@@ -8,6 +8,7 @@ use {
             ProgramSubscriptionParams, SignatureSubscriptionParams, SubscriptionControl,
             SubscriptionId, SubscriptionParams, SubscriptionToken,
         },
+        rpc_subscriptions::RpcVote,
     },
     dashmap::DashMap,
     jsonrpc_core::{Error, ErrorCode, Result},
@@ -20,7 +21,7 @@ use {
             RpcTransactionLogsConfig, RpcTransactionLogsFilter,
         },
         rpc_response::{
-            Response as RpcResponse, RpcKeyedAccount, RpcLogsResponse, RpcSignatureResult, RpcVote,
+            Response as RpcResponse, RpcKeyedAccount, RpcLogsResponse, RpcSignatureResult,
             SlotInfo, SlotUpdate,
         },
     },
@@ -713,7 +714,7 @@ mod tests {
         let tx = system_transaction::transfer(&alice, &bob_pubkey, 20, blockhash);
         let req = format!(
             r#"{{"jsonrpc":"2.0","id":1,"method":"signatureSubscribe","params":["{}"]}}"#,
-            tx.signatures[0]
+            tx.signatures[0].to_string()
         );
         let _res = io.handle_request_sync(&req);
 
@@ -818,7 +819,7 @@ mod tests {
                    "context": { "slot": 1 },
                    "value": {
                        "owner": stake_program_id.to_string(),
-                       "tock": 51,
+                       "tocks": 51,
                        "data": [base64::encode(expected_data), encoding],
                        "executable": false,
                        "rentEpoch": 0,
@@ -935,7 +936,7 @@ mod tests {
                    "context": { "slot": 1 },
                    "value": {
                        "owner": system_program::id().to_string(),
-                       "tock": 100,
+                       "tocks": 100,
                        "data": expected_data,
                        "executable": false,
                        "rentEpoch": 0,
@@ -970,7 +971,7 @@ mod tests {
 
         let req = format!(
             r#"{{"jsonrpc":"2.0","id":1,"method":"accountSubscribe","params":["{}"]}}"#,
-            bob_pubkey
+            bob_pubkey.to_string()
         );
         let _res = io.handle_request_sync(&req);
 
@@ -1106,7 +1107,7 @@ mod tests {
                    "context": { "slot": 1 },
                    "value": {
                        "owner": system_program::id().to_string(),
-                       "tock": 100,
+                       "tocks": 100,
                        "data": "",
                        "executable": false,
                        "rentEpoch": 0,

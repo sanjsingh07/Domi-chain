@@ -100,7 +100,7 @@ where
 #[cfg(test)]
 pub mod tests {
     use super::*;
-    use analog_sdk::{account::Account, native_token::anlog_to_tock};
+    use analog_sdk::{account::Account, native_token::anlog_to_tocks};
 
     #[test]
     fn test_calculate_stake_weighted_timestamp_uses_median() {
@@ -118,30 +118,30 @@ pub mod tests {
         let stakes: HashMap<Pubkey, (u64, Account)> = [
             (
                 pubkey0,
-                (anlog_to_tock(1.0), Account::new(1, 0, &Pubkey::default())),
+                (anlog_to_tocks(1.0), Account::new(1, 0, &Pubkey::default())),
             ),
             (
                 pubkey1,
-                (anlog_to_tock(1.0), Account::new(1, 0, &Pubkey::default())),
+                (anlog_to_tocks(1.0), Account::new(1, 0, &Pubkey::default())),
             ),
             (
                 pubkey2,
                 (
-                    anlog_to_tock(1_000_000.0),
+                    anlog_to_tocks(1_000_000.0),
                     Account::new(1, 0, &Pubkey::default()),
                 ),
             ),
             (
                 pubkey3,
                 (
-                    anlog_to_tock(1_000_000.0),
+                    anlog_to_tocks(1_000_000.0),
                     Account::new(1, 0, &Pubkey::default()),
                 ),
             ),
             (
                 pubkey4,
                 (
-                    anlog_to_tock(1_000_000.0),
+                    anlog_to_tocks(1_000_000.0),
                     Account::new(1, 0, &Pubkey::default()),
                 ),
             ),
@@ -226,21 +226,21 @@ pub mod tests {
             (
                 pubkey0,
                 (
-                    anlog_to_tock(1_000_000.0), // 1/3 stake
+                    anlog_to_tocks(1_000_000.0), // 1/3 stake
                     Account::new(1, 0, &Pubkey::default()),
                 ),
             ),
             (
                 pubkey1,
                 (
-                    anlog_to_tock(1_000_000.0),
+                    anlog_to_tocks(1_000_000.0),
                     Account::new(1, 0, &Pubkey::default()),
                 ),
             ),
             (
                 pubkey2,
                 (
-                    anlog_to_tock(1_000_000.0),
+                    anlog_to_tocks(1_000_000.0),
                     Account::new(1, 0, &Pubkey::default()),
                 ),
             ),
@@ -274,14 +274,14 @@ pub mod tests {
             (
                 pubkey0,
                 (
-                    anlog_to_tock(1_000_001.0), // 1/3 stake
+                    anlog_to_tocks(1_000_001.0), // 1/3 stake
                     Account::new(1, 0, &Pubkey::default()),
                 ),
             ),
             (
                 pubkey1,
                 (
-                    anlog_to_tock(1_000_000.0),
+                    anlog_to_tocks(1_000_000.0),
                     Account::new(1, 0, &Pubkey::default()),
                 ),
             ),
@@ -330,21 +330,21 @@ pub mod tests {
             (
                 pubkey0,
                 (
-                    anlog_to_tock(1_000_000.0),
+                    anlog_to_tocks(1_000_000.0),
                     Account::new(1, 0, &Pubkey::default()),
                 ),
             ),
             (
                 pubkey1,
                 (
-                    anlog_to_tock(1_000_000.0),
+                    anlog_to_tocks(1_000_000.0),
                     Account::new(1, 0, &Pubkey::default()),
                 ),
             ),
             (
                 pubkey2,
                 (
-                    anlog_to_tock(1_000_000.0),
+                    anlog_to_tocks(1_000_000.0),
                     Account::new(1, 0, &Pubkey::default()),
                 ),
             ),
@@ -471,21 +471,21 @@ pub mod tests {
             (
                 pubkey0,
                 (
-                    anlog_to_tock(1_000_000.0),
+                    anlog_to_tocks(1_000_000.0),
                     Account::new(1, 0, &Pubkey::default()),
                 ),
             ),
             (
                 pubkey1,
                 (
-                    anlog_to_tock(1_000_000.0),
+                    anlog_to_tocks(1_000_000.0),
                     Account::new(1, 0, &Pubkey::default()),
                 ),
             ),
             (
                 pubkey2,
                 (
-                    anlog_to_tock(1_000_000.0),
+                    anlog_to_tocks(1_000_000.0),
                     Account::new(1, 0, &Pubkey::default()),
                 ),
             ),
@@ -607,21 +607,21 @@ pub mod tests {
             (
                 pubkey0,
                 (
-                    anlog_to_tock(1_000_000.0),
+                    anlog_to_tocks(1_000_000.0),
                     Account::new(1, 0, &Pubkey::default()),
                 ),
             ),
             (
                 pubkey1,
                 (
-                    anlog_to_tock(1_000_000.0),
+                    anlog_to_tocks(1_000_000.0),
                     Account::new(1, 0, &Pubkey::default()),
                 ),
             ),
             (
                 pubkey2,
                 (
-                    anlog_to_tock(1_000_000.0),
+                    anlog_to_tocks(1_000_000.0),
                     Account::new(1, 0, &Pubkey::default()),
                 ),
             ),
@@ -745,21 +745,21 @@ pub mod tests {
             (
                 pubkey0,
                 (
-                    anlog_to_tock(1_000_000.0),
+                    anlog_to_tocks(1_000_000.0),
                     Account::new(1, 0, &Pubkey::default()),
                 ),
             ),
             (
                 pubkey1,
                 (
-                    anlog_to_tock(1_000_000.0),
+                    anlog_to_tocks(1_000_000.0),
                     Account::new(1, 0, &Pubkey::default()),
                 ),
             ),
             (
                 pubkey2,
                 (
-                    anlog_to_tock(1_000_000.0),
+                    anlog_to_tocks(1_000_000.0),
                     Account::new(1, 0, &Pubkey::default()),
                 ),
             ),

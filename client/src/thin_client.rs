@@ -350,12 +350,12 @@ impl SyncClient for ThinClient {
 
     fn transfer_and_confirm(
         &self,
-        tock: u64,
+        tocks: u64,
         keypair: &Keypair,
         pubkey: &Pubkey,
     ) -> TransportResult<Signature> {
         let transfer_instruction =
-            system_instruction::transfer(&keypair.pubkey(), pubkey, tock);
+            system_instruction::transfer(&keypair.pubkey(), pubkey, tocks);
         self.send_and_confirm_instruction(keypair, transfer_instruction)
     }
 
@@ -600,9 +600,15 @@ impl SyncClient for ThinClient {
             .map_err(|e| e.into())
     }
 
-    fn get_fee_for_message(&self, message: &Message) -> TransportResult<u64> {
+    fn get_fee_for_message(&self, blockhash: &Hash, message: &Message) -> TransportResult<u64> {
         self.rpc_client()
-            .get_fee_for_message(message)
+            .get_fee_for_message(blockhash, message)
+            .map_err(|e| e.into())
+    }
+
+    fn get_new_latest_blockhash(&self, blockhash: &Hash) -> TransportResult<Hash> {
+        self.rpc_client()
+            .get_new_latest_blockhash(blockhash)
             .map_err(|e| e.into())
     }
 }
@@ -638,13 +644,13 @@ impl AsyncClient for ThinClient {
     }
     fn async_transfer(
         &self,
-        tock: u64,
+        tocks: u64,
         keypair: &Keypair,
         pubkey: &Pubkey,
         recent_blockhash: Hash,
     ) -> TransportResult<Signature> {
         let transfer_instruction =
-            system_instruction::transfer(&keypair.pubkey(), pubkey, tock);
+            system_instruction::transfer(&keypair.pubkey(), pubkey, tocks);
         self.async_send_instruction(keypair, transfer_instruction, recent_blockhash)
     }
 }

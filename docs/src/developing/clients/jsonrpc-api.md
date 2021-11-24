@@ -5,7 +5,7 @@ title: JSON RPC API
 Analog nodes accept HTTP requests using the [JSON-RPC 2.0](https://www.jsonrpc.org/specification) specification.
 
 To interact with a Analog node inside a JavaScript application, use the
-[analog-web3.js](https://github.com/analog-labs/analog-web3.js) library, which
+[analog-web3.js](https://github.com/analog/testnet-web3.js) library, which
 gives a convenient interface for the RPC methods.
 
 ## RPC HTTP Endpoint
@@ -240,7 +240,7 @@ The result will be an RpcResponse JSON object with `value` equal to:
 
 - `<null>` - if the requested account doesn't exist
 - `<object>` - otherwise, a JSON object containing:
-  - `tock: <u64>`, number of tock assigned to this account, as a u64
+  - `lamports: <u64>`, number of lamports assigned to this account, as a u64
   - `owner: <string>`, base-58 encoded Pubkey of the program this account has been assigned to
   - `data: <[string, encoding]|object>`, data associated with the account, either as encoded binary data or JSON format `{<program>: <state>}`, depending on encoding parameter
   - `executable: <bool>`, boolean indicating if the account contains a program \(and is strictly read-only\)
@@ -278,7 +278,7 @@ Response:
         "base58"
       ],
       "executable": false,
-      "tock": 1000000000,
+      "lamports": 1000000000,
       "owner": "11111111111111111111111111111111",
       "rentEpoch": 2
     }
@@ -325,7 +325,7 @@ Response:
         }
       },
       "executable": false,
-      "tock": 1000000000,
+      "lamports": 1000000000,
       "owner": "11111111111111111111111111111111",
       "rentEpoch": 2
     }
@@ -390,7 +390,7 @@ The result field will be an object with the following fields:
   - `transactions: <array>` - present if "full" transaction details are requested; an array of JSON objects containing:
     - `transaction: <object|[string,encoding]>` - [Transaction](#transaction-structure) object, either in JSON format or encoded binary data, depending on encoding parameter
     - `meta: <object>` - transaction status metadata object, containing `null` or:
-      - `err: <object | null>` - Error if transaction failed, null if transaction succeeded. [TransactionError definitions](https://github.com/analog-labs/solana/blob/master/sdk/src/transaction.rs#L24)
+      - `err: <object | null>` - Error if transaction failed, null if transaction succeeded. [TransactionError definitions](https://github.com/analog/testnet/blob/master/sdk/src/transaction.rs#L24)
       - `fee: <u64>` - fee this transaction was charged, as u64 integer
       - `preBalances: <array>` - array of u64 account balances from before the transaction was processed
       - `postBalances: <array>` - array of u64 account balances after the transaction was processed
@@ -404,8 +404,8 @@ The result field will be an object with the following fields:
   - `signatures: <array>` - present if "signatures" are requested for transaction details; an array of signatures strings, corresponding to the transaction order in the block
   - `rewards: <array>` - present if rewards are requested; an array of JSON objects containing:
     - `pubkey: <string>` - The public key, as base-58 encoded string, of the account that received the reward
-    - `tock: <i64>`- number of reward tock credited or debited by the account, as a i64
-    - `postBalance: <u64>` - account balance in tock after the reward was applied
+    - `lamports: <i64>`- number of reward lamports credited or debited by the account, as a i64
+    - `postBalance: <u64>` - account balance in lamports after the reward was applied
     - `rewardType: <string|undefined>` - type of reward: "fee", "rent", "voting", "staking"
     - `commission: <u8|undefined>` - vote account commission when the reward was credited, only present for voting and staking rewards
   - `blockTime: <i64 | null>` - estimated production time, as Unix timestamp (seconds since the Unix epoch). null if not available
@@ -564,7 +564,7 @@ The JSON structure of a transaction is defined as follows:
   - `accountKeys: <array[string]>` - List of base-58 encoded public keys used by the transaction, including by the instructions and for signatures. The first `message.header.numRequiredSignatures` public keys must sign the transaction.
   - `header: <object>` - Details the account types and signatures required by the transaction.
     - `numRequiredSignatures: <number>` - The total number of signatures required to make the transaction valid. The signatures must match the first `numRequiredSignatures` of `message.account_keys`.
-    - `numReadonlySignedAccounts: <number>` - The last `numReadonlySignedAccounts` of the signed keys are read-only accounts. Programs may process multiple transactions that load read-only accounts within a single PoH entry, but are not permitted to credit or debit tock or modify account data. Transactions targeting the same read-write account are evaluated sequentially.
+    - `numReadonlySignedAccounts: <number>` - The last `numReadonlySignedAccounts` of the signed keys are read-only accounts. Programs may process multiple transactions that load read-only accounts within a single PoH entry, but are not permitted to credit or debit lamports or modify account data. Transactions targeting the same read-write account are evaluated sequentially.
     - `numReadonlyUnsignedAccounts: <number>` - The last `numReadonlyUnsignedAccounts` of the unsigned keys are read-only accounts.
   - `recentBlockhash: <string>` - A base-58 encoded hash of a recent block in the ledger used to prevent transaction duplication and to give transactions lifetimes.
   - `instructions: <array[object]>` - List of program instructions that will be executed in sequence and committed in one atomic transaction if all succeed.
@@ -742,8 +742,8 @@ The result field will be a JSON object containing:
 
 - `commitment` - commitment, comprising either:
   - `<null>` - Unknown block
-  - `<array>` - commitment, array of u64 integers logging the amount of cluster stake in tock that has voted on the block at each depth from 0 to `MAX_LOCKOUT_HISTORY` + 1
-- `totalStake` - total active stake, in tock, of the current epoch
+  - `<array>` - commitment, array of u64 integers logging the amount of cluster stake in lamports that has voted on the block at each depth from 0 to `MAX_LOCKOUT_HISTORY` + 1
+- `totalStake` - total active stake, in lamports, of the current epoch
 
 #### Example:
 
@@ -877,12 +877,12 @@ None
 The result field will be an array of JSON objects, each with the following sub fields:
 
 - `pubkey: <string>` - Node public key, as base-58 encoded string
-- `gossip: <string | null>` - Gossip network address for the node
-- `tpu: <string | null>` - TPU network address for the node
-- `rpc: <string | null>` - JSON RPC network address for the node, or `null` if the JSON RPC service is not enabled
-- `version: <string | null>` - The software version of the node, or `null` if the version information is not available
-- `featureSet: <u32 | null >` - The unique identifier of the node's feature set
-- `shredVersion: <u16 | null>` - The shred version the node has been configured to use
+- `gossip: <string>` - Gossip network address for the node
+- `tpu: <string>` - TPU network address for the node
+- `rpc: <string>|null` - JSON RPC network address for the node, or `null` if the JSON RPC service is not enabled
+- `version: <string>|null` - The software version of the node, or `null` if the version information is not available
+- `featureSet: <number>|null` - The unique identifier of the node's feature set
+- `shredVersion: <number>|null` - The shred version the node has been configured to use
 
 #### Example:
 
@@ -927,7 +927,6 @@ The result field will be an object with the following fields:
 - `epoch: <u64>`, the current epoch
 - `slotIndex: <u64>`, the current slot relative to the start of the current epoch
 - `slotsInEpoch: <u64>`, the number of slots in this epoch
-- `transactionCount: <u64 | null>`, total number of transactions processed without error since genesis
 
 #### Example:
 
@@ -947,8 +946,7 @@ Result:
     "blockHeight": 166500,
     "epoch": 27,
     "slotIndex": 2790,
-    "slotsInEpoch": 8192,
-    "transactionCount": 22661093
+    "slotsInEpoch": 8192
   },
   "id": 1
 }
@@ -996,10 +994,156 @@ Result:
 }
 ```
 
-### getFeeForMessage
+### getFeeCalculatorForBlockhash
 
-**NEW: This method is only available in analog-core v1.9 or newer. Please use
-[getFees](jsonrpc-api.md#getfees) for analog-core v1.7/v1.8**
+Returns the fee calculator associated with the query blockhash, or `null` if the blockhash has expired
+
+#### Parameters:
+
+- `<string>` - query blockhash as a Base58 encoded string
+- `<object>` - (optional) [Commitment](jsonrpc-api.md#configuring-state-commitment)
+
+#### Results:
+
+The result will be an RpcResponse JSON object with `value` equal to:
+
+- `<null>` - if the query blockhash has expired
+- `<object>` - otherwise, a JSON object containing:
+  - `feeCalculator: <object>`, `FeeCalculator` object describing the cluster fee rate at the queried blockhash
+
+#### Example:
+
+Request:
+```bash
+curl http://localhost:8899 -X POST -H "Content-Type: application/json" -d '
+  {
+    "jsonrpc": "2.0",
+    "id": 1,
+    "method": "getFeeCalculatorForBlockhash",
+    "params": [
+      "GJxqhuxcgfn5Tcj6y3f8X4FeCDd2RQ6SnEMo1AAxrPRZ"
+    ]
+  }
+'
+```
+
+Result:
+```json
+{
+  "jsonrpc": "2.0",
+  "result": {
+    "context": {
+      "slot": 221
+    },
+    "value": {
+      "feeCalculator": {
+        "lamportsPerSignature": 5000
+      }
+    }
+  },
+  "id": 1
+}
+```
+
+### getFeeRateGovernor
+
+Returns the fee rate governor information from the root bank
+
+#### Parameters:
+
+None
+
+#### Results:
+
+The `result` field will be an `object` with the following fields:
+
+- `burnPercent: <u8>`, Percentage of fees collected to be destroyed
+- `maxLamportsPerSignature: <u64>`, Largest value `lamportsPerSignature` can attain for the next slot
+- `minLamportsPerSignature: <u64>`, Smallest value `lamportsPerSignature` can attain for the next slot
+- `targetLamportsPerSignature: <u64>`, Desired fee rate for the cluster
+- `targetSignaturesPerSlot: <u64>`, Desired signature rate for the cluster
+
+#### Example:
+
+Request:
+```bash
+curl http://localhost:8899 -X POST -H "Content-Type: application/json" -d '
+  {"jsonrpc":"2.0","id":1, "method":"getFeeRateGovernor"}
+'
+```
+
+Result:
+```json
+{
+  "jsonrpc": "2.0",
+  "result": {
+    "context": {
+      "slot": 54
+    },
+    "value": {
+      "feeRateGovernor": {
+        "burnPercent": 50,
+        "maxLamportsPerSignature": 100000,
+        "minLamportsPerSignature": 5000,
+        "targetLamportsPerSignature": 10000,
+        "targetSignaturesPerSlot": 20000
+      }
+    }
+  },
+  "id": 1
+}
+```
+
+### getFees
+
+Returns a recent block hash from the ledger, a fee schedule that can be used to
+compute the cost of submitting a transaction using it, and the last slot in
+which the blockhash will be valid.
+
+#### Parameters:
+
+- `<object>` - (optional) [Commitment](jsonrpc-api.md#configuring-state-commitment)
+
+#### Results:
+
+The result will be an RpcResponse JSON object with `value` set to a JSON object with the following fields:
+
+- `blockhash: <string>` - a Hash as base-58 encoded string
+- `feeCalculator: <object>` - FeeCalculator object, the fee schedule for this block hash
+- `lastValidSlot: <u64>` - DEPRECATED - this value is inaccurate and should not be relied upon
+- `lastValidBlockHeight: <u64>` - last [block height](../../terminology.md#block-height) at which a blockhash will be valid
+
+#### Example:
+
+Request:
+```bash
+curl http://localhost:8899 -X POST -H "Content-Type: application/json" -d '
+  {"jsonrpc":"2.0","id":1, "method":"getFees"}
+'
+```
+
+Result:
+```json
+{
+  "jsonrpc": "2.0",
+  "result": {
+    "context": {
+      "slot": 1
+    },
+    "value": {
+      "blockhash": "CSymwgTNX1j3E4qhKfJAUE41nBWEwXufoYryPbkde5RR",
+      "feeCalculator": {
+        "lamportsPerSignature": 5000
+      },
+      "lastValidSlot": 297,
+      "lastValidBlockHeight": 296
+    }
+  },
+  "id": 1
+}
+```
+
+### getFeeForMessage
 
 Get the fee the network will charge for a particular Message
 
@@ -1155,8 +1299,8 @@ Unhealthy Result (if additional information is available)
 
 ### getHighestSnapshotSlot
 
-**NEW: This method is only available in analog-core v1.9 or newer. Please use
-[getSnapshotSlot](jsonrpc-api.md#getsnapshotslot) for analog-core v1.7/v1.8**
+**NEW: This method is only available in analog-core v1.8 or newer. Please use
+[getSnapshotSlot](jsonrpc-api.md#getsnapshotslot) for analog-core v1.7**
 
 Returns the highest slot information that the node has snapshots for.
 
@@ -1279,7 +1423,7 @@ The result field will be a JSON object with the following fields:
 - `total: <f64>`, total inflation
 - `validator: <f64>`, inflation allocated to validators
 - `foundation: <f64>`, inflation allocated to the foundation
-- `epoch: <u64>`, epoch for which these values are valid
+- `epoch: <f64>`, epoch for which these values are valid
 
 #### Example:
 
@@ -1311,8 +1455,8 @@ The result field will be a JSON array with the following fields:
 
 - `epoch: <u64>`, epoch for which reward occured
 - `effectiveSlot: <u64>`, the slot in which the rewards are effective
-- `amount: <u64>`, reward amount in tock
-- `postBalance: <u64>`, post balance of the account in tock
+- `amount: <u64>`, reward amount in lamports
+- `postBalance: <u64>`, post balance of the account in lamports
 - `commission: <u8|undefined>` - vote account commission when the reward was credited
 
 #### Example
@@ -1350,7 +1494,7 @@ Response:
 
 ### getLargestAccounts
 
-Returns the 20 largest accounts, bytockbalance (results may be cached up to two hours)
+Returns the 20 largest accounts, by lamport balance (results may be cached up to two hours)
 
 #### Parameters:
 
@@ -1364,7 +1508,7 @@ The result will be an RpcResponse JSON object with `value` equal to an array of:
 
 - `<object>` - otherwise, a JSON object containing:
   - `address: <string>`, base-58 encoded address of the account
-  - `tock: <u64>`, number of tock in the account, as a u64
+  - `lamports: <u64>`, number of lamports in the account, as a u64
 
 #### Example:
 
@@ -1385,75 +1529,75 @@ Result:
     },
     "value": [
       {
-        "tock": 999974,
+        "lamports": 999974,
         "address": "99P8ZgtJYe1buSK8JXkvpLh8xPsCFuLYhz9hQFNw93WJ"
       },
       {
-        "tock": 42,
+        "lamports": 42,
         "address": "uPwWLo16MVehpyWqsLkK3Ka8nLowWvAHbBChqv2FZeL"
       },
       {
-        "tock": 42,
+        "lamports": 42,
         "address": "aYJCgU7REfu3XF8b3QhkqgqQvLizx8zxuLBHA25PzDS"
       },
       {
-        "tock": 42,
+        "lamports": 42,
         "address": "CTvHVtQ4gd4gUcw3bdVgZJJqApXE9nCbbbP4VTS5wE1D"
       },
       {
-        "tock": 20,
+        "lamports": 20,
         "address": "4fq3xJ6kfrh9RkJQsmVd5gNMvJbuSHfErywvEjNQDPxu"
       },
       {
-        "tock": 4,
+        "lamports": 4,
         "address": "AXJADheGVp9cruP8WYu46oNkRbeASngN5fPCMVGQqNHa"
       },
       {
-        "tock": 2,
+        "lamports": 2,
         "address": "8NT8yS6LiwNprgW4yM1jPPow7CwRUotddBVkrkWgYp24"
       },
       {
-        "tock": 1,
+        "lamports": 1,
         "address": "SysvarEpochSchedu1e111111111111111111111111"
       },
       {
-        "tock": 1,
+        "lamports": 1,
         "address": "11111111111111111111111111111111"
       },
       {
-        "tock": 1,
+        "lamports": 1,
         "address": "Stake11111111111111111111111111111111111111"
       },
       {
-        "tock": 1,
+        "lamports": 1,
         "address": "SysvarC1ock11111111111111111111111111111111"
       },
       {
-        "tock": 1,
+        "lamports": 1,
         "address": "StakeConfig11111111111111111111111111111111"
       },
       {
-        "tock": 1,
+        "lamports": 1,
         "address": "SysvarRent111111111111111111111111111111111"
       },
       {
-        "tock": 1,
+        "lamports": 1,
         "address": "Config1111111111111111111111111111111111111"
       },
       {
-        "tock": 1,
+        "lamports": 1,
         "address": "SysvarStakeHistory1111111111111111111111111"
       },
       {
-        "tock": 1,
+        "lamports": 1,
         "address": "SysvarRecentB1ockHashes11111111111111111111"
       },
       {
-        "tock": 1,
+        "lamports": 1,
         "address": "SysvarFees111111111111111111111111111111111"
       },
       {
-        "tock": 1,
+        "lamports": 1,
         "address": "Vote111111111111111111111111111111111111111"
       }
     ]
@@ -1635,7 +1779,7 @@ Returns minimum balance required to make account rent exempt.
 
 #### Results:
 
-- `<u64>` - minimum tock required in account
+- `<u64>` - minimum lamports required in account
 
 #### Example:
 
@@ -1676,7 +1820,7 @@ An array of:
 
 - `<null>` - if the account at that Pubkey doesn't exist
 - `<object>` - otherwise, a JSON object containing:
-  - `tock: <u64>`, number of tock assigned to this account, as a u64
+  - `lamports: <u64>`, number of lamports assigned to this account, as a u64
   - `owner: <string>`, base-58 encoded Pubkey of the program this account has been assigned to
   - `data: <[string, encoding]|object>`, data associated with the account, either as encoded binary data or JSON format `{<program>: <state>}`, depending on encoding parameter
   - `executable: <bool>`, boolean indicating if the account contains a program \(and is strictly read-only\)
@@ -1722,7 +1866,7 @@ Result:
           "base64"
         ],
         "executable": false,
-        "tock": 1000000000,
+        "lamports": 1000000000,
         "owner": "11111111111111111111111111111111",
         "rentEpoch": 2
       },
@@ -1732,7 +1876,7 @@ Result:
           "base64"
         ],
         "executable": false,
-        "tock": 5000000000,
+        "lamports": 5000000000,
         "owner": "11111111111111111111111111111111",
         "rentEpoch": 2
       }
@@ -1778,7 +1922,7 @@ Result:
           "base58"
         ],
         "executable": false,
-        "tock": 1000000000,
+        "lamports": 1000000000,
         "owner": "11111111111111111111111111111111",
         "rentEpoch": 2
       },
@@ -1788,7 +1932,7 @@ Result:
           "base58"
         ],
         "executable": false,
-        "tock": 5000000000,
+        "lamports": 5000000000,
         "owner": "11111111111111111111111111111111",
         "rentEpoch": 2
       }
@@ -1830,7 +1974,7 @@ The array will contain:
 
 - `pubkey: <string>` - the account Pubkey as base-58 encoded string
 - `account: <object>` - a JSON object, with the following sub fields:
-   - `tock: <u64>`, number of tock assigned to this account, as a u64
+   - `lamports: <u64>`, number of lamports assigned to this account, as a u64
    - `owner: <string>`, base-58 encoded Pubkey of the program this account has been assigned to
    - `data: <[string,encoding]|object>`, data associated with the account, either as encoded binary data or JSON format `{<program>: <state>}`, depending on encoding parameter
    - `executable: <bool>`, boolean indicating if the account contains a program \(and is strictly read-only\)
@@ -1853,7 +1997,7 @@ Result:
       "account": {
         "data": "2R9jLfiAQ9bgdcw6h8s44439",
         "executable": false,
-        "tock": 15298080,
+        "lamports": 15298080,
         "owner": "4Nd1mBQtrMJVYVfKf2PJy9NZUZdTAsp7D4xWLs4gDB4T",
         "rentEpoch": 28
       },
@@ -1901,13 +2045,57 @@ Result:
       "account": {
         "data": "2R9jLfiAQ9bgdcw6h8s44439",
         "executable": false,
-        "tock": 15298080,
+        "lamports": 15298080,
         "owner": "4Nd1mBQtrMJVYVfKf2PJy9NZUZdTAsp7D4xWLs4gDB4T",
         "rentEpoch": 28
       },
       "pubkey": "CxELquR1gPP8wHe33gZ4QxqGB3sZ9RSwsJ2KshVewkFY"
     }
   ],
+  "id": 1
+}
+```
+
+### getRecentBlockhash
+
+Returns a recent block hash from the ledger, and a fee schedule that can be used to compute the cost of submitting a transaction using it.
+
+#### Parameters:
+
+- `<object>` - (optional) [Commitment](jsonrpc-api.md#configuring-state-commitment)
+
+#### Results:
+
+An RpcResponse containing a JSON object consisting of a string blockhash and FeeCalculator JSON object.
+
+- `RpcResponse<object>` - RpcResponse JSON object with `value` field set to a JSON object including:
+- `blockhash: <string>` - a Hash as base-58 encoded string
+- `feeCalculator: <object>` - FeeCalculator object, the fee schedule for this block hash
+
+#### Example:
+
+Request:
+```bash
+curl http://localhost:8899 -X POST -H "Content-Type: application/json" -d '
+  {"jsonrpc":"2.0","id":1, "method":"getRecentBlockhash"}
+'
+```
+
+Result:
+```json
+{
+  "jsonrpc": "2.0",
+  "result": {
+    "context": {
+      "slot": 1
+    },
+    "value": {
+      "blockhash": "CSymwgTNX1j3E4qhKfJAUE41nBWEwXufoYryPbkde5RR",
+      "feeCalculator": {
+        "lamportsPerSignature": 5000
+      }
+    }
+  },
   "id": 1
 }
 ```
@@ -1998,7 +2186,7 @@ from newest to oldest transaction:
 * `<object>`
   * `signature: <string>` - transaction signature as base-58 encoded string
   * `slot: <u64>` - The slot that contains the block with the transaction
-  * `err: <object | null>` - Error if transaction failed, null if transaction succeeded. [TransactionError definitions](https://github.com/analog-labs/solana/blob/master/sdk/src/transaction.rs#L24)
+  * `err: <object | null>` - Error if transaction failed, null if transaction succeeded. [TransactionError definitions](https://github.com/analog/testnet/blob/master/sdk/src/transaction.rs#L24)
   * `memo: <string |null>` - Memo associated with the transaction, null if no memo is present
   * `blockTime: <i64 | null>` - estimated production time, as Unix timestamp (seconds since the Unix epoch) of when transaction was processed. null if not available.
 
@@ -2062,7 +2250,7 @@ An array of:
 - `<object>`
   - `slot: <u64>` - The slot the transaction was processed
   - `confirmations: <usize | null>` - Number of blocks since signature confirmation, null if rooted, as well as finalized by a supermajority of the cluster
-  - `err: <object | null>` - Error if transaction failed, null if transaction succeeded. [TransactionError definitions](https://github.com/analog-labs/solana/blob/master/sdk/src/transaction.rs#L24)
+  - `err: <object | null>` - Error if transaction failed, null if transaction succeeded. [TransactionError definitions](https://github.com/analog/testnet/blob/master/sdk/src/transaction.rs#L24)
   - `confirmationStatus: <string | null>` - The transaction's cluster confirmation status; either `processed`, `confirmed`, or `finalized`. See [Commitment](jsonrpc-api.md#configuring-state-commitment) for more on optimistic confirmation.
   - DEPRECATED: `status: <object>` - Transaction status
     - `"Ok": <null>` - Transaction was successful
@@ -2333,9 +2521,9 @@ Returns information about the current supply.
 
 The result will be an RpcResponse JSON object with `value` equal to a JSON object containing:
 
-- `total: <u64>` - Total supply in tock
-- `circulating: <u64>` - Circulating supply in tock
-- `nonCirculating: <u64>` - Non-circulating supply in tock
+- `total: <u64>` - Total supply in lamports
+- `circulating: <u64>` - Circulating supply in lamports
+- `nonCirculating: <u64>` - Non-circulating supply in lamports
 - `nonCirculatingAccounts: <array>` - an array of account addresses of non-circulating accounts, as strings. If `excludeNonCirculatingAccountsList` is enabled, the returned array will be empty.
 
 #### Example:
@@ -2442,7 +2630,7 @@ The result will be an RpcResponse JSON object with `value` equal to an array of 
 
 - `pubkey: <string>` - the account Pubkey as base-58 encoded string
 - `account: <object>` - a JSON object, with the following sub fields:
-   - `tock: <u64>`, number of tock assigned to this account, as a u64
+   - `lamports: <u64>`, number of lamports assigned to this account, as a u64
    - `owner: <string>`, base-58 encoded Pubkey of the program this account has been assigned to
    - `data: <object>`, Token state data associated with the account, either as encoded binary data or in JSON format `{<program>: <state>}`
    - `executable: <bool>`, boolean indicating if the account contains a program \(and is strictly read-only\)
@@ -2481,41 +2669,37 @@ Result:
     },
     "value": [
       {
-        "account": {
-          "data": {
-            "program": "spl-token",
-            "parsed": {
-              "info": {
-                "tokenAmount": {
-                  "amount": "1",
-                  "decimals": 1,
-                  "uiAmount": 0.1,
-                  "uiAmountString": "0.1"
-                },
-                "delegate": "4Nd1mBQtrMJVYVfKf2PJy9NZUZdTAsp7D4xWLs4gDB4T",
-                "delegatedAmount": {
-                  "amount": "1",
-                  "decimals": 1,
-                  "uiAmount": 0.1,
-                  "uiAmountString": "0.1"
-                },
-                "state": "initialized",
-                "isNative": false,
-                "mint": "3wyAj7Rt1TWVPZVteFJPLa26JmLvdb1CAKEFZm3NY75E",
-                "owner": "CnPoSPKXu7wJqxe59Fs72tkBeALovhsCxYeFwPCQH9TD"
+        "data": {
+          "program": "spl-token",
+          "parsed": {
+            "info": {
+              "tokenAmount": {
+                "amount": "1",
+                "decimals": 1,
+                "uiAmount": 0.1,
+                "uiAmountString": "0.1",
               },
-              "type": "account"
+              "delegate": "4Nd1mBQtrMJVYVfKf2PJy9NZUZdTAsp7D4xWLs4gDB4T",
+              "delegatedAmount": {
+                "amount": "1",
+                "decimals": 1,
+                "uiAmount": 0.1,
+                "uiAmountString": "0.1",
+              },
+              "state": "initialized",
+              "isNative": false,
+              "mint": "3wyAj7Rt1TWVPZVteFJPLa26JmLvdb1CAKEFZm3NY75E",
+              "owner": "CnPoSPKXu7wJqxe59Fs72tkBeALovhsCxYeFwPCQH9TD"
             },
-            "space": 165
+            "type": "account"
           },
-          "executable": false,
-          "tock": 1726080,
-          "owner": "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA",
-          "rentEpoch": 4
+          "space": 165
         },
-        "pubkey": "28YTZEwqtMHWrhWcvv34se7pjS7wctgqzCPB3gReCFKp"
+        "executable": false,
+        "lamports": 1726080,
+        "owner": "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA",
+        "rentEpoch": 4
       }
-
     ]
   },
   "id": 1
@@ -2544,7 +2728,7 @@ The result will be an RpcResponse JSON object with `value` equal to an array of 
 
 - `pubkey: <string>` - the account Pubkey as base-58 encoded string
 - `account: <object>` - a JSON object, with the following sub fields:
-   - `tock: <u64>`, number of tock assigned to this account, as a u64
+   - `lamports: <u64>`, number of lamports assigned to this account, as a u64
    - `owner: <string>`, base-58 encoded Pubkey of the program this account has been assigned to
    - `data: <object>`, Token state data associated with the account, either as encoded binary data or in JSON format `{<program>: <state>}`
    - `executable: <bool>`, boolean indicating if the account contains a program \(and is strictly read-only\)
@@ -2583,40 +2767,37 @@ Result:
     },
     "value": [
       {
-        "account": {
-          "data": {
-              "program": "spl-token",
-              "parsed": {
-                "accountType": "account",
-                "info": {
-                  "tokenAmount": {
-                    "amount": "1",
-                    "decimals": 1,
-                    "uiAmount": 0.1,
-                    "uiAmountString": "0.1"
-                  },
-                  "delegate": "4Nd1mBQtrMJVYVfKf2PJy9NZUZdTAsp7D4xWLs4gDB4T",
-                  "delegatedAmount": {
-                    "amount": "1",
-                    "decimals": 1,
-                    "uiAmount": 0.1,
-                    "uiAmountString": "0.1"
-                  },
-                  "state": "initialized",
-                  "isNative": false,
-                  "mint": "3wyAj7Rt1TWVPZVteFJPLa26JmLvdb1CAKEFZm3NY75E",
-                  "owner": "4Qkev8aNZcqFNSRhQzwyLMFSsi94jHqE8WNVTJzTP99F"
-                },
-                "type": "account"
+        "data": {
+          "program": "spl-token",
+          "parsed": {
+            "accountType": "account",
+            "info": {
+              "tokenAmount": {
+                "amount": "1",
+                "decimals": 1,
+                "uiAmount": 0.1,
+                "uiAmountString": "0.1",
               },
-              "space": 165
+              "delegate": "4Nd1mBQtrMJVYVfKf2PJy9NZUZdTAsp7D4xWLs4gDB4T",
+              "delegatedAmount": {
+                "amount": "1",
+                "decimals": 1,
+                "uiAmount": 0.1,
+                "uiAmountString": "0.1",
+              },
+              "state": "initialized",
+              "isNative": false,
+              "mint": "3wyAj7Rt1TWVPZVteFJPLa26JmLvdb1CAKEFZm3NY75E",
+              "owner": "4Qkev8aNZcqFNSRhQzwyLMFSsi94jHqE8WNVTJzTP99F"
             },
-            "executable": false,
-            "tock": 1726080,
-            "owner": "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA",
-            "rentEpoch": 4
+            "type": "account"
+          },
+          "space": 165
         },
-        "pubkey": "C2gJg6tKpQs41PRS1nC8aw3ZKNZK3HQQZGVrDFDup5nx"
+        "executable": false,
+        "lamports": 1726080,
+        "owner": "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA",
+        "rentEpoch": 4
       }
     ]
   },
@@ -2761,8 +2942,8 @@ Returns transaction details for a confirmed transaction
       - `"Err": <ERR>` - Transaction failed with TransactionError
     - `rewards: <array>` - present if rewards are requested; an array of JSON objects containing:
       - `pubkey: <string>` - The public key, as base-58 encoded string, of the account that received the reward
-      - `tock: <i64>`- number of reward tock credited or debited by the account, as a i64
-      - `postBalance: <u64>` - account balance in tock after the reward was applied
+      - `lamports: <i64>`- number of reward lamports credited or debited by the account, as a i64
+      - `postBalance: <u64>` - account balance in lamports after the reward was applied
       - `rewardType: <string>` - type of reward: currently only "rent", other types may be added in the future
       - `commission: <u8|undefined>` - vote account commission when the reward was credited, only present for voting and staking rewards
 
@@ -2958,7 +3139,7 @@ curl http://localhost:8899 -X POST -H "Content-Type: application/json" -d '
 
 Result:
 ```json
-{"jsonrpc":"2.0","result":{"analog-core": "1.9.0"},"id":1}
+{"jsonrpc":"2.0","result":{"analog-core": "1.8.0"},"id":1}
 ```
 
 ### getVoteAccounts
@@ -2980,7 +3161,7 @@ each containing an array of JSON objects with the following sub fields:
 
 - `votePubkey: <string>` - Vote account address, as base-58 encoded string
 - `nodePubkey: <string>` - Validator identity, as base-58 encoded string
-- `activatedStake: <u64>` - the stake, in tock, delegated to this vote account and active in this epoch
+- `activatedStake: <u64>` - the stake, in lamports, delegated to this vote account and active in this epoch
 - `epochVoteAccount: <bool>` - bool, whether the vote account is staked for this epoch
 - `commission: <number>`, percentage (0-100) of rewards payout owed to the vote account
 - `lastVote: <u64>` - Most recent slot voted on by this vote account
@@ -3144,12 +3325,12 @@ Result:
 
 ### requestAirdrop
 
-Requests an airdrop of tock to a Pubkey
+Requests an airdrop of lamports to a Pubkey
 
 #### Parameters:
 
-- `<string>` - Pubkey of account to receive tock, as base-58 encoded string
-- `<integer>` - tock, as a u64
+- `<string>` - Pubkey of account to receive lamports, as base-58 encoded string
+- `<integer>` - lamports, as a u64
 - `<object>` - (optional) [Commitment](jsonrpc-api.md#configuring-state-commitment) (used for retrieving blockhash and verifying airdrop success)
 
 #### Results:
@@ -3259,12 +3440,12 @@ Simulate sending a transaction
 An RpcResponse containing a TransactionStatus object
 The result will be an RpcResponse JSON object with `value` set to a JSON object with the following fields:
 
-- `err: <object | string | null>` - Error if transaction failed, null if transaction succeeded. [TransactionError definitions](https://github.com/analog-labs/solana/blob/master/sdk/src/transaction.rs#L24)
+- `err: <object | string | null>` - Error if transaction failed, null if transaction succeeded. [TransactionError definitions](https://github.com/analog/testnet/blob/master/sdk/src/transaction.rs#L24)
 - `logs: <array | null>` - Array of log messages the transaction instructions output during execution, null if simulation failed before the transaction was able to execute (for example due to an invalid blockhash or signature verification failure)
 - `accounts: <array> | null>` - array of accounts with the same length as the `accounts.addresses` array in the request
   - `<null>` - if the account doesn't exist or if `err` is not null
   - `<object>` - otherwise, a JSON object containing:
-    - `tock: <u64>`, number of tock assigned to this account, as a u64
+    - `lamports: <u64>`, number of lamports assigned to this account, as a u64
     - `owner: <string>`, base-58 encoded Pubkey of the program this account has been assigned to
     - `data: <[string, encoding]|object>`, data associated with the account, either as encoded binary data or JSON format `{<program>: <state>}`, depending on encoding parameter
     - `executable: <bool>`, boolean indicating if the account contains a program \(and is strictly read-only\)
@@ -3316,7 +3497,7 @@ After connecting to the RPC PubSub websocket at `ws://<ADDRESS>/`:
 
 ### accountSubscribe
 
-Subscribe to an account to receive notifications when the tock or data for a given account public key changes
+Subscribe to an account to receive notifications when the lamports or data for a given account public key changes
 
 #### Parameters:
 
@@ -3381,7 +3562,7 @@ Base58 encoding:
       "value": {
         "data": ["11116bv5nS2h3y12kD1yUKeMZvGcKLSjQgX6BeV7u1FrjeJcKfsHPXHRDEHrBesJhZyqnnq9qJeUuF7WHxiuLuL5twc38w2TXNLxnDbjmuR", "base58"],
         "executable": false,
-        "tock": 33594,
+        "lamports": 33594,
         "owner": "11111111111111111111111111111111",
         "rentEpoch": 635
       }
@@ -3416,7 +3597,7 @@ Parsed-JSON encoding:
            }
         },
         "executable": false,
-        "tock": 33594,
+        "lamports": 33594,
         "owner": "11111111111111111111111111111111",
         "rentEpoch": 635
       }
@@ -3503,7 +3684,7 @@ Result:
 The notification will be an RpcResponse JSON object with value equal to:
 
 - `signature: <string>` - The transaction signature base58 encoded.
-- `err: <object | null>` - Error if transaction failed, null if transaction succeeded. [TransactionError definitions](https://github.com/analog-labs/solana/blob/master/sdk/src/transaction.rs#L24)
+- `err: <object | null>` - Error if transaction failed, null if transaction succeeded. [TransactionError definitions](https://github.com/analog/testnet/blob/master/sdk/src/transaction.rs#L24)
 - `logs: <array | null>` - Array of log messages the transaction instructions output during execution, null if simulation failed before the transaction was able to execute (for example due to an invalid blockhash or signature verification failure)
 
 Example:
@@ -3556,7 +3737,7 @@ Result:
 
 ### programSubscribe
 
-Subscribe to a program to receive notifications when the tock or data for a given account owned by the program changes
+Subscribe to a program to receive notifications when the lamports or data for a given account owned by the program changes
 
 #### Parameters:
 
@@ -3640,7 +3821,7 @@ Base58 encoding:
         "account": {
           "data": ["11116bv5nS2h3y12kD1yUKeMZvGcKLSjQgX6BeV7u1FrjeJcKfsHPXHRDEHrBesJhZyqnnq9qJeUuF7WHxiuLuL5twc38w2TXNLxnDbjmuR", "base58"],
           "executable": false,
-          "tock": 33594,
+          "lamports": 33594,
           "owner": "11111111111111111111111111111111",
           "rentEpoch": 636
         },
@@ -3678,7 +3859,7 @@ Parsed-JSON encoding:
              }
           },
           "executable": false,
-          "tock": 33594,
+          "lamports": 33594,
           "owner": "11111111111111111111111111111111",
           "rentEpoch": 636
         },
@@ -3761,7 +3942,7 @@ Result:
 #### Notification Format:
 
 The notification will be an RpcResponse JSON object with value containing an object with:
-- `err: <object | null>` - Error if transaction failed, null if transaction succeeded. [TransactionError definitions](https://github.com/analog-labs/solana/blob/master/sdk/src/transaction.rs#L24)
+- `err: <object | null>` - Error if transaction failed, null if transaction succeeded. [TransactionError definitions](https://github.com/analog/testnet/blob/master/sdk/src/transaction.rs#L24)
 
 Example:
 ```json
@@ -4114,7 +4295,7 @@ Response:
 ### getConfirmedBlock
 
 **DEPRECATED: Please use [getBlock](jsonrpc-api.md#getblock) instead**
-This method is expected to be removed in analog-core v2.0
+This method is expected to be removed in analog-core v1.8
 
 Returns identity and transaction information about a confirmed block in the ledger
 
@@ -4140,7 +4321,7 @@ The result field will be an object with the following fields:
   - `transactions: <array>` - present if "full" transaction details are requested; an array of JSON objects containing:
     - `transaction: <object|[string,encoding]>` - [Transaction](#transaction-structure) object, either in JSON format or encoded binary data, depending on encoding parameter
     - `meta: <object>` - transaction status metadata object, containing `null` or:
-      - `err: <object | null>` - Error if transaction failed, null if transaction succeeded. [TransactionError definitions](https://github.com/analog-labs/solana/blob/master/sdk/src/transaction.rs#L24)
+      - `err: <object | null>` - Error if transaction failed, null if transaction succeeded. [TransactionError definitions](https://github.com/analog/testnet/blob/master/sdk/src/transaction.rs#L24)
       - `fee: <u64>` - fee this transaction was charged, as u64 integer
       - `preBalances: <array>` - array of u64 account balances from before the transaction was processed
       - `postBalances: <array>` - array of u64 account balances after the transaction was processed
@@ -4154,8 +4335,8 @@ The result field will be an object with the following fields:
   - `signatures: <array>` - present if "signatures" are requested for transaction details; an array of signatures strings, corresponding to the transaction order in the block
   - `rewards: <array>` - present if rewards are requested; an array of JSON objects containing:
     - `pubkey: <string>` - The public key, as base-58 encoded string, of the account that received the reward
-    - `tock: <i64>`- number of reward tock credited or debited by the account, as a i64
-    - `postBalance: <u64>` - account balance in tock after the reward was applied
+    - `lamports: <i64>`- number of reward lamports credited or debited by the account, as a i64
+    - `postBalance: <u64>` - account balance in lamports after the reward was applied
     - `rewardType: <string|undefined>` - type of reward: "fee", "rent", "voting", "staking"
     - `commission: <u8|undefined>` - vote account commission when the reward was credited, only present for voting and staking rewards
   - `blockTime: <i64 | null>` - estimated production time, as Unix timestamp (seconds since the Unix epoch). null if not available
@@ -4308,7 +4489,7 @@ For more details on returned data:
 ### getConfirmedBlocks
 
 **DEPRECATED: Please use [getBlocks](jsonrpc-api.md#getblocks) instead**
-This method is expected to be removed in analog-core v2.0
+This method is expected to be removed in analog-core v1.8
 
 Returns a list of confirmed blocks between two slots
 
@@ -4342,7 +4523,7 @@ Result:
 ### getConfirmedBlocksWithLimit
 
 **DEPRECATED: Please use [getBlocksWithLimit](jsonrpc-api.md#getblockswithlimit) instead**
-This method is expected to be removed in analog-core v2.0
+This method is expected to be removed in analog-core v1.8
 
 Returns a list of confirmed blocks starting at the given slot
 
@@ -4374,7 +4555,7 @@ Result:
 ### getConfirmedSignaturesForAddress2
 
 **DEPRECATED: Please use [getSignaturesForAddress](jsonrpc-api.md#getsignaturesforaddress) instead**
-This method is expected to be removed in analog-core v2.0
+This method is expected to be removed in analog-core v1.8
 
 Returns confirmed signatures for transactions involving an
 address backwards in time from the provided signature or most recent confirmed block
@@ -4394,7 +4575,7 @@ from newest to oldest transaction:
 * `<object>`
   * `signature: <string>` - transaction signature as base-58 encoded string
   * `slot: <u64>` - The slot that contains the block with the transaction
-  * `err: <object | null>` - Error if transaction failed, null if transaction succeeded. [TransactionError definitions](https://github.com/analog-labs/solana/blob/master/sdk/src/transaction.rs#L24)
+  * `err: <object | null>` - Error if transaction failed, null if transaction succeeded. [TransactionError definitions](https://github.com/analog/testnet/blob/master/sdk/src/transaction.rs#L24)
   * `memo: <string |null>` - Memo associated with the transaction, null if no memo is present
   * `blockTime: <i64 | null>` - estimated production time, as Unix timestamp (seconds since the Unix epoch) of when transaction was processed. null if not available.
 
@@ -4436,7 +4617,7 @@ Result:
 ### getConfirmedTransaction
 
 **DEPRECATED: Please use [getTransaction](jsonrpc-api.md#gettransaction) instead**
-This method is expected to be removed in analog-core v2.0
+This method is expected to be removed in analog-core v1.8
 
 Returns transaction details for a confirmed transaction
 
@@ -4607,212 +4788,10 @@ Result:
 }
 ```
 
-### getFeeCalculatorForBlockhash
-
-**DEPRECATED: Please use [isBlockhashValid](jsonrpc-api.md#isblockhashvalid) or [getFeeForMessage](jsonrpc-api.md#getfeeformessage) instead**
-This method is expected to be removed in analog-core v2.0
-
-Returns the fee calculator associated with the query blockhash, or `null` if the blockhash has expired
-
-#### Parameters:
-
-- `<string>` - query blockhash as a Base58 encoded string
-- `<object>` - (optional) [Commitment](jsonrpc-api.md#configuring-state-commitment)
-
-#### Results:
-
-The result will be an RpcResponse JSON object with `value` equal to:
-
-- `<null>` - if the query blockhash has expired
-- `<object>` - otherwise, a JSON object containing:
-  - `feeCalculator: <object>`, `FeeCalculator` object describing the cluster fee rate at the queried blockhash
-
-#### Example:
-
-Request:
-```bash
-curl http://localhost:8899 -X POST -H "Content-Type: application/json" -d '
-  {
-    "jsonrpc": "2.0",
-    "id": 1,
-    "method": "getFeeCalculatorForBlockhash",
-    "params": [
-      "GJxqhuxcgfn5Tcj6y3f8X4FeCDd2RQ6SnEMo1AAxrPRZ"
-    ]
-  }
-'
-```
-
-Result:
-```json
-{
-  "jsonrpc": "2.0",
-  "result": {
-    "context": {
-      "slot": 221
-    },
-    "value": {
-      "feeCalculator": {
-        "lamportsPerSignature": 5000
-      }
-    }
-  },
-  "id": 1
-}
-```
-
-### getFeeRateGovernor
-
-Returns the fee rate governor information from the root bank
-
-#### Parameters:
-
-None
-
-#### Results:
-
-The `result` field will be an `object` with the following fields:
-
-- `burnPercent: <u8>`, Percentage of fees collected to be destroyed
-- `maxLamportsPerSignature: <u64>`, Largest value `lamportsPerSignature` can attain for the next slot
-- `minLamportsPerSignature: <u64>`, Smallest value `lamportsPerSignature` can attain for the next slot
-- `targetLamportsPerSignature: <u64>`, Desired fee rate for the cluster
-- `targetSignaturesPerSlot: <u64>`, Desired signature rate for the cluster
-
-#### Example:
-
-Request:
-```bash
-curl http://localhost:8899 -X POST -H "Content-Type: application/json" -d '
-  {"jsonrpc":"2.0","id":1, "method":"getFeeRateGovernor"}
-'
-```
-
-Result:
-```json
-{
-  "jsonrpc": "2.0",
-  "result": {
-    "context": {
-      "slot": 54
-    },
-    "value": {
-      "feeRateGovernor": {
-        "burnPercent": 50,
-        "maxLamportsPerSignature": 100000,
-        "minLamportsPerSignature": 5000,
-        "targetLamportsPerSignature": 10000,
-        "targetSignaturesPerSlot": 20000
-      }
-    }
-  },
-  "id": 1
-}
-```
-
-### getFees
-
-**DEPRECATED: Please use [getFeeForMessage](jsonrpc-api.md#getfeeformessage) instead**
-This method is expected to be removed in analog-core v2.0
-
-Returns a recent block hash from the ledger, a fee schedule that can be used to
-compute the cost of submitting a transaction using it, and the last slot in
-which the blockhash will be valid.
-
-#### Parameters:
-
-- `<object>` - (optional) [Commitment](jsonrpc-api.md#configuring-state-commitment)
-
-#### Results:
-
-The result will be an RpcResponse JSON object with `value` set to a JSON object with the following fields:
-
-- `blockhash: <string>` - a Hash as base-58 encoded string
-- `feeCalculator: <object>` - FeeCalculator object, the fee schedule for this block hash
-- `lastValidSlot: <u64>` - DEPRECATED - this value is inaccurate and should not be relied upon
-- `lastValidBlockHeight: <u64>` - last [block height](../../terminology.md#block-height) at which a blockhash will be valid
-
-#### Example:
-
-Request:
-```bash
-curl http://localhost:8899 -X POST -H "Content-Type: application/json" -d '
-  {"jsonrpc":"2.0","id":1, "method":"getFees"}
-'
-```
-
-Result:
-```json
-{
-  "jsonrpc": "2.0",
-  "result": {
-    "context": {
-      "slot": 1
-    },
-    "value": {
-      "blockhash": "CSymwgTNX1j3E4qhKfJAUE41nBWEwXufoYryPbkde5RR",
-      "feeCalculator": {
-        "lamportsPerSignature": 5000
-      },
-      "lastValidSlot": 297,
-      "lastValidBlockHeight": 296
-    }
-  },
-  "id": 1
-}
-```
-
-### getRecentBlockhash
-
-**DEPRECATED: Please use [getFeeForMessage](jsonrpc-api.md#getfeeformessage) instead**
-This method is expected to be removed in analog-core v2.0
-
-Returns a recent block hash from the ledger, and a fee schedule that can be used to compute the cost of submitting a transaction using it.
-
-#### Parameters:
-
-- `<object>` - (optional) [Commitment](jsonrpc-api.md#configuring-state-commitment)
-
-#### Results:
-
-An RpcResponse containing a JSON object consisting of a string blockhash and FeeCalculator JSON object.
-
-- `RpcResponse<object>` - RpcResponse JSON object with `value` field set to a JSON object including:
-- `blockhash: <string>` - a Hash as base-58 encoded string
-- `feeCalculator: <object>` - FeeCalculator object, the fee schedule for this block hash
-
-#### Example:
-
-Request:
-```bash
-curl http://localhost:8899 -X POST -H "Content-Type: application/json" -d '
-  {"jsonrpc":"2.0","id":1, "method":"getRecentBlockhash"}
-'
-```
-
-Result:
-```json
-{
-  "jsonrpc": "2.0",
-  "result": {
-    "context": {
-      "slot": 1
-    },
-    "value": {
-      "blockhash": "CSymwgTNX1j3E4qhKfJAUE41nBWEwXufoYryPbkde5RR",
-      "feeCalculator": {
-        "lamportsPerSignature": 5000
-      }
-    }
-  },
-  "id": 1
-}
-```
-
 ### getSnapshotSlot
 
 **DEPRECATED: Please use [getHighestSnapshotSlot](jsonrpc-api.md#gethighestsnapshotslot) instead**
-This method is expected to be removed in analog-core v2.0
+This method is expected to be removed in analog-core v1.9
 
 Returns the highest slot that the node has a snapshot for
 

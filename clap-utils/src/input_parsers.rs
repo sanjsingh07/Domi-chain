@@ -10,7 +10,7 @@ use {
         clock::UnixTimestamp,
         commitment_config::CommitmentConfig,
         genesis_config::ClusterType,
-        native_token::anlog_to_tock,
+        native_token::anlog_to_tocks,
         pubkey::Pubkey,
         signature::{read_keypair_file, Keypair, Signature, Signer},
     },
@@ -180,8 +180,8 @@ pub fn resolve_signer(
     )
 }
 
-pub fn lamports_of_anlog(matches: &ArgMatches<'_>, name: &str) -> Option<u64> {
-    value_of(matches, name).map(anlog_to_tock)
+pub fn tocks_of_anlog(matches: &ArgMatches<'_>, name: &str) -> Option<u64> {
+    value_of(matches, name).map(anlog_to_tocks)
 }
 
 pub fn cluster_type_of(matches: &ArgMatches<'_>, name: &str) -> Option<ClusterType> {
@@ -217,7 +217,7 @@ mod tests {
         use std::env;
         let out_dir = env::var("FARF_DIR").unwrap_or_else(|_| "farf".to_string());
 
-        format!("{}/tmp/{}-{}", out_dir, name, pubkey)
+        format!("{}/tmp/{}-{}", out_dir, name, pubkey.to_string())
     }
 
     #[test]
@@ -352,20 +352,20 @@ mod tests {
     }
 
     #[test]
-    fn test_lamports_of_anlog() {
+    fn test_tocks_of_anlog() {
         let matches = app()
             .clone()
             .get_matches_from(vec!["test", "--single", "50"]);
-        assert_eq!(lamports_of_anlog(&matches, "single"), Some(50_000_000_000));
-        assert_eq!(lamports_of_anlog(&matches, "multiple"), None);
+        assert_eq!(tocks_of_anlog(&matches, "single"), Some(50_000_000_000));
+        assert_eq!(tocks_of_anlog(&matches, "multiple"), None);
         let matches = app()
             .clone()
             .get_matches_from(vec!["test", "--single", "1.5"]);
-        assert_eq!(lamports_of_anlog(&matches, "single"), Some(1_500_000_000));
-        assert_eq!(lamports_of_anlog(&matches, "multiple"), None);
+        assert_eq!(tocks_of_anlog(&matches, "single"), Some(1_500_000_000));
+        assert_eq!(tocks_of_anlog(&matches, "multiple"), None);
         let matches = app()
             .clone()
             .get_matches_from(vec!["test", "--single", "0.03"]);
-        assert_eq!(lamports_of_anlog(&matches, "single"), Some(30_000_000));
+        assert_eq!(tocks_of_anlog(&matches, "single"), Some(30_000_000));
     }
 }

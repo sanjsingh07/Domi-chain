@@ -8,8 +8,8 @@
 extern double log2(double arg);
 
 extern uint64_t entrypoint(const uint8_t *input) {
-  SolAccountInfo ka[1];
-  SolParameters params = (SolParameters) { .ka = ka };
+  AnlogAccountInfo ka[1];
+  AnlogParameters params = (AnlogParameters) { .ka = ka };
 
   if (!anlog_deserialize(input, &params, ANLOG_ARRAY_SIZE(ka))) {
     return ERROR_INVALID_ARGUMENT;

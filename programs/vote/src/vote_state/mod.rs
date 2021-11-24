@@ -235,7 +235,7 @@ impl VoteState {
 
     // utility function, used by Stakes, tests
     pub fn to<T: WritableAccount>(versioned: &VoteStateVersions, account: &mut T) -> Option<()> {
-        Self::serialize(versioned, account.data_as_mut_slice()).ok()
+        Self::serialize(versioned, &mut account.data_as_mut_slice()).ok()
     }
 
     pub fn deserialize(input: &[u8]) -> Result<Self, InstructionError> {
@@ -271,8 +271,8 @@ impl VoteState {
                 // Calculate mine and theirs independently and symmetrically instead of
                 // using the remainder of the other to treat them strictly equally.
                 // This is also to cancel the rewarding if either of the parties
-                // should receive only fractional tock, resulting in not being rewarded at all.
-                // Thus, note that we intentionally discard any residual fractional tock.
+                // should receive only fractional tocks, resulting in not being rewarded at all.
+                // Thus, note that we intentionally discard any residual fractional tocks.
                 let mine = on * u128::from(split) / 100u128;
                 let theirs = on * u128::from(100 - split) / 100u128;
 
@@ -455,7 +455,7 @@ impl VoteState {
     }
 
     /// Number of "credits" owed to this account from the mining pool. Submit this
-    /// VoteState to the Rewards program to trade credits for tock.
+    /// VoteState to the Rewards program to trade credits for tocks.
     pub fn credits(&self) -> u64 {
         if self.epoch_credits.is_empty() {
             0
@@ -676,7 +676,7 @@ fn verify_authorized_signer<S: std::hash::BuildHasher>(
 /// Withdraw funds from the vote account
 pub fn withdraw<S: std::hash::BuildHasher>(
     vote_account: &KeyedAccount,
-    tock: u64,
+    tocks: u64,
     to_account: &KeyedAccount,
     signers: &HashSet<Pubkey, S>,
 ) -> Result<(), InstructionError> {
@@ -685,7 +685,7 @@ pub fn withdraw<S: std::hash::BuildHasher>(
 
     verify_authorized_signer(&vote_state.authorized_withdrawer, signers)?;
 
-    match vote_account.tock()?.cmp(&tock) {
+    match vote_account.tocks()?.cmp(&tocks) {
         Ordering::Less => return Err(InstructionError::InsufficientFunds),
         Ordering::Equal => {
             // Deinitialize upon zero-balance
@@ -695,10 +695,10 @@ pub fn withdraw<S: std::hash::BuildHasher>(
     }
     vote_account
         .try_account_ref_mut()?
-        .checked_sub_lamports(tock)?;
+        .checked_sub_tocks(tocks)?;
     to_account
         .try_account_ref_mut()?
-        .checked_add_lamports(tock)?;
+        .checked_add_tocks(tocks)?;
     Ok(())
 }
 
@@ -710,8 +710,9 @@ pub fn initialize_account<S: std::hash::BuildHasher>(
     vote_init: &VoteInit,
     signers: &HashSet<Pubkey, S>,
     clock: &Clock,
+    check_data_size: bool,
 ) -> Result<(), InstructionError> {
-    if vote_account.data_len()? != VoteState::size_of() {
+    if check_data_size && vote_account.data_len()? != VoteState::size_of() {
         return Err(InstructionError::InvalidAccountData);
     }
     let versioned = State::<VoteStateVersions>::state(vote_account)?;
@@ -761,9 +762,9 @@ pub fn create_account_with_authorized(
     authorized_voter: &Pubkey,
     authorized_withdrawer: &Pubkey,
     commission: u8,
-    tock: u64,
+    tocks: u64,
 ) -> AccountSharedData {
-    let mut vote_account = AccountSharedData::new(tock, VoteState::size_of(), &id());
+    let mut vote_account = AccountSharedData::new(tocks, VoteState::size_of(), &id());
 
     let vote_state = VoteState::new(
         &VoteInit {
@@ -786,9 +787,9 @@ pub fn create_account(
     vote_pubkey: &Pubkey,
     node_pubkey: &Pubkey,
     commission: u8,
-    tock: u64,
+    tocks: u64,
 ) -> AccountSharedData {
-    create_account_with_authorized(node_pubkey, vote_pubkey, vote_pubkey, commission, tock)
+    create_account_with_authorized(node_pubkey, vote_pubkey, vote_pubkey, commission, tocks)
 }
 
 #[cfg(test)]
@@ -841,6 +842,7 @@ mod tests {
             },
             &signers,
             &Clock::default(),
+            true,
         );
         assert_eq!(res, Err(InstructionError::MissingRequiredSignature));
 
@@ -858,6 +860,7 @@ mod tests {
             },
             &signers,
             &Clock::default(),
+            true,
         );
         assert_eq!(res, Ok(()));
 
@@ -872,6 +875,7 @@ mod tests {
             },
             &signers,
             &Clock::default(),
+            true,
         );
         assert_eq!(res, Err(InstructionError::AccountAlreadyInitialized));
 
@@ -889,6 +893,7 @@ mod tests {
             },
             &signers,
             &Clock::default(),
+            true,
         );
         assert_eq!(res, Err(InstructionError::InvalidAccountData));
     }
@@ -1682,25 +1687,25 @@ mod tests {
 
         // all good
         let to_account = RefCell::new(AccountSharedData::default());
-        let tock = vote_account.borrow().tock();
+        let tocks = vote_account.borrow().tocks();
         let keyed_accounts = &[KeyedAccount::new(&vote_pubkey, true, &vote_account)];
         let signers: HashSet<Pubkey> = get_signers(keyed_accounts);
         let pre_state: VoteStateVersions = vote_account.borrow().state().unwrap();
         let res = withdraw(
             &keyed_accounts[0],
-            tock,
+            tocks,
             &KeyedAccount::new(&analog_sdk::pubkey::new_rand(), false, &to_account),
             &signers,
         );
         assert_eq!(res, Ok(()));
-        assert_eq!(vote_account.borrow().tock(), 0);
-        assert_eq!(to_account.borrow().tock(), tock);
+        assert_eq!(vote_account.borrow().tocks(), 0);
+        assert_eq!(to_account.borrow().tocks(), tocks);
         let post_state: VoteStateVersions = vote_account.borrow().state().unwrap();
         // State has been deinitialized since balance is zero
         assert!(post_state.is_uninitialized());
 
         // reset balance and restore state, verify that authorized_withdrawer works
-        vote_account.borrow_mut().set_lamports(tock);
+        vote_account.borrow_mut().set_tocks(tocks);
         vote_account.borrow_mut().set_state(&pre_state).unwrap();
 
         // authorize authorized_withdrawer
@@ -1727,13 +1732,13 @@ mod tests {
         let withdrawer_keyed_account = keyed_account_at_index(keyed_accounts, 1).unwrap();
         let res = withdraw(
             vote_keyed_account,
-            tock,
+            tocks,
             withdrawer_keyed_account,
             &signers,
         );
         assert_eq!(res, Ok(()));
-        assert_eq!(vote_account.borrow().tock(), 0);
-        assert_eq!(withdrawer_account.borrow().tock(), tock);
+        assert_eq!(vote_account.borrow().tocks(), 0);
+        assert_eq!(withdrawer_account.borrow().tocks(), tocks);
         let post_state: VoteStateVersions = vote_account.borrow().state().unwrap();
         // State has been deinitialized since balance is zero
         assert!(post_state.is_uninitialized());

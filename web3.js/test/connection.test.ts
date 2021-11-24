@@ -11,7 +11,7 @@ import {
   EpochSchedule,
   SystemProgram,
   Transaction,
-  TOCK_PER_ANLOG,
+  TOCKS_PER_ANLOG,
   Lockup,
   PublicKey,
   StakeProgram,
@@ -103,7 +103,7 @@ describe('Connection', () => {
       await mockRpcResponse({
         method: 'getVersion',
         params: [],
-        value: {'analog-core': '0.20.4'},
+        value: {'solana-core': '0.20.4'},
         withHeaders: headers,
       });
 
@@ -123,7 +123,7 @@ describe('Connection', () => {
       await mockRpcResponse({
         method: 'getVersion',
         params: [],
-        value: {'analog-core': '0.20.4'},
+        value: {'solana-core': '0.20.4'},
         withHeaders: {
           Authorization: 'Bearer 123',
         },
@@ -164,27 +164,27 @@ describe('Connection', () => {
       await helpers.airdrop({
         connection,
         address: account1.publicKey,
-        amount: TOCK_PER_ANLOG,
+        amount: TOCKS_PER_ANLOG,
       });
 
       await helpers.airdrop({
         connection,
         address: account2.publicKey,
-        amount: TOCK_PER_ANLOG,
+        amount: TOCKS_PER_ANLOG,
       });
     }
 
     const value = [
       {
         owner: '11111111111111111111111111111111',
-        tock: TOCK_PER_ANLOG,
+        tocks: TOCKS_PER_ANLOG,
         data: ['', 'base64'],
         executable: false,
         rentEpoch: 0,
       },
       {
         owner: '11111111111111111111111111111111',
-        tock: TOCK_PER_ANLOG,
+        tocks: TOCKS_PER_ANLOG,
         data: ['', 'base64'],
         executable: false,
         rentEpoch: 0,
@@ -209,14 +209,14 @@ describe('Connection', () => {
     const expectedValue = [
       {
         owner: new PublicKey('11111111111111111111111111111111'),
-        tock: TOCK_PER_ANLOG,
+        tocks: TOCKS_PER_ANLOG,
         data: Buffer.from([]),
         executable: false,
         rentEpoch: 0,
       },
       {
         owner: new PublicKey('11111111111111111111111111111111'),
-        tock: TOCK_PER_ANLOG,
+        tocks: TOCKS_PER_ANLOG,
         data: Buffer.from([]),
         executable: false,
         rentEpoch: 0,
@@ -235,7 +235,7 @@ describe('Connection', () => {
       await helpers.airdrop({
         connection,
         address: account0.publicKey,
-        amount: TOCK_PER_ANLOG,
+        amount: TOCKS_PER_ANLOG,
       });
 
       const transaction = new Transaction().add(
@@ -257,7 +257,7 @@ describe('Connection', () => {
       await helpers.airdrop({
         connection,
         address: account1.publicKey,
-        amount: 0.5 * TOCK_PER_ANLOG,
+        amount: 0.5 * TOCKS_PER_ANLOG,
       });
 
       const transaction = new Transaction().add(
@@ -290,7 +290,7 @@ describe('Connection', () => {
             account: {
               data: ['', 'base64'],
               executable: false,
-              tock: TOCK_PER_ANLOG - feeCalculator.lamportsPerSignature,
+              tocks: TOCKS_PER_ANLOG - feeCalculator.tocksPerSignature,
               owner: programId.publicKey.toBase58(),
               rentEpoch: 20,
             },
@@ -300,8 +300,8 @@ describe('Connection', () => {
             account: {
               data: ['', 'base64'],
               executable: false,
-              tock:
-                0.5 * TOCK_PER_ANLOG - feeCalculator.lamportsPerSignature,
+              tocks:
+                0.5 * TOCKS_PER_ANLOG - feeCalculator.tocksPerSignature,
               owner: programId.publicKey.toBase58(),
               rentEpoch: 20,
             },
@@ -319,13 +319,13 @@ describe('Connection', () => {
       expect(programAccounts).to.have.length(2);
       programAccounts.forEach(function (keyedAccount) {
         if (keyedAccount.pubkey.equals(account0.publicKey)) {
-          expect(keyedAccount.account.tock).to.eq(
-            TOCK_PER_ANLOG - feeCalculator.lamportsPerSignature,
+          expect(keyedAccount.account.tocks).to.eq(
+            TOCKS_PER_ANLOG - feeCalculator.tocksPerSignature,
           );
         } else {
           expect(keyedAccount.pubkey).to.eql(account1.publicKey);
-          expect(keyedAccount.account.tock).to.eq(
-            0.5 * TOCK_PER_ANLOG - feeCalculator.lamportsPerSignature,
+          expect(keyedAccount.account.tocks).to.eq(
+            0.5 * TOCKS_PER_ANLOG - feeCalculator.tocksPerSignature,
           );
         }
       });
@@ -343,7 +343,7 @@ describe('Connection', () => {
             account: {
               data: ['', 'base64'],
               executable: false,
-              tock: TOCK_PER_ANLOG - feeCalculator.lamportsPerSignature,
+              tocks: TOCKS_PER_ANLOG - feeCalculator.tocksPerSignature,
               owner: programId.publicKey.toBase58(),
               rentEpoch: 20,
             },
@@ -353,8 +353,8 @@ describe('Connection', () => {
             account: {
               data: ['', 'base64'],
               executable: false,
-              tock:
-                0.5 * TOCK_PER_ANLOG - feeCalculator.lamportsPerSignature,
+              tocks:
+                0.5 * TOCKS_PER_ANLOG - feeCalculator.tocksPerSignature,
               owner: programId.publicKey.toBase58(),
               rentEpoch: 20,
             },
@@ -370,13 +370,13 @@ describe('Connection', () => {
       expect(programAccounts).to.have.length(2);
       programAccounts.forEach(function (keyedAccount) {
         if (keyedAccount.pubkey.equals(account0.publicKey)) {
-          expect(keyedAccount.account.tock).to.eq(
-            TOCK_PER_ANLOG - feeCalculator.lamportsPerSignature,
+          expect(keyedAccount.account.tocks).to.eq(
+            TOCKS_PER_ANLOG - feeCalculator.tocksPerSignature,
           );
         } else {
           expect(keyedAccount.pubkey).to.eql(account1.publicKey);
-          expect(keyedAccount.account.tock).to.eq(
-            0.5 * TOCK_PER_ANLOG - feeCalculator.lamportsPerSignature,
+          expect(keyedAccount.account.tocks).to.eq(
+            0.5 * TOCKS_PER_ANLOG - feeCalculator.tocksPerSignature,
           );
         }
       });
@@ -402,7 +402,7 @@ describe('Connection', () => {
             account: {
               data: ['', 'base64'],
               executable: false,
-              tock: TOCK_PER_ANLOG - feeCalculator.lamportsPerSignature,
+              tocks: TOCKS_PER_ANLOG - feeCalculator.tocksPerSignature,
               owner: programId.publicKey.toBase58(),
               rentEpoch: 20,
             },
@@ -412,8 +412,8 @@ describe('Connection', () => {
             account: {
               data: ['', 'base64'],
               executable: false,
-              tock:
-                0.5 * TOCK_PER_ANLOG - feeCalculator.lamportsPerSignature,
+              tocks:
+                0.5 * TOCKS_PER_ANLOG - feeCalculator.tocksPerSignature,
               owner: programId.publicKey.toBase58(),
               rentEpoch: 20,
             },
@@ -481,7 +481,7 @@ describe('Connection', () => {
             account: {
               data: ['', 'base64'],
               executable: false,
-              tock: TOCK_PER_ANLOG - feeCalculator.lamportsPerSignature,
+              tocks: TOCKS_PER_ANLOG - feeCalculator.tocksPerSignature,
               owner: programId.publicKey.toBase58(),
               rentEpoch: 20,
             },
@@ -491,8 +491,8 @@ describe('Connection', () => {
             account: {
               data: ['', 'base64'],
               executable: false,
-              tock:
-                0.5 * TOCK_PER_ANLOG - feeCalculator.lamportsPerSignature,
+              tocks:
+                0.5 * TOCKS_PER_ANLOG - feeCalculator.tocksPerSignature,
               owner: programId.publicKey.toBase58(),
               rentEpoch: 20,
             },
@@ -511,13 +511,13 @@ describe('Connection', () => {
 
       programAccounts.forEach(function (element) {
         if (element.pubkey.equals(account0.publicKey)) {
-          expect(element.account.tock).to.eq(
-            TOCK_PER_ANLOG - feeCalculator.lamportsPerSignature,
+          expect(element.account.tocks).to.eq(
+            TOCKS_PER_ANLOG - feeCalculator.tocksPerSignature,
           );
         } else {
           expect(element.pubkey).to.eql(account1.publicKey);
-          expect(element.account.tock).to.eq(
-            0.5 * TOCK_PER_ANLOG - feeCalculator.lamportsPerSignature,
+          expect(element.account.tocks).to.eq(
+            0.5 * TOCKS_PER_ANLOG - feeCalculator.tocksPerSignature,
           );
         }
       });
@@ -572,7 +572,7 @@ describe('Connection', () => {
             account: {
               data: ['', 'base64'],
               executable: false,
-              tock: TOCK_PER_ANLOG - feeCalculator.lamportsPerSignature,
+              tocks: TOCKS_PER_ANLOG - feeCalculator.tocksPerSignature,
               owner: programId.publicKey.toBase58(),
               rentEpoch: 20,
             },
@@ -582,8 +582,8 @@ describe('Connection', () => {
             account: {
               data: ['', 'base64'],
               executable: false,
-              tock:
-                0.5 * TOCK_PER_ANLOG - feeCalculator.lamportsPerSignature,
+              tocks:
+                0.5 * TOCKS_PER_ANLOG - feeCalculator.tocksPerSignature,
               owner: programId.publicKey.toBase58(),
               rentEpoch: 20,
             },
@@ -887,7 +887,7 @@ describe('Connection', () => {
         total: 1000000,
         circulating: 100000,
         nonCirculating: 900000,
-        nonCirculatingAccounts: [],
+        nonCirculatingAccounts: [Keypair.generate().publicKey.toBase58()],
       },
       withContext: true,
     });
@@ -2080,7 +2080,7 @@ describe('Connection', () => {
 
   it('get blocks between two slots', async () => {
     await mockRpcResponse({
-      method: 'getConfirmedBlocks',
+      method: 'getBlocks',
       params: [0, 10],
       value: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10],
     });
@@ -2100,7 +2100,7 @@ describe('Connection', () => {
 
   it('get blocks from starting slot', async () => {
     await mockRpcResponse({
-      method: 'getConfirmedBlocks',
+      method: 'getBlocks',
       params: [0],
       value: [
         1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20,
@@ -2222,7 +2222,7 @@ describe('Connection', () => {
         commitment,
       });
       expect(bs58.decode(blockhash)).to.have.length(32);
-      expect(feeCalculator.lamportsPerSignature).to.be.at.least(0);
+      expect(feeCalculator.tocksPerSignature).to.be.at.least(0);
     }
   });
 
@@ -2233,7 +2233,7 @@ describe('Connection', () => {
       params: [blockhash, {commitment: 'confirmed'}],
       value: {
         feeCalculator: {
-          lamportsPerSignature: 5000,
+          tocksPerSignature: 5000,
         },
       },
       withContext: true,
@@ -2246,7 +2246,7 @@ describe('Connection', () => {
       expect(feeCalculator).not.to.be.null;
       return;
     }
-    expect(feeCalculator.lamportsPerSignature).to.eq(5000);
+    expect(feeCalculator.tocksPerSignature).to.eq(5000);
   });
 
   it('get block time', async () => {
@@ -2289,7 +2289,7 @@ describe('Connection', () => {
   it('get supply', async () => {
     await mockRpcResponse({
       method: 'getSupply',
-      params: [{commitment: 'finalized'}],
+      params: [],
       value: {
         total: 1000,
         circulating: 100,
@@ -2299,36 +2299,11 @@ describe('Connection', () => {
       withContext: true,
     });
 
-    const supply = (await connection.getSupply('finalized')).value;
+    const supply = (await connection.getSupply()).value;
     expect(supply.total).to.be.greaterThan(0);
     expect(supply.circulating).to.be.greaterThan(0);
     expect(supply.nonCirculating).to.be.at.least(0);
     expect(supply.nonCirculatingAccounts.length).to.be.at.least(0);
-  });
-
-  it('get supply without accounts', async () => {
-    await mockRpcResponse({
-      method: 'getSupply',
-      params: [{commitment: 'finalized'}],
-      value: {
-        total: 1000,
-        circulating: 100,
-        nonCirculating: 900,
-        nonCirculatingAccounts: [],
-      },
-      withContext: true,
-    });
-
-    const supply = (
-      await connection.getSupply({
-        commitment: 'finalized',
-        excludeNonCirculatingAccountsList: true,
-      })
-    ).value;
-    expect(supply.total).to.be.greaterThan(0);
-    expect(supply.circulating).to.be.greaterThan(0);
-    expect(supply.nonCirculating).to.be.at.least(0);
-    expect(supply.nonCirculatingAccounts.length).to.eq(0);
   });
 
   it('get performance samples', async () => {
@@ -2592,14 +2567,14 @@ describe('Connection', () => {
       const recipient = Keypair.generate();
       let signature = await connection.requestAirdrop(
         sender.publicKey,
-        2 * TOCK_PER_ANLOG,
+        2 * TOCKS_PER_ANLOG,
       );
       await connection.confirmTransaction(signature, 'singleGossip');
       const transaction = new Transaction().add(
         SystemProgram.transfer({
           fromPubkey: sender.publicKey,
           toPubkey: recipient.publicKey,
-          tock: TOCK_PER_ANLOG,
+          tocks: TOCKS_PER_ANLOG,
         }),
       );
       await sendAndConfirmTransaction(connection, transaction, [sender]);
@@ -2612,7 +2587,7 @@ describe('Connection', () => {
       params: [],
       value: new Array(20).fill(0).map(() => ({
         address: Keypair.generate().publicKey.toBase58(),
-        tock: 1000,
+        tocks: 1000,
       })),
       withContext: true,
     });
@@ -2643,7 +2618,7 @@ describe('Connection', () => {
       const authorized = Keypair.generate();
       let signature = await connection.requestAirdrop(
         authorized.publicKey,
-        2 * TOCK_PER_ANLOG,
+        2 * TOCKS_PER_ANLOG,
       );
       await connection.confirmTransaction(signature, 'confirmed');
 
@@ -2657,7 +2632,7 @@ describe('Connection', () => {
         stakePubkey: newStakeAccount.publicKey,
         authorized: new Authorized(authorized.publicKey, authorized.publicKey),
         lockup: new Lockup(0, 0, new PublicKey(0)),
-        tock: minimumAmount + 42,
+        tocks: minimumAmount + 42,
       });
 
       await sendAndConfirmTransaction(
@@ -2735,11 +2710,11 @@ describe('Connection', () => {
     await mockRpcResponse({
       method: 'getVersion',
       params: [],
-      value: {'analog-core': '0.20.4'},
+      value: {'solana-core': '0.20.4'},
     });
 
     const version = await connection.getVersion();
-    expect(version['analog-core']).to.be.ok;
+    expect(version['solana-core']).to.be.ok;
   });
 
   it('getGenesisHash', async () => {
@@ -2759,18 +2734,18 @@ describe('Connection', () => {
     await helpers.airdrop({
       connection,
       address: account.publicKey,
-      amount: TOCK_PER_ANLOG,
+      amount: TOCKS_PER_ANLOG,
     });
 
     await mockRpcResponse({
       method: 'getBalance',
       params: [account.publicKey.toBase58(), {commitment: 'confirmed'}],
-      value: TOCK_PER_ANLOG,
+      value: TOCKS_PER_ANLOG,
       withContext: true,
     });
 
     const balance = await connection.getBalance(account.publicKey, 'confirmed');
-    expect(balance).to.eq(TOCK_PER_ANLOG);
+    expect(balance).to.eq(TOCKS_PER_ANLOG);
 
     await mockRpcResponse({
       method: 'getAccountInfo',
@@ -2780,7 +2755,7 @@ describe('Connection', () => {
       ],
       value: {
         owner: '11111111111111111111111111111111',
-        tock: TOCK_PER_ANLOG,
+        tocks: TOCKS_PER_ANLOG,
         data: ['', 'base64'],
         executable: false,
         rentEpoch: 20,
@@ -2796,7 +2771,7 @@ describe('Connection', () => {
       expect(accountInfo).not.to.be.null;
       return;
     }
-    expect(accountInfo.tock).to.eq(TOCK_PER_ANLOG);
+    expect(accountInfo.tocks).to.eq(TOCKS_PER_ANLOG);
     expect(accountInfo.data).to.have.length(0);
     expect(accountInfo.owner).to.eql(SystemProgram.programId);
 
@@ -2808,7 +2783,7 @@ describe('Connection', () => {
       ],
       value: {
         owner: '11111111111111111111111111111111',
-        tock: TOCK_PER_ANLOG,
+        tocks: TOCKS_PER_ANLOG,
         data: ['', 'base64'],
         executable: false,
         rentEpoch: 20,
@@ -2826,7 +2801,7 @@ describe('Connection', () => {
       expect(parsedAccountInfo.data.parsed).not.to.be.ok;
       return;
     }
-    expect(parsedAccountInfo.tock).to.eq(TOCK_PER_ANLOG);
+    expect(parsedAccountInfo.tocks).to.eq(TOCKS_PER_ANLOG);
     expect(parsedAccountInfo.data).to.have.length(0);
     expect(parsedAccountInfo.owner).to.eql(SystemProgram.programId);
   });
@@ -2837,7 +2812,7 @@ describe('Connection', () => {
     await helpers.airdrop({
       connection,
       address: payer.publicKey,
-      amount: TOCK_PER_ANLOG,
+      amount: TOCKS_PER_ANLOG,
     });
 
     const newAccount = Keypair.generate();
@@ -2845,7 +2820,7 @@ describe('Connection', () => {
       SystemProgram.createAccount({
         fromPubkey: payer.publicKey,
         newAccountPubkey: newAccount.publicKey,
-        tock: TOCK_PER_ANLOG / 2,
+        tocks: TOCKS_PER_ANLOG / 2,
         space: 0,
         programId: SystemProgram.programId,
       }),
@@ -2901,13 +2876,13 @@ describe('Connection', () => {
       await helpers.airdrop({
         connection,
         address: account1.publicKey,
-        amount: TOCK_PER_ANLOG,
+        amount: TOCKS_PER_ANLOG,
       });
 
       await helpers.airdrop({
         connection,
         address: account2.publicKey,
-        amount: TOCK_PER_ANLOG,
+        amount: TOCKS_PER_ANLOG,
       });
 
       const recentBlockhash = await (
@@ -2975,7 +2950,7 @@ describe('Connection', () => {
         SystemProgram.transfer({
           fromPubkey: accountFrom.publicKey,
           toPubkey: accountTo.publicKey,
-          tock: 10,
+          tocks: 10,
         }),
       );
 
@@ -2992,7 +2967,7 @@ describe('Connection', () => {
         SystemProgram.transfer({
           fromPubkey: accountFrom.publicKey,
           toPubkey: accountTo.publicKey,
-          tock: 10,
+          tocks: 10,
         }),
       );
 
@@ -3013,7 +2988,7 @@ describe('Connection', () => {
         SystemProgram.transfer({
           fromPubkey: accountFrom.publicKey,
           toPubkey: accountTo.publicKey,
-          tock: 9,
+          tocks: 9,
         }),
       );
       await sendAndConfirmTransaction(connection, transaction3, [accountFrom], {
@@ -3033,7 +3008,7 @@ describe('Connection', () => {
         SystemProgram.transfer({
           fromPubkey: accountFrom.publicKey,
           toPubkey: accountTo.publicKey,
-          tock: 13,
+          tocks: 13,
         }),
       );
 
@@ -3062,11 +3037,11 @@ describe('Connection', () => {
 
       let signature = await connection.requestAirdrop(
         accountFrom.publicKey,
-        TOCK_PER_ANLOG,
+        TOCKS_PER_ANLOG,
       );
       await connection.confirmTransaction(signature);
       expect(await connection.getBalance(accountFrom.publicKey)).to.eq(
-        TOCK_PER_ANLOG,
+        TOCKS_PER_ANLOG,
       );
 
       const minimumAmount = await connection.getMinimumBalanceForRentExemption(
@@ -3089,14 +3064,14 @@ describe('Connection', () => {
           SystemProgram.transfer({
             fromPubkey: accountFrom.publicKey,
             toPubkey: accountTo.publicKey,
-            tock: 100,
+            tocks: 100,
           }),
         )
         .add(
           SystemProgram.transfer({
             fromPubkey: accountTo.publicKey,
             toPubkey: accountFrom.publicKey,
-            tock: 100,
+            tocks: 100,
           }),
         );
       signature = await connection.sendTransaction(
@@ -3115,12 +3090,12 @@ describe('Connection', () => {
         expect(response).not.to.be.null;
       }
 
-      // accountFrom may have less than TOCK_PER_ANLOG due to transaction fees
+      // accountFrom may have less than TOCKS_PER_ANLOG due to transaction fees
       expect(
         await connection.getBalance(accountFrom.publicKey),
       ).to.be.greaterThan(0);
       expect(await connection.getBalance(accountFrom.publicKey)).to.be.at.most(
-        TOCK_PER_ANLOG,
+        TOCKS_PER_ANLOG,
       );
 
       expect(await connection.getBalance(accountTo.publicKey)).to.eq(
@@ -3153,7 +3128,7 @@ describe('Connection', () => {
 
     //   let signature = await connection.requestAirdrop(
     //     owner.publicKey,
-    //     TOCK_PER_ANLOG,
+    //     TOCKS_PER_ANLOG,
     //   );
     //   await connection.confirmTransaction(signature);
     //   try {
@@ -3161,7 +3136,7 @@ describe('Connection', () => {
     //       SystemProgram.transfer({
     //         fromPubkey: owner.publicKey,
     //         toPubkey: programAccount.publicKey,
-    //         tock: balanceNeeded,
+    //         tocks: balanceNeeded,
     //       }),
     //     );
     //     await sendAndConfirmTransaction(connection, transaction, [owner], {
@@ -3189,7 +3164,7 @@ describe('Connection', () => {
 
     //   await connection.removeAccountChangeListener(subscriptionId);
 
-    //   expect(mockCallback.mock.calls[0][0].tock).to.eq(balanceNeeded);
+    //   expect(mockCallback.mock.calls[0][0].tocks).to.eq(balanceNeeded);
     //   expect(mockCallback.mock.calls[0][0].owner).to.eq(SystemProgram.programId);
     // });
 
@@ -3207,7 +3182,7 @@ describe('Connection', () => {
         SystemProgram.programId,
         (keyedAccountInfo: KeyedAccountInfo) => {
           if (keyedAccountInfo.accountId.equals(programAccount.publicKey)) {
-            expect(keyedAccountInfo.accountInfo.tock).to.eq(balanceNeeded);
+            expect(keyedAccountInfo.accountInfo.tocks).to.eq(balanceNeeded);
             expect(
               keyedAccountInfo.accountInfo.owner.equals(
                 SystemProgram.programId,
@@ -3221,7 +3196,7 @@ describe('Connection', () => {
       await helpers.airdrop({
         connection,
         address: owner.publicKey,
-        amount: TOCK_PER_ANLOG,
+        amount: TOCKS_PER_ANLOG,
       });
 
       try {
@@ -3229,7 +3204,7 @@ describe('Connection', () => {
           SystemProgram.transfer({
             fromPubkey: owner.publicKey,
             toPubkey: programAccount.publicKey,
-            tock: balanceNeeded,
+            tocks: balanceNeeded,
           }),
         );
         await sendAndConfirmTransaction(connection, transaction, [owner], {
@@ -3336,7 +3311,7 @@ describe('Connection', () => {
     it('https request', async () => {
       const connection = new Connection('https://api.mainnet-beta.solana.com');
       const version = await connection.getVersion();
-      expect(version['analog-core']).to.be.ok;
+      expect(version['solana-core']).to.be.ok;
     });
   }
 });

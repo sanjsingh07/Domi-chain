@@ -17,7 +17,7 @@ use {
         signers::Signers,
     },
     serde::Serialize,
-    solana_program::{system_instruction::SystemInstruction, system_program},
+    analog_program::{system_instruction::SystemInstruction, system_program},
     analog_sdk::feature_set,
     std::result,
     std::sync::Arc,
@@ -218,7 +218,7 @@ impl Transaction {
     /// Create a signed transaction
     /// * `from_keypairs` - The keys used to sign the transaction.
     /// * `keys` - The keys for the transaction.  These are the program state
-    ///    instances ortockrecipient keys.
+    ///    instances or tock recipient keys.
     /// * `recent_blockhash` - The PoH hash.
     /// * `program_ids` - The keys that identify programs used in the `instruction` vector.
     /// * `instructions` - Instructions that will be executed atomically.

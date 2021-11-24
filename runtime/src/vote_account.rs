@@ -29,11 +29,9 @@ struct VoteAccountInner {
     vote_state_once: Once,
 }
 
-pub type VoteAccountsHashMap = HashMap<Pubkey, (/*stake:*/ u64, VoteAccount)>;
-
 #[derive(Debug, AbiExample)]
 pub struct VoteAccounts {
-    vote_accounts: Arc<VoteAccountsHashMap>,
+    vote_accounts: Arc<HashMap<Pubkey, (/*stake:*/ u64, VoteAccount)>>,
     // Inner Arc is meant to implement copy-on-write semantics as opposed to
     // sharing mutations (hence RwLock<Arc<...>> instead of Arc<RwLock<...>>).
     staked_nodes: RwLock<
@@ -48,12 +46,8 @@ pub struct VoteAccounts {
 }
 
 impl VoteAccount {
-    pub fn account(&self) -> &Account {
-        &self.0.account
-    }
-
-    pub(crate) fn tock(&self) -> u64 {
-        self.account().tock
+    pub(crate) fn tocks(&self) -> u64 {
+        self.0.account.tocks
     }
 
     pub fn vote_state(&self) -> RwLockReadGuard<Result<VoteState, InstructionError>> {
@@ -198,12 +192,6 @@ impl From<Account> for VoteAccount {
     }
 }
 
-impl AsRef<VoteAccountInner> for VoteAccount {
-    fn as_ref(&self) -> &VoteAccountInner {
-        &self.0
-    }
-}
-
 impl From<AccountSharedData> for VoteAccountInner {
     fn from(account: AccountSharedData) -> Self {
         Self::from(Account::from(account))
@@ -272,6 +260,8 @@ impl PartialEq<VoteAccounts> for VoteAccounts {
         self.vote_accounts == other.vote_accounts
     }
 }
+
+type VoteAccountsHashMap = HashMap<Pubkey, (/*stake:*/ u64, VoteAccount)>;
 
 impl From<Arc<VoteAccountsHashMap>> for VoteAccounts {
     fn from(vote_accounts: Arc<VoteAccountsHashMap>) -> Self {
@@ -351,7 +341,7 @@ mod tests {
         };
         let vote_state = VoteState::new(&vote_init, &clock);
         let account = Account::new_data(
-            rng.gen(), // tock
+            rng.gen(), // tocks
             &VoteStateVersions::new_current(vote_state.clone()),
             &Pubkey::new_unique(), // owner
         )
@@ -395,9 +385,9 @@ mod tests {
     fn test_vote_account() {
         let mut rng = rand::thread_rng();
         let (account, vote_state) = new_rand_vote_account(&mut rng, None);
-        let tock = account.tock;
+        let tocks = account.tocks;
         let vote_account = VoteAccount::from(account);
-        assert_eq!(tock, vote_account.tock());
+        assert_eq!(tocks, vote_account.tocks());
         assert_eq!(vote_state, *vote_account.vote_state().as_ref().unwrap());
         // 2nd call to .vote_state() should return the cached value.
         assert_eq!(vote_state, *vote_account.vote_state().as_ref().unwrap());

@@ -13,7 +13,7 @@ This document proposes an easy to use software install and updater that can be u
 The easiest install method for supported platforms:
 
 ```bash
-$ curl -sSf https://raw.githubusercontent.com/analog-labs/solana/v1.0.0/install/analog-install-init.sh | sh
+$ curl -sSf https://raw.githubusercontent.com/analog/analog/v1.0.0/install/analog-install-init.sh | sh
 ```
 
 This script will check github for the latest tagged release and download and run the `analog-install-init` binary from there.
@@ -22,7 +22,7 @@ If additional arguments need to be specified during the installation, the follow
 
 ```bash
 $ init_args=.... # arguments for `analog-install-init ...`
-$ curl -sSf https://raw.githubusercontent.com/analog-labs/solana/v1.0.0/install/analog-install-init.sh | sh -s - ${init_args}
+$ curl -sSf https://raw.githubusercontent.com/analog/analog/v1.0.0/install/analog-install-init.sh | sh -s - ${init_args}
 ```
 
 ### Fetch and run a pre-built installer from a Github release
@@ -30,7 +30,7 @@ $ curl -sSf https://raw.githubusercontent.com/analog-labs/solana/v1.0.0/install/
 With a well-known release URL, a pre-built binary can be obtained for supported platforms:
 
 ```bash
-$ curl -o analog-install-init https://github.com/analog-labs/solana/releases/download/v1.0.0/analog-install-init-x86_64-apple-darwin
+$ curl -o analog-install-init https://github.com/analog/testnet/releases/download/v1.0.0/analog-install-init-x86_64-apple-darwin
 $ chmod +x ./analog-install-init
 $ ./analog-install-init --help
 ```
@@ -40,7 +40,7 @@ $ ./analog-install-init --help
 If a pre-built binary is not available for a given platform, building the installer from source is always an option:
 
 ```bash
-$ git clone https://github.com/analog-labs/solana.git
+$ git clone https://github.com/analog/testnet.git
 $ cd analog/install
 $ cargo run -- --help
 ```
@@ -115,9 +115,9 @@ The `analog-install` tool is used by the user to install and update their cluste
 
 It manages the following files and directories in the user's home directory:
 
-- `~/.config/solana/install/config.yml` - user configuration and information about currently installed software version
-- `~/.local/share/solana/install/bin` - a symlink to the current release. eg, `~/.local/share/analog-update/<update-pubkey>-<manifest_signature>/bin`
-- `~/.local/share/solana/install/releases/<download_sha256>/` - contents of a release
+- `~/.config/analog/install/config.yml` - user configuration and information about currently installed software version
+- `~/.local/share/analog/install/bin` - a symlink to the current release. eg, `~/.local/share/analog-update/<update-pubkey>-<manifest_signature>/bin`
+- `~/.local/share/analog/install/releases/<download_sha256>/` - contents of a release
 
 ### Command-line Interface
 
@@ -133,7 +133,7 @@ FLAGS:
     -V, --version    Prints version information
 
 OPTIONS:
-    -c, --config <PATH>    Configuration file to use [default: .../Library/Preferences/solana/install.yml]
+    -c, --config <PATH>    Configuration file to use [default: .../Library/Preferences/analog/install.yml]
 
 SUBCOMMANDS:
     deploy    deploys a new update
@@ -155,8 +155,8 @@ FLAGS:
     -h, --help    Prints help information
 
 OPTIONS:
-    -d, --data_dir <PATH>    Directory to store install data [default: .../Library/Application Support/solana]
-    -u, --url <URL>          JSON RPC URL for the analog cluster [default: http://api.devnet.solana.com]
+    -d, --data_dir <PATH>    Directory to store install data [default: .../Library/Application Support/analog]
+    -u, --url <URL>          JSON RPC URL for the analog cluster [default: http://api.devnet.analog.com]
     -p, --pubkey <PUBKEY>    Public key of the update manifest [default: 9XX329sPuskWhH4DQh6k16c87dHKhXLBZTL3Gxmve8Gp]
 ```
 

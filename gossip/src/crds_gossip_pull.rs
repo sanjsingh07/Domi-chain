@@ -15,7 +15,7 @@ use {
     crate::{
         cluster_info::{Ping, CRDS_UNIQUE_PUBKEY_CAPACITY},
         contact_info::ContactInfo,
-        crds::{Crds, GossipRoute, VersionedCrdsValue},
+        crds::{Crds, VersionedCrdsValue},
         crds_gossip::{get_stake, get_weight},
         crds_gossip_error::CrdsGossipError,
         crds_value::CrdsValue,
@@ -348,7 +348,7 @@ impl CrdsGossipPull {
         let mut crds = crds.write().unwrap();
         for caller in callers {
             let key = caller.pubkey();
-            let _ = crds.insert(caller, now, GossipRoute::PullRequest);
+            let _ = crds.insert(caller, now);
             crds.update_record_timestamp(&key, now);
         }
     }
@@ -430,12 +430,12 @@ impl CrdsGossipPull {
         let mut owners = HashSet::new();
         let mut crds = crds.write().unwrap();
         for response in responses_expired_timeout {
-            let _ = crds.insert(response, now, GossipRoute::PullResponse);
+            let _ = crds.insert(response, now);
         }
         let mut num_inserts = 0;
         for response in responses {
             let owner = response.pubkey();
-            if let Ok(()) = crds.insert(response, now, GossipRoute::PullResponse) {
+            if let Ok(()) = crds.insert(response, now) {
                 num_inserts += 1;
                 owners.insert(owner);
             }
@@ -533,6 +533,7 @@ impl CrdsGossipPull {
                 dropped_requests.fetch_add(1, Ordering::Relaxed);
                 return Vec::default();
             }
+            let caller_pubkey = caller.pubkey();
             let caller_wallclock = caller_wallclock.checked_add(jitter).unwrap_or(0);
             let pred = |entry: &&VersionedCrdsValue| {
                 debug_assert!(filter.test_mask(&entry.value_hash));
@@ -542,6 +543,8 @@ impl CrdsGossipPull {
                     false
                 } else {
                     !filter.filter_contains(&entry.value_hash)
+                        && (entry.value.pubkey() != caller_pubkey
+                            || entry.value.should_force_push(&caller_pubkey))
                 }
             };
             let out: Vec<_> = crds
@@ -672,8 +675,7 @@ pub(crate) mod tests {
             crds_value::{CrdsData, Vote},
         },
         itertools::Itertools,
-        rand::{seq::SliceRandom, thread_rng, SeedableRng},
-        rand_chacha::ChaChaRng,
+        rand::{seq::SliceRandom, thread_rng},
         rayon::ThreadPoolBuilder,
         analog_perf::test_tx::test_tx,
         analog_sdk::{
@@ -732,16 +734,14 @@ pub(crate) mod tests {
             &analog_sdk::pubkey::new_rand(),
             0,
         )));
-        crds.insert(me.clone(), 0, GossipRoute::LocalMessage)
-            .unwrap();
+        crds.insert(me.clone(), 0).unwrap();
         for i in 1..=30 {
             let entry = CrdsValue::new_unsigned(CrdsData::ContactInfo(ContactInfo::new_localhost(
                 &analog_sdk::pubkey::new_rand(),
                 0,
             )));
             let id = entry.label().pubkey();
-            crds.insert(entry.clone(), 0, GossipRoute::LocalMessage)
-                .unwrap();
+            crds.insert(entry.clone(), 0).unwrap();
             stakes.insert(id, i * 100);
         }
         let now = 1024;
@@ -795,14 +795,10 @@ pub(crate) mod tests {
             ..ContactInfo::default()
         }));
 
-        crds.insert(me.clone(), 0, GossipRoute::LocalMessage)
-            .unwrap();
-        crds.insert(spy.clone(), 0, GossipRoute::LocalMessage)
-            .unwrap();
-        crds.insert(node_123.clone(), 0, GossipRoute::LocalMessage)
-            .unwrap();
-        crds.insert(node_456.clone(), 0, GossipRoute::LocalMessage)
-            .unwrap();
+        crds.insert(me.clone(), 0).unwrap();
+        crds.insert(spy.clone(), 0).unwrap();
+        crds.insert(node_123.clone(), 0).unwrap();
+        crds.insert(node_456.clone(), 0).unwrap();
         let crds = RwLock::new(crds);
 
         // shred version 123 should ignore nodes with versions 0 and 456
@@ -861,10 +857,8 @@ pub(crate) mod tests {
             ..ContactInfo::default()
         }));
 
-        crds.insert(me.clone(), 0, GossipRoute::LocalMessage)
-            .unwrap();
-        crds.insert(node_123.clone(), 0, GossipRoute::LocalMessage)
-            .unwrap();
+        crds.insert(me.clone(), 0).unwrap();
+        crds.insert(node_123.clone(), 0).unwrap();
         let crds = RwLock::new(crds);
 
         // Empty gossip_validators -- will pull from nobody
@@ -958,22 +952,16 @@ pub(crate) mod tests {
 
     #[test]
     fn test_build_crds_filter() {
-        const SEED: [u8; 32] = [0x55; 32];
-        let mut rng = ChaChaRng::from_seed(SEED);
+        let mut rng = thread_rng();
         let thread_pool = ThreadPoolBuilder::new().build().unwrap();
         let crds_gossip_pull = CrdsGossipPull::default();
         let mut crds = Crds::default();
-        let keypairs: Vec<_> = repeat_with(|| Keypair::generate(&mut rng))
-            .take(10_000)
-            .collect();
+        let keypairs: Vec<_> = repeat_with(Keypair::new).take(10_000).collect();
         let mut num_inserts = 0;
         for _ in 0..40_000 {
             let keypair = keypairs.choose(&mut rng).unwrap();
             let value = CrdsValue::new_rand(&mut rng, Some(keypair));
-            if crds
-                .insert(value, rng.gen(), GossipRoute::LocalMessage)
-                .is_ok()
-            {
+            if crds.insert(value, rng.gen()).is_ok() {
                 num_inserts += 1;
             }
         }
@@ -984,13 +972,7 @@ pub(crate) mod tests {
         let crds = crds.read().unwrap();
         let purged: Vec<_> = thread_pool.install(|| crds.purged().collect());
         let hash_values: Vec<_> = crds.values().map(|v| v.value_hash).chain(purged).collect();
-        // CrdsValue::new_rand may generate exact same value twice in which
-        // case its hash-value is not added to purged values.
-        assert!(
-            hash_values.len() >= 40_000 - 5,
-            "hash_values.len(): {}",
-            hash_values.len()
-        );
+        assert_eq!(hash_values.len(), 40_000);
         let mut false_positives = 0;
         for hash_value in hash_values {
             let mut num_hits = 0;
@@ -1040,10 +1022,7 @@ pub(crate) mod tests {
             Err(CrdsGossipError::NoPeers)
         );
 
-        crds.write()
-            .unwrap()
-            .insert(entry, 0, GossipRoute::LocalMessage)
-            .unwrap();
+        crds.write().unwrap().insert(entry, 0).unwrap();
         assert_eq!(
             node.new_pull_request(
                 &thread_pool,
@@ -1067,10 +1046,7 @@ pub(crate) mod tests {
             .unwrap()
             .mock_pong(new.id, new.gossip, Instant::now());
         let new = CrdsValue::new_unsigned(CrdsData::ContactInfo(new));
-        crds.write()
-            .unwrap()
-            .insert(new.clone(), now, GossipRoute::LocalMessage)
-            .unwrap();
+        crds.write().unwrap().insert(new.clone(), now).unwrap();
         let req = node.new_pull_request(
             &thread_pool,
             &crds,
@@ -1090,10 +1066,7 @@ pub(crate) mod tests {
         node.mark_pull_request_creation_time(new.contact_info().unwrap().id, now);
         let offline = ContactInfo::new_localhost(&analog_sdk::pubkey::new_rand(), now);
         let offline = CrdsValue::new_unsigned(CrdsData::ContactInfo(offline));
-        crds.write()
-            .unwrap()
-            .insert(offline, now, GossipRoute::LocalMessage)
-            .unwrap();
+        crds.write().unwrap().insert(offline, now).unwrap();
         let req = node.new_pull_request(
             &thread_pool,
             &crds,
@@ -1128,17 +1101,15 @@ pub(crate) mod tests {
             0,
         )));
         let node = CrdsGossipPull::default();
-        crds.insert(entry, now, GossipRoute::LocalMessage).unwrap();
+        crds.insert(entry, now).unwrap();
         let old = ContactInfo::new_localhost(&analog_sdk::pubkey::new_rand(), 0);
         ping_cache.mock_pong(old.id, old.gossip, Instant::now());
         let old = CrdsValue::new_unsigned(CrdsData::ContactInfo(old));
-        crds.insert(old.clone(), now, GossipRoute::LocalMessage)
-            .unwrap();
+        crds.insert(old.clone(), now).unwrap();
         let new = ContactInfo::new_localhost(&analog_sdk::pubkey::new_rand(), 0);
         ping_cache.mock_pong(new.id, new.gossip, Instant::now());
         let new = CrdsValue::new_unsigned(CrdsData::ContactInfo(new));
-        crds.insert(new.clone(), now, GossipRoute::LocalMessage)
-            .unwrap();
+        crds.insert(new.clone(), now).unwrap();
         let crds = RwLock::new(crds);
 
         // set request creation time to now.
@@ -1225,13 +1196,11 @@ pub(crate) mod tests {
         )));
         let caller = entry.clone();
         let node = CrdsGossipPull::default();
-        node_crds
-            .insert(entry, 0, GossipRoute::LocalMessage)
-            .unwrap();
+        node_crds.insert(entry, 0).unwrap();
         let new = ContactInfo::new_localhost(&analog_sdk::pubkey::new_rand(), 0);
         ping_cache.mock_pong(new.id, new.gossip, Instant::now());
         let new = CrdsValue::new_unsigned(CrdsData::ContactInfo(new));
-        node_crds.insert(new, 0, GossipRoute::LocalMessage).unwrap();
+        node_crds.insert(new, 0).unwrap();
         let node_crds = RwLock::new(node_crds);
         let mut pings = Vec::new();
         let req = node.new_pull_request(
@@ -1268,11 +1237,7 @@ pub(crate) mod tests {
         dest_crds
             .write()
             .unwrap()
-            .insert(
-                new,
-                CRDS_GOSSIP_PULL_MSG_TIMEOUT_MS,
-                GossipRoute::LocalMessage,
-            )
+            .insert(new, CRDS_GOSSIP_PULL_MSG_TIMEOUT_MS)
             .unwrap();
 
         //should skip new value since caller is to old
@@ -1321,9 +1286,7 @@ pub(crate) mod tests {
         )));
         let caller = entry.clone();
         let node = CrdsGossipPull::default();
-        node_crds
-            .insert(entry, 0, GossipRoute::LocalMessage)
-            .unwrap();
+        node_crds.insert(entry, 0).unwrap();
         let mut ping_cache = PingCache::new(
             Duration::from_secs(20 * 60), // ttl
             128,                          // capacity
@@ -1331,7 +1294,7 @@ pub(crate) mod tests {
         let new = ContactInfo::new_localhost(&analog_sdk::pubkey::new_rand(), 0);
         ping_cache.mock_pong(new.id, new.gossip, Instant::now());
         let new = CrdsValue::new_unsigned(CrdsData::ContactInfo(new));
-        node_crds.insert(new, 0, GossipRoute::LocalMessage).unwrap();
+        node_crds.insert(new, 0).unwrap();
         let node_crds = RwLock::new(node_crds);
         let mut pings = Vec::new();
         let req = node.new_pull_request(
@@ -1380,9 +1343,7 @@ pub(crate) mod tests {
         let caller = entry.clone();
         let node_pubkey = entry.label().pubkey();
         let node = CrdsGossipPull::default();
-        node_crds
-            .insert(entry, 0, GossipRoute::LocalMessage)
-            .unwrap();
+        node_crds.insert(entry, 0).unwrap();
         let mut ping_cache = PingCache::new(
             Duration::from_secs(20 * 60), // ttl
             128,                          // capacity
@@ -1390,16 +1351,14 @@ pub(crate) mod tests {
         let new = ContactInfo::new_localhost(&analog_sdk::pubkey::new_rand(), 1);
         ping_cache.mock_pong(new.id, new.gossip, Instant::now());
         let new = CrdsValue::new_unsigned(CrdsData::ContactInfo(new));
-        node_crds.insert(new, 0, GossipRoute::LocalMessage).unwrap();
+        node_crds.insert(new, 0).unwrap();
 
         let mut dest_crds = Crds::default();
         let new_id = analog_sdk::pubkey::new_rand();
         let new = ContactInfo::new_localhost(&new_id, 1);
         ping_cache.mock_pong(new.id, new.gossip, Instant::now());
         let new = CrdsValue::new_unsigned(CrdsData::ContactInfo(new));
-        dest_crds
-            .insert(new.clone(), 0, GossipRoute::LocalMessage)
-            .unwrap();
+        dest_crds.insert(new.clone(), 0).unwrap();
         let dest_crds = RwLock::new(dest_crds);
 
         // node contains a key from the dest node, but at an older local timestamp
@@ -1408,9 +1367,7 @@ pub(crate) mod tests {
         let same_key = CrdsValue::new_unsigned(CrdsData::ContactInfo(same_key));
         assert_eq!(same_key.label(), new.label());
         assert!(same_key.wallclock() < new.wallclock());
-        node_crds
-            .insert(same_key.clone(), 0, GossipRoute::LocalMessage)
-            .unwrap();
+        node_crds.insert(same_key.clone(), 0).unwrap();
         assert_eq!(0, {
             let entry: &VersionedCrdsValue = node_crds.get(&same_key.label()).unwrap();
             entry.local_timestamp
@@ -1495,16 +1452,12 @@ pub(crate) mod tests {
         let node_label = entry.label();
         let node_pubkey = node_label.pubkey();
         let node = CrdsGossipPull::default();
-        node_crds
-            .insert(entry, 0, GossipRoute::LocalMessage)
-            .unwrap();
+        node_crds.insert(entry, 0).unwrap();
         let old = CrdsValue::new_unsigned(CrdsData::ContactInfo(ContactInfo::new_localhost(
             &analog_sdk::pubkey::new_rand(),
             0,
         )));
-        node_crds
-            .insert(old.clone(), 0, GossipRoute::LocalMessage)
-            .unwrap();
+        node_crds.insert(old.clone(), 0).unwrap();
         let value_hash = {
             let entry: &VersionedCrdsValue = node_crds.get(&old.label()).unwrap();
             entry.value_hash

@@ -19,9 +19,9 @@ of the account.
 - To change the [validator identity](#validator-identity), use
   [vote-update-validator](../cli/usage.md#analog-vote-update-validator).
 - To change the [vote authority](#vote-authority), use
-  [vote-authorize-voter-checked](../cli/usage.md#analog-vote-authorize-voter-checked).
+  [vote-authorize-voter](../cli/usage.md#analog-vote-authorize-voter).
 - To change the [authorized withdrawer](#authorized-withdrawer), use
-  [vote-authorize-withdrawer-checked](../cli/usage.md#analog-vote-authorize-withdrawer-checked).
+  [vote-authorize-withdrawer](../cli/usage.md#analog-vote-authorize-withdrawer).
 - To change the [commission](#commission), use
   [vote-update-commission](../cli/usage.md#analog-vote-update-commission).
 
@@ -52,7 +52,7 @@ stored as a "hot wallet" in a keypair file on the same system the validator
 process is running.
 
 Because a hot wallet is generally less secure than an offline or "cold" wallet,
-the validator operator may choose to store only enough ANLOG on the identity
+the validator operator may choose to store only enough SOL on the identity
 account to cover voting fees for a limited amount of time, such as a few weeks
 or months. The validator identity account could be periodically topped off
 from a more secure wallet.
@@ -84,10 +84,10 @@ different accounts.
 The vote authority can be set when the vote account is created. If it is not
 provided, the default behavior is to assign it the same as the validator identity.
 The vote authority can be changed later with the
-[vote-authorize-voter-checked](../cli/usage.md#analog-vote-authorize-voter-checked) command.
+[vote-authorize-voter](../cli/usage.md#analog-vote-authorize-voter) command.
 
 The vote authority can be changed at most once per epoch. If the authority is
-changed with [vote-authorize-voter-checked](../cli/usage.md#analog-vote-authorize-voter-checked),
+changed with [vote-authorize-voter](../cli/usage.md#analog-vote-authorize-voter),
 this will not take effect until the beginning of the next epoch.
 To support a smooth transition of the vote signing,
 `analog-validator` allows the `--authorized-voter` argument to be specified
@@ -117,7 +117,7 @@ not be set to a keypair that is the same as either the validator identity
 keypair or the vote authority keypair.
 
 The authorized withdrawer can be changed later with the
-[vote-authorize-withdrawer-checked](../cli/usage.md#analog-vote-authorize-withdrawer-checked)
+[vote-authorize-withdrawer](../cli/usage.md#analog-vote-authorize-withdrawer)
 command.
 
 ### Commission
@@ -162,8 +162,8 @@ change the validator identity. The follow steps assume that
 `~/authorized_withdrawer.json` is that keypair.
 
 1. Create the new validator identity keypair, `analog-keygen new -o ~/new-validator-keypair.json`.
-2. Ensure that the new identity account has been funded, `solana transfer ~/new-validator-keypair.json 500`.
-3. Run `solana vote-update-validator ~/vote-account-keypair.json ~/new-validator-keypair.json ~/authorized_withdrawer.json`
+2. Ensure that the new identity account has been funded, `analog transfer ~/new-validator-keypair.json 500`.
+3. Run `analog vote-update-validator ~/vote-account-keypair.json ~/new-validator-keypair.json ~/authorized_withdrawer.json`
    to modify the validator identity in your vote account
 4. Restart your validator with the new identity keypair for the `--identity` argument
 
@@ -183,7 +183,7 @@ This temporary validator should be run for two full epochs. During this time it 
 * Receive the transaction fees and rent rewards for your old validator identity
 
 It is safe to stop this temporary validator when your old validator identity is
-no longer listed in the `solana leader-schedule` output.
+no longer listed in the `analog leader-schedule` output.
 
 ### Vote Account Authorized Voter
 
@@ -191,14 +191,14 @@ The _vote authority_ keypair may only be changed at epoch boundaries and
 requires some additional arguments to `analog-validator` for a seamless
 migration.
 
-1. Run `solana epoch-info`. If there is not much time remaining time in the
+1. Run `analog epoch-info`. If there is not much time remaining time in the
    current epoch, consider waiting for the next epoch to allow your validator
    plenty of time to restart and catch up.
 2. Create the new vote authority keypair, `analog-keygen new -o ~/new-vote-authority.json`.
-3. Determine the current _vote authority_ keypair by running `solana vote-account ~/vote-account-keypair.json`. It may be validator's
+3. Determine the current _vote authority_ keypair by running `analog vote-account ~/vote-account-keypair.json`. It may be validator's
    identity account (the default) or some other keypair. The following steps
    assume that `~/validator-keypair.json` is that keypair.
-4. Run `solana vote-authorize-voter ~/vote-account-keypair.json ~/validator-keypair.json ~/new-vote-authority.json`.
+4. Run `analog vote-authorize-voter ~/vote-account-keypair.json ~/validator-keypair.json ~/new-vote-authority.json`.
    The new vote authority is scheduled to become active starting at the next epoch.
 5. `analog-validator` now needs to be restarted with the old and new vote
    authority keypairs, so that it can smoothly transition at the next epoch. Add
@@ -209,11 +209,11 @@ migration.
 
 ### Vote Account Authorized Withdrawer
 
-No special handling is required. Use the `solana vote-authorize-withdrawer` command as needed.
+No special handling is required. Use the `analog vote-authorize-withdrawer` command as needed.
 
 ## Close a Vote Account
 
 A vote account can be closed with the
 [close-vote-account](../cli/usage.md#analog-close-vote-account) command.
-Closing a vote account withdraws all remaining ANLOG funds to a supplied recipient address and renders it invalid as a vote account.
+Closing a vote account withdraws all remaining SOL funds to a supplied recipient address and renders it invalid as a vote account.
 It is not possible to close a vote account with active stake.

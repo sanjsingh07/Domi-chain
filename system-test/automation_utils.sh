@@ -110,21 +110,6 @@ function get_current_stake {
     '$HOME/.cargo/bin/analog --url http://127.0.0.1:8899 validators --output=json | grep -o "totalCurrentStake\": [0-9]*" | cut -d: -f2'
 }
 
-function get_validator_confirmation_time {
-  SINCE=$1
-  declare q_mean_confirmation='
-    SELECT ROUND(MEAN("duration_ms")) as "mean_confirmation_ms"
-      FROM "'$TESTNET_TAG'"."autogen"."validator-confirmation"
-      WHERE time > now() - '"$SINCE"'s'
-
-  mean_confirmation_ms=$( \
-      curl -G "${INFLUX_HOST}/query?u=ro&p=topsecret" \
-        --data-urlencode "db=${TESTNET_TAG}" \
-        --data-urlencode "q=$q_mean_confirmation" |
-      python3 "${REPO_ROOT}"/system-test/testnet-automation-json-parser.py --empty_error |
-      cut -d' ' -f2)
-}
-
 function collect_performance_statistics {
   execution_step "Collect performance statistics about run"
   declare q_mean_tps='
@@ -205,13 +190,13 @@ function upload_results_to_slack() {
 
   COMMIT=$(git rev-parse HEAD)
   COMMIT_BUTTON_TEXT="$(echo "$COMMIT" | head -c 8)"
-  COMMIT_URL="https://github.com/analog-labs/analog/commit/${COMMIT}"
+  COMMIT_URL="https://github.com/analog/testnet/commit/${COMMIT}"
 
   if [[ -n $BUILDKITE_BUILD_URL ]] ; then
     BUILD_BUTTON_TEXT="Build Kite Job"
   else
     BUILD_BUTTON_TEXT="Build URL not defined"
-    BUILDKITE_BUILD_URL="https://buildkite.com/analog-labs/"
+    BUILDKITE_BUILD_URL="https://buildkite.com/analog/"
   fi
 
   GRAFANA_URL="https://metrics.analog.com:3000/d/monitor-${CHANNEL:-edge}/cluster-telemetry-${CHANNEL:-edge}?var-testnet=${TESTNET_TAG:-testnet-automation}&from=${TESTNET_START_UNIX_MSECS:-0}&to=${TESTNET_FINISH_UNIX_MSECS:-0}"

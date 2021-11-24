@@ -1,9 +1,9 @@
-//! Example Rust-based BPF sanity program that finalizes a BPF program
+//! @brief Example Rust-based BPF sanity program that finalizes a BPF program
 
 #![allow(unreachable_code)]
 
-extern crate solana_program;
-use solana_program::{
+extern crate analog_program;
+use analog_program::{
     account_info::AccountInfo, bpf_loader, entrypoint, entrypoint::ProgramResult,
     loader_instruction, msg, program::invoke, pubkey::Pubkey,
 };

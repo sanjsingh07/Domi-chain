@@ -603,7 +603,7 @@ impl Tower {
                     // So, don't re-vote on it by returning pseudo FailedSwitchThreshold, otherwise
                     // there would be slashing because of double vote on one of last_vote_ancestors.
                     // (Well, needless to say, re-creating the duplicate block must be handled properly
-                    // at the banking stage: https://github.com/analog-labs/solana/issues/8232)
+                    // at the banking stage: https://github.com/analog/testnet/issues/8232)
                     //
                     // To be specific, the replay stage is tricked into a false perception where
                     // last_vote_ancestors is AVAILABLE for descendant-of-`switch_slot`,  stale, and
@@ -1301,10 +1301,10 @@ pub mod test {
     fn gen_stakes(stake_votes: &[(u64, &[u64])]) -> HashMap<Pubkey, (u64, VoteAccount)> {
         stake_votes
             .iter()
-            .map(|(tock, votes)| {
+            .map(|(tocks, votes)| {
                 let mut account = AccountSharedData::from(Account {
                     data: vec![0; VoteState::size_of()],
-                    tock: *tock,
+                    tocks: *tocks,
                     ..Account::default()
                 });
                 let mut vote_state = VoteState::default();
@@ -1313,12 +1313,12 @@ pub mod test {
                 }
                 VoteState::serialize(
                     &VoteStateVersions::new_current(vote_state),
-                    account.data_as_mut_slice(),
+                    &mut account.data_as_mut_slice(),
                 )
                 .expect("serialize state");
                 (
                     analog_sdk::pubkey::new_rand(),
-                    (*tock, VoteAccount::from(account)),
+                    (*tocks, VoteAccount::from(account)),
                 )
             })
             .collect()
@@ -2236,12 +2236,12 @@ pub mod test {
     fn test_stake_is_updated_for_entire_branch() {
         let mut voted_stakes = HashMap::new();
         let account = AccountSharedData::from(Account {
-            tock: 1,
+            tocks: 1,
             ..Account::default()
         });
         let set: HashSet<u64> = vec![0u64, 1u64].into_iter().collect();
         let ancestors: HashMap<u64, HashSet<u64>> = [(2u64, set)].iter().cloned().collect();
-        Tower::update_ancestor_voted_stakes(&mut voted_stakes, 2, account.tock(), &ancestors);
+        Tower::update_ancestor_voted_stakes(&mut voted_stakes, 2, account.tocks(), &ancestors);
         assert_eq!(voted_stakes[&0], 1);
         assert_eq!(voted_stakes[&1], 1);
         assert_eq!(voted_stakes[&2], 1);

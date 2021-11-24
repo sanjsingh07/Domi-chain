@@ -1,5 +1,5 @@
 import React from "react";
-import { PublicKey, SystemProgram } from "@solana/web3.js";
+import { PublicKey, SystemProgram } from "@analog/web3.js";
 import { Address } from "components/common/Address";
 import {
   Account,
@@ -8,12 +8,12 @@ import {
 } from "providers/accounts";
 import { ClusterStatus, useCluster } from "providers/cluster";
 import { addressLabel } from "utils/tx";
-import { lamportsToSolString } from "utils";
+import { tocksToAnlogString } from "utils";
 
 type AccountValidator = (account: Account) => string | undefined;
 
 export const createFeePayerValidator = (
-  feeLamports: number
+  feeTocks: number
 ): AccountValidator => {
   return (account: Account): string | undefined => {
     if (account.details === undefined) return "Account doesn't exist";
@@ -22,7 +22,7 @@ export const createFeePayerValidator = (
     // TODO: Actually nonce accounts can pay fees too
     if (account.details.space > 0)
       return "Only unallocated accounts can pay fees";
-    if (account.tock < feeLamports) {
+    if (account.tocks < feeTocks) {
       return "Insufficient funds for fees";
     }
     return;
@@ -94,7 +94,7 @@ function AccountInfo({
       {ownerAddress
         ? `Owned by ${
             ownerLabel || ownerAddress
-          }. Balance is ${lamportsToSolString(info.data.tock)} ANLOG`
+          }. Balance is ${tocksToAnlogString(info.data.tocks)} ANLOG`
         : "Account doesn't exist"}
     </span>
   );

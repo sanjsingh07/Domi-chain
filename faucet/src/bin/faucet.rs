@@ -1,7 +1,7 @@
 use {
     clap::{crate_description, crate_name, values_t, App, Arg},
     log::*,
-    analog_clap_utils::input_parsers::{lamports_of_anlog, value_of},
+    analog_clap_utils::input_parsers::{tocks_of_anlog, value_of},
     analog_faucet::{
         faucet::{run_faucet, Faucet, FAUCET_PORT},
         socketaddr,
@@ -73,8 +73,8 @@ async fn main() {
         .expect("failed to read client keypair");
 
     let time_slice = value_of(&matches, "slice");
-    let per_time_cap = lamports_of_anlog(&matches, "per_time_cap");
-    let per_request_cap = lamports_of_anlog(&matches, "per_request_cap");
+    let per_time_cap = tocks_of_anlog(&matches, "per_time_cap");
+    let per_request_cap = tocks_of_anlog(&matches, "per_request_cap");
 
     let allowed_ips: HashSet<_> = values_t!(matches.values_of("allowed_ip"), IpAddr)
         .unwrap_or_default()

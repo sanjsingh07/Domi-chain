@@ -46,11 +46,11 @@ pub trait SyncClient {
         instruction: Instruction,
     ) -> Result<Signature>;
 
-    /// Transfer tock from `keypair` to `pubkey`, retrying until the
+    /// Transfer tocks from `keypair` to `pubkey`, retrying until the
     /// transfer completes or produces and error.
     fn transfer_and_confirm(
         &self,
-        tock: u64,
+        tocks: u64,
         keypair: &Keypair,
         pubkey: &Pubkey,
     ) -> Result<Signature>;
@@ -81,13 +81,13 @@ pub trait SyncClient {
     fn get_minimum_balance_for_rent_exemption(&self, data_len: usize) -> Result<u64>;
 
     /// Get recent blockhash
-    #[deprecated(since = "1.9.0", note = "Please use `get_latest_blockhash` instead")]
+    #[deprecated(since = "1.8.0", note = "Please use `get_latest_blockhash` instead")]
     fn get_recent_blockhash(&self) -> Result<(Hash, FeeCalculator)>;
 
     /// Get recent blockhash. Uses explicit commitment configuration.
     #[deprecated(
-        since = "1.9.0",
-        note = "Please use `get_latest_blockhash_with_commitment` and `get_latest_blockhash_with_commitment` instead"
+        since = "1.8.0",
+        note = "Please use `get_latest_blockhash_with_commitment` and `get_fee_for_message` instead"
     )]
     fn get_recent_blockhash_with_commitment(
         &self,
@@ -97,14 +97,14 @@ pub trait SyncClient {
     /// Get `Some(FeeCalculator)` associated with `blockhash` if it is still in
     /// the BlockhashQueue`, otherwise `None`
     #[deprecated(
-        since = "1.9.0",
+        since = "1.8.0",
         note = "Please use `get_fee_for_message` or `is_blockhash_valid` instead"
     )]
     fn get_fee_calculator_for_blockhash(&self, blockhash: &Hash) -> Result<Option<FeeCalculator>>;
 
     /// Get recent fee rate governor
     #[deprecated(
-        since = "1.9.0",
+        since = "1.8.0",
         note = "Please do not use, will no longer be available in the future"
     )]
     fn get_fee_rate_governor(&self) -> Result<FeeRateGovernor>;
@@ -150,15 +150,15 @@ pub trait SyncClient {
     fn poll_for_signature(&self, signature: &Signature) -> Result<()>;
 
     #[deprecated(
-        since = "1.9.0",
-        note = "Please do not use, will no longer be available in the future"
+        since = "1.8.0",
+        note = "Please use `get_new_latest_blockhash` instead"
     )]
     fn get_new_blockhash(&self, blockhash: &Hash) -> Result<(Hash, FeeCalculator)>;
 
     /// Get last known blockhash
     fn get_latest_blockhash(&self) -> Result<Hash>;
 
-    /// Get latest blockhash with last valid block height. Uses explicit commitment configuration.
+    /// Get recent blockhash. Uses explicit commitment configuration.
     fn get_latest_blockhash_with_commitment(
         &self,
         commitment_config: CommitmentConfig,
@@ -168,7 +168,10 @@ pub trait SyncClient {
     fn is_blockhash_valid(&self, blockhash: &Hash, commitment: CommitmentConfig) -> Result<bool>;
 
     /// Calculate the fee for a `Message`
-    fn get_fee_for_message(&self, message: &Message) -> Result<u64>;
+    fn get_fee_for_message(&self, blockhash: &Hash, message: &Message) -> Result<u64>;
+
+    /// Get a new blockhash after the one specified
+    fn get_new_latest_blockhash(&self, blockhash: &Hash) -> Result<Hash>;
 }
 
 pub trait AsyncClient {
@@ -193,10 +196,10 @@ pub trait AsyncClient {
         recent_blockhash: Hash,
     ) -> Result<Signature>;
 
-    /// Attempt to transfer tock from `keypair` to `pubkey`, but don't wait to confirm.
+    /// Attempt to transfer tocks from `keypair` to `pubkey`, but don't wait to confirm.
     fn async_transfer(
         &self,
-        tock: u64,
+        tocks: u64,
         keypair: &Keypair,
         pubkey: &Pubkey,
         recent_blockhash: Hash,

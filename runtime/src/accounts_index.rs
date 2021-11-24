@@ -5,7 +5,7 @@ use crate::{
     contains::Contains,
     in_mem_accounts_index::InMemAccountsIndex,
     inline_spl_token_v2_0::{self, SPL_TOKEN_ACCOUNT_MINT_OFFSET, SPL_TOKEN_ACCOUNT_OWNER_OFFSET},
-    pubkey_bins::PubkeyBinCalculator24,
+    pubkey_bins::PubkeyBinCalculator16,
     secondary_index::*,
 };
 use bv::BitVec;
@@ -62,13 +62,13 @@ pub type AccountMap<V> = Arc<InMemAccountsIndex<V>>;
 pub(crate) type AccountMapEntry<T> = Arc<AccountMapEntryInner<T>>;
 
 pub trait IsCached:
-    'static + Clone + Debug + PartialEq + ZeroLamport + Copy + Default + Sync + Send
+    'static + Clone + Debug + PartialEq + ZeroTock + Copy + Default + Sync + Send
 {
     fn is_cached(&self) -> bool;
 }
 
 pub trait IndexValue:
-    'static + IsCached + Clone + Debug + PartialEq + ZeroLamport + Copy + Default + Sync + Send
+    'static + IsCached + Clone + Debug + PartialEq + ZeroTock + Copy + Default + Sync + Send
 {
 }
 
@@ -184,14 +184,6 @@ impl<T: IndexValue> AccountMapEntryInner<T> {
         self.meta.dirty.store(value, Ordering::Release)
     }
 
-    /// set dirty to false, return true if was dirty
-    pub fn clear_dirty(&self) -> bool {
-        self.meta
-            .dirty
-            .compare_exchange(true, false, Ordering::AcqRel, Ordering::Relaxed)
-            .is_ok()
-    }
-
     pub fn age(&self) -> Age {
         self.meta.age.load(Ordering::Relaxed)
     }
@@ -289,6 +281,37 @@ impl<T: IndexValue> PreAllocatedAccountMapEntry<T> {
                 meta,
             )),
         }
+    }
+}
+
+#[self_referencing]
+pub struct WriteAccountMapEntry<T: IndexValue> {
+    owned_entry: AccountMapEntry<T>,
+    #[borrows(owned_entry)]
+    #[covariant]
+    slot_list_guard: RwLockWriteGuard<'this, SlotList<T>>,
+}
+
+impl<T: IndexValue> WriteAccountMapEntry<T> {
+    pub fn from_account_map_entry(account_map_entry: AccountMapEntry<T>) -> Self {
+        WriteAccountMapEntryBuilder {
+            owned_entry: account_map_entry,
+            slot_list_guard_builder: |lock| lock.slot_list.write().unwrap(),
+        }
+        .build()
+    }
+
+    pub fn slot_list(&self) -> &SlotList<T> {
+        &*self.borrow_slot_list_guard()
+    }
+
+    pub fn slot_list_mut<RT>(
+        &mut self,
+        user: impl for<'this> FnOnce(&mut RwLockWriteGuard<'this, SlotList<T>>) -> RT,
+    ) -> RT {
+        let result = self.with_slot_list_guard_mut(user);
+        self.borrow_owned_entry().set_dirty(true);
+        result
     }
 }
 
@@ -579,13 +602,11 @@ pub struct AccountsIndexRootsStats {
     pub roots_range: u64,
     pub rooted_cleaned_count: usize,
     pub unrooted_cleaned_count: usize,
-    pub clean_unref_from_storage_us: u64,
-    pub clean_dead_slot_us: u64,
 }
 
 pub struct AccountsIndexIterator<'a, T: IndexValue> {
     account_maps: &'a LockMapTypeSlice<T>,
-    bin_calculator: &'a PubkeyBinCalculator24,
+    bin_calculator: &'a PubkeyBinCalculator16,
     start_bound: Bound<Pubkey>,
     end_bound: Bound<Pubkey>,
     is_finished: bool,
@@ -727,8 +748,8 @@ impl<'a, T: IndexValue> Iterator for AccountsIndexIterator<'a, T> {
     }
 }
 
-pub trait ZeroLamport {
-    fn is_zero_lamport(&self) -> bool;
+pub trait ZeroTock {
+    fn is_zero_tock(&self) -> bool;
 }
 
 type MapType<T> = AccountMap<T>;
@@ -740,6 +761,7 @@ type AccountMapsReadLock<'a, T> = RwLockReadGuard<'a, MapType<T>>;
 #[derive(Debug, Default)]
 pub struct ScanSlotTracker {
     is_removed: bool,
+    ref_count: u64,
 }
 
 impl ScanSlotTracker {
@@ -755,7 +777,7 @@ impl ScanSlotTracker {
 #[derive(Debug)]
 pub struct AccountsIndex<T: IndexValue> {
     pub account_maps: LockMapType<T>,
-    pub bin_calculator: PubkeyBinCalculator24,
+    pub bin_calculator: PubkeyBinCalculator16,
     program_id_index: SecondaryIndex<DashMapSecondaryIndexEntry>,
     spl_token_mint_index: SecondaryIndex<DashMapSecondaryIndexEntry>,
     spl_token_owner_index: SecondaryIndex<RwLockSecondaryIndexEntry>,
@@ -806,7 +828,7 @@ impl<T: IndexValue> AccountsIndex<T> {
         config: Option<AccountsIndexConfig>,
     ) -> (
         LockMapType<T>,
-        PubkeyBinCalculator24,
+        PubkeyBinCalculator16,
         AccountsIndexStorage<T>,
     ) {
         let bins = config
@@ -814,7 +836,7 @@ impl<T: IndexValue> AccountsIndex<T> {
             .and_then(|config| config.bins)
             .unwrap_or(BINS_DEFAULT);
         // create bin_calculator early to verify # bins is reasonable
-        let bin_calculator = PubkeyBinCalculator24::new(bins);
+        let bin_calculator = PubkeyBinCalculator16::new(bins);
         let storage = AccountsIndexStorage::new(bins, &config);
         let account_maps = (0..bins)
             .into_iter()
@@ -1177,15 +1199,12 @@ impl<T: IndexValue> AccountsIndex<T> {
             .map(ReadAccountMapEntry::from_account_map_entry)
     }
 
-    fn slot_list_mut<RT>(
-        &self,
-        pubkey: &Pubkey,
-        user: impl for<'a> FnOnce(&mut RwLockWriteGuard<'a, SlotList<T>>) -> RT,
-    ) -> Option<RT> {
-        let read_lock = self.account_maps[self.bin_calculator.bin_from_pubkey(pubkey)]
+    fn get_account_write_entry(&self, pubkey: &Pubkey) -> Option<WriteAccountMapEntry<T>> {
+        self.account_maps[self.bin_calculator.bin_from_pubkey(pubkey)]
             .read()
-            .unwrap();
-        read_lock.slot_list_mut(pubkey, user)
+            .unwrap()
+            .get(pubkey)
+            .map(WriteAccountMapEntry::from_account_map_entry)
     }
 
     pub fn handle_dead_keys(
@@ -1323,19 +1342,22 @@ impl<T: IndexValue> AccountsIndex<T> {
     where
         C: Contains<'a, Slot>,
     {
-        self.slot_list_mut(pubkey, |slot_list| {
-            slot_list.retain(|(slot, item)| {
-                let should_purge = slots_to_purge.contains(slot);
-                if should_purge {
-                    reclaims.push((*slot, *item));
-                    false
-                } else {
-                    true
-                }
-            });
-            slot_list.is_empty()
-        })
-        .unwrap_or(true)
+        if let Some(mut write_account_map_entry) = self.get_account_write_entry(pubkey) {
+            write_account_map_entry.slot_list_mut(|slot_list| {
+                slot_list.retain(|(slot, item)| {
+                    let should_purge = slots_to_purge.contains(slot);
+                    if should_purge {
+                        reclaims.push((*slot, *item));
+                        false
+                    } else {
+                        true
+                    }
+                });
+                slot_list.is_empty()
+            })
+        } else {
+            true
+        }
     }
 
     pub fn min_ongoing_scan_root(&self) -> Option<Slot> {
@@ -1397,50 +1419,7 @@ impl<T: IndexValue> AccountsIndex<T> {
     }
 
     pub fn set_startup(&self, value: bool) {
-        self.storage.set_startup(value);
-    }
-
-    /// For each pubkey, find the latest account that appears in `roots` and <= `max_root`
-    ///   call `callback`
-    pub(crate) fn scan<F>(&self, pubkeys: &[Pubkey], max_root: Option<Slot>, mut callback: F)
-    where
-        // return true if accounts index entry should be put in in_mem cache
-        // params:
-        //  exists: false if not in index at all
-        //  slot list found at slot at most max_root or empty slot list
-        //  index in slot list where best slot was found or None if nothing found by root criteria
-        //  pubkey looked up
-        //  refcount of entry in index
-        F: FnMut(bool, &SlotList<T>, Option<usize>, &Pubkey, RefCount) -> bool,
-    {
-        let empty_slot_list = vec![];
-        let mut lock = None;
-        let mut last_bin = self.bins(); // too big, won't match
-        pubkeys.iter().for_each(|pubkey| {
-            let bin = self.bin_calculator.bin_from_pubkey(pubkey);
-            if bin != last_bin {
-                // cannot re-use lock since next pubkey is in a different bin than previous one
-                lock = Some(self.account_maps[bin].read().unwrap());
-                last_bin = bin;
-            }
-            lock.as_ref().unwrap().get_internal(pubkey, |entry| {
-                let cache = match entry {
-                    Some(locked_entry) => {
-                        let slot_list = &locked_entry.slot_list.read().unwrap();
-                        let found_index = self.latest_slot(None, slot_list, max_root);
-                        callback(
-                            true,
-                            slot_list,
-                            found_index,
-                            pubkey,
-                            locked_entry.ref_count(),
-                        )
-                    }
-                    None => callback(false, &empty_slot_list, None, pubkey, RefCount::MAX),
-                };
-                (cache, ())
-            });
-        });
+        self.storage.storage.set_startup(value);
     }
 
     /// Get an account
@@ -1509,15 +1488,15 @@ impl<T: IndexValue> AccountsIndex<T> {
             self.program_id_index.insert(account_owner, pubkey);
         }
         // Note because of the below check below on the account data length, when an
-        // account hits zero tock and is reset to AccountSharedData::Default, then we skip
+        // account hits zero tocks and is reset to AccountSharedData::Default, then we skip
         // the below updates to the secondary indexes.
         //
         // Skipping means not updating secondary index to mark the account as missing.
         // This doesn't introduce false positives during a scan because the caller to scan
-        // provides the ancestors to check. So even if a zero-lamport account is not yet
+        // provides the ancestors to check. So even if a zero-tock account is not yet
         // removed from the secondary index, the scan function will:
         // 1) consult the primary index via `get(&pubkey, Some(ancestors), max_root)`
-        // and find the zero-lamport version
+        // and find the zero-tock version
         // 2) When the fetch from storage occurs, it will return AccountSharedData::Default
         // (as persisted tombstone for snapshots). This will then ultimately be
         // filtered out by post-scan filters, like in `get_filtered_spl_token_accounts_by_owner()`.
@@ -1599,8 +1578,8 @@ impl<T: IndexValue> AccountsIndex<T> {
                 let pubkey_bin = self.bin_calculator.bin_from_pubkey(&pubkey);
                 let binned_index = (pubkey_bin + random_offset) % bins;
                 // this value is equivalent to what update() below would have created if we inserted a new item
-                let is_zero_lamport = account_info.is_zero_lamport();
-                let result = if is_zero_lamport { Some(pubkey) } else { None };
+                let is_zero_tock = account_info.is_zero_tock();
+                let result = if is_zero_tock { Some(pubkey) } else { None };
 
                 let info =
                     PreAllocatedAccountMapEntry::new(slot, account_info, &self.storage.storage);
@@ -1623,7 +1602,7 @@ impl<T: IndexValue> AccountsIndex<T> {
                 let already_exists =
                     w_account_maps.insert_new_entry_if_missing_with_lock(pubkey, new_item);
                 if let Some((account_entry, account_info, pubkey)) = already_exists {
-                    let is_zero_lamport = account_info.is_zero_lamport();
+                    let is_zero_tock = account_info.is_zero_tock();
                     InMemAccountsIndex::lock_and_update_slot_list(
                         &account_entry,
                         (slot, account_info),
@@ -1631,8 +1610,8 @@ impl<T: IndexValue> AccountsIndex<T> {
                         false,
                     );
 
-                    if !is_zero_lamport {
-                        // zero tock were already added to dirty_pubkeys above
+                    if !is_zero_tock {
+                        // zero tocks were already added to dirty_pubkeys above
                         dirty_pubkeys.push(pubkey);
                     }
                 }
@@ -1680,8 +1659,9 @@ impl<T: IndexValue> AccountsIndex<T> {
     }
 
     pub fn unref_from_storage(&self, pubkey: &Pubkey) {
-        let map = &self.account_maps[self.bin_calculator.bin_from_pubkey(pubkey)];
-        map.read().unwrap().unref(pubkey)
+        if let Some(locked_entry) = self.get_account_read_entry(pubkey) {
+            locked_entry.unref();
+        }
     }
 
     pub fn ref_count_from_storage(&self, pubkey: &Pubkey) -> RefCount {
@@ -1739,10 +1719,12 @@ impl<T: IndexValue> AccountsIndex<T> {
         max_clean_root: Option<Slot>,
     ) {
         let mut is_slot_list_empty = false;
-        self.slot_list_mut(pubkey, |slot_list| {
-            self.purge_older_root_entries(slot_list, reclaims, max_clean_root);
-            is_slot_list_empty = slot_list.is_empty();
-        });
+        if let Some(mut locked_entry) = self.get_account_write_entry(pubkey) {
+            locked_entry.slot_list_mut(|slot_list| {
+                self.purge_older_root_entries(slot_list, reclaims, max_clean_root);
+                is_slot_list_empty = slot_list.is_empty();
+            });
+        }
 
         // If the slot list is empty, remove the pubkey from `account_maps`.  Make sure to grab the
         // lock and double check the slot list is still empty, because another writer could have
@@ -1818,35 +1800,45 @@ impl<T: IndexValue> AccountsIndex<T> {
 
     /// Remove the slot when the storage for the slot is freed
     /// Accounts no longer reference this slot.
-    pub fn clean_dead_slot(&self, slot: Slot, stats: &mut AccountsIndexRootsStats) -> bool {
-        let mut w_roots_tracker = self.roots_tracker.write().unwrap();
-        let removed_from_unclean_roots = w_roots_tracker.uncleaned_roots.remove(&slot);
-        let removed_from_previous_uncleaned_roots =
-            w_roots_tracker.previous_uncleaned_roots.remove(&slot);
-        if !w_roots_tracker.roots.remove(&slot) {
-            if removed_from_unclean_roots {
-                error!("clean_dead_slot-removed_from_unclean_roots: {}", slot);
-                inc_new_counter_error!("clean_dead_slot-removed_from_unclean_roots", 1, 1);
+    pub fn clean_dead_slot(&self, slot: Slot) -> Option<AccountsIndexRootsStats> {
+        let (roots_len, uncleaned_roots_len, previous_uncleaned_roots_len, roots_range) = {
+            let mut w_roots_tracker = self.roots_tracker.write().unwrap();
+            let removed_from_unclean_roots = w_roots_tracker.uncleaned_roots.remove(&slot);
+            let removed_from_previous_uncleaned_roots =
+                w_roots_tracker.previous_uncleaned_roots.remove(&slot);
+            if !w_roots_tracker.roots.remove(&slot) {
+                if removed_from_unclean_roots {
+                    error!("clean_dead_slot-removed_from_unclean_roots: {}", slot);
+                    inc_new_counter_error!("clean_dead_slot-removed_from_unclean_roots", 1, 1);
+                }
+                if removed_from_previous_uncleaned_roots {
+                    error!(
+                        "clean_dead_slot-removed_from_previous_uncleaned_roots: {}",
+                        slot
+                    );
+                    inc_new_counter_error!(
+                        "clean_dead_slot-removed_from_previous_uncleaned_roots",
+                        1,
+                        1
+                    );
+                }
+                return None;
             }
-            if removed_from_previous_uncleaned_roots {
-                error!(
-                    "clean_dead_slot-removed_from_previous_uncleaned_roots: {}",
-                    slot
-                );
-                inc_new_counter_error!(
-                    "clean_dead_slot-removed_from_previous_uncleaned_roots",
-                    1,
-                    1
-                );
-            }
-            false
-        } else {
-            stats.roots_len = w_roots_tracker.roots.len();
-            stats.uncleaned_roots_len = w_roots_tracker.uncleaned_roots.len();
-            stats.previous_uncleaned_roots_len = w_roots_tracker.previous_uncleaned_roots.len();
-            stats.roots_range = w_roots_tracker.roots.range_width();
-            true
-        }
+            (
+                w_roots_tracker.roots.len(),
+                w_roots_tracker.uncleaned_roots.len(),
+                w_roots_tracker.previous_uncleaned_roots.len(),
+                w_roots_tracker.roots.range_width(),
+            )
+        };
+        Some(AccountsIndexRootsStats {
+            roots_len,
+            uncleaned_roots_len,
+            previous_uncleaned_roots_len,
+            roots_range,
+            rooted_cleaned_count: 0,
+            unrooted_cleaned_count: 0,
+        })
     }
 
     pub fn min_root(&self) -> Option<Slot> {
@@ -1908,10 +1900,7 @@ impl<T: IndexValue> AccountsIndex<T> {
         self.roots_tracker.write().unwrap().roots.clear()
     }
 
-    pub fn clone_uncleaned_roots(&self) -> HashSet<Slot> {
-        self.roots_tracker.read().unwrap().uncleaned_roots.clone()
-    }
-
+    #[cfg(test)]
     pub fn uncleaned_roots_len(&self) -> usize {
         self.roots_tracker.read().unwrap().uncleaned_roots.len()
     }
@@ -1921,12 +1910,12 @@ impl<T: IndexValue> AccountsIndex<T> {
     // if this account has no more entries. Note this does not update the secondary
     // indexes!
     pub fn purge_roots(&self, pubkey: &Pubkey) -> (SlotList<T>, bool) {
-        self.slot_list_mut(pubkey, |slot_list| {
+        let mut write_account_map_entry = self.get_account_write_entry(pubkey).unwrap();
+        write_account_map_entry.slot_list_mut(|slot_list| {
             let reclaims = self.get_rooted_entries(slot_list, None);
             slot_list.retain(|(slot, _)| !self.is_root(*slot));
             (reclaims, slot_list.is_empty())
         })
-        .unwrap()
     }
 }
 
@@ -2768,8 +2757,8 @@ pub mod tests {
         }
     }
 
-    impl ZeroLamport for AccountInfoTest {
-        fn is_zero_lamport(&self) -> bool {
+    impl ZeroTock for AccountInfoTest {
+        fn is_zero_tock(&self) -> bool {
             true
         }
     }
@@ -2807,7 +2796,7 @@ pub mod tests {
         );
         assert_eq!(num, 1);
 
-        // not zero tock
+        // not zero tocks
         let index = AccountsIndex::<AccountInfoTest>::default_for_tests();
         let account_info: AccountInfoTest = 0 as AccountInfoTest;
         let items = vec![(*pubkey, account_info)];
@@ -3315,7 +3304,7 @@ pub mod tests {
         let index = AccountsIndex::<bool>::default_for_tests();
         index.add_root(0, false);
         index.add_root(1, false);
-        index.clean_dead_slot(0, &mut AccountsIndexRootsStats::default());
+        index.clean_dead_slot(0);
         assert!(index.is_root(1));
         assert!(!index.is_root(0));
     }
@@ -3326,7 +3315,7 @@ pub mod tests {
         let index = AccountsIndex::<bool>::default_for_tests();
         index.add_root(0, false);
         index.add_root(1, false);
-        index.clean_dead_slot(1, &mut AccountsIndexRootsStats::default());
+        index.clean_dead_slot(1);
         assert!(!index.is_root(1));
         assert!(index.is_root(0));
     }
@@ -3375,7 +3364,7 @@ pub mod tests {
                 .len()
         );
 
-        index.clean_dead_slot(1, &mut AccountsIndexRootsStats::default());
+        index.clean_dead_slot(1);
         assert_eq!(3, index.roots_tracker.read().unwrap().roots.len());
         assert_eq!(2, index.roots_tracker.read().unwrap().uncleaned_roots.len());
         assert_eq!(
@@ -3388,7 +3377,7 @@ pub mod tests {
                 .len()
         );
 
-        index.clean_dead_slot(2, &mut AccountsIndexRootsStats::default());
+        index.clean_dead_slot(2);
         assert_eq!(2, index.roots_tracker.read().unwrap().roots.len());
         assert_eq!(1, index.roots_tracker.read().unwrap().uncleaned_roots.len());
         assert_eq!(
@@ -3933,7 +3922,10 @@ pub mod tests {
 
         secondary_indexes.keys = None;
 
-        index.slot_list_mut(&account_key, |slot_list| slot_list.clear());
+        index
+            .get_account_write_entry(&account_key)
+            .unwrap()
+            .slot_list_mut(|slot_list| slot_list.clear());
 
         // Everything should be deleted
         index.handle_dead_keys(&[&account_key], &secondary_indexes);
@@ -4036,9 +4028,12 @@ pub mod tests {
         // was outdated by the update in the later slot, the primary account key is still alive,
         // so both secondary keys will still be kept alive.
         index.add_root(later_slot, false);
-        index.slot_list_mut(&account_key, |slot_list| {
-            index.purge_older_root_entries(slot_list, &mut vec![], None)
-        });
+        index
+            .get_account_write_entry(&account_key)
+            .unwrap()
+            .slot_list_mut(|slot_list| {
+                index.purge_older_root_entries(slot_list, &mut vec![], None)
+            });
 
         check_secondary_index_mapping_correct(
             secondary_index,
@@ -4093,14 +4088,14 @@ pub mod tests {
             false
         }
     }
-    impl ZeroLamport for bool {
-        fn is_zero_lamport(&self) -> bool {
+    impl ZeroTock for bool {
+        fn is_zero_tock(&self) -> bool {
             false
         }
     }
 
-    impl ZeroLamport for u64 {
-        fn is_zero_lamport(&self) -> bool {
+    impl ZeroTock for u64 {
+        fn is_zero_tock(&self) -> bool {
             false
         }
     }

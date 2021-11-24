@@ -113,16 +113,16 @@ for file in "${TARBALL_BASENAME}"-$TARGET.tar.bz2 "${TARBALL_BASENAME}"-$TARGET.
 
   if [[ -n $BUILDKITE ]]; then
     echo --- AWS S3 Store: "$file"
-    upload-s3-artifact "/solana/$file" s3://release.solana.com/"$CHANNEL_OR_TAG"/"$file"
+    upload-s3-artifact "/analog/$file" s3://release.analog.com/"$CHANNEL_OR_TAG"/"$file"
 
     echo Published to:
-    $DRYRUN ci/format-url.sh https://release.solana.com/"$CHANNEL_OR_TAG"/"$file"
+    $DRYRUN ci/format-url.sh https://release.analog.com/"$CHANNEL_OR_TAG"/"$file"
 
     if [[ -n $TAG ]]; then
       ci/upload-github-release-asset.sh "$file"
     fi
   elif [[ -n $TRAVIS ]]; then
-    # .travis.yml uploads everything in the travis-s3-upload/ directory to release.solana.com
+    # .travis.yml uploads everything in the travis-s3-upload/ directory to release.analog.com
     mkdir -p travis-s3-upload/"$CHANNEL_OR_TAG"
     cp -v "$file" travis-s3-upload/"$CHANNEL_OR_TAG"/
 
@@ -139,21 +139,21 @@ for file in "${TARBALL_BASENAME}"-$TARGET.tar.bz2 "${TARBALL_BASENAME}"-$TARGET.
 done
 
 
-# Create install wrapper for release.solana.com
+# Create install wrapper for release.analog.com
 if [[ -n $DO_NOT_PUBLISH_TAR ]]; then
   echo "Skipping publishing install wrapper"
 elif [[ -n $BUILDKITE ]]; then
-  cat > release.solana.com-install <<EOF
+  cat > release.analog.com-install <<EOF
 ANALOG_RELEASE=$CHANNEL_OR_TAG
 ANALOG_INSTALL_INIT_ARGS=$CHANNEL_OR_TAG
-ANALOG_DOWNLOAD_ROOT=http://release.solana.com
+ANALOG_DOWNLOAD_ROOT=http://release.analog.com
 EOF
-  cat install/analog-install-init.sh >> release.solana.com-install
+  cat install/analog-install-init.sh >> release.analog.com-install
 
   echo --- AWS S3 Store: "install"
-  $DRYRUN upload-s3-artifact "/solana/release.solana.com-install" "s3://release.solana.com/$CHANNEL_OR_TAG/install"
+  $DRYRUN upload-s3-artifact "/analog/release.analog.com-install" "s3://release.analog.com/$CHANNEL_OR_TAG/install"
   echo Published to:
-  $DRYRUN ci/format-url.sh https://release.solana.com/"$CHANNEL_OR_TAG"/install
+  $DRYRUN ci/format-url.sh https://release.analog.com/"$CHANNEL_OR_TAG"/install
 fi
 
 echo --- ok

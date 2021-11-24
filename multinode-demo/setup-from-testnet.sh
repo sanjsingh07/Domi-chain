@@ -11,8 +11,8 @@ mkdir -p "$ANALOG_CONFIG_DIR"/latest-testnet-snapshot
 (
   cd "$ANALOG_CONFIG_DIR"/latest-testnet-snapshot || exit 1
   set -x
-  wget http://api.testnet.solana.com/genesis.tar.bz2
-  wget --trust-server-names http://testnet.solana.com/snapshot.tar.bz2
+  wget http://api.testnet.analog.com/genesis.tar.bz2
+  wget --trust-server-names http://testnet.analog.com/snapshot.tar.bz2
 )
 
 snapshot=$(ls "$ANALOG_CONFIG_DIR"/latest-testnet-snapshot/snapshot-[0-9]*-*.tar.zst)
@@ -51,7 +51,7 @@ $analog_keygen new --no-passphrase -so "$ANALOG_CONFIG_DIR"/bootstrap-validator/
 $analog_ledger_tool create-snapshot \
   --ledger "$ANALOG_CONFIG_DIR"/latest-testnet-snapshot \
   --faucet-pubkey "$ANALOG_CONFIG_DIR"/faucet.json \
-  --faucet-tock 500000000000000000 \
+  --faucet-lamports 500000000000000000 \
   --bootstrap-validator "$ANALOG_CONFIG_DIR"/bootstrap-validator/identity.json \
                         "$ANALOG_CONFIG_DIR"/bootstrap-validator/vote-account.json \
                         "$ANALOG_CONFIG_DIR"/bootstrap-validator/stake-account.json \

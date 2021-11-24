@@ -4,6 +4,10 @@
 /analog-metrics/
 /analog-metrics.tar.bz2
 /target/
+*/target/*
+*/*/target/*
+ledger/ledger.lock
+test-ledger/
 
 **/*.rs.bk
 .cargo

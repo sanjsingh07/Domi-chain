@@ -80,6 +80,8 @@ impl Dashboard {
             };
 
             let rpc_client = RpcClient::new_socket(rpc_addr);
+            println_name_value("rpc_addr info:", &rpc_addr.to_string());
+
             let identity = match rpc_client.get_identity() {
                 Ok(identity) => identity,
                 Err(err) => {
@@ -108,7 +110,7 @@ impl Dashboard {
                     println_name_value("TPU Address:", &tpu.to_string());
                 }
                 if let Some(rpc) = contact_info.rpc {
-                    println_name_value("JSON RPC URL:", &format!("http://{}", rpc));
+                    println_name_value("JSON RPC URL:", &format!("http://{}", rpc.to_string()));
                 }
             }
 

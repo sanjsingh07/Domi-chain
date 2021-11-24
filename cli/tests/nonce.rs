@@ -9,6 +9,7 @@ use analog_client::{
     nonce_utils,
     rpc_client::RpcClient,
 };
+use analog_core::test_validator::TestValidator;
 use analog_faucet::faucet::run_local_faucet;
 use analog_sdk::{
     commitment_config::CommitmentConfig,
@@ -18,7 +19,6 @@ use analog_sdk::{
     system_program,
 };
 use analog_streamer::socket::SocketAddrSpace;
-use analog_test_validator::TestValidator;
 
 #[test]
 fn test_nonce() {
@@ -159,7 +159,7 @@ fn full_battery_tests(
         nonce_authority: index,
         memo: None,
         destination_account_pubkey: payee_pubkey,
-        tock: 100,
+        tocks: 100,
     };
     process_command(&config_payer).unwrap();
     check_recent_balance(1000, &rpc_client, &config_payer.signers[0].pubkey());
@@ -169,7 +169,7 @@ fn full_battery_tests(
     // Show nonce account
     config_payer.command = CliCommand::ShowNonceAccount {
         nonce_account_pubkey: nonce_account,
-        use_lamports_unit: true,
+        use_tocks_unit: true,
     };
     process_command(&config_payer).unwrap();
 
@@ -206,7 +206,7 @@ fn full_battery_tests(
         nonce_authority: 1,
         memo: None,
         destination_account_pubkey: payee_pubkey,
-        tock: 100,
+        tocks: 100,
     };
     process_command(&config_payer).unwrap();
     check_recent_balance(1000, &rpc_client, &config_payer.signers[0].pubkey());
@@ -215,7 +215,6 @@ fn full_battery_tests(
 }
 
 #[test]
-#[allow(clippy::redundant_closure)]
 fn test_create_account_with_seed() {
     analog_logger::setup();
     let mint_keypair = Keypair::new();

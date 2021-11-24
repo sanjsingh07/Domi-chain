@@ -144,11 +144,11 @@ pub fn create_account(
     from_pubkey: &Pubkey,
     vote_pubkey: &Pubkey,
     vote_init: &VoteInit,
-    tock: u64,
+    tocks: u64,
 ) -> Vec<Instruction> {
     let space = VoteState::size_of() as u64;
     let create_ix =
-        system_instruction::create_account(from_pubkey, vote_pubkey, tock, space, &id());
+        system_instruction::create_account(from_pubkey, vote_pubkey, tocks, space, &id());
     let init_ix = initialize_account(vote_pubkey, vote_init);
     vec![create_ix, init_ix]
 }
@@ -159,7 +159,7 @@ pub fn create_account_with_seed(
     base: &Pubkey,
     seed: &str,
     vote_init: &VoteInit,
-    tock: u64,
+    tocks: u64,
 ) -> Vec<Instruction> {
     let space = VoteState::size_of() as u64;
     let create_ix = system_instruction::create_account_with_seed(
@@ -167,7 +167,7 @@ pub fn create_account_with_seed(
         vote_pubkey,
         base,
         seed,
-        tock,
+        tocks,
         space,
         &id(),
     );
@@ -283,7 +283,7 @@ pub fn vote_switch(
 pub fn withdraw(
     vote_pubkey: &Pubkey,
     authorized_withdrawer_pubkey: &Pubkey,
-    tock: u64,
+    tocks: u64,
     to_pubkey: &Pubkey,
 ) -> Instruction {
     let account_metas = vec![
@@ -292,7 +292,7 @@ pub fn withdraw(
         AccountMeta::new_readonly(*authorized_withdrawer_pubkey, true),
     ];
 
-    Instruction::new_with_bincode(id(), &VoteInstruction::Withdraw(tock), account_metas)
+    Instruction::new_with_bincode(id(), &VoteInstruction::Withdraw(tocks), account_metas)
 }
 
 fn verify_rent_exemption(
@@ -300,7 +300,7 @@ fn verify_rent_exemption(
     rent_sysvar_account: &KeyedAccount,
 ) -> Result<(), InstructionError> {
     let rent: sysvar::rent::Rent = from_keyed_account(rent_sysvar_account)?;
-    if !rent.is_exempt(keyed_account.tock()?, keyed_account.data_len()?) {
+    if !rent.is_exempt(keyed_account.tocks()?, keyed_account.data_len()?) {
         Err(InstructionError::InsufficientFunds)
     } else {
         Ok(())
@@ -308,7 +308,7 @@ fn verify_rent_exemption(
 }
 
 pub fn process_instruction(
-    first_instruction_account: usize,
+    _program_id: &Pubkey,
     data: &[u8],
     invoke_context: &mut dyn InvokeContext,
 ) -> Result<(), InstructionError> {
@@ -317,26 +317,23 @@ pub fn process_instruction(
     trace!("process_instruction: {:?}", data);
     trace!("keyed_accounts: {:?}", keyed_accounts);
 
-    let me = &mut keyed_account_at_index(keyed_accounts, first_instruction_account)?;
+    let signers: HashSet<Pubkey> = get_signers(keyed_accounts);
+
+    let me = &mut keyed_account_at_index(keyed_accounts, 0)?;
+
     if me.owner()? != id() {
         return Err(InstructionError::InvalidAccountOwner);
     }
 
-    let signers: HashSet<Pubkey> = get_signers(&keyed_accounts[first_instruction_account..]);
     match limited_deserialize(data)? {
         VoteInstruction::InitializeAccount(vote_init) => {
-            verify_rent_exemption(
-                me,
-                keyed_account_at_index(keyed_accounts, first_instruction_account + 1)?,
-            )?;
+            verify_rent_exemption(me, keyed_account_at_index(keyed_accounts, 1)?)?;
             vote_state::initialize_account(
                 me,
                 &vote_init,
                 &signers,
-                &from_keyed_account::<Clock>(keyed_account_at_index(
-                    keyed_accounts,
-                    first_instruction_account + 2,
-                )?)?,
+                &from_keyed_account::<Clock>(keyed_account_at_index(keyed_accounts, 2)?)?,
+                invoke_context.is_feature_active(&feature_set::check_init_vote_data::id()),
             )
         }
         VoteInstruction::Authorize(voter_pubkey, vote_authorize) => vote_state::authorize(
@@ -344,14 +341,11 @@ pub fn process_instruction(
             &voter_pubkey,
             vote_authorize,
             &signers,
-            &from_keyed_account::<Clock>(keyed_account_at_index(
-                keyed_accounts,
-                first_instruction_account + 1,
-            )?)?,
+            &from_keyed_account::<Clock>(keyed_account_at_index(keyed_accounts, 1)?)?,
         ),
         VoteInstruction::UpdateValidatorIdentity => vote_state::update_validator_identity(
             me,
-            keyed_account_at_index(keyed_accounts, first_instruction_account + 1)?.unsigned_key(),
+            keyed_account_at_index(keyed_accounts, 1)?.unsigned_key(),
             &signers,
         ),
         VoteInstruction::UpdateCommission(commission) => {
@@ -361,38 +355,28 @@ pub fn process_instruction(
             inc_new_counter_info!("vote-native", 1);
             vote_state::process_vote(
                 me,
-                &from_keyed_account::<SlotHashes>(keyed_account_at_index(
-                    keyed_accounts,
-                    first_instruction_account + 1,
-                )?)?,
-                &from_keyed_account::<Clock>(keyed_account_at_index(
-                    keyed_accounts,
-                    first_instruction_account + 2,
-                )?)?,
+                &from_keyed_account::<SlotHashes>(keyed_account_at_index(keyed_accounts, 1)?)?,
+                &from_keyed_account::<Clock>(keyed_account_at_index(keyed_accounts, 2)?)?,
                 &vote,
                 &signers,
             )
         }
-        VoteInstruction::Withdraw(tock) => {
-            let to = keyed_account_at_index(keyed_accounts, first_instruction_account + 1)?;
-            vote_state::withdraw(me, tock, to, &signers)
+        VoteInstruction::Withdraw(tocks) => {
+            let to = keyed_account_at_index(keyed_accounts, 1)?;
+            vote_state::withdraw(me, tocks, to, &signers)
         }
         VoteInstruction::AuthorizeChecked(vote_authorize) => {
             if invoke_context.is_feature_active(&feature_set::vote_stake_checked_instructions::id())
             {
-                let voter_pubkey =
-                    &keyed_account_at_index(keyed_accounts, first_instruction_account + 3)?
-                        .signer_key()
-                        .ok_or(InstructionError::MissingRequiredSignature)?;
+                let voter_pubkey = &keyed_account_at_index(keyed_accounts, 3)?
+                    .signer_key()
+                    .ok_or(InstructionError::MissingRequiredSignature)?;
                 vote_state::authorize(
                     me,
                     voter_pubkey,
                     vote_authorize,
                     &signers,
-                    &from_keyed_account::<Clock>(keyed_account_at_index(
-                        keyed_accounts,
-                        first_instruction_account + 1,
-                    )?)?,
+                    &from_keyed_account::<Clock>(keyed_account_at_index(keyed_accounts, 1)?)?,
                 )
             } else {
                 Err(InstructionError::InvalidInstructionData)
@@ -405,37 +389,38 @@ pub fn process_instruction(
 mod tests {
     use super::*;
     use bincode::serialize;
-    use solana_program_runtime::invoke_context::mock_process_instruction;
     use analog_sdk::{
         account::{self, Account, AccountSharedData},
+        process_instruction::MockInvokeContext,
         rent::Rent,
     };
+    use std::cell::RefCell;
     use std::str::FromStr;
-    use std::{cell::RefCell, rc::Rc};
 
-    fn create_default_account() -> Rc<RefCell<AccountSharedData>> {
-        AccountSharedData::new_ref(0, 0, &Pubkey::new_unique())
+    fn create_default_account() -> RefCell<AccountSharedData> {
+        RefCell::new(AccountSharedData::default())
     }
 
-    fn process_instruction(
-        instruction_data: &[u8],
-        keyed_accounts: &[(bool, bool, Pubkey, Rc<RefCell<AccountSharedData>>)],
-    ) -> Result<(), InstructionError> {
-        mock_process_instruction(
-            &id(),
-            Vec::new(),
-            instruction_data,
-            keyed_accounts,
-            super::process_instruction,
-        )
+    // these are for 100% coverage in this file
+    #[test]
+    fn test_vote_process_instruction_decode_bail() {
+        assert_eq!(
+            super::process_instruction(
+                &Pubkey::default(),
+                &[],
+                &mut MockInvokeContext::new(vec![])
+            ),
+            Err(InstructionError::NotEnoughAccountKeys),
+        );
     }
 
-    fn process_instruction_as_one_arg(instruction: &Instruction) -> Result<(), InstructionError> {
+    #[allow(clippy::same_item_push)]
+    fn process_instruction(instruction: &Instruction) -> Result<(), InstructionError> {
         let mut accounts: Vec<_> = instruction
             .accounts
             .iter()
             .map(|meta| {
-                Rc::new(RefCell::new(if sysvar::clock::check_id(&meta.pubkey) {
+                RefCell::new(if sysvar::clock::check_id(&meta.pubkey) {
                     account::create_account_shared_data_for_test(&Clock::default())
                 } else if sysvar::slot_hashes::check_id(&meta.pubkey) {
                     account::create_account_shared_data_for_test(&SlotHashes::default())
@@ -451,47 +436,38 @@ mod tests {
                         owner: id(),
                         ..Account::default()
                     })
-                }))
+                })
             })
             .collect();
-        #[allow(clippy::same_item_push)]
+
         for _ in 0..instruction.accounts.len() {
-            accounts.push(AccountSharedData::new_ref(0, 0, &Pubkey::new_unique()));
+            accounts.push(RefCell::new(AccountSharedData::default()));
         }
-        let keyed_accounts: Vec<_> = instruction
-            .accounts
-            .iter()
-            .zip(accounts.into_iter())
-            .map(|(meta, account)| (meta.is_signer, meta.is_writable, meta.pubkey, account))
-            .collect();
-        solana_program_runtime::invoke_context::mock_process_instruction(
-            &id(),
-            Vec::new(),
-            &instruction.data,
-            &keyed_accounts,
-            super::process_instruction,
-        )
+        {
+            let keyed_accounts: Vec<_> = instruction
+                .accounts
+                .iter()
+                .zip(accounts.iter())
+                .map(|(meta, account)| KeyedAccount::new(&meta.pubkey, meta.is_signer, account))
+                .collect();
+            super::process_instruction(
+                &Pubkey::default(),
+                &instruction.data,
+                &mut MockInvokeContext::new(keyed_accounts),
+            )
+        }
     }
 
     fn invalid_vote_state_pubkey() -> Pubkey {
         Pubkey::from_str("BadVote111111111111111111111111111111111111").unwrap()
     }
 
-    // these are for 100% coverage in this file
-    #[test]
-    fn test_vote_process_instruction_decode_bail() {
-        assert_eq!(
-            process_instruction(&[], &[]),
-            Err(InstructionError::NotEnoughAccountKeys),
-        );
-    }
-
     #[test]
     fn test_spoofed_vote() {
         assert_eq!(
-            process_instruction_as_one_arg(&vote(
+            process_instruction(&vote(
                 &invalid_vote_state_pubkey(),
-                &Pubkey::new_unique(),
+                &Pubkey::default(),
                 Vote::default(),
             )),
             Err(InstructionError::InvalidAccountOwner),
@@ -502,64 +478,64 @@ mod tests {
     fn test_vote_process_instruction() {
         analog_logger::setup();
         let instructions = create_account(
-            &Pubkey::new_unique(),
-            &Pubkey::new_unique(),
+            &Pubkey::default(),
+            &Pubkey::default(),
             &VoteInit::default(),
             100,
         );
         assert_eq!(
-            process_instruction_as_one_arg(&instructions[1]),
+            process_instruction(&instructions[1]),
             Err(InstructionError::InvalidAccountData),
         );
         assert_eq!(
-            process_instruction_as_one_arg(&vote(
-                &Pubkey::new_unique(),
-                &Pubkey::new_unique(),
+            process_instruction(&vote(
+                &Pubkey::default(),
+                &Pubkey::default(),
                 Vote::default(),
             )),
             Err(InstructionError::InvalidAccountData),
         );
         assert_eq!(
-            process_instruction_as_one_arg(&vote_switch(
-                &Pubkey::new_unique(),
-                &Pubkey::new_unique(),
+            process_instruction(&vote_switch(
+                &Pubkey::default(),
+                &Pubkey::default(),
                 Vote::default(),
                 Hash::default(),
             )),
             Err(InstructionError::InvalidAccountData),
         );
         assert_eq!(
-            process_instruction_as_one_arg(&authorize(
-                &Pubkey::new_unique(),
-                &Pubkey::new_unique(),
-                &Pubkey::new_unique(),
+            process_instruction(&authorize(
+                &Pubkey::default(),
+                &Pubkey::default(),
+                &Pubkey::default(),
                 VoteAuthorize::Voter,
             )),
             Err(InstructionError::InvalidAccountData),
         );
         assert_eq!(
-            process_instruction_as_one_arg(&update_validator_identity(
-                &Pubkey::new_unique(),
-                &Pubkey::new_unique(),
-                &Pubkey::new_unique(),
+            process_instruction(&update_validator_identity(
+                &Pubkey::default(),
+                &Pubkey::default(),
+                &Pubkey::default(),
             )),
             Err(InstructionError::InvalidAccountData),
         );
         assert_eq!(
-            process_instruction_as_one_arg(&update_commission(
-                &Pubkey::new_unique(),
-                &Pubkey::new_unique(),
+            process_instruction(&update_commission(
+                &Pubkey::default(),
+                &Pubkey::default(),
                 0,
             )),
             Err(InstructionError::InvalidAccountData),
         );
 
         assert_eq!(
-            process_instruction_as_one_arg(&withdraw(
-                &Pubkey::new_unique(),
-                &Pubkey::new_unique(),
+            process_instruction(&withdraw(
+                &Pubkey::default(),
+                &Pubkey::default(),
                 0,
-                &Pubkey::new_unique()
+                &Pubkey::default()
             )),
             Err(InstructionError::InvalidAccountData),
         );
@@ -580,7 +556,7 @@ mod tests {
         );
         instruction.accounts = instruction.accounts[0..2].to_vec();
         assert_eq!(
-            process_instruction_as_one_arg(&instruction),
+            process_instruction(&instruction),
             Err(InstructionError::NotEnoughAccountKeys),
         );
 
@@ -592,7 +568,7 @@ mod tests {
         );
         instruction.accounts = instruction.accounts[0..2].to_vec();
         assert_eq!(
-            process_instruction_as_one_arg(&instruction),
+            process_instruction(&instruction),
             Err(InstructionError::NotEnoughAccountKeys),
         );
 
@@ -605,7 +581,7 @@ mod tests {
         );
         instruction.accounts[3] = AccountMeta::new_readonly(new_authorized_pubkey, false);
         assert_eq!(
-            process_instruction_as_one_arg(&instruction),
+            process_instruction(&instruction),
             Err(InstructionError::MissingRequiredSignature),
         );
 
@@ -617,40 +593,48 @@ mod tests {
         );
         instruction.accounts[3] = AccountMeta::new_readonly(new_authorized_pubkey, false);
         assert_eq!(
-            process_instruction_as_one_arg(&instruction),
+            process_instruction(&instruction),
             Err(InstructionError::MissingRequiredSignature),
         );
 
         // Test with new_authorized_pubkey signer
         let vote_account = AccountSharedData::new_ref(100, VoteState::size_of(), &id());
         let clock_address = sysvar::clock::id();
-        let clock_account = Rc::new(RefCell::new(account::create_account_shared_data_for_test(
+        let clock_account = RefCell::new(account::create_account_shared_data_for_test(
             &Clock::default(),
-        )));
+        ));
         let default_authorized_pubkey = Pubkey::default();
         let authorized_account = create_default_account();
         let new_authorized_account = create_default_account();
-        let keyed_accounts = [
-            (false, false, vote_pubkey, vote_account),
-            (false, false, clock_address, clock_account),
-            (true, false, default_authorized_pubkey, authorized_account),
-            (true, false, new_authorized_pubkey, new_authorized_account),
+        let keyed_accounts = vec![
+            KeyedAccount::new(&vote_pubkey, false, &vote_account),
+            KeyedAccount::new(&clock_address, false, &clock_account),
+            KeyedAccount::new(&default_authorized_pubkey, true, &authorized_account),
+            KeyedAccount::new(&new_authorized_pubkey, true, &new_authorized_account),
         ];
         assert_eq!(
-            process_instruction(
+            super::process_instruction(
+                &Pubkey::default(),
                 &serialize(&VoteInstruction::AuthorizeChecked(VoteAuthorize::Voter)).unwrap(),
-                &keyed_accounts,
+                &mut MockInvokeContext::new(keyed_accounts)
             ),
             Ok(())
         );
 
+        let keyed_accounts = vec![
+            KeyedAccount::new(&vote_pubkey, false, &vote_account),
+            KeyedAccount::new(&clock_address, false, &clock_account),
+            KeyedAccount::new(&default_authorized_pubkey, true, &authorized_account),
+            KeyedAccount::new(&new_authorized_pubkey, true, &new_authorized_account),
+        ];
         assert_eq!(
-            process_instruction(
+            super::process_instruction(
+                &Pubkey::default(),
                 &serialize(&VoteInstruction::AuthorizeChecked(
                     VoteAuthorize::Withdrawer
                 ))
                 .unwrap(),
-                &keyed_accounts,
+                &mut MockInvokeContext::new(keyed_accounts)
             ),
             Ok(())
         );

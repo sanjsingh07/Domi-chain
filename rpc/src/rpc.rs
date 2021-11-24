@@ -57,12 +57,11 @@ use {
         epoch_schedule::EpochSchedule,
         exit::Exit,
         feature_set,
-        fee_calculator::FeeCalculator,
         hash::Hash,
         message::{Message, SanitizedMessage},
-        pubkey::{Pubkey, PUBKEY_BYTES},
+        pubkey::Pubkey,
         signature::{Keypair, Signature, Signer},
-        stake::state::{StakeActivationStatus, StakeState},
+        stake::state::StakeState,
         stake_history::StakeHistory,
         system_instruction,
         sysvar::stake_history,
@@ -143,7 +142,6 @@ pub struct JsonRpcConfig {
     pub max_multiple_accounts: Option<usize>,
     pub account_indexes: AccountSecondaryIndexes,
     pub rpc_threads: usize,
-    pub rpc_niceness_adj: i8,
     pub rpc_bigtable_timeout: Option<Duration>,
     pub minimal_api: bool,
     pub obsolete_v1_7_api: bool,
@@ -157,7 +155,6 @@ pub struct JsonRpcRequestProcessor {
     blockstore: Arc<Blockstore>,
     config: JsonRpcConfig,
     snapshot_config: Option<SnapshotConfig>,
-    #[allow(dead_code)]
     validator_exit: Arc<RwLock<Exit>>,
     health: Arc<RpcHealth>,
     cluster_info: Arc<ClusterInfo>,
@@ -228,7 +225,7 @@ impl JsonRpcRequestProcessor {
             // BlockCommitmentCache should hold an `Arc<Bank>` everywhere it currently holds
             // a slot.
             //
-            // For more information, see https://github.com/analog-labs/solana/issues/11078
+            // For more information, see https://github.com/analog/testnet/issues/11078
             warn!(
                 "Bank with {:?} not found at slot: {:?}",
                 commitment.commitment, slot
@@ -378,7 +375,7 @@ impl JsonRpcRequestProcessor {
         &self,
         program_id: &Pubkey,
         config: Option<RpcAccountInfoConfig>,
-        mut filters: Vec<RpcFilterType>,
+        filters: Vec<RpcFilterType>,
         with_context: bool,
     ) -> Result<OptionalContext<Vec<RpcKeyedAccount>>> {
         let config = config.unwrap_or_default();
@@ -386,7 +383,6 @@ impl JsonRpcRequestProcessor {
         let encoding = config.encoding.unwrap_or(UiAccountEncoding::Binary);
         let data_slice_config = config.data_slice;
         check_slice_and_encoding(&encoding, data_slice_config.is_some())?;
-        optimize_filters(&mut filters);
         let keyed_accounts = {
             if let Some(owner) = get_spl_token_owner_filter(program_id, &filters) {
                 self.get_filtered_spl_token_accounts_by_owner(&bank, &owner, filters)?
@@ -495,7 +491,7 @@ impl JsonRpcRequestProcessor {
                     return Some(RpcInflationReward {
                         epoch,
                         effective_slot: first_confirmed_block_in_epoch,
-                        amount: reward.tock.abs() as u64,
+                        amount: reward.tocks.abs() as u64,
                         post_balance: reward.post_balance,
                         commission: reward.commission,
                     });
@@ -549,25 +545,21 @@ impl JsonRpcRequestProcessor {
         commitment: Option<CommitmentConfig>,
     ) -> RpcResponse<RpcBlockhashFeeCalculator> {
         let bank = self.bank(commitment);
-        let blockhash = bank.confirmed_last_blockhash();
-        let lamports_per_signature = bank
-            .get_lamports_per_signature_for_blockhash(&blockhash)
-            .unwrap();
+        #[allow(deprecated)]
+        let (blockhash, fee_calculator) = bank.confirmed_last_blockhash_with_fee_calculator();
         new_response(
             &bank,
             RpcBlockhashFeeCalculator {
                 blockhash: blockhash.to_string(),
-                fee_calculator: FeeCalculator::new(lamports_per_signature),
+                fee_calculator,
             },
         )
     }
 
     fn get_fees(&self, commitment: Option<CommitmentConfig>) -> RpcResponse<RpcFees> {
         let bank = self.bank(commitment);
-        let blockhash = bank.confirmed_last_blockhash();
-        let lamports_per_signature = bank
-            .get_lamports_per_signature_for_blockhash(&blockhash)
-            .unwrap();
+        #[allow(deprecated)]
+        let (blockhash, fee_calculator) = bank.confirmed_last_blockhash_with_fee_calculator();
         #[allow(deprecated)]
         let last_valid_slot = bank
             .get_blockhash_last_valid_slot(&blockhash)
@@ -579,7 +571,7 @@ impl JsonRpcRequestProcessor {
             &bank,
             RpcFees {
                 blockhash: blockhash.to_string(),
-                fee_calculator: FeeCalculator::new(lamports_per_signature),
+                fee_calculator,
                 last_valid_slot,
                 last_valid_block_height,
             },
@@ -592,12 +584,11 @@ impl JsonRpcRequestProcessor {
         commitment: Option<CommitmentConfig>,
     ) -> RpcResponse<Option<RpcFeeCalculator>> {
         let bank = self.bank(commitment);
-        let lamports_per_signature = bank.get_lamports_per_signature_for_blockhash(blockhash);
+        #[allow(deprecated)]
+        let fee_calculator = bank.get_fee_calculator(blockhash);
         new_response(
             &bank,
-            lamports_per_signature.map(|lamports_per_signature| RpcFeeCalculator {
-                fee_calculator: FeeCalculator::new(lamports_per_signature),
-            }),
+            fee_calculator.map(|fee_calculator| RpcFeeCalculator { fee_calculator }),
         )
     }
 
@@ -767,9 +758,9 @@ impl JsonRpcRequestProcessor {
                     message: e.to_string(),
                 })?
                 .into_iter()
-                .map(|(address, tock)| RpcAccountBalance {
+                .map(|(address, tocks)| RpcAccountBalance {
                     address: address.to_string(),
-                    tock,
+                    tocks,
                 })
                 .collect::<Vec<RpcAccountBalance>>();
 
@@ -803,8 +794,8 @@ impl JsonRpcRequestProcessor {
             &bank,
             RpcSupply {
                 total: total_supply,
-                circulating: total_supply - non_circulating_supply.tock,
-                non_circulating: non_circulating_supply.tock,
+                circulating: total_supply - non_circulating_supply.tocks,
+                non_circulating: non_circulating_supply.tocks,
                 non_circulating_accounts,
             },
         ))
@@ -963,18 +954,6 @@ impl JsonRpcRequestProcessor {
         Ok(())
     }
 
-    fn check_status_is_complete(&self, slot: Slot) -> Result<()> {
-        if slot
-            > self
-                .max_complete_transaction_status_slot
-                .load(Ordering::SeqCst)
-        {
-            Err(RpcCustomError::BlockStatusNotAvailableYet { slot }.into())
-        } else {
-            Ok(())
-        }
-    }
-
     pub async fn get_block(
         &self,
         slot: Slot,
@@ -998,7 +977,6 @@ impl JsonRpcRequestProcessor {
                     .unwrap()
                     .highest_confirmed_root()
             {
-                self.check_status_is_complete(slot)?;
                 let result = self.blockstore.get_rooted_block(slot, true);
                 self.check_blockstore_root(&result, slot)?;
                 let configure_block = |confirmed_block: ConfirmedBlock| {
@@ -1023,8 +1001,12 @@ impl JsonRpcRequestProcessor {
             } else if commitment.is_confirmed() {
                 // Check if block is confirmed
                 let confirmed_bank = self.bank(Some(CommitmentConfig::confirmed()));
-                if confirmed_bank.status_cache_ancestors().contains(&slot) {
-                    self.check_status_is_complete(slot)?;
+                if confirmed_bank.status_cache_ancestors().contains(&slot)
+                    && slot
+                        <= self
+                            .max_complete_transaction_status_slot
+                            .load(Ordering::SeqCst)
+                {
                     let result = self.blockstore.get_complete_block(slot, true);
                     return Ok(result.ok().map(|mut confirmed_block| {
                         if confirmed_block.block_time.is_none()
@@ -1423,7 +1405,7 @@ impl JsonRpcRequestProcessor {
     ) -> Vec<Signature> {
         if self.config.enable_rpc_transaction_history {
             // TODO: Add bigtable_ledger_storage support as a part of
-            // https://github.com/analog-labs/solana/pull/10928
+            // https://github.com/analog/testnet/pull/10928
             let end_slot = min(
                 end_slot,
                 self.block_commitment_cache
@@ -1577,7 +1559,7 @@ impl JsonRpcRequestProcessor {
                     return Ok(RpcStakeActivation {
                         state: StakeActivationState::Inactive,
                         active: 0,
-                        inactive: stake_account.tock().saturating_sub(rent_exempt_reserve),
+                        inactive: stake_account.tocks().saturating_sub(rent_exempt_reserve),
                     });
                 }
             }
@@ -1591,16 +1573,13 @@ impl JsonRpcRequestProcessor {
             analog_sdk::account::from_account::<StakeHistory, _>(&stake_history_account)
                 .ok_or_else(Error::internal_error)?;
 
-        let StakeActivationStatus {
-            effective,
-            activating,
-            deactivating,
-        } = delegation.stake_activating_and_deactivating(epoch, Some(&stake_history));
+        let (active, activating, deactivating) =
+            delegation.stake_activating_and_deactivating(epoch, Some(&stake_history));
         let stake_activation_state = if deactivating > 0 {
             StakeActivationState::Deactivating
         } else if activating > 0 {
             StakeActivationState::Activating
-        } else if effective > 0 {
+        } else if active > 0 {
             StakeActivationState::Active
         } else {
             StakeActivationState::Inactive
@@ -1608,12 +1587,12 @@ impl JsonRpcRequestProcessor {
         let inactive_stake = match stake_activation_state {
             StakeActivationState::Activating => activating,
             StakeActivationState::Active => 0,
-            StakeActivationState::Deactivating => delegation.stake.saturating_sub(effective),
+            StakeActivationState::Deactivating => delegation.stake.saturating_sub(active),
             StakeActivationState::Inactive => delegation.stake,
         };
         Ok(RpcStakeActivation {
             state: stake_activation_state,
-            active: effective,
+            active,
             inactive: inactive_stake,
         })
     }
@@ -1721,7 +1700,7 @@ impl JsonRpcRequestProcessor {
             // Optional filter on Mint address
             filters.push(RpcFilterType::Memcmp(Memcmp {
                 offset: 0,
-                bytes: MemcmpEncodedBytes::Bytes(mint.to_bytes().into()),
+                bytes: MemcmpEncodedBytes::Binary(mint.to_string()),
                 encoding: None,
             }));
         }
@@ -1765,13 +1744,15 @@ impl JsonRpcRequestProcessor {
             // Filter on Delegate is_some()
             RpcFilterType::Memcmp(Memcmp {
                 offset: 72,
-                bytes: MemcmpEncodedBytes::Bytes(bincode::serialize(&1u32).unwrap()),
+                bytes: MemcmpEncodedBytes::Binary(
+                    bs58::encode(bincode::serialize(&1u32).unwrap()).into_string(),
+                ),
                 encoding: None,
             }),
             // Filter on Delegate address
             RpcFilterType::Memcmp(Memcmp {
                 offset: 76,
-                bytes: MemcmpEncodedBytes::Bytes(delegate.to_bytes().into()),
+                bytes: MemcmpEncodedBytes::Binary(delegate.to_string()),
                 encoding: None,
             }),
         ];
@@ -1810,9 +1791,8 @@ impl JsonRpcRequestProcessor {
         &self,
         bank: &Arc<Bank>,
         program_id: &Pubkey,
-        mut filters: Vec<RpcFilterType>,
+        filters: Vec<RpcFilterType>,
     ) -> RpcCustomResult<Vec<(Pubkey, AccountSharedData)>> {
-        optimize_filters(&mut filters);
         let filter_closure = |account: &AccountSharedData| {
             filters.iter().all(|filter_type| match filter_type {
                 RpcFilterType::DataSize(size) => account.data().len() as u64 == *size,
@@ -1833,7 +1813,7 @@ impl JsonRpcRequestProcessor {
                 .get_filtered_indexed_accounts(&IndexKey::ProgramId(*program_id), |account| {
                     // The program-id account index checks for Account owner on inclusion. However, due
                     // to the current AccountsDb implementation, an account may remain in storage as a
-                    // zero-lamport AccountSharedData::Default() after being wiped and reinitialized in later
+                    // zero-tock AccountSharedData::Default() after being wiped and reinitialized in later
                     // updates. We include the redundant filters here to avoid returning these
                     // accounts.
                     account.owner() == program_id && filter_closure(account)
@@ -1859,7 +1839,7 @@ impl JsonRpcRequestProcessor {
     ) -> RpcCustomResult<Vec<(Pubkey, AccountSharedData)>> {
         // The by-owner accounts index checks for Token Account state and Owner address on
         // inclusion. However, due to the current AccountsDb implementation, an account may remain
-        // in storage as a zero-lamport AccountSharedData::Default() after being wiped and reinitialized in
+        // in storage as a zero-tock AccountSharedData::Default() after being wiped and reinitialized in
         // later updates. We include the redundant filters here to avoid returning these accounts.
         //
         // Filter on Token Account state
@@ -1869,7 +1849,7 @@ impl JsonRpcRequestProcessor {
         // Filter on Owner address
         filters.push(RpcFilterType::Memcmp(Memcmp {
             offset: SPL_TOKEN_ACCOUNT_OWNER_OFFSET,
-            bytes: MemcmpEncodedBytes::Bytes(owner_key.to_bytes().into()),
+            bytes: MemcmpEncodedBytes::Binary(owner_key.to_string()),
             encoding: None,
         }));
 
@@ -1908,7 +1888,7 @@ impl JsonRpcRequestProcessor {
     ) -> RpcCustomResult<Vec<(Pubkey, AccountSharedData)>> {
         // The by-mint accounts index checks for Token Account state and Mint address on inclusion.
         // However, due to the current AccountsDb implementation, an account may remain in storage
-        // as be zero-lamport AccountSharedData::Default() after being wiped and reinitialized in later
+        // as be zero-tock AccountSharedData::Default() after being wiped and reinitialized in later
         // updates. We include the redundant filters here to avoid returning these accounts.
         //
         // Filter on Token Account state
@@ -1918,7 +1898,7 @@ impl JsonRpcRequestProcessor {
         // Filter on Mint address
         filters.push(RpcFilterType::Memcmp(Memcmp {
             offset: SPL_TOKEN_ACCOUNT_MINT_OFFSET,
-            bytes: MemcmpEncodedBytes::Bytes(mint_key.to_bytes().into()),
+            bytes: MemcmpEncodedBytes::Binary(mint_key.to_string()),
             encoding: None,
         }));
         if self
@@ -1977,38 +1957,20 @@ impl JsonRpcRequestProcessor {
 
     fn get_fee_for_message(
         &self,
+        blockhash: &Hash,
         message: &SanitizedMessage,
         commitment: Option<CommitmentConfig>,
-    ) -> RpcResponse<Option<u64>> {
+    ) -> Result<RpcResponse<Option<u64>>> {
         let bank = self.bank(commitment);
-        let fee = bank.get_fee_for_message(message);
-        new_response(&bank, fee)
+        let fee = bank.get_fee_for_message(blockhash, message);
+        Ok(new_response(&bank, fee))
     }
-}
-
-fn optimize_filters(filters: &mut Vec<RpcFilterType>) {
-    filters.iter_mut().for_each(|filter_type| {
-        if let RpcFilterType::Memcmp(compare) = filter_type {
-            use MemcmpEncodedBytes::*;
-            match &compare.bytes {
-                #[allow(deprecated)]
-                Binary(bytes) | Base58(bytes) => {
-                    compare.bytes = Bytes(bs58::decode(bytes).into_vec().unwrap());
-                }
-                Base64(bytes) => {
-                    compare.bytes = Bytes(base64::decode(bytes).unwrap());
-                }
-                _ => {}
-            }
-        }
-    })
 }
 
 fn verify_transaction(
     transaction: &SanitizedTransaction,
     feature_set: &Arc<feature_set::FeatureSet>,
 ) -> Result<()> {
-    #[allow(clippy::question_mark)]
     if transaction.verify().is_err() {
         return Err(RpcCustomError::TransactionSignatureVerificationFailure.into());
     }
@@ -2160,86 +2122,58 @@ fn encode_account<T: ReadableAccount>(
     }
 }
 
-/// Analyze custom filters to determine if the result will be a subset of spl-token accounts by
-/// owner.
-/// NOTE: `optimize_filters()` should almost always be called before using this method because of
-/// the strict match on `MemcmpEncodedBytes::Bytes`.
 fn get_spl_token_owner_filter(program_id: &Pubkey, filters: &[RpcFilterType]) -> Option<Pubkey> {
     if program_id != &spl_token_id_v2_0() {
         return None;
     }
     let mut data_size_filter: Option<u64> = None;
     let mut owner_key: Option<Pubkey> = None;
-    let mut incorrect_owner_len: Option<usize> = None;
     for filter in filters {
         match filter {
             RpcFilterType::DataSize(size) => data_size_filter = Some(*size),
             RpcFilterType::Memcmp(Memcmp {
                 offset: SPL_TOKEN_ACCOUNT_OWNER_OFFSET,
-                bytes: MemcmpEncodedBytes::Bytes(bytes),
+                bytes: MemcmpEncodedBytes::Binary(bytes),
                 ..
             }) => {
-                if bytes.len() == PUBKEY_BYTES {
-                    owner_key = Some(Pubkey::new(bytes));
-                } else {
-                    incorrect_owner_len = Some(bytes.len());
+                if let Ok(key) = Pubkey::from_str(bytes) {
+                    owner_key = Some(key)
                 }
             }
             _ => {}
         }
     }
     if data_size_filter == Some(TokenAccount::get_packed_len() as u64) {
-        if let Some(incorrect_owner_len) = incorrect_owner_len {
-            info!(
-                "Incorrect num bytes ({:?}) provided for spl_token_owner_filter",
-                incorrect_owner_len
-            );
-        }
         owner_key
     } else {
-        debug!("spl_token program filters do not match by-owner index requisites");
         None
     }
 }
 
-/// Analyze custom filters to determine if the result will be a subset of spl-token accounts by
-/// mint.
-/// NOTE: `optimize_filters()` should almost always be called before using this method because of
-/// the strict match on `MemcmpEncodedBytes::Bytes`.
 fn get_spl_token_mint_filter(program_id: &Pubkey, filters: &[RpcFilterType]) -> Option<Pubkey> {
     if program_id != &spl_token_id_v2_0() {
         return None;
     }
     let mut data_size_filter: Option<u64> = None;
     let mut mint: Option<Pubkey> = None;
-    let mut incorrect_mint_len: Option<usize> = None;
     for filter in filters {
         match filter {
             RpcFilterType::DataSize(size) => data_size_filter = Some(*size),
             RpcFilterType::Memcmp(Memcmp {
                 offset: SPL_TOKEN_ACCOUNT_MINT_OFFSET,
-                bytes: MemcmpEncodedBytes::Bytes(bytes),
+                bytes: MemcmpEncodedBytes::Binary(bytes),
                 ..
             }) => {
-                if bytes.len() == PUBKEY_BYTES {
-                    mint = Some(Pubkey::new(bytes));
-                } else {
-                    incorrect_mint_len = Some(bytes.len());
+                if let Ok(key) = Pubkey::from_str(bytes) {
+                    mint = Some(key)
                 }
             }
             _ => {}
         }
     }
     if data_size_filter == Some(TokenAccount::get_packed_len() as u64) {
-        if let Some(incorrect_mint_len) = incorrect_mint_len {
-            info!(
-                "Incorrect num bytes ({:?}) provided for spl_token_mint_filter",
-                incorrect_mint_len
-            );
-        }
         mint
     } else {
-        debug!("spl_token program filters do not match by-mint index requisites");
         None
     }
 }
@@ -2809,7 +2743,7 @@ pub mod rpc_accounts {
         ) -> Result<RpcStakeActivation>;
 
         // SPL Token-specific RPC endpoints
-        // See https://github.com/analog-labs/analog-program-library/releases/tag/token-v2.0.0 for
+        // See https://github.com/analog/testnet-program-library/releases/tag/token-v2.0.0 for
         // program details
 
         #[rpc(meta, name = "getTokenAccountBalance")]
@@ -3092,7 +3026,7 @@ pub mod rpc_full {
             &self,
             meta: Self::Metadata,
             pubkey_str: String,
-            tock: u64,
+            tocks: u64,
             config: Option<RpcRequestAirdropConfig>,
         ) -> Result<String>;
 
@@ -3186,6 +3120,7 @@ pub mod rpc_full {
         fn get_fee_for_message(
             &self,
             meta: Self::Metadata,
+            blockhash: String,
             data: String,
             commitment: Option<CommitmentConfig>,
         ) -> Result<RpcResponse<Option<u64>>>;
@@ -3317,14 +3252,14 @@ pub mod rpc_full {
             &self,
             meta: Self::Metadata,
             pubkey_str: String,
-            tock: u64,
+            tocks: u64,
             config: Option<RpcRequestAirdropConfig>,
         ) -> Result<String> {
             debug!("request_airdrop rpc request received");
             trace!(
-                "request_airdrop id={} tock={} config: {:?}",
+                "request_airdrop id={} tocks={} config: {:?}",
                 pubkey_str,
-                tock,
+                tocks,
                 &config
             );
 
@@ -3344,7 +3279,7 @@ pub mod rpc_full {
                 .unwrap_or(0);
 
             let transaction =
-                request_airdrop_transaction(&faucet_addr, &pubkey, tock, blockhash).map_err(
+                request_airdrop_transaction(&faucet_addr, &pubkey, tocks, blockhash).map_err(
                     |err| {
                         info!("request_airdrop_transaction failed: {:?}", err);
                         Error::internal_error()
@@ -3701,26 +3636,30 @@ pub mod rpc_full {
         fn get_fee_for_message(
             &self,
             meta: Self::Metadata,
+            blockhash: String,
             data: String,
             commitment: Option<CommitmentConfig>,
         ) -> Result<RpcResponse<Option<u64>>> {
             debug!("get_fee_for_message rpc request received");
+            let blockhash = Hash::from_str(&blockhash)
+                .map_err(|e| Error::invalid_params(format!("{:?}", e)))?;
             let (_, message) =
                 decode_and_deserialize::<Message>(data, UiTransactionEncoding::Base64)?;
-            let sanitized_message = SanitizedMessage::try_from(message).map_err(|err| {
-                Error::invalid_params(format!("invalid transaction message: {}", err))
-            })?;
-            Ok(meta.get_fee_for_message(&sanitized_message, commitment))
+            SanitizedMessage::try_from(message)
+                .map_err(|err| {
+                    Error::invalid_params(format!("invalid transaction message: {}", err))
+                })
+                .and_then(|message| meta.get_fee_for_message(&blockhash, &message, commitment))
         }
     }
 }
 
 // RPC methods deprecated in v1.8
-pub mod rpc_deprecated_v1_9 {
+pub mod rpc_deprecated_v1_8 {
     #![allow(deprecated)]
     use super::*;
     #[rpc]
-    pub trait DeprecatedV1_9 {
+    pub trait DeprecatedV1_8 {
         type Metadata;
 
         #[rpc(meta, name = "getRecentBlockhash")]
@@ -3755,8 +3694,8 @@ pub mod rpc_deprecated_v1_9 {
         fn get_snapshot_slot(&self, meta: Self::Metadata) -> Result<Slot>;
     }
 
-    pub struct DeprecatedV1_9Impl;
-    impl DeprecatedV1_9 for DeprecatedV1_9Impl {
+    pub struct DeprecatedV1_8Impl;
+    impl DeprecatedV1_8 for DeprecatedV1_8Impl {
         type Metadata = JsonRpcRequestProcessor;
 
         fn get_recent_blockhash(
@@ -4173,7 +4112,7 @@ where
 
 fn sanitize_transaction(transaction: VersionedTransaction) -> Result<SanitizedTransaction> {
     let message_hash = transaction.message.hash();
-    SanitizedTransaction::try_create(transaction, message_hash, None, |_| {
+    SanitizedTransaction::try_create(transaction, message_hash, |_| {
         Err(TransactionError::UnsupportedVersion)
     })
     .map_err(|err| Error::invalid_params(format!("invalid transaction: {}", err)))
@@ -4266,7 +4205,7 @@ pub fn create_test_transactions_and_populate_blockstore(
 pub mod tests {
     use {
         super::{
-            rpc_accounts::*, rpc_bank::*, rpc_deprecated_v1_9::*, rpc_full::*, rpc_minimal::*, *,
+            rpc_accounts::*, rpc_bank::*, rpc_deprecated_v1_8::*, rpc_full::*, rpc_minimal::*, *,
         },
         crate::{
             optimistically_confirmed_bank_tracker::{
@@ -4317,7 +4256,7 @@ pub mod tests {
         std::collections::HashMap,
     };
 
-    const TEST_MINT_LAMPORTS: u64 = 1_000_000;
+    const TEST_MINT_TOCKS: u64 = 1_000_000;
     const TEST_SLOTS_PER_EPOCH: u64 = DELINQUENT_VALIDATOR_SLOT_DISTANCE + 1;
 
     struct RpcHandler {
@@ -4509,7 +4448,7 @@ pub mod tests {
         io.extend_with(rpc_bank::BankDataImpl.to_delegate());
         io.extend_with(rpc_accounts::AccountsDataImpl.to_delegate());
         io.extend_with(rpc_full::FullImpl.to_delegate());
-        io.extend_with(rpc_deprecated_v1_9::DeprecatedV1_9Impl.to_delegate());
+        io.extend_with(rpc_deprecated_v1_8::DeprecatedV1_8Impl.to_delegate());
         RpcHandler {
             io,
             meta,
@@ -4750,8 +4689,8 @@ pub mod tests {
         let supply: RpcSupply = serde_json::from_value(json["result"]["value"].clone())
             .expect("actual response deserialization");
         assert_eq!(supply.non_circulating, 20);
-        assert!(supply.circulating >= TEST_MINT_LAMPORTS);
-        assert!(supply.total >= TEST_MINT_LAMPORTS + 20);
+        assert!(supply.circulating >= TEST_MINT_TOCKS);
+        assert!(supply.total >= TEST_MINT_TOCKS + 20);
         let expected_accounts: Vec<String> = non_circulating_accounts()
             .iter()
             .map(|pubkey| pubkey.to_string())
@@ -4775,8 +4714,8 @@ pub mod tests {
         let supply: RpcSupply = serde_json::from_value(json["result"]["value"].clone())
             .expect("actual response deserialization");
         assert_eq!(supply.non_circulating, 20);
-        assert!(supply.circulating >= TEST_MINT_LAMPORTS);
-        assert!(supply.total >= TEST_MINT_LAMPORTS + 20);
+        assert!(supply.circulating >= TEST_MINT_TOCKS);
+        assert!(supply.total >= TEST_MINT_TOCKS + 20);
         assert!(supply.non_circulating_accounts.is_empty());
     }
 
@@ -4805,7 +4744,7 @@ pub mod tests {
             .expect("actual response deserialization");
         assert!(largest_accounts.contains(&RpcAccountBalance {
             address: alice.pubkey().to_string(),
-            tock: alice_balance,
+            tocks: alice_balance,
         }));
 
         // Get Bob balance
@@ -4819,7 +4758,7 @@ pub mod tests {
             .expect("actual response deserialization");
         assert!(largest_accounts.contains(&RpcAccountBalance {
             address: bob_pubkey.to_string(),
-            tock: bob_balance,
+            tocks: bob_balance,
         }));
 
         // Test Circulating/NonCirculating Filter
@@ -4949,11 +4888,11 @@ pub mod tests {
             r#"{"jsonrpc":"2.0","id":1,"method":"getLeaderSchedule"}"#,
             &format!(
                 r#"{{"jsonrpc":"2.0","id":1,"method":"getLeaderSchedule", "params": [null, {{ "identity": "{}" }}]}}"#,
-                bank.collector_id()
+                bank.collector_id().to_string()
             ),
             &format!(
                 r#"{{"jsonrpc":"2.0","id":1,"method":"getLeaderSchedule", "params": [{{ "identity": "{}" }}]}}"#,
-                bank.collector_id()
+                bank.collector_id().to_string()
             ),
         ]
         .iter()
@@ -5096,7 +5035,7 @@ pub mod tests {
                 "context":{"slot":0},
                 "value":{
                     "owner": "11111111111111111111111111111111",
-                    "tock": 20,
+                    "tocks": 20,
                     "data": "",
                     "executable": false,
                     "rentEpoch": 0
@@ -5187,7 +5126,7 @@ pub mod tests {
                 "context":{"slot":0},
                 "value":[{
                     "owner": "11111111111111111111111111111111",
-                    "tock": 20,
+                    "tocks": 20,
                     "data": ["", "base64"],
                     "executable": false,
                     "rentEpoch": 0
@@ -5195,7 +5134,7 @@ pub mod tests {
                 null,
                 {
                     "owner": "11111111111111111111111111111111",
-                    "tock": 42,
+                    "tocks": 42,
                     "data": [base64::encode(&data), "base64"],
                     "executable": false,
                     "rentEpoch": 0
@@ -5307,7 +5246,7 @@ pub mod tests {
                         "pubkey": "{}",
                         "account": {{
                             "owner": "{}",
-                            "tock": 20,
+                            "tocks": 20,
                             "data": "",
                             "executable": false,
                             "rentEpoch": 0
@@ -5552,7 +5491,7 @@ pub mod tests {
                             "data": ["", "base64"],
                             "executable": false,
                             "owner": "11111111111111111111111111111111",
-                            "tock": 1234,
+                            "tocks": 1234,
                             "rentEpoch": 0
                         }
                     ],
@@ -5694,6 +5633,7 @@ pub mod tests {
                 "sigVerify": true,
                 "replaceRecentBlockhash": true,
             })
+            .to_string()
         );
         let res = io.handle_request_sync(&req, meta.clone());
         let expected = json!({
@@ -5882,7 +5822,7 @@ pub mod tests {
             "value":{
                 "blockhash": blockhash.to_string(),
                 "feeCalculator": {
-                    "lamportsPerSignature": 0,
+                    "tocksPerSignature": 0,
                 }
             }},
             "id": 1
@@ -5913,7 +5853,7 @@ pub mod tests {
             "value":{
                 "blockhash": blockhash.to_string(),
                 "feeCalculator": {
-                    "lamportsPerSignature": 0,
+                    "tocksPerSignature": 0,
                 },
                 "lastValidSlot": MAX_RECENT_BLOCKHASHES,
                 "lastValidBlockHeight": MAX_RECENT_BLOCKHASHES,
@@ -5932,11 +5872,9 @@ pub mod tests {
         let bob_pubkey = analog_sdk::pubkey::new_rand();
         let RpcHandler { io, meta, bank, .. } = start_rpc_handler_with_tx(&bob_pubkey);
 
-        let blockhash = bank.last_blockhash();
-        let lamports_per_signature = bank.get_lamports_per_signature();
-        let fee_calculator = RpcFeeCalculator {
-            fee_calculator: FeeCalculator::new(lamports_per_signature),
-        };
+        #[allow(deprecated)]
+        let (blockhash, fee_calculator) = bank.last_blockhash_with_fee_calculator();
+        let fee_calculator = RpcFeeCalculator { fee_calculator };
 
         let req = format!(
             r#"{{"jsonrpc":"2.0","id":1,"method":"getFeeCalculatorForBlockhash","params":["{:?}"]}}"#,
@@ -5992,9 +5930,9 @@ pub mod tests {
             "value":{
                 "feeRateGovernor": {
                     "burnPercent": DEFAULT_BURN_PERCENT,
-                    "maxLamportsPerSignature": 0,
-                    "minLamportsPerSignature": 0,
-                    "targetLamportsPerSignature": 0,
+                    "maxTocksPerSignature": 0,
+                    "minTocksPerSignature": 0,
+                    "targetTocksPerSignature": 0,
                     "targetSignaturesPerSlot": 0
                 }
             }},
@@ -6195,7 +6133,7 @@ pub mod tests {
     fn test_rpc_verify_filter() {
         let filter = RpcFilterType::Memcmp(Memcmp {
             offset: 0,
-            bytes: MemcmpEncodedBytes::Base58(
+            bytes: MemcmpEncodedBytes::Binary(
                 "13LeFbG6m2EP1fqCj9k66fcXsoTHMMtgr7c78AivUrYD".to_string(),
             ),
             encoding: None,
@@ -6204,7 +6142,7 @@ pub mod tests {
         // Invalid base-58
         let filter = RpcFilterType::Memcmp(Memcmp {
             offset: 0,
-            bytes: MemcmpEncodedBytes::Base58("III".to_string()),
+            bytes: MemcmpEncodedBytes::Binary("III".to_string()),
             encoding: None,
         });
         assert!(verify_filter(&filter).is_err());
@@ -6245,9 +6183,9 @@ pub mod tests {
             mut genesis_config,
             mint_keypair,
             voting_keypair,
-        } = create_genesis_config(TEST_MINT_LAMPORTS);
+        } = create_genesis_config(TEST_MINT_TOCKS);
 
-        genesis_config.rent.lamports_per_byte_year = 50;
+        genesis_config.rent.tocks_per_byte_year = 50;
         genesis_config.rent.exemption_threshold = 2.0;
         genesis_config.epoch_schedule =
             EpochSchedule::custom(TEST_SLOTS_PER_EPOCH, TEST_SLOTS_PER_EPOCH, false);
@@ -7202,7 +7140,7 @@ pub mod tests {
         };
         TokenAccount::pack(token_account, &mut account_data).unwrap();
         let token_account = AccountSharedData::from(Account {
-            tock: 111,
+            tocks: 111,
             data: account_data.to_vec(),
             owner: spl_token_id_v2_0(),
             ..Account::default()
@@ -7221,7 +7159,7 @@ pub mod tests {
         };
         Mint::pack(mint_state, &mut mint_data).unwrap();
         let mint_account = AccountSharedData::from(Account {
-            tock: 111,
+            tocks: 111,
             data: mint_data.to_vec(),
             owner: spl_token_id_v2_0(),
             ..Account::default()
@@ -7298,7 +7236,7 @@ pub mod tests {
         };
         TokenAccount::pack(token_account, &mut account_data).unwrap();
         let token_account = AccountSharedData::from(Account {
-            tock: 111,
+            tocks: 111,
             data: account_data.to_vec(),
             owner: spl_token_id_v2_0(),
             ..Account::default()
@@ -7517,7 +7455,7 @@ pub mod tests {
         };
         Mint::pack(mint_state, &mut mint_data).unwrap();
         let mint_account = AccountSharedData::from(Account {
-            tock: 111,
+            tocks: 111,
             data: mint_data.to_vec(),
             owner: spl_token_id_v2_0(),
             ..Account::default()
@@ -7539,7 +7477,7 @@ pub mod tests {
         };
         TokenAccount::pack(token_account, &mut account_data).unwrap();
         let token_account = AccountSharedData::from(Account {
-            tock: 111,
+            tocks: 111,
             data: account_data.to_vec(),
             owner: spl_token_id_v2_0(),
             ..Account::default()
@@ -7603,7 +7541,7 @@ pub mod tests {
         };
         TokenAccount::pack(token_account, &mut account_data).unwrap();
         let token_account = AccountSharedData::from(Account {
-            tock: 111,
+            tocks: 111,
             data: account_data.to_vec(),
             owner: spl_token_id_v2_0(),
             ..Account::default()
@@ -7622,7 +7560,7 @@ pub mod tests {
         };
         Mint::pack(mint_state, &mut mint_data).unwrap();
         let mint_account = AccountSharedData::from(Account {
-            tock: 111,
+            tocks: 111,
             data: mint_data.to_vec(),
             owner: spl_token_id_v2_0(),
             ..Account::default()
@@ -7709,7 +7647,7 @@ pub mod tests {
                 &[
                     RpcFilterType::Memcmp(Memcmp {
                         offset: 32,
-                        bytes: MemcmpEncodedBytes::Bytes(owner.to_bytes().to_vec()),
+                        bytes: MemcmpEncodedBytes::Binary(owner.to_string()),
                         encoding: None
                     }),
                     RpcFilterType::DataSize(165)
@@ -7725,7 +7663,7 @@ pub mod tests {
             &[
                 RpcFilterType::Memcmp(Memcmp {
                     offset: 0,
-                    bytes: MemcmpEncodedBytes::Bytes(owner.to_bytes().to_vec()),
+                    bytes: MemcmpEncodedBytes::Binary(owner.to_string()),
                     encoding: None
                 }),
                 RpcFilterType::DataSize(165)
@@ -7739,7 +7677,7 @@ pub mod tests {
             &[
                 RpcFilterType::Memcmp(Memcmp {
                     offset: 32,
-                    bytes: MemcmpEncodedBytes::Bytes(owner.to_bytes().to_vec()),
+                    bytes: MemcmpEncodedBytes::Binary(owner.to_string()),
                     encoding: None
                 }),
                 RpcFilterType::DataSize(165)

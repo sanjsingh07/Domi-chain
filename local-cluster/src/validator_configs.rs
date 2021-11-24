@@ -13,7 +13,6 @@ pub fn safe_clone_config(config: &ValidatorConfig) -> ValidatorConfig {
         account_shrink_paths: config.account_shrink_paths.clone(),
         rpc_config: config.rpc_config.clone(),
         accountsdb_repl_service_config: config.accountsdb_repl_service_config.clone(),
-        accountsdb_plugin_config_files: config.accountsdb_plugin_config_files.clone(),
         rpc_addrs: config.rpc_addrs,
         pubsub_config: config.pubsub_config.clone(),
         snapshot_config: config.snapshot_config.clone(),
@@ -44,7 +43,8 @@ pub fn safe_clone_config(config: &ValidatorConfig) -> ValidatorConfig {
         contact_debug_interval: config.contact_debug_interval,
         contact_save_interval: config.contact_save_interval,
         bpf_jit: config.bpf_jit,
-        send_transaction_service_config: config.send_transaction_service_config.clone(),
+        send_transaction_retry_ms: config.send_transaction_retry_ms,
+        send_transaction_leader_forward_count: config.send_transaction_leader_forward_count,
         no_poh_speed_test: config.no_poh_speed_test,
         poh_pinned_cpu_core: config.poh_pinned_cpu_core,
         account_indexes: config.account_indexes.clone(),
@@ -59,7 +59,6 @@ pub fn safe_clone_config(config: &ValidatorConfig) -> ValidatorConfig {
         no_wait_for_vote_to_start_leader: config.no_wait_for_vote_to_start_leader,
         accounts_shrink_ratio: config.accounts_shrink_ratio,
         accounts_db_config: config.accounts_db_config.clone(),
-        disable_epoch_boundary_optimization: config.disable_epoch_boundary_optimization,
     }
 }
 

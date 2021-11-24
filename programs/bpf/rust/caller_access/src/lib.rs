@@ -1,4 +1,4 @@
-use solana_program::{
+use analog_program::{
     account_info::AccountInfo,
     entrypoint,
     entrypoint::ProgramResult,
@@ -18,11 +18,11 @@ fn process_instruction(
     if instruction_data.len() == 32 {
         let key = Pubkey::new_from_array(instruction_data.try_into().unwrap());
         let ix = Instruction::new_with_bincode(key, &[2], vec![]);
-        let mut tock = accounts[0].tock();
+        let mut tocks = accounts[0].tocks();
         let owner = &accounts[0].owner;
         let mut data = accounts[0].try_borrow_mut_data()?;
         let account =
-            AccountInfo::new(&key, false, false, &mut tock, &mut data, owner, true, 0);
+            AccountInfo::new(&key, false, false, &mut tocks, &mut data, owner, true, 0);
         msg!("{:?} calling {:?}", program_id, key);
         invoke(&ix, &[account])?;
     } else {

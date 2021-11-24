@@ -32,7 +32,7 @@ const NOOP_PROGRAM_ID: [u8; 32] = [
 
 #[allow(clippy::unnecessary_wraps)]
 fn process_instruction(
-    _first_instruction_account: usize,
+    _program_id: &Pubkey,
     _data: &[u8],
     _invoke_context: &mut dyn InvokeContext,
 ) -> Result<(), InstructionError> {
@@ -127,10 +127,10 @@ fn do_bench_transactions(
     let mut bank = Bank::new_for_benches(&genesis_config);
     bank.add_builtin(
         "builtin_program",
-        &Pubkey::new(&BUILTIN_PROGRAM_ID),
+        Pubkey::new(&BUILTIN_PROGRAM_ID),
         process_instruction,
     );
-    bank.add_builtin_account("analog_noop_program", &Pubkey::new(&NOOP_PROGRAM_ID), false);
+    bank.add_native_program("analog_noop_program", &Pubkey::new(&NOOP_PROGRAM_ID), false);
     let bank = Arc::new(bank);
     let bank_client = BankClient::new_shared(&bank);
     let transactions = create_transactions(&bank_client, &mint_keypair);

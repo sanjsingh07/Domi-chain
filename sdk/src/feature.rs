@@ -1,7 +1,7 @@
 //! Methods for working with `Feature` accounts.
 
 use crate::account::{AccountSharedData, ReadableAccount, WritableAccount};
-pub use solana_program::feature::*;
+pub use analog_program::feature::*;
 
 pub fn from_account<T: ReadableAccount>(account: &T) -> Option<Feature> {
     if account.owner() != &id() {
@@ -15,9 +15,9 @@ pub fn to_account(feature: &Feature, account: &mut AccountSharedData) -> Option<
     bincode::serialize_into(account.data_as_mut_slice(), feature).ok()
 }
 
-pub fn create_account(feature: &Feature, tock: u64) -> AccountSharedData {
+pub fn create_account(feature: &Feature, tocks: u64) -> AccountSharedData {
     let data_len = Feature::size_of().max(bincode::serialized_size(feature).unwrap() as usize);
-    let mut account = AccountSharedData::new(tock, data_len, &id());
+    let mut account = AccountSharedData::new(tocks, data_len, &id());
     to_account(feature, &mut account).unwrap();
     account
 }

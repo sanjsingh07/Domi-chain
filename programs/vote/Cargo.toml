@@ -1,11 +1,11 @@
 [package]
 name = "analog-vote-program"
-version = "1.9.0"
+version = "1.8.2"
 description = "Analog Vote program"
-authors = ["Analog Maintainers <maintainers@solana.foundation>"]
-repository = "https://github.com/analog-labs/solana"
+authors = ["Analog Maintainers <maintainers@analog.foundation>"]
+repository = "https://github.com/analog/testnet"
 license = "Apache-2.0"
-homepage = "https://solana.com/"
+homepage = "https://analog.com/"
 documentation = "https://docs.rs/analog-vote-program"
 edition = "2018"
 
@@ -16,15 +16,12 @@ num-derive = "0.3"
 num-traits = "0.2"
 serde = "1.0.130"
 serde_derive = "1.0.103"
-analog-frozen-abi = { path = "../../frozen-abi", version = "=1.9.0" }
-analog-frozen-abi-macro = { path = "../../frozen-abi/macro", version = "=1.9.0" }
-analog-logger = { path = "../../logger", version = "=1.9.0" }
-analog-metrics = { path = "../../metrics", version = "=1.9.0" }
-analog-sdk = { path = "../../sdk", version = "=1.9.0" }
+analog-frozen-abi = { path = "../../frozen-abi", version = "=1.8.2" }
+analog-frozen-abi-macro = { path = "../../frozen-abi/macro", version = "=1.8.2" }
+analog-logger = { path = "../../logger", version = "=1.8.2" }
+analog-metrics = { path = "../../metrics", version = "=1.8.2" }
+analog-sdk = { path = "../../sdk", version = "=1.8.2" }
 thiserror = "1.0"
-
-[dev-dependencies]
-analog-program-runtime = { path = "../../program-runtime", version = "=1.9.0" }
 
 [build-dependencies]
 rustc_version = "0.4"

@@ -288,14 +288,6 @@ pub struct RpcIdentity {
 
 #[derive(Serialize, Deserialize, Clone, Debug)]
 #[serde(rename_all = "camelCase")]
-pub struct RpcVote {
-    pub slots: Vec<Slot>,
-    pub hash: String,
-    pub timestamp: Option<UnixTimestamp>,
-}
-
-#[derive(Serialize, Deserialize, Clone, Debug)]
-#[serde(rename_all = "camelCase")]
 pub struct RpcVoteAccountStatus {
     pub current: Vec<RpcVoteAccountInfo>,
     pub delinquent: Vec<RpcVoteAccountInfo>,
@@ -310,7 +302,7 @@ pub struct RpcVoteAccountInfo {
     /// The validator identity, as base-58 encoded string
     pub node_pubkey: String,
 
-    /// The current stake, in tock, delegated to this vote account
+    /// The current stake, in tocks, delegated to this vote account
     pub activated_stake: u64,
 
     /// An 8-bit integer used as a fraction (commission/MAX_U8) for rewards payout
@@ -357,7 +349,7 @@ pub struct RpcStorageTurn {
 #[serde(rename_all = "camelCase")]
 pub struct RpcAccountBalance {
     pub address: String,
-    pub tock: u64,
+    pub tocks: u64,
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug)]
@@ -419,8 +411,8 @@ pub struct RpcPerfSample {
 pub struct RpcInflationReward {
     pub epoch: Epoch,
     pub effective_slot: Slot,
-    pub amount: u64,            // tock
-    pub post_balance: u64,      // tock
+    pub amount: u64,            // tocks
+    pub post_balance: u64,      // tocks
     pub commission: Option<u8>, // Vote account commission when the reward was credited
 }
 

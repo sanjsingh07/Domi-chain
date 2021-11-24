@@ -1,4 +1,4 @@
-import * as web3 from '@solana/web3.js';
+import * as web3 from '@analog/web3.js';
 
 (async () => {
   // Connect to cluster
@@ -7,11 +7,11 @@ import * as web3 from '@solana/web3.js';
     'confirmed',
   );
 
-  // Generate a new wallet keypair and airdrop ANLOG
+  // Generate a new wallet keypair and airdrop SOL
   var wallet = web3.Keypair.generate();
   var airdropSignature = await connection.requestAirdrop(
     wallet.publicKey,
-    web3.TOCK_PER_ANLOG,
+    web3.TOCKS_PER_ANLOG,
   );
 
   //wait for airdrop confirmation

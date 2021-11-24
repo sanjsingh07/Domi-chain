@@ -6,7 +6,7 @@ use crate::{
     snapshot_config::SnapshotConfig,
 };
 use log::*;
-use analog_measure::measure::Measure;
+use analog_metrics::inc_new_counter_info;
 use analog_sdk::{clock::Slot, hash::Hash, timing};
 use std::{
     collections::{hash_map::Entry, HashMap, HashSet},
@@ -14,16 +14,6 @@ use std::{
     sync::Arc,
     time::Instant,
 };
-
-struct SetRootTimings {
-    total_banks: i64,
-    total_squash_cache_ms: i64,
-    total_squash_accounts_ms: i64,
-    total_snapshot_ms: i64,
-    tx_count: i64,
-    prune_non_rooted_ms: i64,
-    drop_parent_banks_ms: i64,
-}
 
 pub struct BankForks {
     banks: HashMap<Slot, Arc<Bank>>,
@@ -182,14 +172,15 @@ impl BankForks {
         self[self.highest_slot()].clone()
     }
 
-    fn do_set_root_return_metrics(
+    pub fn set_root(
         &mut self,
         root: Slot,
         accounts_background_request_sender: &AbsRequestSender,
         highest_confirmed_root: Option<Slot>,
-    ) -> SetRootTimings {
+    ) {
         let old_epoch = self.root_bank().epoch();
         self.root = root;
+        let set_root_start = Instant::now();
         let root_bank = self
             .banks
             .get(&root)
@@ -198,9 +189,9 @@ impl BankForks {
         if old_epoch != new_epoch {
             info!(
                 "Root entering
-                    epoch: {},
-                    next_epoch_start_slot: {},
-                    epoch_stakes: {:#?}",
+                epoch: {},
+                next_epoch_start_slot: {},
+                epoch_stakes: {:#?}",
                 new_epoch,
                 root_bank
                     .epoch_schedule()
@@ -221,22 +212,15 @@ impl BankForks {
         let mut banks = vec![root_bank];
         let parents = root_bank.parents();
         banks.extend(parents.iter());
-        let total_banks = banks.len();
-        let mut total_squash_accounts_ms = 0;
-        let mut total_squash_cache_ms = 0;
-        let mut total_snapshot_ms = 0;
         for bank in banks.iter() {
             let bank_slot = bank.slot();
             if bank.block_height() % self.accounts_hash_interval_slots == 0
                 && bank_slot > self.last_accounts_hash_slot
             {
                 self.last_accounts_hash_slot = bank_slot;
-                let squash_timing = bank.squash();
-                total_squash_accounts_ms += squash_timing.squash_accounts_ms as i64;
-                total_squash_cache_ms += squash_timing.squash_cache_ms as i64;
+                bank.squash();
                 is_root_bank_squashed = bank_slot == root;
 
-                let mut snapshot_time = Measure::start("squash::snapshot_time");
                 if self.snapshot_config.is_some()
                     && accounts_background_request_sender.is_snapshot_creation_enabled()
                 {
@@ -257,79 +241,22 @@ impl BankForks {
                         );
                     }
                 }
-                snapshot_time.stop();
-                total_snapshot_ms += snapshot_time.as_ms() as i64;
                 break;
             }
         }
         if !is_root_bank_squashed {
-            let squash_timing = root_bank.squash();
-            total_squash_accounts_ms += squash_timing.squash_accounts_ms as i64;
-            total_squash_cache_ms += squash_timing.squash_cache_ms as i64;
+            root_bank.squash();
         }
         let new_tx_count = root_bank.transaction_count();
-        let mut prune_time = Measure::start("set_root::prune");
         self.prune_non_rooted(root, highest_confirmed_root);
-        prune_time.stop();
 
-        let mut drop_parent_banks_time = Measure::start("set_root::drop_banks");
-        drop(parents);
-        drop_parent_banks_time.stop();
-
-        SetRootTimings {
-            total_banks: total_banks as i64,
-            total_squash_cache_ms,
-            total_squash_accounts_ms,
-            total_snapshot_ms,
-            tx_count: (new_tx_count - root_tx_count) as i64,
-            prune_non_rooted_ms: prune_time.as_ms() as i64,
-            drop_parent_banks_ms: drop_parent_banks_time.as_ms() as i64,
-        }
-    }
-
-    pub fn set_root(
-        &mut self,
-        root: Slot,
-        accounts_background_request_sender: &AbsRequestSender,
-        highest_confirmed_root: Option<Slot>,
-    ) {
-        let set_root_start = Instant::now();
-        let set_root_metrics = self.do_set_root_return_metrics(
-            root,
-            accounts_background_request_sender,
-            highest_confirmed_root,
+        inc_new_counter_info!(
+            "bank-forks_set_root_ms",
+            timing::duration_as_ms(&set_root_start.elapsed()) as usize
         );
-        datapoint_info!(
-            "bank-forks_set_root",
-            (
-                "elapsed_ms",
-                timing::duration_as_ms(&set_root_start.elapsed()) as usize,
-                i64
-            ),
-            ("slot", root, i64),
-            ("total_banks", set_root_metrics.total_banks, i64),
-            (
-                "total_squash_cache_ms",
-                set_root_metrics.total_squash_cache_ms,
-                i64
-            ),
-            (
-                "total_squash_accounts_ms",
-                set_root_metrics.total_squash_accounts_ms,
-                i64
-            ),
-            ("total_snapshot_ms", set_root_metrics.total_snapshot_ms, i64),
-            ("tx_count", set_root_metrics.tx_count, i64),
-            (
-                "prune_non_rooted_ms",
-                set_root_metrics.prune_non_rooted_ms,
-                i64
-            ),
-            (
-                "drop_parent_banks_ms",
-                set_root_metrics.drop_parent_banks_ms,
-                i64
-            ),
+        inc_new_counter_info!(
+            "bank-forks_set_root_tx_count",
+            (new_tx_count - root_tx_count) as usize
         );
     }
 

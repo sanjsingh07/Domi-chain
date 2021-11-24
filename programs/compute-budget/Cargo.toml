@@ -1,16 +1,16 @@
 [package]
 name = "analog-compute-budget-program"
 description = "Analog Compute Budget program"
-version = "1.9.0"
-homepage = "https://solana.com/"
+version = "1.8.2"
+homepage = "https://analog.com/"
 documentation = "https://docs.rs/analog-compute-budget-program"
-repository = "https://github.com/analog-labs/solana"
-authors = ["Analog Maintainers <maintainers@solana.foundation>"]
+repository = "https://github.com/analog/testnet"
+authors = ["Analog Maintainers <maintainers@analog.foundation>"]
 license = "Apache-2.0"
 edition = "2018"
 
 [dependencies]
-analog-sdk = { path = "../../sdk", version = "=1.9.0" }
+analog-sdk = { path = "../../sdk", version = "=1.8.2" }
 
 [lib]
 crate-type = ["lib"]

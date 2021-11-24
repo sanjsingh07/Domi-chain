@@ -1,11 +1,11 @@
 [package]
 authors = ["Analog Maintainers <maintainers@analog.foundation>"]
-description = "analog Program Test Framework"
+description = "Analog Program Test Framework"
 edition = "2018"
 license = "Apache-2.0"
 name = "analog-program-test"
-repository = "https://github.com/analog-labs/analog"
-version = "1.9.0"
+repository = "https://github.com/analog/testnet"
+version = "1.8.2"
 
 [dependencies]
 async-trait = "0.1.51"
@@ -14,14 +14,14 @@ bincode = "1.3.3"
 chrono-humanize = "0.2.1"
 log = "0.4.14"
 serde = "1.0.130"
-analog-banks-client = { path = "../banks-client", version = "=1.9.0" }
-analog-banks-server = { path = "../banks-server", version = "=1.9.0" }
-analog-bpf-loader-program = { path = "../programs/bpf_loader", version = "=1.9.0" }
-analog-logger = { path = "../logger", version = "=1.9.0" }
-analog-program-runtime = { path = "../program-runtime", version = "=1.9.0" }
-analog-runtime = { path = "../runtime", version = "=1.9.0" }
-analog-sdk = { path = "../sdk", version = "=1.9.0" }
-analog-vote-program = { path = "../programs/vote", version = "=1.9.0" }
+analog-banks-client = { path = "../banks-client", version = "=1.8.2" }
+analog-banks-server = { path = "../banks-server", version = "=1.8.2" }
+analog-bpf-loader-program = { path = "../programs/bpf_loader", version = "=1.8.2" }
+analog-logger = { path = "../logger", version = "=1.8.2" }
+analog-program-runtime = { path = "../program-runtime", version = "=1.8.2" }
+analog-runtime = { path = "../runtime", version = "=1.8.2" }
+analog-sdk = { path = "../sdk", version = "=1.8.2" }
+analog-vote-program = { path = "../programs/vote", version = "=1.8.2" }
 thiserror = "1.0"
 tokio = { version = "1", features = ["full"] }
 

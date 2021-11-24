@@ -1,8 +1,8 @@
-//! Example Rust-based BPF program that uses anlog_log_data syscall
+//! @brief Example Rust-based BPF program that uses anlog_log_data syscall
 
 #![cfg(feature = "program")]
 
-use solana_program::{
+use analog_program::{
     account_info::AccountInfo, entrypoint, entrypoint::ProgramResult, log::anlog_log_data,
     program::set_return_data, pubkey::Pubkey,
 };

@@ -2,7 +2,6 @@ use {
     crate::{
         accounts_db::{AccountShrinkThreshold, AccountsDbConfig},
         accounts_index::AccountSecondaryIndexes,
-        accounts_update_notifier_interface::AccountsUpdateNotifier,
         bank::{Bank, BankSlotDelta},
         builtins::Builtins,
         hardened_unpack::{unpack_snapshot, ParallelSelector, UnpackError, UnpackedAppendVecMap},
@@ -153,7 +152,6 @@ struct SnapshotRootPaths {
 /// Helper type to bundle up the results from `unarchive_snapshot()`
 #[derive(Debug)]
 struct UnarchivedSnapshot {
-    #[allow(dead_code)]
     unpack_dir: TempDir,
     unpacked_append_vec_map: UnpackedAppendVecMap,
     unpacked_snapshots_dir_and_version: UnpackedSnapshotsDirAndVersion,
@@ -465,7 +463,7 @@ pub fn deserialize_snapshot_data_file<T: Sized>(
     deserializer: impl FnOnce(&mut BufReader<File>) -> Result<T>,
 ) -> Result<T> {
     let wrapped_deserializer = move |streams: &mut SnapshotStreams<File>| -> Result<T> {
-        deserializer(streams.full_snapshot_stream)
+        deserializer(&mut streams.full_snapshot_stream)
     };
 
     let wrapped_data_file_path = SnapshotRootPaths {
@@ -736,7 +734,6 @@ pub fn bank_from_snapshot_archives(
     accounts_db_skip_shrink: bool,
     verify_index: bool,
     accounts_db_config: Option<AccountsDbConfig>,
-    accounts_update_notifier: Option<AccountsUpdateNotifier>,
 ) -> Result<(Bank, BankFromArchiveTimings)> {
     check_are_snapshots_compatible(
         full_snapshot_archive_info,
@@ -801,7 +798,6 @@ pub fn bank_from_snapshot_archives(
         shrink_ratio,
         verify_index,
         accounts_db_config,
-        accounts_update_notifier,
     )?;
     measure_rebuild.stop();
     info!("{}", measure_rebuild);
@@ -848,7 +844,6 @@ pub fn bank_from_latest_snapshot_archives(
     accounts_db_skip_shrink: bool,
     verify_index: bool,
     accounts_db_config: Option<AccountsDbConfig>,
-    accounts_update_notifier: Option<AccountsUpdateNotifier>,
 ) -> Result<(
     Bank,
     BankFromArchiveTimings,
@@ -892,7 +887,6 @@ pub fn bank_from_latest_snapshot_archives(
         accounts_db_skip_shrink,
         verify_index,
         accounts_db_config,
-        accounts_update_notifier,
     )?;
 
     verify_bank_against_expected_slot_hash(
@@ -1152,7 +1146,7 @@ where
 }
 
 /// Get a list of the incremental snapshot archives in a directory
-pub fn get_incremental_snapshot_archives<P>(
+fn get_incremental_snapshot_archives<P>(
     snapshot_archives_dir: P,
 ) -> Vec<IncrementalSnapshotArchiveInfo>
 where
@@ -1430,7 +1424,6 @@ fn rebuild_bank_from_snapshots(
     shrink_ratio: AccountShrinkThreshold,
     verify_index: bool,
     accounts_db_config: Option<AccountsDbConfig>,
-    accounts_update_notifier: Option<AccountsUpdateNotifier>,
 ) -> Result<Bank> {
     let (full_snapshot_version, full_snapshot_root_paths) =
         verify_unpacked_snapshots_dir_and_version(
@@ -1461,12 +1454,12 @@ fn rebuild_bank_from_snapshots(
             .map(|root_paths| root_paths.snapshot_path),
     };
 
-    let bank = deserialize_snapshot_data_files(&snapshot_root_paths, |snapshot_streams| {
+    let bank = deserialize_snapshot_data_files(&snapshot_root_paths, |mut snapshot_streams| {
         Ok(
             match incremental_snapshot_version.unwrap_or(full_snapshot_version) {
                 SnapshotVersion::V1_2_0 => bank_from_streams(
                     SerdeStyle::Newer,
-                    snapshot_streams,
+                    &mut snapshot_streams,
                     account_paths,
                     unpacked_append_vec_map,
                     genesis_config,
@@ -1479,7 +1472,6 @@ fn rebuild_bank_from_snapshots(
                     shrink_ratio,
                     verify_index,
                     accounts_db_config,
-                    accounts_update_notifier,
                 ),
             }?,
         )
@@ -1602,8 +1594,15 @@ pub fn snapshot_bank(
     hash_for_testing: Option<Hash>,
     snapshot_type: Option<SnapshotType>,
 ) -> Result<()> {
-    let snapshot_storages = get_snapshot_storages(root_bank, snapshot_type);
-
+    let snapshot_storages = snapshot_type.map_or_else(SnapshotStorages::default, |snapshot_type| {
+        let incremental_snapshot_base_slot = match snapshot_type {
+            SnapshotType::IncrementalSnapshot(incremental_snapshot_base_slot) => {
+                Some(incremental_snapshot_base_slot)
+            }
+            _ => None,
+        };
+        root_bank.get_snapshot_storages(incremental_snapshot_base_slot)
+    });
     let mut add_snapshot_time = Measure::start("add-snapshot-ms");
     let bank_snapshot_info = add_bank_snapshot(
         &bank_snapshots_dir,
@@ -1631,48 +1630,6 @@ pub fn snapshot_bank(
     accounts_package_sender.send(accounts_package)?;
 
     Ok(())
-}
-
-/// Get the snapshot storages for this bank and snapshot_type
-fn get_snapshot_storages(bank: &Bank, snapshot_type: Option<SnapshotType>) -> SnapshotStorages {
-    let mut measure_snapshot_storages = Measure::start("snapshot-storages");
-    let snapshot_storages = snapshot_type.map_or_else(SnapshotStorages::default, |snapshot_type| {
-        let incremental_snapshot_base_slot = match snapshot_type {
-            SnapshotType::IncrementalSnapshot(incremental_snapshot_base_slot) => {
-                Some(incremental_snapshot_base_slot)
-            }
-            _ => None,
-        };
-        bank.get_snapshot_storages(incremental_snapshot_base_slot)
-    });
-    measure_snapshot_storages.stop();
-
-    if let Some(snapshot_type) = snapshot_type {
-        let snapshot_storages_count_name;
-        let snapshot_storages_time_name;
-        match snapshot_type {
-            SnapshotType::FullSnapshot => {
-                snapshot_storages_count_name = "full-snapshot-storages-count";
-                snapshot_storages_time_name = "full-snapshot-storages-time-ms";
-            }
-            SnapshotType::IncrementalSnapshot(_) => {
-                snapshot_storages_count_name = "incremental-snapshot-storages-count";
-                snapshot_storages_time_name = "incremental-snapshot-storages-time-ms";
-            }
-        }
-        let snapshot_storages_count = snapshot_storages.iter().map(Vec::len).sum::<usize>();
-        datapoint_info!(
-            "get_snapshot_storages",
-            (snapshot_storages_count_name, snapshot_storages_count, i64),
-            (
-                snapshot_storages_time_name,
-                measure_snapshot_storages.as_ms(),
-                i64
-            ),
-        );
-    }
-
-    snapshot_storages
 }
 
 /// Convenience function to create a full snapshot archive out of any Bank, regardless of state.
@@ -1868,7 +1825,7 @@ mod tests {
         system_transaction,
         transaction::SanitizedTransaction,
     };
-    use std::mem::size_of;
+    use std::{convert::TryFrom, mem::size_of};
 
     #[test]
     fn test_serialize_snapshot_data_file_under_limit() {
@@ -2653,7 +2610,6 @@ mod tests {
             false,
             false,
             Some(ACCOUNTS_DB_CONFIG_FOR_TESTING),
-            None,
         )
         .unwrap();
 
@@ -2745,7 +2701,6 @@ mod tests {
             false,
             false,
             Some(ACCOUNTS_DB_CONFIG_FOR_TESTING),
-            None,
         )
         .unwrap();
 
@@ -2856,7 +2811,6 @@ mod tests {
             false,
             false,
             Some(ACCOUNTS_DB_CONFIG_FOR_TESTING),
-            None,
         )
         .unwrap();
 
@@ -2956,21 +2910,20 @@ mod tests {
             false,
             false,
             Some(ACCOUNTS_DB_CONFIG_FOR_TESTING),
-            None,
         )
         .unwrap();
 
         assert_eq!(deserialized_bank, *bank4);
     }
 
-    /// Test that cleaning works well in the edge cases of zero-lamport accounts and snapshots.
+    /// Test that cleaning works well in the edge cases of zero-tock accounts and snapshots.
     /// Here's the scenario:
     ///
     /// slot 1:
-    ///     - send some tock to Account1 (from Account2) to bring it to life
+    ///     - send some tocks to Account1 (from Account2) to bring it to life
     ///     - take a full snapshot
     /// slot 2:
-    ///     - make Account1 have zero tock (send back to Account2)
+    ///     - make Account1 have zero tocks (send back to Account2)
     ///     - take an incremental snapshot
     ///     - ensure deserializing from this snapshot is equal to this bank
     /// slot 3:
@@ -2986,7 +2939,7 @@ mod tests {
     /// information about Account1, but the full snapshost _does_ have info for Account1, which is
     /// no longer correct!
     #[test]
-    fn test_incremental_snapshots_handle_zero_lamport_accounts() {
+    fn test_incremental_snapshots_handle_zero_tock_accounts() {
         analog_logger::setup();
 
         let collector = Pubkey::new_unique();
@@ -3000,7 +2953,7 @@ mod tests {
 
         let (genesis_config, mint_keypair) = create_genesis_config(1_000_000);
 
-        let lamports_to_transfer = 123_456;
+        let tocks_to_transfer = 123_456;
         let bank0 = Arc::new(Bank::new_with_paths_for_tests(
             &genesis_config,
             vec![accounts_dir.path().to_path_buf()],
@@ -3013,7 +2966,7 @@ mod tests {
             false,
         ));
         bank0
-            .transfer(lamports_to_transfer, &mint_keypair, &key2.pubkey())
+            .transfer(tocks_to_transfer, &mint_keypair, &key2.pubkey())
             .unwrap();
         while !bank0.is_complete() {
             bank0.register_tick(&Hash::new_unique());
@@ -3022,7 +2975,7 @@ mod tests {
         let slot = 1;
         let bank1 = Arc::new(Bank::new_from_parent(&bank0, &collector, slot));
         bank1
-            .transfer(lamports_to_transfer, &key2, &key1.pubkey())
+            .transfer(tocks_to_transfer, &key2, &key1.pubkey())
             .unwrap();
         while !bank1.is_complete() {
             bank1.register_tick(&Hash::new_unique());
@@ -3042,19 +2995,21 @@ mod tests {
 
         let slot = slot + 1;
         let bank2 = Arc::new(Bank::new_from_parent(&bank1, &collector, slot));
-        let blockhash = bank2.last_blockhash();
-        let tx = SanitizedTransaction::from_transaction_for_tests(system_transaction::transfer(
+        let tx = SanitizedTransaction::try_from(system_transaction::transfer(
             &key1,
             &key2.pubkey(),
-            lamports_to_transfer,
-            blockhash,
-        ));
-        let fee = bank2.get_fee_for_message(tx.message()).unwrap();
+            tocks_to_transfer,
+            bank2.last_blockhash(),
+        ))
+        .unwrap();
+        let fee = bank2
+            .get_fee_for_message(&bank2.last_blockhash(), tx.message())
+            .unwrap();
         let tx = system_transaction::transfer(
             &key1,
             &key2.pubkey(),
-            lamports_to_transfer - fee,
-            blockhash,
+            tocks_to_transfer - fee,
+            bank2.last_blockhash(),
         );
         bank2.process_transaction(&tx).unwrap();
         assert_eq!(
@@ -3096,7 +3051,6 @@ mod tests {
             false,
             false,
             Some(ACCOUNTS_DB_CONFIG_FOR_TESTING),
-            None,
         )
         .unwrap();
         assert_eq!(
@@ -3108,7 +3062,7 @@ mod tests {
         let bank3 = Arc::new(Bank::new_from_parent(&bank2, &collector, slot));
         // Update Account2 so that it no longer holds a reference to slot2
         bank3
-            .transfer(lamports_to_transfer, &mint_keypair, &key2.pubkey())
+            .transfer(tocks_to_transfer, &mint_keypair, &key2.pubkey())
             .unwrap();
         while !bank3.is_complete() {
             bank3.register_tick(&Hash::new_unique());
@@ -3159,7 +3113,6 @@ mod tests {
             false,
             false,
             Some(ACCOUNTS_DB_CONFIG_FOR_TESTING),
-            None,
         )
         .unwrap();
         assert_eq!(

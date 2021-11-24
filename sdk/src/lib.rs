@@ -7,7 +7,7 @@ extern crate self as analog_sdk;
 
 #[cfg(feature = "full")]
 pub use signer::signers;
-pub use solana_program::*;
+pub use analog_program::*;
 
 pub mod account;
 pub mod account_utils;
@@ -20,6 +20,7 @@ pub mod deserialize_utils;
 pub mod ed25519_instruction;
 pub mod entrypoint;
 pub mod entrypoint_deprecated;
+pub mod entrypoint_native;
 pub mod epoch_info;
 pub mod exit;
 pub mod feature;
@@ -32,6 +33,7 @@ pub mod keyed_account;
 pub mod log;
 pub mod native_loader;
 pub mod nonce_account;
+pub mod nonce_keyed_account;
 pub mod packet;
 pub mod poh_config;
 pub mod precompiles;

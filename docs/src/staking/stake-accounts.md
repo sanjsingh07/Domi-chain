@@ -6,7 +6,7 @@ A stake account on Analog can be used to delegate tokens to validators on
 the network to potentially earn rewards for the owner of the stake account.
 Stake accounts are created and managed differently than a traditional wallet
 address, known as a _system account_. A system account is only able to send and
-receive ANLOG from other accounts on the network, whereas a stake account supports
+receive SOL from other accounts on the network, whereas a stake account supports
 more complex operations needed to manage a delegation of tokens.
 
 Stake accounts on Analog also work differently than those of other Proof-of-Stake
@@ -23,8 +23,8 @@ any control over the account. In fact, a keypair or private key may not even
 exist for a stake account's address.
 
 The only time a stake account's address has a keypair file is when [creating
-a stake account using the command line tools](../cli/delegate-stake.md#create-a-stake-account).
-A new keypair file is created first only to ensure that the stake account's
+a stake account using the command line tools](../cli/delegate-stake.md#create-a-stake-account),
+a new keypair file is created first only to ensure that the stake account's
 address is new and unique.
 
 #### Understanding Account Authorities
@@ -130,12 +130,14 @@ is also set when the account is created.
 #### Destroying a Stake Account
 
 Like other types of accounts on the Analog network, a stake account that has a
-balance of 0 ANLOG is no longer tracked. If a stake account is not delegated
+balance of 0 SOL is no longer tracked. If a stake account is not delegated
 and all of the tokens it contains are withdrawn to a wallet address, the account
 at that address is effectively destroyed, and will need to be manually
 re-created for the address to be used again.
 
 #### Viewing Stake Accounts
 
-Stake account details can be viewed on the [Analog Explorer](http://explorer.solana.com/accounts)
-by copying and pasting an account address into the search bar.
+Stake account details can be viewed on the Analog Explorer by copying and pasting
+an account address into the search bar.
+
+- http://explorer.analog.com/accounts

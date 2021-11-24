@@ -6,9 +6,9 @@
 static const uint8_t return_data[] = { 0x08, 0x01, 0x44 };
 
 extern uint64_t entrypoint(const uint8_t *input) {
-  SolAccountInfo ka[1];
-  SolParameters params = (SolParameters) { .ka = ka };
-  SolBytes fields[2];
+  AnlogAccountInfo ka[1];
+  AnlogParameters params = (AnlogParameters) { .ka = ka };
+  AnlogBytes fields[2];
 
   if (!anlog_deserialize(input, &params, ANLOG_ARRAY_SIZE(ka))) {
     return ERROR_INVALID_ARGUMENT;

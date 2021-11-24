@@ -27,7 +27,7 @@ if [[ $VERSION != "$(cat target/perf-libs/.version 2> /dev/null)" ]]; then
       cp ~/.cache/analog-perf-$PERF_LIBS_VERSION.tgz analog-perf.tgz
     else
       curl -L --retry 5 --retry-delay 2 --retry-connrefused -o analog-perf.tgz \
-        https://github.com/analog-labs/analog-perf-libs/releases/download/$PERF_LIBS_VERSION/analog-perf.tgz
+        https://github.com/analog/testnet-perf-libs/releases/download/$PERF_LIBS_VERSION/analog-perf.tgz
     fi
     tar zxvf analog-perf.tgz
 

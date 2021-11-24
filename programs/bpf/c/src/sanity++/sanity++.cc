@@ -10,8 +10,8 @@
 #define INVALID_INPUT 1
 
 extern uint64_t entrypoint(const uint8_t *input) {
-  SolAccountInfo ka[1];
-  SolParameters params = (SolParameters) { .ka = ka };
+  AnlogAccountInfo ka[1];
+  AnlogParameters params = (AnlogParameters) { .ka = ka };
 
   anlog_log(__FILE__);
 

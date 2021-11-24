@@ -13,7 +13,6 @@ use {
         commitment_config::CommitmentLevel,
         fee_calculator::FeeCalculator,
         hash::Hash,
-        message::{Message, SanitizedMessage},
         pubkey::Pubkey,
         signature::Signature,
         transaction::{self, Transaction},
@@ -23,7 +22,6 @@ use {
         tpu_info::NullTpuInfo,
     },
     std::{
-        convert::TryFrom,
         io,
         net::{Ipv4Addr, SocketAddr},
         sync::{
@@ -49,7 +47,6 @@ struct BanksServer {
     bank_forks: Arc<RwLock<BankForks>>,
     block_commitment_cache: Arc<RwLock<BlockCommitmentCache>>,
     transaction_sender: Sender<TransactionInfo>,
-    poll_signature_status_sleep_duration: Duration,
 }
 
 impl BanksServer {
@@ -61,13 +58,11 @@ impl BanksServer {
         bank_forks: Arc<RwLock<BankForks>>,
         block_commitment_cache: Arc<RwLock<BlockCommitmentCache>>,
         transaction_sender: Sender<TransactionInfo>,
-        poll_signature_status_sleep_duration: Duration,
     ) -> Self {
         Self {
             bank_forks,
             block_commitment_cache,
             transaction_sender,
-            poll_signature_status_sleep_duration,
         }
     }
 
@@ -90,7 +85,6 @@ impl BanksServer {
     fn new_loopback(
         bank_forks: Arc<RwLock<BankForks>>,
         block_commitment_cache: Arc<RwLock<BlockCommitmentCache>>,
-        poll_signature_status_sleep_duration: Duration,
     ) -> Self {
         let (transaction_sender, transaction_receiver) = channel();
         let bank = bank_forks.read().unwrap().working_bank();
@@ -105,12 +99,7 @@ impl BanksServer {
             .name("analog-bank-forks-client".to_string())
             .spawn(move || Self::run(server_bank_forks, transaction_receiver))
             .unwrap();
-        Self::new(
-            bank_forks,
-            block_commitment_cache,
-            transaction_sender,
-            poll_signature_status_sleep_duration,
-        )
+        Self::new(bank_forks, block_commitment_cache, transaction_sender)
     }
 
     fn slot(&self, commitment: CommitmentLevel) -> Slot {
@@ -135,7 +124,7 @@ impl BanksServer {
             .bank(commitment)
             .get_signature_status_with_blockhash(signature, blockhash);
         while status.is_none() {
-            sleep(self.poll_signature_status_sleep_duration).await;
+            sleep(Duration::from_millis(200)).await;
             let bank = self.bank(commitment);
             if bank.block_height() > last_valid_block_height {
                 break;
@@ -187,16 +176,12 @@ impl Banks for BanksServer {
         commitment: CommitmentLevel,
     ) -> (FeeCalculator, Hash, u64) {
         let bank = self.bank(commitment);
-        let blockhash = bank.last_blockhash();
-        let lamports_per_signature = bank.get_lamports_per_signature();
+        #[allow(deprecated)]
+        let (blockhash, fee_calculator) = bank.last_blockhash_with_fee_calculator();
         let last_valid_block_height = bank
             .get_blockhash_last_valid_block_height(&blockhash)
             .unwrap();
-        (
-            FeeCalculator::new(lamports_per_signature),
-            blockhash,
-            last_valid_block_height,
-        )
+        (fee_calculator, blockhash, last_valid_block_height)
     }
 
     async fn get_transaction_status_with_context(
@@ -255,7 +240,10 @@ impl Banks for BanksServer {
 
         let blockhash = &transaction.message.recent_blockhash;
         let last_valid_block_height = self
-            .bank(commitment)
+            .bank_forks
+            .read()
+            .unwrap()
+            .root_bank()
             .get_blockhash_last_valid_block_height(blockhash)
             .unwrap();
         let signature = transaction.signatures.get(0).cloned().unwrap_or_default();
@@ -280,45 +268,13 @@ impl Banks for BanksServer {
         let bank = self.bank(commitment);
         bank.get_account(&address).map(Account::from)
     }
-
-    async fn get_latest_blockhash_with_context(self, _: Context) -> Hash {
-        let bank = self.bank(CommitmentLevel::default());
-        bank.last_blockhash()
-    }
-
-    async fn get_latest_blockhash_with_commitment_and_context(
-        self,
-        _: Context,
-        commitment: CommitmentLevel,
-    ) -> Option<(Hash, u64)> {
-        let bank = self.bank(commitment);
-        let blockhash = bank.last_blockhash();
-        let last_valid_block_height = bank.get_blockhash_last_valid_block_height(&blockhash)?;
-        Some((blockhash, last_valid_block_height))
-    }
-
-    async fn get_fee_for_message_with_commitment_and_context(
-        self,
-        _: Context,
-        commitment: CommitmentLevel,
-        message: Message,
-    ) -> Option<u64> {
-        let bank = self.bank(commitment);
-        let sanitized_message = SanitizedMessage::try_from(message).ok()?;
-        bank.get_fee_for_message(&sanitized_message)
-    }
 }
 
 pub async fn start_local_server(
     bank_forks: Arc<RwLock<BankForks>>,
     block_commitment_cache: Arc<RwLock<BlockCommitmentCache>>,
-    poll_signature_status_sleep_duration: Duration,
 ) -> UnboundedChannel<Response<BanksResponse>, ClientMessage<BanksRequest>> {
-    let banks_server = BanksServer::new_loopback(
-        bank_forks,
-        block_commitment_cache,
-        poll_signature_status_sleep_duration,
-    );
+    let banks_server = BanksServer::new_loopback(bank_forks, block_commitment_cache);
     let (client_transport, server_transport) = transport::channel::unbounded();
     let server = server::BaseChannel::with_defaults(server_transport).execute(banks_server.serve());
     tokio::spawn(server);
@@ -358,12 +314,8 @@ pub async fn start_tcp_server(
                 0,
             );
 
-            let server = BanksServer::new(
-                bank_forks.clone(),
-                block_commitment_cache.clone(),
-                sender,
-                Duration::from_millis(200),
-            );
+            let server =
+                BanksServer::new(bank_forks.clone(), block_commitment_cache.clone(), sender);
             chan.execute(server.serve())
         })
         // Max 10 channels.

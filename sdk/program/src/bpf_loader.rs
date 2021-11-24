@@ -1,4 +1,4 @@
-//! The latest Analog BPF loader.
+//! @brief The latest Analog BPF loader.
 //!
 //! The BPF loader is responsible for loading, finalizing, and executing BPF
 //! programs.  Not all networks may support the latest loader.  You can use the

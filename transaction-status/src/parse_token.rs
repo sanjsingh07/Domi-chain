@@ -1,19 +1,15 @@
-use {
-    crate::parse_instruction::{
-        check_num_accounts, ParsableProgram, ParseInstructionError, ParsedInstructionEnum,
-    },
-    serde_json::{json, Map, Value},
-    analog_account_decoder::parse_token::{pubkey_from_spl_token_v2_0, token_amount_to_ui_amount},
-    analog_sdk::{
-        instruction::{AccountMeta, CompiledInstruction, Instruction},
-        pubkey::Pubkey,
-    },
-    spl_token_v2_0::{
-        instruction::{AuthorityType, TokenInstruction},
-        solana_program::{
-            instruction::Instruction as SplTokenInstruction, program_option::COption,
-        },
-    },
+use crate::parse_instruction::{
+    check_num_accounts, ParsableProgram, ParseInstructionError, ParsedInstructionEnum,
+};
+use serde_json::{json, Map, Value};
+use analog_account_decoder::parse_token::{pubkey_from_spl_token_v2_0, token_amount_to_ui_amount};
+use analog_sdk::{
+    instruction::{AccountMeta, CompiledInstruction, Instruction},
+    pubkey::Pubkey,
+};
+use spl_token_v2_0::{
+    instruction::{AuthorityType, TokenInstruction},
+    solana_program::{instruction::Instruction as SplTokenInstruction, program_option::COption},
 };
 
 pub fn parse_token(
@@ -103,9 +99,9 @@ pub fn parse_token(
                 "destination": account_keys[instruction.accounts[1] as usize].to_string(),
                 "amount": amount.to_string(),
             });
-            let map = value.as_object_mut().unwrap();
+            let mut map = value.as_object_mut().unwrap();
             parse_signers(
-                map,
+                &mut map,
                 2,
                 account_keys,
                 &instruction.accounts,
@@ -124,9 +120,9 @@ pub fn parse_token(
                 "delegate": account_keys[instruction.accounts[1] as usize].to_string(),
                 "amount": amount.to_string(),
             });
-            let map = value.as_object_mut().unwrap();
+            let mut map = value.as_object_mut().unwrap();
             parse_signers(
-                map,
+                &mut map,
                 2,
                 account_keys,
                 &instruction.accounts,
@@ -143,9 +139,9 @@ pub fn parse_token(
             let mut value = json!({
                 "source": account_keys[instruction.accounts[0] as usize].to_string(),
             });
-            let map = value.as_object_mut().unwrap();
+            let mut map = value.as_object_mut().unwrap();
             parse_signers(
-                map,
+                &mut map,
                 1,
                 account_keys,
                 &instruction.accounts,
@@ -174,9 +170,9 @@ pub fn parse_token(
                     COption::None => None,
                 },
             });
-            let map = value.as_object_mut().unwrap();
+            let mut map = value.as_object_mut().unwrap();
             parse_signers(
-                map,
+                &mut map,
                 1,
                 account_keys,
                 &instruction.accounts,
@@ -195,9 +191,9 @@ pub fn parse_token(
                 "account": account_keys[instruction.accounts[1] as usize].to_string(),
                 "amount": amount.to_string(),
             });
-            let map = value.as_object_mut().unwrap();
+            let mut map = value.as_object_mut().unwrap();
             parse_signers(
-                map,
+                &mut map,
                 2,
                 account_keys,
                 &instruction.accounts,
@@ -216,9 +212,9 @@ pub fn parse_token(
                 "mint": account_keys[instruction.accounts[1] as usize].to_string(),
                 "amount": amount.to_string(),
             });
-            let map = value.as_object_mut().unwrap();
+            let mut map = value.as_object_mut().unwrap();
             parse_signers(
-                map,
+                &mut map,
                 2,
                 account_keys,
                 &instruction.accounts,
@@ -236,9 +232,9 @@ pub fn parse_token(
                 "account": account_keys[instruction.accounts[0] as usize].to_string(),
                 "destination": account_keys[instruction.accounts[1] as usize].to_string(),
             });
-            let map = value.as_object_mut().unwrap();
+            let mut map = value.as_object_mut().unwrap();
             parse_signers(
-                map,
+                &mut map,
                 2,
                 account_keys,
                 &instruction.accounts,
@@ -256,9 +252,9 @@ pub fn parse_token(
                 "account": account_keys[instruction.accounts[0] as usize].to_string(),
                 "mint": account_keys[instruction.accounts[1] as usize].to_string(),
             });
-            let map = value.as_object_mut().unwrap();
+            let mut map = value.as_object_mut().unwrap();
             parse_signers(
-                map,
+                &mut map,
                 2,
                 account_keys,
                 &instruction.accounts,
@@ -276,9 +272,9 @@ pub fn parse_token(
                 "account": account_keys[instruction.accounts[0] as usize].to_string(),
                 "mint": account_keys[instruction.accounts[1] as usize].to_string(),
             });
-            let map = value.as_object_mut().unwrap();
+            let mut map = value.as_object_mut().unwrap();
             parse_signers(
-                map,
+                &mut map,
                 2,
                 account_keys,
                 &instruction.accounts,
@@ -298,9 +294,9 @@ pub fn parse_token(
                 "destination": account_keys[instruction.accounts[2] as usize].to_string(),
                 "tokenAmount": token_amount_to_ui_amount(amount, decimals),
             });
-            let map = value.as_object_mut().unwrap();
+            let mut map = value.as_object_mut().unwrap();
             parse_signers(
-                map,
+                &mut map,
                 3,
                 account_keys,
                 &instruction.accounts,
@@ -320,9 +316,9 @@ pub fn parse_token(
                 "delegate": account_keys[instruction.accounts[2] as usize].to_string(),
                 "tokenAmount": token_amount_to_ui_amount(amount, decimals),
             });
-            let map = value.as_object_mut().unwrap();
+            let mut map = value.as_object_mut().unwrap();
             parse_signers(
-                map,
+                &mut map,
                 3,
                 account_keys,
                 &instruction.accounts,
@@ -341,9 +337,9 @@ pub fn parse_token(
                 "account": account_keys[instruction.accounts[1] as usize].to_string(),
                 "tokenAmount": token_amount_to_ui_amount(amount, decimals),
             });
-            let map = value.as_object_mut().unwrap();
+            let mut map = value.as_object_mut().unwrap();
             parse_signers(
-                map,
+                &mut map,
                 2,
                 account_keys,
                 &instruction.accounts,
@@ -362,9 +358,9 @@ pub fn parse_token(
                 "mint": account_keys[instruction.accounts[1] as usize].to_string(),
                 "tokenAmount": token_amount_to_ui_amount(amount, decimals),
             });
-            let map = value.as_object_mut().unwrap();
+            let mut map = value.as_object_mut().unwrap();
             parse_signers(
-                map,
+                &mut map,
                 2,
                 account_keys,
                 &instruction.accounts,
@@ -456,18 +452,16 @@ pub fn spl_token_v2_0_instruction(instruction: SplTokenInstruction) -> Instructi
 
 #[cfg(test)]
 mod test {
-    use {
-        super::*,
-        analog_sdk::instruction::CompiledInstruction,
-        spl_token_v2_0::{
-            instruction::*,
-            solana_program::{
-                instruction::CompiledInstruction as SplTokenCompiledInstruction, message::Message,
-                pubkey::Pubkey as SplTokenPubkey,
-            },
+    use super::*;
+    use analog_sdk::instruction::CompiledInstruction;
+    use spl_token_v2_0::{
+        instruction::*,
+        solana_program::{
+            instruction::CompiledInstruction as SplTokenCompiledInstruction, message::Message,
+            pubkey::Pubkey as SplTokenPubkey,
         },
-        std::str::FromStr,
     };
+    use std::str::FromStr;
 
     fn convert_pubkey(pubkey: Pubkey) -> SplTokenPubkey {
         SplTokenPubkey::from_str(&pubkey.to_string()).unwrap()

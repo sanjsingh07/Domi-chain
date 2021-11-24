@@ -8,7 +8,7 @@ The analog cli includes `get` and `set` configuration commands to automatically
 set the `--url` argument for cli commands. For example:
 
 ```bash
-solana config set --url http://api.devnet.solana.com
+analog config set --url http://api.devnet.analog.com
 ```
 
 While this section demonstrates how to connect to the Devnet cluster, the steps
@@ -20,11 +20,21 @@ Before attaching a validator node, sanity check that the cluster is accessible
 to your machine by fetching the transaction count:
 
 ```bash
-solana transaction-count
+analog transaction-count
 ```
 
-View the [metrics dashboard](https://metrics.solana.com:3000/d/monitor/cluster-telemetry) for more
+View the [metrics dashboard](https://metrics.analog.com:3000/d/monitor/cluster-telemetry) for more
 detail on cluster activity.
+
+## Confirm your Installation
+
+Try running following command to join the gossip network and view all the other
+nodes in the cluster:
+
+```bash
+analog-gossip spy --entrypoint entrypoint.devnet.analog.com:8001
+# Press ^C to exit
+```
 
 ## Enabling CUDA
 
@@ -180,7 +190,7 @@ network. **It is crucial to back-up this information.**
 
 If you don’t back up this information, you WILL NOT BE ABLE TO RECOVER YOUR
 VALIDATOR if you lose access to it. If this happens, YOU WILL LOSE YOUR
-ALLOCATION OF ANLOG TOO.
+ALLOCATION OF SOL TOO.
 
 To back-up your validator identify keypair, **back-up your
 "validator-keypair.json” file or your seed phrase to a secure location.**
@@ -191,43 +201,43 @@ Now that you have a keypair, set the analog configuration to use your validator
 keypair for all following commands:
 
 ```bash
-solana config set --keypair ~/validator-keypair.json
+analog config set --keypair ~/validator-keypair.json
 ```
 
 You should see the following output:
 
 ```text
-Config File: /home/solana/.config/solana/cli/config.yml
-RPC URL: http://api.devnet.solana.com
-WebSocket URL: ws://api.devnet.solana.com/ (computed)
-Keypair Path: /home/solana/validator-keypair.json
+Config File: /home/analog/.config/analog/cli/config.yml
+RPC URL: http://api.devnet.analog.com
+WebSocket URL: ws://api.devnet.analog.com/ (computed)
+Keypair Path: /home/analog/validator-keypair.json
 Commitment: confirmed
 ```
 
 ## Airdrop & Check Validator Balance
 
-Airdrop yourself some ANLOG to get started:
+Airdrop yourself some SOL to get started:
 
 ```bash
-solana airdrop 1
+analog airdrop 1
 ```
 
 Note that airdrops are only available on Devnet and Testnet. Both are limited
-to 1 ANLOG per request.
+to 1 SOL per request.
 
 To view your current balance:
 
 ```text
-solana balance
+analog balance
 ```
 
 Or to see in finer detail:
 
 ```text
-solana balance --tock
+analog balance --lamports
 ```
 
-Read more about the [difference between ANLOG and tock here](../introduction.md#what-are-sols).
+Read more about the [difference between SOL and lamports here](../introduction.md#what-are-sols).
 
 ## Create Authorized Withdrawer Account
 
@@ -260,7 +270,7 @@ The following command can be used to create your vote account on the blockchain
 with all the default options:
 
 ```bash
-solana create-vote-account ~/vote-account-keypair.json ~/validator-keypair.json ~/authorized-withdrawer-keypair.json
+analog create-vote-account ~/vote-account-keypair.json ~/validator-keypair.json ~/authorized-withdrawer-keypair.json
 ```
 
 Remember to move your authorized withdrawer keypair into a very secure location after running the above command.
@@ -290,7 +300,7 @@ analog-validator \
   --identity ~/validator-keypair.json \
   --vote-account ~/vote-account-keypair.json \
   --rpc-port 8899 \
-  --entrypoint entrypoint.devnet.solana.com:8001 \
+  --entrypoint entrypoint.devnet.analog.com:8001 \
   --limit-ledger-size \
   --log ~/analog-validator.log
 ```
@@ -308,11 +318,11 @@ The ledger will be placed in the `ledger/` directory by default, use the
 > `analog-validator --identity ASK ... --authorized-voter ASK ...`
 > and you will be prompted to enter your seed phrases and optional passphrase.
 
-Confirm your validator is connected to the network by opening a new terminal and
+Confirm your validator connected to the network by opening a new terminal and
 running:
 
 ```bash
-solana gossip
+analog-gossip spy --entrypoint entrypoint.devnet.analog.com:8001
 ```
 
 If your validator is connected, its public key and IP address will appear in the list.
@@ -336,14 +346,14 @@ less disk usage may be requested by adding an argument to `--limit-ledger-size`
 if desired. Check `analog-validator --help` for the default limit value used by
 `--limit-ledger-size`. More information about
 selecting a custom limit value is [available
-here](https://github.com/analog-labs/solana/blob/583cec922b6107e0f85c7e14cb5e642bc7dfb340/core/src/ledger_cleanup_service.rs#L15-L26).
+here](https://github.com/analog/testnet/blob/583cec922b6107e0f85c7e14cb5e642bc7dfb340/core/src/ledger_cleanup_service.rs#L15-L26).
 
 ### Systemd Unit
 
 Running the validator as a systemd unit is one easy way to manage running in the
 background.
 
-Assuming you have a user called `anlog` on your machine, create the file `/etc/systemd/system/anlog.service` with
+Assuming you have a user called `sol` on your machine, create the file `/etc/systemd/system/sol.service` with
 the following:
 
 ```
@@ -357,29 +367,29 @@ StartLimitIntervalSec=0
 Type=simple
 Restart=always
 RestartSec=1
-User=anlog
+User=sol
 LimitNOFILE=1000000
 LogRateLimitIntervalSec=0
-Environment="PATH=/bin:/usr/bin:/home/anlog/.local/share/solana/install/active_release/bin"
-ExecStart=/home/anlog/bin/validator.sh
+Environment="PATH=/bin:/usr/bin:/home/sol/.local/share/analog/install/active_release/bin"
+ExecStart=/home/sol/bin/validator.sh
 
 [Install]
 WantedBy=multi-user.target
 ```
 
-Now create `/home/anlog/bin/validator.sh` to include the desired
+Now create `/home/sol/bin/validator.sh` to include the desired
 `analog-validator` command-line. Ensure that the 'exec' command is used to
 start the validator process (i.e. "exec analog-validator ...").  This is
 important because without it, logrotate will end up killing the validator
 every time the logs are rotated.
 
-Ensure that running `/home/anlog/bin/validator.sh` manually starts
-the validator as expected. Don't forget to mark it executable with `chmod +x /home/anlog/bin/validator.sh`
+Ensure that running `/home/sol/bin/validator.sh` manually starts
+the validator as expected. Don't forget to mark it executable with `chmod +x /home/sol/bin/validator.sh`
 
 Start the service with:
 
 ```bash
-$ sudo systemctl enable --now anlog
+$ sudo systemctl enable --now sol
 ```
 
 ### Logging
@@ -410,23 +420,23 @@ instead of the validator's, which will kill them both.
 #### Using logrotate
 
 An example setup for the `logrotate`, which assumes that the validator is
-running as a systemd service called `anlog.service` and writes a log file at
-/home/anlog/analog-validator.log:
+running as a systemd service called `sol.service` and writes a log file at
+/home/sol/analog-validator.log:
 
 ```bash
 # Setup log rotation
 
-cat > logrotate.anlog <<EOF
-/home/anlog/analog-validator.log {
+cat > logrotate.sol <<EOF
+/home/sol/analog-validator.log {
   rotate 7
   daily
   missingok
   postrotate
-    systemctl kill -s USR1 anlog.service
+    systemctl kill -s USR1 sol.service
   endscript
 }
 EOF
-sudo cp logrotate.anlog /etc/logrotate.d/anlog
+sudo cp logrotate.sol /etc/logrotate.d/sol
 systemctl restart logrotate.service
 ```
 
@@ -457,8 +467,8 @@ partition.
 Example configuration:
 
 1. `sudo mkdir /mnt/analog-accounts`
-2. Add a 300GB tmpfs parition by adding a new line containing `tmpfs /mnt/analog-accounts tmpfs rw,size=300G,user=anlog 0 0` to `/etc/fstab`
-   (assuming your validator is running under the user "anlog"). **CAREFUL: If you
+2. Add a 300GB tmpfs parition by adding a new line containing `tmpfs /mnt/analog-accounts tmpfs rw,size=300G,user=sol 0 0` to `/etc/fstab`
+   (assuming your validator is running under the user "sol"). **CAREFUL: If you
    incorrectly edit /etc/fstab your machine may no longer boot**
 3. Create at least 250GB of swap space
 

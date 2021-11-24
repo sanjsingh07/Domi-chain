@@ -4,12 +4,11 @@ import {
   StakeProgram,
   SystemProgram,
   ParsedInstruction,
-} from "@solana/web3.js";
+} from "@analog/web3.js";
 import { InstructionCard } from "../InstructionCard";
 import { Address } from "components/common/Address";
 import { InitializeInfo } from "./types";
 import { displayTimestampUtc } from "utils/date";
-import { Epoch } from "components/common/Epoch";
 
 export function InitializeDetailsCard(props: {
   ix: ParsedInstruction;
@@ -61,9 +60,7 @@ export function InitializeDetailsCard(props: {
       {info.lockup.epoch > 0 && (
         <tr>
           <td>Lockup Expiry Epoch</td>
-          <td className="text-lg-right">
-            <Epoch epoch={info.lockup.epoch} link />
-          </td>
+          <td className="text-lg-right">{info.lockup.epoch}</td>
         </tr>
       )}
 

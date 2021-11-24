@@ -1,7 +1,7 @@
-//! Example Rust-based BPF program that tests duplicate accounts passed via accounts
+//! @brief Example Rust-based BPF program that tests duplicate accounts passed via accounts
 
-extern crate solana_program;
-use solana_program::{
+extern crate analog_program;
+use analog_program::{
     account_info::AccountInfo,
     entrypoint,
     entrypoint::ProgramResult,
@@ -33,20 +33,20 @@ fn process_instruction(
             accounts[3].data.borrow_mut()[0] += 2;
         }
         4 => {
-            msg!("modify account (1,2) tock");
-            **accounts[1].tock.borrow_mut() -= 1;
-            **accounts[2].tock.borrow_mut() += 1;
+            msg!("modify account (1,2) tocks");
+            **accounts[1].tocks.borrow_mut() -= 1;
+            **accounts[2].tocks.borrow_mut() += 1;
         }
         5 => {
-            msg!("modify account (1,3) tock");
-            **accounts[1].tock.borrow_mut() -= 2;
-            **accounts[3].tock.borrow_mut() += 2;
+            msg!("modify account (1,3) tocks");
+            **accounts[1].tocks.borrow_mut() -= 2;
+            **accounts[3].tocks.borrow_mut() += 2;
         }
         6 => {
-            msg!("modify account (1,2,3) tock");
-            **accounts[1].tock.borrow_mut() -= 3;
-            **accounts[2].tock.borrow_mut() += 1;
-            **accounts[3].tock.borrow_mut() += 2;
+            msg!("modify account (1,2,3) tocks");
+            **accounts[1].tocks.borrow_mut() -= 3;
+            **accounts[2].tocks.borrow_mut() += 1;
+            **accounts[3].tocks.borrow_mut() += 2;
         }
         7 => {
             msg!("check account (0,1,2,3) privs");

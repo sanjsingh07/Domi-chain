@@ -27,7 +27,7 @@ fn test_bench_tps_local_cluster(config: Config) {
     let cluster = LocalCluster::new(
         &mut ClusterConfig {
             node_stakes: vec![999_990; NUM_NODES],
-            cluster_lamports: 200_000_000,
+            cluster_tocks: 200_000_000,
             validator_configs: make_identical_validator_configs(
                 &ValidatorConfig::default(),
                 NUM_NODES,
@@ -57,7 +57,7 @@ fn test_bench_tps_local_cluster(config: Config) {
         .expect("run_local_faucet")
         .expect("faucet_addr");
 
-    let lamports_per_account = 100;
+    let tocks_per_account = 100;
 
     let keypair_count = config.tx_count * config.keypair_multiplier;
     let keypairs = generate_and_fund_keypairs(
@@ -65,7 +65,7 @@ fn test_bench_tps_local_cluster(config: Config) {
         Some(faucet_addr),
         &config.id,
         keypair_count,
-        lamports_per_account,
+        tocks_per_account,
     )
     .unwrap();
 

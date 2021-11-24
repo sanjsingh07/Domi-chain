@@ -52,7 +52,7 @@ impl RewardsRecorderService {
             .into_iter()
             .map(|(pubkey, reward_info)| Reward {
                 pubkey: pubkey.to_string(),
-                tock: reward_info.tock,
+                tocks: reward_info.tocks,
                 post_balance: reward_info.post_balance,
                 reward_type: Some(reward_info.reward_type),
                 commission: reward_info.commission,

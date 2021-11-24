@@ -5,7 +5,7 @@ title: Install the Analog Tool Suite
 There are multiple ways to install the Analog tools on your computer
 depending on your preferred workflow:
 
-- [Use Analog's Install Tool (Simplest option)](#use-solanas-install-tool)
+- [Use Analog's Install Tool (Simplest option)](#use-analogs-install-tool)
 - [Download Prebuilt Binaries](#download-prebuilt-binaries)
 - [Build from Source](#build-from-source)
 
@@ -16,11 +16,11 @@ depending on your preferred workflow:
 - Open your favorite Terminal application
 
 - Install the Analog release
-  [LATEST_ANALOG_RELEASE_VERSION](https://github.com/analog-labs/solana/releases/tag/LATEST_ANALOG_RELEASE_VERSION) on your
+  [LATEST_ANALOG_RELEASE_VERSION](https://github.com/analog/testnet/releases/tag/LATEST_ANALOG_RELEASE_VERSION) on your
   machine by running:
 
 ```bash
-sh -c "$(curl -sSfL https://release.solana.com/LATEST_ANALOG_RELEASE_VERSION/install)"
+sh -c "$(curl -sSfL https://release.analog.com/LATEST_ANALOG_RELEASE_VERSION/install)"
 ```
 
 - You can replace `LATEST_ANALOG_RELEASE_VERSION` with the release tag matching
@@ -31,10 +31,10 @@ sh -c "$(curl -sSfL https://release.solana.com/LATEST_ANALOG_RELEASE_VERSION/ins
 
 ```text
 downloading LATEST_ANALOG_RELEASE_VERSION installer
-Configuration: /home/solana/.config/solana/install/config.yml
-Active release directory: /home/solana/.local/share/solana/install/active_release
+Configuration: /home/analog/.config/analog/install/config.yml
+Active release directory: /home/analog/.local/share/analog/install/active_release
 * Release version: LATEST_ANALOG_RELEASE_VERSION
-* Release URL: https://github.com/analog-labs/solana/releases/download/LATEST_ANALOG_RELEASE_VERSION/analog-release-x86_64-unknown-linux-gnu.tar.bz2
+* Release URL: https://github.com/analog/testnet/releases/download/LATEST_ANALOG_RELEASE_VERSION/analog-release-x86_64-unknown-linux-gnu.tar.bz2
 Update successful
 ```
 
@@ -47,10 +47,10 @@ Please update your PATH environment variable to include the analog programs:
 
 - If you get the above message, copy and paste the recommended command below
   it to update `PATH`
-- Confirm you have the desired version of `solana` installed by running:
+- Confirm you have the desired version of `analog` installed by running:
 
 ```bash
-solana --version
+analog --version
 ```
 
 - After a successful install, `analog-install update` may be used to easily
@@ -71,7 +71,7 @@ solana --version
   installer into a temporary directory:
 
 ```bash
-curl https://release.solana.com/LATEST_ANALOG_RELEASE_VERSION/analog-install-init-x86_64-pc-windows-msvc.exe --output C:\analog-install-tmp\analog-install-init.exe --create-dirs
+curl https://release.analog.com/LATEST_ANALOG_RELEASE_VERSION/analog-install-init-x86_64-pc-windows-msvc.exe --output C:\analog-install-tmp\analog-install-init.exe --create-dirs
 ```
 
 - Copy and paste the following command, then press Enter to install the latest
@@ -88,10 +88,10 @@ C:\analog-install-tmp\analog-install-init.exe LATEST_ANALOG_RELEASE_VERSION
   normal user
   - Search for "Command Prompt" in the search bar, then left click on the
     Command Prompt app icon, no need to run as Administrator)
-- Confirm you have the desired version of `solana` installed by entering:
+- Confirm you have the desired version of `analog` installed by entering:
 
 ```bash
-solana --version
+analog --version
 ```
 
 - After a successful install, `analog-install update` may be used to easily
@@ -105,7 +105,7 @@ manually download and install the binaries.
 ### Linux
 
 Download the binaries by navigating to
-[https://github.com/analog-labs/solana/releases/latest](https://github.com/analog-labs/solana/releases/latest),
+[https://github.com/analog/testnet/releases/latest](https://github.com/analog/testnet/releases/latest),
 download **analog-release-x86_64-unknown-linux-msvc.tar.bz2**, then extract the
 archive:
 
@@ -118,7 +118,7 @@ export PATH=$PWD/bin:$PATH
 ### MacOS
 
 Download the binaries by navigating to
-[https://github.com/analog-labs/solana/releases/latest](https://github.com/analog-labs/solana/releases/latest),
+[https://github.com/analog/testnet/releases/latest](https://github.com/analog/testnet/releases/latest),
 download **analog-release-x86_64-apple-darwin.tar.bz2**, then extract the
 archive:
 
@@ -131,7 +131,7 @@ export PATH=$PWD/bin:$PATH
 ### Windows
 
 - Download the binaries by navigating to
-  [https://github.com/analog-labs/solana/releases/latest](https://github.com/analog-labs/solana/releases/latest),
+  [https://github.com/analog/testnet/releases/latest](https://github.com/analog/testnet/releases/latest),
   download **analog-release-x86_64-pc-windows-msvc.tar.bz2**, then extract the
   archive using WinZip or similar.
 
@@ -147,7 +147,7 @@ set PATH=%cd%/bin;%PATH%
 
 If you are unable to use the prebuilt binaries or prefer to build it yourself
 from source, navigate to
-[https://github.com/analog-labs/solana/releases/latest](https://github.com/analog-labs/solana/releases/latest),
+[https://github.com/analog/testnet/releases/latest](https://github.com/analog/testnet/releases/latest),
 and download the **Source Code** archive. Extract the code and build the
 binaries with:
 

@@ -1,11 +1,11 @@
 [package]
 name = "analog-keygen"
-version = "1.9.0"
+version = "1.8.2"
 description = "Analog key generation utility"
-authors = ["Analog Maintainers <maintainers@solana.foundation>"]
-repository = "https://github.com/analog-labs/solana"
+authors = ["Analog Maintainers <maintainers@analog.foundation>"]
+repository = "https://github.com/analog/testnet"
 license = "Apache-2.0"
-homepage = "https://solana.com/"
+homepage = "https://analog.com/"
 documentation = "https://docs.rs/analog-keygen"
 edition = "2018"
 
@@ -14,12 +14,12 @@ bs58 = "0.4.0"
 clap = "2.33"
 dirs-next = "2.0.0"
 num_cpus = "1.13.0"
-analog-clap-utils = { path = "../clap-utils", version = "=1.9.0" }
-analog-cli-config = { path = "../cli-config", version = "=1.9.0" }
-analog-remote-wallet = { path = "../remote-wallet", version = "=1.9.0" }
-analog-sdk = { path = "../sdk", version = "=1.9.0" }
-analog-version = { path = "../version", version = "=1.9.0" }
-tiny-bip39 = "0.8.2"
+analog-clap-utils = { path = "../clap-utils", version = "=1.8.2" }
+analog-cli-config = { path = "../cli-config", version = "=1.8.2" }
+analog-remote-wallet = { path = "../remote-wallet", version = "=1.8.2" }
+analog-sdk = { path = "../sdk", version = "=1.8.2" }
+analog-version = { path = "../version", version = "=1.8.2" }
+tiny-bip39 = "0.8.1"
 
 [[bin]]
 name = "analog-keygen"

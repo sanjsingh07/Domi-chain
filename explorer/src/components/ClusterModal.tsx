@@ -87,6 +87,7 @@ export function ClusterModal() {
 type InputProps = { activeSuffix: string; active: boolean };
 function CustomClusterInput({ activeSuffix, active }: InputProps) {
   const { customUrl } = useCluster();
+  //const { localUrl } = useCluster();
   const updateCustomUrl = useUpdateCustomUrl();
   const [editing, setEditing] = React.useState(false);
   const query = useQuery();
@@ -118,6 +119,7 @@ function CustomClusterInput({ activeSuffix, active }: InputProps) {
 
   const inputTextClass = editing ? "" : "text-muted";
   return (
+    <div>
     <Link
       to={(location) => clusterLocation(location)}
       className="btn input-group input-group-merge p-0"
@@ -138,6 +140,25 @@ function CustomClusterInput({ activeSuffix, active }: InputProps) {
         </div>
       </div>
     </Link>
+    <Link to={(location) => clusterLocation(location)}
+      className="btn input-group input-group-merge p-0" style = {{marginTop:"12px" ,padding :"8px 12px"}} >
+      <input 
+          type="text"
+          defaultValue="http://127.0.0.1:8899"
+          className={`form-control form-control-prepended ${inputTextClass} ${customClass(
+            "border"
+          )}`}
+          onFocus={() => setEditing(true)}
+          onBlur={() => setEditing(false)}
+          onInput={(e) => onUrlInput(e.currentTarget.value)}
+        />
+        <div className="input-group-prepend">
+          <div className={`input-group-text pr-0 ${customClass("border")}`}>
+            <span className={customClass("text") || ""}>Local:</span>
+          </div>
+        </div>
+    </Link>
+    </div>
   );
 }
 
@@ -206,3 +227,4 @@ function ClusterToggle() {
     </div>
   );
 }
+

@@ -37,7 +37,7 @@ export const SplitInfo = type({
   stakeAccount: PublicKeyFromString,
   stakeAuthority: PublicKeyFromString,
   newSplitAccount: PublicKeyFromString,
-  tock: number(),
+  tocks: number(),
 });
 
 export type WithdrawInfo = Infer<typeof WithdrawInfo>;
@@ -45,7 +45,7 @@ export const WithdrawInfo = type({
   stakeAccount: PublicKeyFromString,
   withdrawAuthority: PublicKeyFromString,
   destination: PublicKeyFromString,
-  tock: number(),
+  tocks: number(),
 });
 
 export type DeactivateInfo = Infer<typeof DeactivateInfo>;

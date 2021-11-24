@@ -1,17 +1,17 @@
 [package]
 name = "analog-notifier"
-version = "1.9.0"
+version = "1.8.2"
 description = "Analog Notifier"
-authors = ["Analog Maintainers <maintainers@solana.foundation>"]
-repository = "https://github.com/analog-labs/solana"
+authors = ["Analog Maintainers <maintainers@analog.foundation>"]
+repository = "https://github.com/analog/testnet"
 license = "Apache-2.0"
-homepage = "https://solana.com/"
+homepage = "https://analog.com/"
 documentation = "https://docs.rs/analog-notifier"
 edition = "2018"
 
 [dependencies]
 log = "0.4.14"
-reqwest = { version = "0.11.6", default-features = false, features = ["blocking", "rustls-tls", "json"] }
+reqwest = { version = "0.11.4", default-features = false, features = ["blocking", "rustls-tls", "json"] }
 serde_json = "1.0"
 
 [lib]

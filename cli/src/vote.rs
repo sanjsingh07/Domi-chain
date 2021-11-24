@@ -20,7 +20,7 @@ use analog_client::{rpc_client::RpcClient, rpc_config::RpcGetVoteAccountsConfig}
 use analog_remote_wallet::remote_wallet::RemoteWalletManager;
 use analog_sdk::{
     account::Account, commitment_config::CommitmentConfig, message::Message,
-    native_token::tock_to_anlog, pubkey::Pubkey, system_instruction::SystemError,
+    native_token::tocks_to_anlog, pubkey::Pubkey, system_instruction::SystemError,
     transaction::Transaction,
 };
 use analog_vote_program::{
@@ -280,10 +280,10 @@ impl VoteSubCommands for App<'_, '_> {
                         "Vote account pubkey. "),
                 )
                 .arg(
-                    Arg::with_name("tock")
-                        .long("tock")
+                    Arg::with_name("tocks")
+                        .long("tocks")
                         .takes_value(false)
-                        .help("Display balance in tock instead of ANLOG"),
+                        .help("Display balance in tocks instead of ANLOG"),
                 )
                 .arg(
                     Arg::with_name("with_rewards")
@@ -304,7 +304,7 @@ impl VoteSubCommands for App<'_, '_> {
         )
         .subcommand(
             SubCommand::with_name("withdraw-from-vote-account")
-                .about("Withdraw tock from a vote account into a specified account")
+                .about("Withdraw tocks from a vote account into a specified account")
                 .arg(
                     pubkey!(Arg::with_name("vote_account_pubkey")
                         .index(1)
@@ -534,7 +534,7 @@ pub fn parse_vote_get_account_command(
 ) -> Result<CliCommandInfo, CliError> {
     let vote_account_pubkey =
         pubkey_of_signer(matches, "vote_account_pubkey", wallet_manager)?.unwrap();
-    let use_lamports_unit = matches.is_present("tock");
+    let use_tocks_unit = matches.is_present("tocks");
     let with_rewards = if matches.is_present("with_rewards") {
         Some(value_of(matches, "num_rewards_epochs").unwrap())
     } else {
@@ -543,7 +543,7 @@ pub fn parse_vote_get_account_command(
     Ok(CliCommandInfo {
         command: CliCommand::ShowVoteAccount {
             pubkey: vote_account_pubkey,
-            use_lamports_unit,
+            use_tocks_unit,
             with_rewards,
         },
         signers: vec![],
@@ -651,7 +651,7 @@ pub fn process_create_vote_account(
         .max(1);
     let amount = SpendAmount::Some(required_balance);
 
-    let build_message = |tock| {
+    let build_message = |tocks| {
         let vote_init = VoteInit {
             node_pubkey: identity_pubkey,
             authorized_voter: authorized_voter.unwrap_or(identity_pubkey),
@@ -666,7 +666,7 @@ pub fn process_create_vote_account(
                 &vote_account_pubkey,        // base
                 seed,                        // seed
                 &vote_init,
-                tock,
+                tocks,
             )
             .with_memo(memo)
         } else {
@@ -674,7 +674,7 @@ pub fn process_create_vote_account(
                 &config.signers[0].pubkey(),
                 &vote_account_pubkey,
                 &vote_init,
-                tock,
+                tocks,
             )
             .with_memo(memo)
         };
@@ -743,15 +743,7 @@ pub fn process_vote_authorize(
                     )
                 })?
                 .1;
-            check_current_authority(current_authorized_voter, &authorized.pubkey())?;
-            if let Some(signer) = new_authorized_signer {
-                if signer.is_interactive() {
-                    return Err(CliError::BadParameter(format!(
-                        "invalid new authorized vote signer {:?}. Interactive vote signers not supported",
-                        new_authorized_pubkey
-                    )).into());
-                }
-            }
+            check_current_authority(current_authorized_voter, &authorized.pubkey())?
         }
         VoteAuthorize::Withdrawer => {
             check_current_authority(&vote_state.authorized_withdrawer, &authorized.pubkey())?
@@ -782,6 +774,7 @@ pub fn process_vote_authorize(
     check_account_for_fee_with_commitment(
         rpc_client,
         &config.signers[0].pubkey(),
+        &latest_blockhash,
         &tx.message,
         config.commitment,
     )?;
@@ -818,6 +811,7 @@ pub fn process_vote_update_validator(
     check_account_for_fee_with_commitment(
         rpc_client,
         &config.signers[0].pubkey(),
+        &latest_blockhash,
         &tx.message,
         config.commitment,
     )?;
@@ -848,6 +842,7 @@ pub fn process_vote_update_commission(
     check_account_for_fee_with_commitment(
         rpc_client,
         &config.signers[0].pubkey(),
+        &latest_blockhash,
         &tx.message,
         config.commitment,
     )?;
@@ -887,7 +882,7 @@ pub fn process_show_vote_account(
     rpc_client: &RpcClient,
     config: &CliConfig,
     vote_account_address: &Pubkey,
-    use_lamports_unit: bool,
+    use_tocks_unit: bool,
     with_rewards: Option<usize>,
 ) -> ProcessResult {
     let (vote_account, vote_state) =
@@ -926,7 +921,7 @@ pub fn process_show_vote_account(
         });
 
     let vote_account_data = CliVoteAccount {
-        account_balance: vote_account.tock,
+        account_balance: vote_account.tocks,
         validator_identity: vote_state.node_pubkey.to_string(),
         authorized_voters: vote_state.authorized_voters().into(),
         authorized_withdrawer: vote_state.authorized_withdrawer.to_string(),
@@ -936,7 +931,7 @@ pub fn process_show_vote_account(
         recent_timestamp: vote_state.last_timestamp.clone(),
         votes,
         epoch_voting_history,
-        use_lamports_unit,
+        use_tocks_unit,
         epoch_rewards,
     };
 
@@ -958,12 +953,12 @@ pub fn process_withdraw_from_vote_account(
     let current_balance = rpc_client.get_balance(vote_account_pubkey)?;
     let minimum_balance = rpc_client.get_minimum_balance_for_rent_exemption(VoteState::size_of())?;
 
-    let tock = match withdraw_amount {
+    let tocks = match withdraw_amount {
         SpendAmount::All => current_balance.saturating_sub(minimum_balance),
         SpendAmount::Some(withdraw_amount) => {
             if current_balance.saturating_sub(withdraw_amount) < minimum_balance {
                 return Err(CliError::BadParameter(format!(
-                    "Withdraw amount too large. The vote account balance must be at least {} ANLOG to remain rent exempt",tock_to_anlog(minimum_balance)
+                    "Withdraw amount too large. The vote account balance must be at least {} ANLOG to remain rent exempt", tocks_to_anlog(minimum_balance)
                 ))
                 .into());
             }
@@ -974,7 +969,7 @@ pub fn process_withdraw_from_vote_account(
     let ixs = vec![withdraw(
         vote_account_pubkey,
         &withdraw_authority.pubkey(),
-        tock,
+        tocks,
         destination_account_pubkey,
     )]
     .with_memo(memo);
@@ -985,6 +980,7 @@ pub fn process_withdraw_from_vote_account(
     check_account_for_fee_with_commitment(
         rpc_client,
         &config.signers[0].pubkey(),
+        &latest_blockhash,
         &transaction.message,
         config.commitment,
     )?;
@@ -1040,6 +1036,7 @@ pub fn process_close_vote_account(
     check_account_for_fee_with_commitment(
         rpc_client,
         &config.signers[0].pubkey(),
+        &latest_blockhash,
         &transaction.message,
         config.commitment,
     )?;

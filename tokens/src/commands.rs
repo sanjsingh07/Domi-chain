@@ -25,7 +25,7 @@ use analog_sdk::{
     commitment_config::CommitmentConfig,
     instruction::Instruction,
     message::Message,
-    native_token::{tock_to_anlog, anlog_to_tock},
+    native_token::{tocks_to_anlog, anlog_to_tocks},
     signature::{unique_signers, Signature, Signer},
     stake::{
         instruction::{self as stake_instruction, LockupArgs},
@@ -156,12 +156,12 @@ fn apply_previous_transactions(
 
 fn transfer<S: Signer>(
     client: &RpcClient,
-    tock: u64,
+    tocks: u64,
     sender_keypair: &S,
     to_pubkey: &Pubkey,
 ) -> ClientResult<Transaction> {
     let create_instruction =
-        system_instruction::transfer(&sender_keypair.pubkey(), to_pubkey, tock);
+        system_instruction::transfer(&sender_keypair.pubkey(), to_pubkey, tocks);
     let message = Message::new(&[create_instruction], Some(&sender_keypair.pubkey()));
     let recent_blockhash = client.get_latest_blockhash()?;
     Ok(Transaction::new(
@@ -187,8 +187,8 @@ fn distribution_instructions(
         None => {
             let from = args.sender_keypair.pubkey();
             let to = allocation.recipient.parse().unwrap();
-            let tock = allocation.amount;
-            let instruction = system_instruction::transfer(&from, &to, tock);
+            let tocks = allocation.amount;
+            let instruction = system_instruction::transfer(&from, &to, tocks);
             vec![instruction]
         }
 
@@ -328,7 +328,7 @@ fn build_messages(
             println!(
                 "{:<44}  {:>24.9}",
                 allocation.recipient,
-               tock_to_anlog(allocation.amount)
+                tocks_to_anlog(allocation.amount)
             );
             false
         };
@@ -340,11 +340,7 @@ fn build_messages(
             do_create_associated_token_account,
         );
         let fee_payer_pubkey = args.fee_payer.pubkey();
-        let message = Message::new_with_blockhash(
-            &instructions,
-            Some(&fee_payer_pubkey),
-            &client.get_latest_blockhash()?,
-        );
+        let message = Message::new(&instructions, Some(&fee_payer_pubkey));
         messages.push(message);
         stake_extras.push((new_stake_account_keypair, lockup_date));
     }
@@ -488,7 +484,7 @@ fn read_allocations(
             .into_iter()
             .map(|(recipient, amount, lockup_date)| Allocation {
                 recipient,
-                amount: anlog_to_tock(amount),
+                amount: anlog_to_tocks(amount),
                 lockup_date,
             })
             .collect()
@@ -514,7 +510,7 @@ fn read_allocations(
             .into_iter()
             .map(|(recipient, amount)| Allocation {
                 recipient,
-                amount: anlog_to_tock(amount),
+                amount: anlog_to_tocks(amount),
                 lockup_date: "".to_string(),
             })
             .collect()
@@ -734,9 +730,10 @@ fn check_payer_balances(
 ) -> Result<(), Error> {
     let mut undistributed_tokens: u64 = allocations.iter().map(|x| x.amount).sum();
 
+    let blockhash = client.get_latest_blockhash()?;
     let fees = messages
         .iter()
-        .map(|message| client.get_fee_for_message(message))
+        .map(|message| client.get_fee_for_message(&blockhash, message))
         .collect::<Result<Vec<_>, _>>()
         .unwrap()
         .iter()
@@ -764,28 +761,28 @@ fn check_payer_balances(
         if staker_balance < undistributed_tokens {
             return Err(Error::InsufficientFunds(
                 vec![FundingSource::StakeAccount].into(),
-               tock_to_anlog(undistributed_tokens).to_string(),
+                tocks_to_anlog(undistributed_tokens).to_string(),
             ));
         }
         if args.fee_payer.pubkey() == unlocked_anlog_source {
             if fee_payer_balance < fees + total_unlocked_anlog {
                 return Err(Error::InsufficientFunds(
                     vec![FundingSource::SystemAccount, FundingSource::FeePayer].into(),
-                   tock_to_anlog(fees + total_unlocked_anlog).to_string(),
+                    tocks_to_anlog(fees + total_unlocked_anlog).to_string(),
                 ));
             }
         } else {
             if fee_payer_balance < fees {
                 return Err(Error::InsufficientFunds(
                     vec![FundingSource::FeePayer].into(),
-                   tock_to_anlog(fees).to_string(),
+                    tocks_to_anlog(fees).to_string(),
                 ));
             }
             let unlocked_anlog_balance = client.get_balance(&unlocked_anlog_source)?;
             if unlocked_anlog_balance < total_unlocked_anlog {
                 return Err(Error::InsufficientFunds(
                     vec![FundingSource::SystemAccount].into(),
-                   tock_to_anlog(total_unlocked_anlog).to_string(),
+                    tocks_to_anlog(total_unlocked_anlog).to_string(),
                 ));
             }
         }
@@ -793,21 +790,21 @@ fn check_payer_balances(
         if fee_payer_balance < fees + undistributed_tokens {
             return Err(Error::InsufficientFunds(
                 vec![FundingSource::SystemAccount, FundingSource::FeePayer].into(),
-               tock_to_anlog(fees + undistributed_tokens).to_string(),
+                tocks_to_anlog(fees + undistributed_tokens).to_string(),
             ));
         }
     } else {
         if fee_payer_balance < fees {
             return Err(Error::InsufficientFunds(
                 vec![FundingSource::FeePayer].into(),
-               tock_to_anlog(fees).to_string(),
+                tocks_to_anlog(fees).to_string(),
             ));
         }
         let sender_balance = client.get_balance(&distribution_source)?;
         if sender_balance < undistributed_tokens {
             return Err(Error::InsufficientFunds(
                 vec![FundingSource::SystemAccount].into(),
-               tock_to_anlog(undistributed_tokens).to_string(),
+                tocks_to_anlog(undistributed_tokens).to_string(),
             ));
         }
     }
@@ -822,7 +819,7 @@ pub fn process_balances(client: &RpcClient, args: &BalancesArgs) -> Result<(), E
     let token = if let Some(spl_token_args) = &args.spl_token_args {
         spl_token_args.mint.to_string()
     } else {
-        "◎".to_string()
+        "GM".to_string()
     };
     println!("{} {}", style("Token:").bold(), token);
 
@@ -840,8 +837,8 @@ pub fn process_balances(client: &RpcClient, args: &BalancesArgs) -> Result<(), E
             print_token_balances(client, allocation, spl_token_args)?;
         } else {
             let address: Pubkey = allocation.recipient.parse().unwrap();
-            let expected =tock_to_anlog(allocation.amount);
-            let actual =tock_to_anlog(client.get_balance(&address).unwrap());
+            let expected = tocks_to_anlog(allocation.amount);
+            let actual = tocks_to_anlog(client.get_balance(&address).unwrap());
             println!(
                 "{:<44}  {:>24.9}  {:>24.9}  {:>24.9}",
                 allocation.recipient,
@@ -873,7 +870,7 @@ pub fn test_process_distribute_tokens_with_client(
     let fee_payer = Keypair::new();
     let transaction = transfer(
         client,
-        anlog_to_tock(1.0),
+        anlog_to_tocks(1.0),
         &sender_keypair,
         &fee_payer.pubkey(),
     )
@@ -883,13 +880,13 @@ pub fn test_process_distribute_tokens_with_client(
         .unwrap();
     assert_eq!(
         client.get_balance(&fee_payer.pubkey()).unwrap(),
-        anlog_to_tock(1.0),
+        anlog_to_tocks(1.0),
     );
 
     let expected_amount = if let Some(amount) = transfer_amount {
         amount
     } else {
-        anlog_to_tock(1000.0)
+        anlog_to_tocks(1000.0)
     };
     let alice_pubkey = analog_sdk::pubkey::new_rand();
     let allocations_file = NamedTempFile::new().unwrap();
@@ -898,7 +895,7 @@ pub fn test_process_distribute_tokens_with_client(
     wtr.write_record(&["recipient", "amount"]).unwrap();
     wtr.write_record(&[
         alice_pubkey.to_string(),
-       tock_to_anlog(expected_amount).to_string(),
+        tocks_to_anlog(expected_amount).to_string(),
     ])
     .unwrap();
     wtr.flush().unwrap();
@@ -956,7 +953,7 @@ pub fn test_process_create_stake_with_client(client: &RpcClient, sender_keypair:
     let fee_payer = Keypair::new();
     let transaction = transfer(
         client,
-        anlog_to_tock(1.0),
+        anlog_to_tocks(1.0),
         &sender_keypair,
         &fee_payer.pubkey(),
     )
@@ -980,7 +977,7 @@ pub fn test_process_create_stake_with_client(client: &RpcClient, sender_keypair:
         &stake_account_address,
         &authorized,
         &lockup,
-        anlog_to_tock(3000.0),
+        anlog_to_tocks(3000.0),
     );
     let message = Message::new(&instructions, Some(&sender_keypair.pubkey()));
     let signers = [&sender_keypair, &stake_account_keypair];
@@ -990,7 +987,7 @@ pub fn test_process_create_stake_with_client(client: &RpcClient, sender_keypair:
         .send_and_confirm_transaction_with_spinner(&transaction)
         .unwrap();
 
-    let expected_amount = anlog_to_tock(1000.0);
+    let expected_amount = anlog_to_tocks(1000.0);
     let alice_pubkey = analog_sdk::pubkey::new_rand();
     let file = NamedTempFile::new().unwrap();
     let input_csv = file.path().to_str().unwrap().to_string();
@@ -999,7 +996,7 @@ pub fn test_process_create_stake_with_client(client: &RpcClient, sender_keypair:
         .unwrap();
     wtr.write_record(&[
         alice_pubkey.to_string(),
-       tock_to_anlog(expected_amount).to_string(),
+        tocks_to_anlog(expected_amount).to_string(),
         "".to_string(),
     ])
     .unwrap();
@@ -1018,7 +1015,7 @@ pub fn test_process_create_stake_with_client(client: &RpcClient, sender_keypair:
 
     let stake_args = StakeArgs {
         lockup_authority: None,
-        unlocked_anlog: anlog_to_tock(1.0),
+        unlocked_anlog: anlog_to_tocks(1.0),
         sender_stake_args: None,
     };
     let args = DistributeTokensArgs {
@@ -1043,12 +1040,12 @@ pub fn test_process_create_stake_with_client(client: &RpcClient, sender_keypair:
 
     assert_eq!(
         client.get_balance(&alice_pubkey).unwrap(),
-        anlog_to_tock(1.0),
+        anlog_to_tocks(1.0),
     );
     let new_stake_account_address = transaction_infos[0].new_stake_account_address.unwrap();
     assert_eq!(
         client.get_balance(&new_stake_account_address).unwrap(),
-        expected_amount - anlog_to_tock(1.0),
+        expected_amount - anlog_to_tocks(1.0),
     );
 
     check_output_file(&output_path, &db::open_db(&transaction_db, true).unwrap());
@@ -1063,11 +1060,11 @@ pub fn test_process_create_stake_with_client(client: &RpcClient, sender_keypair:
 
     assert_eq!(
         client.get_balance(&alice_pubkey).unwrap(),
-        anlog_to_tock(1.0),
+        anlog_to_tocks(1.0),
     );
     assert_eq!(
         client.get_balance(&new_stake_account_address).unwrap(),
-        expected_amount - anlog_to_tock(1.0),
+        expected_amount - anlog_to_tocks(1.0),
     );
 
     check_output_file(&output_path, &db::open_db(&transaction_db, true).unwrap());
@@ -1078,7 +1075,7 @@ pub fn test_process_distribute_stake_with_client(client: &RpcClient, sender_keyp
     let fee_payer = Keypair::new();
     let transaction = transfer(
         client,
-        anlog_to_tock(1.0),
+        anlog_to_tocks(1.0),
         &sender_keypair,
         &fee_payer.pubkey(),
     )
@@ -1102,7 +1099,7 @@ pub fn test_process_distribute_stake_with_client(client: &RpcClient, sender_keyp
         &stake_account_address,
         &authorized,
         &lockup,
-        anlog_to_tock(3000.0),
+        anlog_to_tocks(3000.0),
     );
     let message = Message::new(&instructions, Some(&sender_keypair.pubkey()));
     let signers = [&sender_keypair, &stake_account_keypair];
@@ -1112,7 +1109,7 @@ pub fn test_process_distribute_stake_with_client(client: &RpcClient, sender_keyp
         .send_and_confirm_transaction_with_spinner(&transaction)
         .unwrap();
 
-    let expected_amount = anlog_to_tock(1000.0);
+    let expected_amount = anlog_to_tocks(1000.0);
     let alice_pubkey = analog_sdk::pubkey::new_rand();
     let file = NamedTempFile::new().unwrap();
     let input_csv = file.path().to_str().unwrap().to_string();
@@ -1121,7 +1118,7 @@ pub fn test_process_distribute_stake_with_client(client: &RpcClient, sender_keyp
         .unwrap();
     wtr.write_record(&[
         alice_pubkey.to_string(),
-       tock_to_anlog(expected_amount).to_string(),
+        tocks_to_anlog(expected_amount).to_string(),
         "".to_string(),
     ])
     .unwrap();
@@ -1145,7 +1142,7 @@ pub fn test_process_distribute_stake_with_client(client: &RpcClient, sender_keyp
         lockup_authority: None,
     };
     let stake_args = StakeArgs {
-        unlocked_anlog: anlog_to_tock(1.0),
+        unlocked_anlog: anlog_to_tocks(1.0),
         lockup_authority: None,
         sender_stake_args: Some(sender_stake_args),
     };
@@ -1171,12 +1168,12 @@ pub fn test_process_distribute_stake_with_client(client: &RpcClient, sender_keyp
 
     assert_eq!(
         client.get_balance(&alice_pubkey).unwrap(),
-        anlog_to_tock(1.0),
+        anlog_to_tocks(1.0),
     );
     let new_stake_account_address = transaction_infos[0].new_stake_account_address.unwrap();
     assert_eq!(
         client.get_balance(&new_stake_account_address).unwrap(),
-        expected_amount - anlog_to_tock(1.0),
+        expected_amount - anlog_to_tocks(1.0),
     );
 
     check_output_file(&output_path, &db::open_db(&transaction_db, true).unwrap());
@@ -1191,11 +1188,11 @@ pub fn test_process_distribute_stake_with_client(client: &RpcClient, sender_keyp
 
     assert_eq!(
         client.get_balance(&alice_pubkey).unwrap(),
-        anlog_to_tock(1.0),
+        anlog_to_tocks(1.0),
     );
     assert_eq!(
         client.get_balance(&new_stake_account_address).unwrap(),
-        expected_amount - anlog_to_tock(1.0),
+        expected_amount - anlog_to_tocks(1.0),
     );
 
     check_output_file(&output_path, &db::open_db(&transaction_db, true).unwrap());
@@ -1204,24 +1201,23 @@ pub fn test_process_distribute_stake_with_client(client: &RpcClient, sender_keyp
 #[cfg(test)]
 mod tests {
     use super::*;
+    use analog_core::test_validator::TestValidator;
     use analog_sdk::{
         instruction::AccountMeta,
         signature::{read_keypair_file, write_keypair_file, Signer},
         stake::instruction::StakeInstruction,
     };
     use analog_streamer::socket::SocketAddrSpace;
-    use analog_test_validator::TestValidator;
     use analog_transaction_status::TransactionConfirmationStatus;
 
-    fn one_signer_message(client: &RpcClient) -> Message {
-        Message::new_with_blockhash(
+    fn one_signer_message() -> Message {
+        Message::new(
             &[Instruction::new_with_bytes(
                 Pubkey::new_unique(),
                 &[],
                 vec![AccountMeta::new(Pubkey::default(), true)],
             )],
             None,
-            &client.get_latest_blockhash().unwrap(),
         )
     }
 
@@ -1244,7 +1240,7 @@ mod tests {
         let url = test_validator.rpc_url();
 
         let client = RpcClient::new_with_commitment(url, CommitmentConfig::processed());
-        test_process_distribute_tokens_with_client(&client, alice, Some(anlog_to_tock(1.5)));
+        test_process_distribute_tokens_with_client(&client, alice, Some(anlog_to_tocks(1.5)));
     }
 
     #[test]
@@ -1290,7 +1286,7 @@ mod tests {
 
         let allocation_anlog = Allocation {
             recipient: alice_pubkey.to_string(),
-            amount: anlog_to_tock(42.0),
+            amount: anlog_to_tocks(42.0),
             lockup_date: "".to_string(),
         };
 
@@ -1324,12 +1320,12 @@ mod tests {
         let expected_allocations = vec![
             Allocation {
                 recipient: pubkey0.to_string(),
-                amount: anlog_to_tock(42.0),
+                amount: anlog_to_tocks(42.0),
                 lockup_date: "".to_string(),
             },
             Allocation {
                 recipient: pubkey1.to_string(),
-                amount: anlog_to_tock(43.0),
+                amount: anlog_to_tocks(43.0),
                 lockup_date: "".to_string(),
             },
         ];
@@ -1356,12 +1352,12 @@ mod tests {
         let expected_allocations = vec![
             Allocation {
                 recipient: pubkey0.to_string(),
-                amount: anlog_to_tock(42.0),
+                amount: anlog_to_tocks(42.0),
                 lockup_date: "".to_string(),
             },
             Allocation {
                 recipient: pubkey1.to_string(),
-                amount: anlog_to_tock(43.0),
+                amount: anlog_to_tocks(43.0),
                 lockup_date: "".to_string(),
             },
         ];
@@ -1385,7 +1381,7 @@ mod tests {
         wtr.serialize(&pubkey2.to_string()).unwrap();
         wtr.flush().unwrap();
 
-        let amount = anlog_to_tock(1.5);
+        let amount = anlog_to_tocks(1.5);
 
         let expected_allocations = vec![
             Allocation {
@@ -1417,18 +1413,18 @@ mod tests {
         let mut allocations = vec![
             Allocation {
                 recipient: alice.to_string(),
-                amount: anlog_to_tock(1.0),
+                amount: anlog_to_tocks(1.0),
                 lockup_date: "".to_string(),
             },
             Allocation {
                 recipient: bob.to_string(),
-                amount: anlog_to_tock(1.0),
+                amount: anlog_to_tocks(1.0),
                 lockup_date: "".to_string(),
             },
         ];
         let transaction_infos = vec![TransactionInfo {
             recipient: bob,
-            amount: anlog_to_tock(1.0),
+            amount: anlog_to_tocks(1.0),
             ..TransactionInfo::default()
         }];
         apply_previous_transactions(&mut allocations, &transaction_infos);
@@ -1447,12 +1443,12 @@ mod tests {
         let lockup1 = "9999-12-31T23:59:59Z".to_string();
         let alice_alloc = Allocation {
             recipient: alice_pubkey.to_string(),
-            amount: anlog_to_tock(1.0),
+            amount: anlog_to_tocks(1.0),
             lockup_date: "".to_string(),
         };
         let alice_alloc_lockup0 = Allocation {
             recipient: alice_pubkey.to_string(),
-            amount: anlog_to_tock(1.0),
+            amount: anlog_to_tocks(1.0),
             lockup_date: lockup0.clone(),
         };
         let alice_info = TransactionInfo {
@@ -1495,7 +1491,7 @@ mod tests {
         let lockup_date_str = "2021-01-07T00:00:00Z";
         let allocation = Allocation {
             recipient: Pubkey::default().to_string(),
-            amount: anlog_to_tock(1.0),
+            amount: anlog_to_tocks(1.0),
             lockup_date: lockup_date_str.to_string(),
         };
         let stake_account_address = analog_sdk::pubkey::new_rand();
@@ -1510,7 +1506,7 @@ mod tests {
         };
         let stake_args = StakeArgs {
             lockup_authority: Some(lockup_authority_address),
-            unlocked_anlog: anlog_to_tock(1.0),
+            unlocked_anlog: anlog_to_tocks(1.0),
             sender_stake_args: Some(sender_stake_args),
         };
         let args = DistributeTokensArgs {
@@ -1547,7 +1543,7 @@ mod tests {
         use std::env;
         let out_dir = env::var("FARF_DIR").unwrap_or_else(|_| "farf".to_string());
 
-        format!("{}/tmp/{}-{}", out_dir, name, pubkey)
+        format!("{}/tmp/{}-{}", out_dir, name, pubkey.to_string())
     }
 
     fn initialize_check_payer_balances_inputs(
@@ -1579,7 +1575,7 @@ mod tests {
     #[test]
     fn test_check_payer_balances_distribute_tokens_single_payer() {
         let fees = 10_000;
-        let fees_in_anlog =tock_to_anlog(fees);
+        let fees_in_anlog = tocks_to_anlog(fees);
 
         let alice = Keypair::new();
         let test_validator = TestValidator::with_custom_fees(
@@ -1598,12 +1594,12 @@ mod tests {
 
         // Fully funded payer
         let (allocations, mut args) = initialize_check_payer_balances_inputs(
-            anlog_to_tock(allocation_amount),
+            anlog_to_tocks(allocation_amount),
             &sender_keypair_file,
             &sender_keypair_file,
             None,
         );
-        check_payer_balances(&[one_signer_message(&client)], &allocations, &client, &args).unwrap();
+        check_payer_balances(&[one_signer_message()], &allocations, &client, &args).unwrap();
 
         // Unfunded payer
         let unfunded_payer = Keypair::new();
@@ -1617,7 +1613,7 @@ mod tests {
             .into();
 
         let err_result =
-            check_payer_balances(&[one_signer_message(&client)], &allocations, &client, &args)
+            check_payer_balances(&[one_signer_message()], &allocations, &client, &args)
                 .unwrap_err();
         if let Error::InsufficientFunds(sources, amount) = err_result {
             assert_eq!(
@@ -1640,7 +1636,7 @@ mod tests {
         .unwrap();
         let transaction = transfer(
             &client,
-            anlog_to_tock(allocation_amount),
+            anlog_to_tocks(allocation_amount),
             &alice,
             &partially_funded_payer.pubkey(),
         )
@@ -1656,7 +1652,7 @@ mod tests {
             .unwrap()
             .into();
         let err_result =
-            check_payer_balances(&[one_signer_message(&client)], &allocations, &client, &args)
+            check_payer_balances(&[one_signer_message()], &allocations, &client, &args)
                 .unwrap_err();
         if let Error::InsufficientFunds(sources, amount) = err_result {
             assert_eq!(
@@ -1672,7 +1668,7 @@ mod tests {
     #[test]
     fn test_check_payer_balances_distribute_tokens_separate_payers() {
         let fees = 10_000;
-        let fees_in_anlog =tock_to_anlog(fees);
+        let fees_in_anlog = tocks_to_anlog(fees);
         let alice = Keypair::new();
         let test_validator = TestValidator::with_custom_fees(
             alice.pubkey(),
@@ -1694,7 +1690,7 @@ mod tests {
         write_keypair_file(&funded_payer, &funded_payer_keypair_file).unwrap();
         let transaction = transfer(
             &client,
-            anlog_to_tock(allocation_amount),
+            anlog_to_tocks(allocation_amount),
             &alice,
             &funded_payer.pubkey(),
         )
@@ -1705,12 +1701,12 @@ mod tests {
 
         // Fully funded payers
         let (allocations, mut args) = initialize_check_payer_balances_inputs(
-            anlog_to_tock(allocation_amount),
+            anlog_to_tocks(allocation_amount),
             &funded_payer_keypair_file,
             &sender_keypair_file,
             None,
         );
-        check_payer_balances(&[one_signer_message(&client)], &allocations, &client, &args).unwrap();
+        check_payer_balances(&[one_signer_message()], &allocations, &client, &args).unwrap();
 
         // Unfunded sender
         let unfunded_payer = Keypair::new();
@@ -1722,7 +1718,7 @@ mod tests {
         args.fee_payer = read_keypair_file(&sender_keypair_file).unwrap().into();
 
         let err_result =
-            check_payer_balances(&[one_signer_message(&client)], &allocations, &client, &args)
+            check_payer_balances(&[one_signer_message()], &allocations, &client, &args)
                 .unwrap_err();
         if let Error::InsufficientFunds(sources, amount) = err_result {
             assert_eq!(sources, vec![FundingSource::SystemAccount].into());
@@ -1738,7 +1734,7 @@ mod tests {
             .into();
 
         let err_result =
-            check_payer_balances(&[one_signer_message(&client)], &allocations, &client, &args)
+            check_payer_balances(&[one_signer_message()], &allocations, &client, &args)
                 .unwrap_err();
         if let Error::InsufficientFunds(sources, amount) = err_result {
             assert_eq!(sources, vec![FundingSource::FeePayer].into());
@@ -1796,7 +1792,7 @@ mod tests {
     #[test]
     fn test_check_payer_balances_distribute_stakes_single_payer() {
         let fees = 10_000;
-        let fees_in_anlog =tock_to_anlog(fees);
+        let fees_in_anlog = tocks_to_anlog(fees);
         let alice = Keypair::new();
         let test_validator = TestValidator::with_custom_fees(
             alice.pubkey(),
@@ -1813,30 +1809,30 @@ mod tests {
         let allocation_amount = 1000.0;
         let unlocked_anlog = 1.0;
         let stake_args = initialize_stake_account(
-            anlog_to_tock(allocation_amount),
-            anlog_to_tock(unlocked_anlog),
+            anlog_to_tocks(allocation_amount),
+            anlog_to_tocks(unlocked_anlog),
             &alice,
             &client,
         );
 
         // Fully funded payer & stake account
         let (allocations, mut args) = initialize_check_payer_balances_inputs(
-            anlog_to_tock(allocation_amount),
+            anlog_to_tocks(allocation_amount),
             &sender_keypair_file,
             &sender_keypair_file,
             Some(stake_args),
         );
-        check_payer_balances(&[one_signer_message(&client)], &allocations, &client, &args).unwrap();
+        check_payer_balances(&[one_signer_message()], &allocations, &client, &args).unwrap();
 
         // Underfunded stake-account
         let expensive_allocation_amount = 5000.0;
         let expensive_allocations = vec![Allocation {
             recipient: analog_sdk::pubkey::new_rand().to_string(),
-            amount: anlog_to_tock(expensive_allocation_amount),
+            amount: anlog_to_tocks(expensive_allocation_amount),
             lockup_date: "".to_string(),
         }];
         let err_result = check_payer_balances(
-            &[one_signer_message(&client)],
+            &[one_signer_message()],
             &expensive_allocations,
             &client,
             &args,
@@ -1864,7 +1860,7 @@ mod tests {
             .into();
 
         let err_result =
-            check_payer_balances(&[one_signer_message(&client)], &allocations, &client, &args)
+            check_payer_balances(&[one_signer_message()], &allocations, &client, &args)
                 .unwrap_err();
         if let Error::InsufficientFunds(sources, amount) = err_result {
             assert_eq!(
@@ -1887,7 +1883,7 @@ mod tests {
         .unwrap();
         let transaction = transfer(
             &client,
-            anlog_to_tock(unlocked_anlog),
+            anlog_to_tocks(unlocked_anlog),
             &alice,
             &partially_funded_payer.pubkey(),
         )
@@ -1903,7 +1899,7 @@ mod tests {
             .unwrap()
             .into();
         let err_result =
-            check_payer_balances(&[one_signer_message(&client)], &allocations, &client, &args)
+            check_payer_balances(&[one_signer_message()], &allocations, &client, &args)
                 .unwrap_err();
         if let Error::InsufficientFunds(sources, amount) = err_result {
             assert_eq!(
@@ -1919,7 +1915,7 @@ mod tests {
     #[test]
     fn test_check_payer_balances_distribute_stakes_separate_payers() {
         let fees = 10_000;
-        let fees_in_anlog =tock_to_anlog(fees);
+        let fees_in_anlog = tocks_to_anlog(fees);
         let alice = Keypair::new();
         let test_validator = TestValidator::with_custom_fees(
             alice.pubkey(),
@@ -1937,8 +1933,8 @@ mod tests {
         let allocation_amount = 1000.0;
         let unlocked_anlog = 1.0;
         let stake_args = initialize_stake_account(
-            anlog_to_tock(allocation_amount),
-            anlog_to_tock(unlocked_anlog),
+            anlog_to_tocks(allocation_amount),
+            anlog_to_tocks(unlocked_anlog),
             &alice,
             &client,
         );
@@ -1948,7 +1944,7 @@ mod tests {
         write_keypair_file(&funded_payer, &funded_payer_keypair_file).unwrap();
         let transaction = transfer(
             &client,
-            anlog_to_tock(unlocked_anlog),
+            anlog_to_tocks(unlocked_anlog),
             &alice,
             &funded_payer.pubkey(),
         )
@@ -1959,12 +1955,12 @@ mod tests {
 
         // Fully funded payers
         let (allocations, mut args) = initialize_check_payer_balances_inputs(
-            anlog_to_tock(allocation_amount),
+            anlog_to_tocks(allocation_amount),
             &funded_payer_keypair_file,
             &sender_keypair_file,
             Some(stake_args),
         );
-        check_payer_balances(&[one_signer_message(&client)], &allocations, &client, &args).unwrap();
+        check_payer_balances(&[one_signer_message()], &allocations, &client, &args).unwrap();
 
         // Unfunded sender
         let unfunded_payer = Keypair::new();
@@ -1976,7 +1972,7 @@ mod tests {
         args.fee_payer = read_keypair_file(&sender_keypair_file).unwrap().into();
 
         let err_result =
-            check_payer_balances(&[one_signer_message(&client)], &allocations, &client, &args)
+            check_payer_balances(&[one_signer_message()], &allocations, &client, &args)
                 .unwrap_err();
         if let Error::InsufficientFunds(sources, amount) = err_result {
             assert_eq!(sources, vec![FundingSource::SystemAccount].into());
@@ -1992,7 +1988,7 @@ mod tests {
             .into();
 
         let err_result =
-            check_payer_balances(&[one_signer_message(&client)], &allocations, &client, &args)
+            check_payer_balances(&[one_signer_message()], &allocations, &client, &args)
                 .unwrap_err();
         if let Error::InsufficientFunds(sources, amount) = err_result {
             assert_eq!(sources, vec![FundingSource::FeePayer].into());
@@ -2016,7 +2012,7 @@ mod tests {
 
         let sender = Keypair::new();
         let recipient = Pubkey::new_unique();
-        let amount = anlog_to_tock(1.0);
+        let amount = anlog_to_tocks(1.0);
         let last_valid_block_height = 222;
         let transaction = transfer(&client, amount, &sender, &recipient).unwrap();
 
@@ -2051,7 +2047,7 @@ mod tests {
         };
         let allocation = Allocation {
             recipient: recipient.to_string(),
-            amount: anlog_to_tock(1.0),
+            amount: anlog_to_tocks(1.0),
             lockup_date: "".to_string(),
         };
 
@@ -2138,7 +2134,7 @@ mod tests {
 
         let sender = Keypair::new();
         let recipient = Pubkey::new_unique();
-        let amount = anlog_to_tock(1.0);
+        let amount = anlog_to_tocks(1.0);
         let last_valid_block_height = 222;
         let transaction = transfer(&client, amount, &sender, &recipient).unwrap();
 
@@ -2173,7 +2169,7 @@ mod tests {
         };
         let allocation = Allocation {
             recipient: recipient.to_string(),
-            amount: anlog_to_tock(1.0),
+            amount: anlog_to_tocks(1.0),
             lockup_date: "".to_string(),
         };
         let message = transaction.message.clone();
@@ -2256,7 +2252,7 @@ mod tests {
         let fee_payer = Keypair::new();
         let transaction = transfer(
             &client,
-            anlog_to_tock(1.0),
+            anlog_to_tocks(1.0),
             &sender_keypair,
             &fee_payer.pubkey(),
         )
@@ -2276,7 +2272,7 @@ mod tests {
         let recipient = Pubkey::new_unique();
         let allocation = Allocation {
             recipient: recipient.to_string(),
-            amount: anlog_to_tock(1.0),
+            amount: anlog_to_tocks(1.0),
             lockup_date: "".to_string(),
         };
         // This is just dummy data; Args will not affect messages
@@ -2315,7 +2311,7 @@ mod tests {
 
         let sender = Keypair::new();
         let recipient = Pubkey::new_unique();
-        let amount = anlog_to_tock(1.0);
+        let amount = anlog_to_tocks(1.0);
         let last_valid_block_height = 222;
         let transaction = transfer(&client, amount, &sender, &recipient).unwrap();
 
@@ -2408,7 +2404,7 @@ mod tests {
 
         let sender = Keypair::new();
         let recipient = Pubkey::new_unique();
-        let amount = anlog_to_tock(1.0);
+        let amount = anlog_to_tocks(1.0);
         let last_valid_block_height = 222;
         let transaction = transfer(&client, amount, &sender, &recipient).unwrap();
 

@@ -137,7 +137,7 @@ all_test_steps() {
              ^ci/test-coverage.sh \
              ^scripts/coverage.sh \
       ; then
-    command_step coverage ". ci/rust-version.sh; ci/docker-run.sh \$\$rust_nightly_docker_image ci/test-coverage.sh" 40
+    command_step coverage ". ci/rust-version.sh; ci/docker-run.sh \$\$rust_nightly_docker_image ci/test-coverage.sh" 30
     wait_step
   else
     annotate --style info --context test-coverage \
@@ -270,7 +270,7 @@ if [[ -n $BUILDKITE_TAG ]]; then
   start_pipeline "Tag pipeline for $BUILDKITE_TAG"
 
   annotate --style info --context release-tag \
-    "https://github.com/analog-labs/solana/releases/$BUILDKITE_TAG"
+    "https://github.com/analog/testnet/releases/$BUILDKITE_TAG"
 
   # Jump directly to the secondary build to publish release artifacts quickly
   trigger_secondary_step
@@ -288,7 +288,7 @@ if [[ $BUILDKITE_BRANCH =~ ^pull ]]; then
 
   # Add helpful link back to the corresponding Github Pull Request
   annotate --style info --context pr-backlink \
-    "Github Pull Request: https://github.com/analog-labs/solana/$BUILDKITE_BRANCH"
+    "Github Pull Request: https://github.com/analog/testnet/$BUILDKITE_BRANCH"
 
   if [[ $GITHUB_USER = "dependabot[bot]" ]]; then
     command_step dependabot "ci/dependabot-pr.sh" 5

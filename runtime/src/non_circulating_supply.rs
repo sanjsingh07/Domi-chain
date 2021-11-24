@@ -14,7 +14,7 @@ use {
 };
 
 pub struct NonCirculatingSupply {
-    pub tock: u64,
+    pub tocks: u64,
     pub accounts: Vec<Pubkey>,
 }
 
@@ -39,7 +39,7 @@ pub fn calculate_non_circulating_supply(bank: &Arc<Bank>) -> ScanResult<NonCircu
             &IndexKey::ProgramId(stake::program::id()),
             // The program-id account index checks for Account owner on inclusion. However, due to
             // the current AccountsDb implementation, an account may remain in storage as a
-            // zero-lamport Account::Default() after being wiped and reinitialized in later
+            // zero-tock Account::Default() after being wiped and reinitialized in later
             // updates. We include the redundant filter here to avoid returning these accounts.
             |account| account.owner() == &stake::program::id(),
         )?
@@ -68,13 +68,13 @@ pub fn calculate_non_circulating_supply(bank: &Arc<Bank>) -> ScanResult<NonCircu
         }
     }
 
-    let tock = non_circulating_accounts_set
+    let tocks = non_circulating_accounts_set
         .iter()
         .map(|pubkey| bank.get_balance(pubkey))
         .sum();
 
     Ok(NonCirculatingSupply {
-        tock,
+        tocks,
         accounts: non_circulating_accounts_set.into_iter().collect(),
     })
 }
@@ -208,7 +208,6 @@ analog_sdk::pubkeys!(
         "GeMGyvsTEsANVvcT5cme65Xq5MVU8fVVzMQ13KAZFNS2",
         "Bj3aQ2oFnZYfNR1njzRjmWizzuhvfcYLckh76cqsbuBM",
         "4ZJhPQAgUseCsWhKvJLTmmRRUV74fdoTpQLNfKoekbPY",
-        "HXdYQ5gixrY2H6Y9gqsD8kPM2JQKSaRiohDQtLbZkRWE",
     ]
 );
 
@@ -283,7 +282,7 @@ mod tests {
 
         let non_circulating_supply = calculate_non_circulating_supply(&bank).unwrap();
         assert_eq!(
-            non_circulating_supply.tock,
+            non_circulating_supply.tocks,
             (num_non_circulating_accounts + num_stake_accounts) * balance
         );
         assert_eq!(
@@ -301,7 +300,7 @@ mod tests {
         }
         let non_circulating_supply = calculate_non_circulating_supply(&bank).unwrap();
         assert_eq!(
-            non_circulating_supply.tock,
+            non_circulating_supply.tocks,
             (num_non_circulating_accounts * new_balance) + (num_stake_accounts * balance)
         );
         assert_eq!(
@@ -316,7 +315,7 @@ mod tests {
         assert_eq!(bank.epoch(), 1);
         let non_circulating_supply = calculate_non_circulating_supply(&bank).unwrap();
         assert_eq!(
-            non_circulating_supply.tock,
+            non_circulating_supply.tocks,
             num_non_circulating_accounts * new_balance
         );
         assert_eq!(

@@ -38,7 +38,7 @@ function write_program_account_data_csv {
 
   echo "Account_Pubkey,Lamports" > $CSV_OUTFILE
   # shellcheck disable=SC2002
-  cat "$JSON_INFILE" | jq -r '(.result | .[]) | [.pubkey, (.account | .tock)] | @csv' \
+  cat "$JSON_INFILE" | jq -r '(.result | .[]) | [.pubkey, (.account | .lamports)] | @csv' \
     >> $CSV_OUTFILE
 }
 

@@ -3,10 +3,10 @@ title: Staking on Analog
 ---
 
 _Note before reading: All references to increases in values are in absolute
-terms with regards to balance of ANLOG.
-This document makes no suggestion as to the monetary value of ANLOG at any time._
+terms with regards to balance of SOL.
+This document makes no suggestion as to the monetary value of SOL at any time._
 
-By staking your ANLOG tokens, you help secure the network and
+By staking your SOL tokens, you help secure the network and
 [earn rewards](implemented-proposals/staking-rewards.md) while doing so.
 
 You can stake by delegating your tokens to validators who process transactions and run the network.
@@ -46,9 +46,9 @@ Rewards and slashing align validator and token holder interests which helps keep
 secure, robust and performant.
 
 
-## How do I stake my ANLOG tokens?
+## How do I stake my SOL tokens?
 
-You can stake ANLOG by moving your tokens
+You can stake SOL by moving your tokens
 into a wallet that supports staking.   The wallet provides steps to create a stake account
 and do the delegation.
 
@@ -90,19 +90,19 @@ The Analog Foundation does not recommend any particular validator.
 The Mainnet Beta validators introduce themselves and their services on this
 Analog Forum thread:
 
-- https://forums.solana.com/t/validator-information-thread
+- https://forums.analog.com/t/validator-information-thread
 
 The site analogbeach.io is built and maintained by one of our validators,
 Staking Facilities. It provides a some high-level graphical information about
 the network as a whole, as well as a list of each validator and some recent
 performance statistics about each one.
 
-- https://solanabeach.io
+- https://analogbeach.io
 
 To view block production statistics, use the Analog command-line tools:
 
-- `solana validators`
-- `solana block-production`
+- `analog validators`
+- `analog block-production`
 
 The Analog team does not make recommendations on how to interpret this
 information. Do your own due diligence.

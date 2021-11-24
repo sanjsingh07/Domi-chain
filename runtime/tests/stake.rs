@@ -121,7 +121,7 @@ fn test_stake_create_and_split_single_signature() {
 
     let authorized = Authorized::auto(&staker_pubkey);
 
-    let tock = 1_000_000;
+    let tocks = 1_000_000;
 
     // Create stake account with seed
     let message = Message::new(
@@ -132,7 +132,7 @@ fn test_stake_create_and_split_single_signature() {
             "stake",        // seed
             &authorized,
             &Lockup::default(),
-            tock,
+            tocks,
         ),
         Some(&staker_pubkey),
     );
@@ -150,7 +150,7 @@ fn test_stake_create_and_split_single_signature() {
         &stake_instruction::split_with_seed(
             &stake_address, // original
             &staker_pubkey, // authorized
-            tock / 2,
+            tocks / 2,
             &split_stake_address, // new address
             &staker_pubkey,       // base
             "split_stake",        // seed
@@ -191,7 +191,7 @@ fn test_stake_create_and_split_to_existing_system_account() {
 
     let authorized = Authorized::auto(&staker_pubkey);
 
-    let tock = 1_000_000;
+    let tocks = 1_000_000;
 
     // Create stake account with seed
     let message = Message::new(
@@ -202,7 +202,7 @@ fn test_stake_create_and_split_to_existing_system_account() {
             "stake",        // seed
             &authorized,
             &Lockup::default(),
-            tock,
+            tocks,
         ),
         Some(&staker_pubkey),
     );
@@ -215,21 +215,21 @@ fn test_stake_create_and_split_to_existing_system_account() {
         Pubkey::create_with_seed(&staker_pubkey, "split_stake", &stake::program::id()).unwrap();
 
     // First, put a system account where we want the new stake account
-    let existing_lamports = 42;
+    let existing_tocks = 42;
     bank_client
-        .transfer_and_confirm(existing_lamports, &staker_keypair, &split_stake_address)
+        .transfer_and_confirm(existing_tocks, &staker_keypair, &split_stake_address)
         .unwrap();
     assert_eq!(
         bank_client.get_balance(&split_stake_address).unwrap(),
-        existing_lamports
+        existing_tocks
     );
 
-    // Verify the split succeeds with tock in the destination account
+    // Verify the split succeeds with tocks in the destination account
     let message = Message::new(
         &stake_instruction::split_with_seed(
             &stake_address, // original
             &staker_pubkey, // authorized
-            tock / 2,
+            tocks / 2,
             &split_stake_address, // new address
             &staker_pubkey,       // base
             "split_stake",        // seed
@@ -238,10 +238,10 @@ fn test_stake_create_and_split_to_existing_system_account() {
     );
     bank_client
         .send_and_confirm_message(&[&staker_keypair], message)
-        .expect("failed to split into account with tock");
+        .expect("failed to split into account with tocks");
     assert_eq!(
         bank_client.get_balance(&split_stake_address).unwrap(),
-        existing_lamports + tock / 2
+        existing_tocks + tocks / 2
     );
 }
 
@@ -304,7 +304,7 @@ fn test_stake_account_lifetime() {
         .send_and_confirm_message(&[&mint_keypair, &stake_keypair], message)
         .expect("failed to create and delegate stake account");
 
-    // Test that correct tock are staked
+    // Test that correct tocks are staked
     let account = bank.get_account(&stake_pubkey).expect("account not found");
     let stake_state = account.state().expect("couldn't unpack account data");
     if let StakeState::Stake(_meta, stake) = stake_state {
@@ -328,7 +328,7 @@ fn test_stake_account_lifetime() {
         .send_and_confirm_message(&[&mint_keypair, &stake_keypair], message)
         .is_err());
 
-    // Test that tock are still staked
+    // Test that tocks are still staked
     let account = bank.get_account(&stake_pubkey).expect("account not found");
     let stake_state = account.state().expect("couldn't unpack account data");
     if let StakeState::Stake(_meta, stake) = stake_state {
@@ -368,9 +368,9 @@ fn test_stake_account_lifetime() {
 
     // Test that balance increased, and that the balance got staked
     let staked = get_staked(&bank, &stake_pubkey);
-    let tock = bank.get_balance(&stake_pubkey);
+    let tocks = bank.get_balance(&stake_pubkey);
     assert!(staked > pre_staked);
-    assert!(tock > 1_000_000);
+    assert!(tocks > 1_000_000);
 
     // split the stake
     let split_stake_keypair = Keypair::new();
@@ -382,7 +382,7 @@ fn test_stake_account_lifetime() {
         &stake_instruction::split(
             &stake_pubkey,
             &stake_pubkey,
-            tock / 2,
+            tocks / 2,
             &split_stake_pubkey,
         ),
         Some(&mint_pubkey),
@@ -414,7 +414,7 @@ fn test_stake_account_lifetime() {
             &split_stake_pubkey,
             &stake_pubkey,
             &analog_sdk::pubkey::new_rand(),
-            tock / 2 - split_staked + 1,
+            tocks / 2 - split_staked + 1,
             None,
         )],
         Some(&mint_pubkey),
@@ -436,7 +436,7 @@ fn test_stake_account_lifetime() {
             &split_stake_pubkey,
             &stake_pubkey,
             &analog_sdk::pubkey::new_rand(),
-            tock / 2,
+            tocks / 2,
             None,
         )],
         Some(&mint_pubkey),
@@ -452,7 +452,7 @@ fn test_stake_account_lifetime() {
             &split_stake_pubkey,
             &stake_pubkey,
             &analog_sdk::pubkey::new_rand(),
-            tock / 2 - split_staked,
+            tocks / 2 - split_staked,
             None,
         )],
         Some(&mint_pubkey),
@@ -488,7 +488,7 @@ fn test_stake_account_lifetime() {
 
     // verify all the math sums to zero
     assert_eq!(bank.get_balance(&split_stake_pubkey), 0);
-    assert_eq!(bank.get_balance(&stake_pubkey), tock - tock / 2);
+    assert_eq!(bank.get_balance(&stake_pubkey), tocks - tocks / 2);
 }
 
 #[test]
@@ -553,7 +553,7 @@ fn test_create_stake_account_from_seed() {
         .send_and_confirm_message(&[&mint_keypair], message)
         .expect("failed to create and delegate stake account");
 
-    // Test that correct tock are staked
+    // Test that correct tocks are staked
     let account = bank.get_account(&stake_pubkey).expect("account not found");
     let stake_state = account.state().expect("couldn't unpack account data");
     if let StakeState::Stake(_meta, stake) = stake_state {

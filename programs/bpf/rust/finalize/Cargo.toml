@@ -1,16 +1,16 @@
 [package]
 name = "analog-bpf-rust-finalize"
-version = "1.9.0"
+version = "1.8.2"
 description = "Analog BPF test program written in Rust"
-authors = ["Analog Maintainers <maintainers@solana.foundation>"]
-repository = "https://github.com/analog-labs/solana"
+authors = ["Analog Maintainers <maintainers@analog.foundation>"]
+repository = "https://github.com/analog/testnet"
 license = "Apache-2.0"
-homepage = "https://solana.com/"
+homepage = "https://analog.com/"
 documentation = "https://docs.rs/analog-bpf-rust-finalize"
 edition = "2018"
 
 [dependencies]
-solana-program= { path = "../../../../sdk/program", version = "=1.9.0" }
+analog-program = { path = "../../../../sdk/program", version = "=1.8.2" }
 
 [lib]
 crate-type = ["cdylib"]

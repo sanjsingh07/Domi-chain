@@ -12,7 +12,7 @@ receive, collect, and swap tokens.
 - Beautiful NFT support
 - Ledger hardware wallet support
 
-Available for Chrome, Brave, Firefox, Vivaldi, and Edge
+Available for Chrome, Brave, Firefox, and Edge
 
 ## SolFlare
 
@@ -27,16 +27,16 @@ Check out our [guide for using SolFlare](solflare.md).
 
 [sollet.io](https://www.sollet.io/) is a non-custodial web wallet created by the
 [Project Serum](https://projectserum.com/) team. sollet.io can be used to send
-and receive ANLOG and any SPL Token.
+and receive SOL and any SPL Token.
 
 ## MathWallet
 
 [MathWallet](https://mathwallet.org/) supports wallet
-addresses for sending and receiving ANLOG and SPL Tokens through its
+addresses for sending and receiving SOL and SPL Tokens through its
 browser extension and web wallet interface.
 
-_Note: The MathWallet iOS and Android app do not yet support ANLOG and SPL Tokens_
+_Note: The MathWallet iOS and Android app do not yet support SOL and SPL Tokens_
 
 ## BitKeep
-[BitKeep](https://bitkeep.com) is an digital currency wallet and can send and receive ANLOG/SPL tokens.
+[BitKeep](https://bitkeep.com) is an digital currency wallet and can send and receive SOL/SPL tokens.
 BitKeep also support Analog DApps with BitKeep Browser and BitKeep Chrome.

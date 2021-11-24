@@ -1,7 +1,7 @@
-//! Example Rust-based BPF upgraded program
+//! @brief Example Rust-based BPF upgraded program
 
-extern crate solana_program;
-use solana_program::{
+extern crate analog_program;
+use analog_program::{
     account_info::AccountInfo, entrypoint, entrypoint::ProgramResult, msg, pubkey::Pubkey,
     sysvar::clock,
 };

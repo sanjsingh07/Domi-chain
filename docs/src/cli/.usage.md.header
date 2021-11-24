@@ -16,14 +16,14 @@ $ analog-keygen pubkey
 <PUBKEY>
 ```
 
-### Airdrop ANLOG/Lamports
+### Airdrop SOL/Tocks
 
 ```bash
 // Command
 $ analog airdrop 1
 
 // Return
-"1 ANLOG"
+"1 SOL"
 ```
 
 ### Get Balance
@@ -33,7 +33,7 @@ $ analog airdrop 1
 $ analog balance
 
 // Return
-"3.00050001 ANLOG"
+"3.00050001 SOL"
 ```
 
 ### Confirm Transaction

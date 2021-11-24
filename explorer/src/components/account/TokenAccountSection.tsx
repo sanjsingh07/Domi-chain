@@ -1,9 +1,5 @@
-import {
-  Account,
-  NFTData,
-  TokenProgramData,
-  useFetchAccountInfo,
-} from "providers/accounts";
+import React from "react";
+import { Account, useFetchAccountInfo } from "providers/accounts";
 import {
   TokenAccount,
   MintAccountInfo,
@@ -24,8 +20,6 @@ import { Copyable } from "components/common/Copyable";
 import { CoingeckoStatus, useCoinGecko } from "utils/coingecko";
 import { displayTimestampWithoutDate } from "utils/date";
 import { LoadingCard } from "components/common/LoadingCard";
-import { PublicKey } from "@solana/web3.js";
-import isMetaplexNFT from "providers/accounts/utils/isMetaplexNFT";
 
 const getEthAddress = (link?: string) => {
   let address = "";
@@ -53,18 +47,7 @@ export function TokenAccountSection({
     switch (tokenAccount.type) {
       case "mint": {
         const info = create(tokenAccount.info, MintAccountInfo);
-
-        if (isMetaplexNFT(account.details?.data, info)) {
-          return (
-            <NonFungibleTokenMintAccountCard
-              account={account}
-              nftData={(account.details!.data as TokenProgramData).nftData!}
-              mintInfo={info}
-            />
-          );
-        }
-
-        return <FungibleTokenMintAccountCard account={account} info={info} />;
+        return <MintAccountCard account={account} info={info} />;
       }
       case "account": {
         const info = create(tokenAccount.info, TokenAccountInfo);
@@ -85,7 +68,7 @@ export function TokenAccountSection({
   return <UnknownAccountCard account={account} />;
 }
 
-function FungibleTokenMintAccountCard({
+function MintAccountCard({
   account,
   info,
 }: {
@@ -287,87 +270,6 @@ function FungibleTokenMintAccountCard({
   );
 }
 
-function NonFungibleTokenMintAccountCard({
-  account,
-  nftData,
-  mintInfo,
-}: {
-  account: Account;
-  nftData: NFTData;
-  mintInfo: MintAccountInfo;
-}) {
-  const fetchInfo = useFetchAccountInfo();
-  const refresh = () => fetchInfo(account.pubkey);
-
-  return (
-    <div className="card">
-      <div className="card-header">
-        <h3 className="card-header-title mb-0 d-flex align-items-center">
-          Overview
-        </h3>
-        <button className="btn btn-white btn-sm" onClick={refresh}>
-          <span className="fe fe-refresh-cw mr-2"></span>
-          Refresh
-        </button>
-      </div>
-      <TableCardBody>
-        <tr>
-          <td>Address</td>
-          <td className="text-lg-right">
-            <Address pubkey={account.pubkey} alignRight raw />
-          </td>
-        </tr>
-        {nftData.editionInfo.masterEdition?.maxSupply && (
-          <tr>
-            <td>Max Total Supply</td>
-            <td className="text-lg-right">
-              {nftData.editionInfo.masterEdition.maxSupply.toNumber() === 0
-                ? 1
-                : nftData.editionInfo.masterEdition.maxSupply.toNumber()}
-            </td>
-          </tr>
-        )}
-        {nftData?.editionInfo.masterEdition?.supply && (
-          <tr>
-            <td>Current Supply</td>
-            <td className="text-lg-right">
-              {nftData.editionInfo.masterEdition.supply.toNumber() === 0
-                ? 1
-                : nftData.editionInfo.masterEdition.supply.toNumber()}
-            </td>
-          </tr>
-        )}
-        {mintInfo.mintAuthority && (
-          <tr>
-            <td>Mint Authority</td>
-            <td className="text-lg-right">
-              <Address pubkey={mintInfo.mintAuthority} alignRight link />
-            </td>
-          </tr>
-        )}
-        <tr>
-          <td>Update Authority</td>
-          <td className="text-lg-right">
-            <Address
-              pubkey={new PublicKey(nftData.metadata.updateAuthority)}
-              alignRight
-              link
-            />
-          </td>
-        </tr>
-        {nftData?.metadata.data && (
-          <tr>
-            <td>Seller Fee</td>
-            <td className="text-lg-right">
-              {`${nftData?.metadata.data.sellerFeeBasisPoints / 100}%`}
-            </td>
-          </tr>
-        )}
-      </TableCardBody>
-    </div>
-  );
-}
-
 function TokenAccountCard({
   account,
   info,
@@ -385,7 +287,7 @@ function TokenAccountCard({
     unit = "ANLOG";
     balance = (
       <>
-        ◎
+        
         <span className="text-monospace">
           {new BigNumber(info.tokenAmount.uiAmountString).toFormat(9)}
         </span>
@@ -448,10 +350,10 @@ function TokenAccountCard({
         )}
         {info.rentExemptReserve && (
           <tr>
-            <td>Rent-exempt reserve (ANLOG)</td>
+            <td>Rent-exempt reserve (GM)</td>
             <td className="text-lg-right">
               <>
-                ◎
+                
                 <span className="text-monospace">
                   {new BigNumber(
                     info.rentExemptReserve.uiAmountString

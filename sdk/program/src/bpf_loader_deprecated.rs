@@ -1,4 +1,4 @@
-//! The original and now deprecated Analog BPF loader.
+//! @brief The original and now deprecated Analog BPF loader.
 //!
 //! The BPF loader is responsible for loading, finalizing, and executing BPF
 //! programs.

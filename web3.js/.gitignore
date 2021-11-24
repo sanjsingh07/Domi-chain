@@ -22,7 +22,7 @@ doc
 # VIM swap files
 *.sw*
 
-# `analog-test-validator` ledger location
+# `solana-test-validator` ledger location
 test-ledger/
 
 # Flow

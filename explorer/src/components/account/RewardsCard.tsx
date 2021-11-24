@@ -1,14 +1,13 @@
 import React from "react";
-import { PublicKey } from "@solana/web3.js";
+import { PublicKey } from "@analog/web3.js";
 import { useFetchRewards, useRewards } from "providers/accounts/rewards";
 import { LoadingCard } from "components/common/LoadingCard";
 import { FetchStatus } from "providers/cache";
 import { ErrorCard } from "components/common/ErrorCard";
 import { Slot } from "components/common/Slot";
-import { lamportsToSolString } from "utils";
+import { tocksToAnlogString } from "utils";
 import { useAccountInfo } from "providers/accounts";
 import BN from "bn.js";
-import { Epoch } from "components/common/Epoch";
 
 const MAX_EPOCH = new BN(2).pow(new BN(64)).sub(new BN(1));
 
@@ -53,14 +52,12 @@ export function RewardsCard({ pubkey }: { pubkey: PublicKey }) {
 
     return (
       <tr key={reward.epoch}>
-        <td>
-          <Epoch epoch={reward.epoch} link />
-        </td>
+        <td>{reward.epoch}</td>
         <td>
           <Slot slot={reward.effectiveSlot} link />
         </td>
-        <td>{lamportsToSolString(reward.amount)}</td>
-        <td>{lamportsToSolString(reward.postBalance)}</td>
+        <td>{tocksToAnlogString(reward.amount)}</td>
+        <td>{tocksToAnlogString(reward.postBalance)}</td>
       </tr>
     );
   });

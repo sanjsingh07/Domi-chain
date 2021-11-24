@@ -5,7 +5,9 @@ use {
         blockstore::Blockstore,
         blockstore_processor::{TransactionStatusBatch, TransactionStatusMessage},
     },
-    analog_runtime::bank::{Bank, InnerInstructionsList, TransactionLogMessages},
+    analog_runtime::bank::{
+        Bank, InnerInstructionsList, NonceRollbackInfo, TransactionLogMessages,
+    },
     analog_transaction_status::{
         extract_and_fmt_memos, InnerInstructions, Reward, TransactionStatusMeta,
     },
@@ -103,18 +105,14 @@ impl TransactionStatusService {
                     rent_debits,
                 ) {
                     if Bank::can_commit(&status) {
-                        let lamports_per_signature = nonce_rollback
-                            .map(|nonce_rollback| nonce_rollback.lamports_per_signature())
+                        let fee_calculator = nonce_rollback
+                            .map(|nonce_rollback| nonce_rollback.fee_calculator())
                             .unwrap_or_else(|| {
-                                bank.get_lamports_per_signature_for_blockhash(
-                                    transaction.message().recent_blockhash(),
-                                )
+                                #[allow(deprecated)]
+                                bank.get_fee_calculator(transaction.message().recent_blockhash())
                             })
-                            .expect("lamports_per_signature must be available");
-                        let fee = Bank::get_fee_for_message_with_lamports_per_signature(
-                            transaction.message(),
-                            lamports_per_signature,
-                        );
+                            .expect("FeeCalculator must exist");
+                        let fee = transaction.message().calculate_fee(&fee_calculator);
                         let tx_account_locks =
                             transaction.get_account_locks(bank.demote_program_write_locks());
 
@@ -134,10 +132,11 @@ impl TransactionStatusService {
                         let post_token_balances = Some(post_token_balances);
                         let rewards = Some(
                             rent_debits
-                                .into_unordered_rewards_iter()
+                                .0
+                                .into_iter()
                                 .map(|(pubkey, reward_info)| Reward {
                                     pubkey: pubkey.to_string(),
-                                    tock: reward_info.tock,
+                                    tocks: reward_info.tocks,
                                     post_balance: reward_info.post_balance,
                                     reward_type: Some(reward_info.reward_type),
                                     commission: reward_info.commission,

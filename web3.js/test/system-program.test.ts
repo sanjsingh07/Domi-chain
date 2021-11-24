@@ -11,7 +11,7 @@ import {
   Transaction,
   TransactionInstruction,
   sendAndConfirmTransaction,
-  TOCK_PER_ANLOG,
+  TOCKS_PER_ANLOG,
 } from '../src';
 import {NONCE_ACCOUNT_LENGTH} from '../src/nonce-account';
 import {sleep} from '../src/util/sleep';
@@ -23,7 +23,7 @@ describe('SystemProgram', () => {
     const params = {
       fromPubkey: Keypair.generate().publicKey,
       newAccountPubkey: Keypair.generate().publicKey,
-      tock: 123,
+      tocks: 123,
       space: 0,
       programId: SystemProgram.programId,
     };
@@ -41,7 +41,7 @@ describe('SystemProgram', () => {
     const params = {
       fromPubkey: Keypair.generate().publicKey,
       toPubkey: Keypair.generate().publicKey,
-      tock: 123,
+      tocks: 123,
     };
     const transaction = new Transaction().add(SystemProgram.transfer(params));
     expect(transaction.instructions).to.have.length(1);
@@ -54,7 +54,7 @@ describe('SystemProgram', () => {
       fromPubkey: Keypair.generate().publicKey,
       basePubkey: Keypair.generate().publicKey,
       toPubkey: Keypair.generate().publicKey,
-      tock: 123,
+      tocks: 123,
       seed: '你好',
       programId: Keypair.generate().publicKey,
     };
@@ -126,7 +126,7 @@ describe('SystemProgram', () => {
       newAccountPubkey: Keypair.generate().publicKey,
       basePubkey: fromPubkey,
       seed: 'hi there',
-      tock: 123,
+      tocks: 123,
       space: 0,
       programId: SystemProgram.programId,
     };
@@ -146,7 +146,7 @@ describe('SystemProgram', () => {
       fromPubkey,
       noncePubkey: Keypair.generate().publicKey,
       authorizedPubkey: fromPubkey,
-      tock: 123,
+      tocks: 123,
     };
 
     const transaction = new Transaction().add(
@@ -158,7 +158,7 @@ describe('SystemProgram', () => {
     const createParams = {
       fromPubkey: params.fromPubkey,
       newAccountPubkey: params.noncePubkey,
-      tock: params.tock,
+      tocks: params.tocks,
       space: NONCE_ACCOUNT_LENGTH,
       programId: SystemProgram.programId,
     };
@@ -183,7 +183,7 @@ describe('SystemProgram', () => {
       authorizedPubkey: fromPubkey,
       basePubkey: fromPubkey,
       seed: 'hi there',
-      tock: 123,
+      tocks: 123,
     };
 
     const transaction = new Transaction().add(
@@ -197,7 +197,7 @@ describe('SystemProgram', () => {
       newAccountPubkey: params.noncePubkey,
       basePubkey: fromPubkey,
       seed: 'hi there',
-      tock: params.tock,
+      tocks: params.tocks,
       space: NONCE_ACCOUNT_LENGTH,
       programId: SystemProgram.programId,
     };
@@ -228,7 +228,7 @@ describe('SystemProgram', () => {
       noncePubkey: Keypair.generate().publicKey,
       authorizedPubkey: Keypair.generate().publicKey,
       toPubkey: Keypair.generate().publicKey,
-      tock: 123,
+      tocks: 123,
     };
     const transaction = new Transaction().add(
       SystemProgram.nonceWithdraw(params),
@@ -294,7 +294,7 @@ describe('SystemProgram', () => {
       await helpers.airdrop({
         connection,
         address: from.publicKey,
-        amount: 2 * TOCK_PER_ANLOG,
+        amount: 2 * TOCKS_PER_ANLOG,
       });
 
       const to = Keypair.generate();
@@ -302,7 +302,7 @@ describe('SystemProgram', () => {
       await helpers.airdrop({
         connection,
         address: newAuthority.publicKey,
-        amount: TOCK_PER_ANLOG,
+        amount: TOCKS_PER_ANLOG,
       });
 
       const minimumAmount = await connection.getMinimumBalanceForRentExemption(
@@ -314,7 +314,7 @@ describe('SystemProgram', () => {
           fromPubkey: from.publicKey,
           noncePubkey: nonceAccount.publicKey,
           authorizedPubkey: from.publicKey,
-          tock: minimumAmount,
+          tocks: minimumAmount,
         }),
       );
       await sendAndConfirmTransaction(
@@ -378,7 +378,7 @@ describe('SystemProgram', () => {
         SystemProgram.transfer({
           fromPubkey: from.publicKey,
           toPubkey: to.publicKey,
-          tock: minimumAmount,
+          tocks: minimumAmount,
         }),
       );
       transfer.nonceInfo = {
@@ -408,7 +408,7 @@ describe('SystemProgram', () => {
         SystemProgram.nonceWithdraw({
           noncePubkey: nonceAccount.publicKey,
           authorizedPubkey: newAuthority.publicKey,
-          tock: minimumAmount,
+          tocks: minimumAmount,
           toPubkey: withdrawAccount.publicKey,
         }),
       );
@@ -433,7 +433,7 @@ describe('SystemProgram', () => {
       await helpers.airdrop({
         connection,
         address: baseAccount.publicKey,
-        amount: 2 * TOCK_PER_ANLOG,
+        amount: 2 * TOCKS_PER_ANLOG,
       });
       const basePubkey = baseAccount.publicKey;
       const seed = 'hi there';
@@ -455,7 +455,7 @@ describe('SystemProgram', () => {
         newAccountPubkey: createAccountWithSeedAddress,
         basePubkey,
         seed,
-        tock: minimumAmount,
+        tocks: minimumAmount,
         space,
         programId,
       };
@@ -484,14 +484,14 @@ describe('SystemProgram', () => {
       await helpers.airdrop({
         connection,
         address: uniqueFromAccount.publicKey,
-        amount: 2 * TOCK_PER_ANLOG,
+        amount: 2 * TOCKS_PER_ANLOG,
       });
       const createAccountWithSeedParams2 = {
         fromPubkey: uniqueFromAccount.publicKey,
         newAccountPubkey: createAccountWithSeedAddress2,
         basePubkey: newBaseAccount.publicKey,
         seed,
-        tock: minimumAmount,
+        tocks: minimumAmount,
         space,
         programId,
       };
@@ -522,7 +522,7 @@ describe('SystemProgram', () => {
           SystemProgram.transfer({
             fromPubkey: baseAccount.publicKey,
             toPubkey: transferWithSeedAddress,
-            tock: 3 * minimumAmount,
+            tocks: 3 * minimumAmount,
           }),
         ),
         [baseAccount],
@@ -544,7 +544,7 @@ describe('SystemProgram', () => {
         fromPubkey: transferWithSeedAddress,
         basePubkey,
         toPubkey,
-        tock: 2 * minimumAmount,
+        tocks: 2 * minimumAmount,
         seed,
         programId: programId2,
       };

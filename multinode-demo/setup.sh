@@ -51,7 +51,7 @@ fi
 
 default_arg --ledger "$ANALOG_CONFIG_DIR"/bootstrap-validator
 default_arg --faucet-pubkey "$ANALOG_CONFIG_DIR"/faucet.json
-default_arg --faucet-tock 500000000000000000
+default_arg --faucet-tocks 500000000000000000
 default_arg --hashes-per-tick auto
 default_arg --cluster-type development
 

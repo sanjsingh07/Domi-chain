@@ -27,12 +27,12 @@ if (process.env.TEST_LIVE) {
       before(async function () {
         this.timeout(60_000);
         programData = await fs.readFile(
-          'test/fixtures/noop-program/analog_bpf_rust_noop.so',
+          'test/fixtures/noop-program/solana_bpf_rust_noop.so',
         );
 
         const {feeCalculator} = await connection.getRecentBlockhash();
         const fees =
-          feeCalculator.lamportsPerSignature *
+          feeCalculator.tockssPerSignature *
           BpfLoader.getMinNumSignatures(programData.length);
         const payerBalance = await connection.getMinimumBalanceForRentExemption(
           0,
@@ -60,7 +60,7 @@ if (process.env.TEST_LIVE) {
         await helpers.airdrop({
           connection,
           address: insufficientPayerAccount.publicKey,
-          amount: 2 * feeCalculator.lamportsPerSignature * 8,
+          amount: 2 * feeCalculator.tockssPerSignature * 8,
         });
 
         const failedLoad = BpfLoader.load(

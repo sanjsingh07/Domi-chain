@@ -2,7 +2,7 @@ use crate::{
     account::{from_account, AccountSharedData, ReadableAccount},
     account_utils::{State, StateMut},
 };
-use solana_program::{clock::Epoch, instruction::InstructionError, pubkey::Pubkey, sysvar::Sysvar};
+use analog_program::{clock::Epoch, instruction::InstructionError, pubkey::Pubkey, sysvar::Sysvar};
 use std::{
     cell::{Ref, RefCell, RefMut},
     iter::FromIterator,
@@ -35,8 +35,8 @@ impl<'a> KeyedAccount<'a> {
         self.is_writable
     }
 
-    pub fn tock(&self) -> Result<u64, InstructionError> {
-        Ok(self.try_borrow()?.tock())
+    pub fn tocks(&self) -> Result<u64, InstructionError> {
+        Ok(self.try_borrow()?.tocks())
     }
 
     pub fn data_len(&self) -> Result<usize, InstructionError> {
@@ -217,8 +217,6 @@ pub fn next_keyed_account<'a, 'b, I: Iterator<Item = &'a KeyedAccount<'b>>>(
 }
 
 /// Return the KeyedAccount at the specified index or a NotEnoughAccountKeys error
-///
-/// Index zero starts at the chain of program accounts, followed by the instruction accounts.
 pub fn keyed_account_at_index<'a>(
     keyed_accounts: &'a [KeyedAccount],
     index: usize,
@@ -271,7 +269,7 @@ mod tests {
         something: Pubkey,
     }
     crate::declare_id!("TestSysvar111111111111111111111111111111111");
-    impl solana_program::sysvar::SysvarId for TestSysvar {
+    impl analog_program::sysvar::SysvarId for TestSysvar {
         fn id() -> crate::pubkey::Pubkey {
             id()
         }

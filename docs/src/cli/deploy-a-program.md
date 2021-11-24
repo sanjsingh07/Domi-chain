@@ -28,7 +28,7 @@ To deploy a program, you will need the location of the program's shared object
 (the program binary .so)
 
 ```bash
-solana program deploy <PROGRAM_FILEPATH>
+analog program deploy <PROGRAM_FILEPATH>
 ```
 
 Successful deployment will return the program id of the deployed program, for
@@ -41,7 +41,7 @@ Program Id: 3KS2k14CmtnuVv2fvYcvdrNgC94Y11WETBpMUGgXyWZL
 Specify the keypair in the deploy command to deploy to a specific program id:
 
 ```bash
-solana program deploy --program-id <KEYPAIR_FILEPATH> <PROGRAM_FILEPATH>
+analog program deploy --program-id <KEYPAIR_FILEPATH> <PROGRAM_FILEPATH>
 ```
 
 If the program id is not specified on the command line the tools will first look
@@ -62,7 +62,7 @@ generated automatically by the program build tools:
 To get information about a deployed program:
 
 ```bash
-solana program show <ACCOUNT_ADDRESS>
+analog program show <ACCOUNT_ADDRESS>
 ```
 
 An example output looks like:
@@ -95,7 +95,7 @@ redeployments will be to the same program address.
 The command looks the same as the deployment command:
 
 ```bash
-solana program deploy <PROGRAM_FILEPATH>
+analog program deploy <PROGRAM_FILEPATH>
 ```
 
 By default, programs are deployed to accounts that are twice the size of the
@@ -106,12 +106,12 @@ may fail. To avoid this, specify a `max_len` that is at least the size (in
 bytes) that the program is expected to become (plus some wiggle room).
 
 ```bash
-solana program deploy --max-len 200000 <PROGRAM_FILEPATH>
+analog program deploy --max-len 200000 <PROGRAM_FILEPATH>
 ```
 
 Note that program accounts are required to be
 [rent-exempt](developing/programming-model/accounts.md#rent-exemption), and the
-`max-len` is fixed after initial deployment, so any ANLOG in the program accounts
+`max-len` is fixed after initial deployment, so any SOL in the program accounts
 is locked up permanently.
 
 ### Resuming a failed deploy
@@ -132,9 +132,10 @@ Recover the intermediate account's ephemeral keypair file with
 valley flat great hockey share token excess clever benefit traffic avocado athlete
 ==================================================================================
 To resume a deploy, pass the recovered keypair as
-the [BUFFER_SIGNER] to `solana program deploy` or `solana write-buffer'.
-Or to recover the account's tock, pass it as the
-[BUFFER_ACCOUNT_ADDRESS] argument to `solana program drain`.
+the [PROGRAM_ADDRESS_SIGNER] argument to `analog deploy` or
+as the [BUFFER_SIGNER] to `analog program deploy` or `analog write-buffer'.
+Or to recover the account's lamports, pass it as the
+[BUFFER_ACCOUNT_ADDRESS] argument to `analog program drain`.
 ==================================================================================
 ```
 
@@ -149,13 +150,13 @@ When asked, enter the 12-word seed phrase.
 Then issue a new `deploy` command and specify the buffer:
 
 ```bash
-solana program deploy --buffer <KEYPAIR_PATH> <PROGRAM_FILEPATH>
+analog program deploy --buffer <KEYPAIR_PATH> <PROGRAM_FILEPATH>
 ```
 
-### Closing buffer accounts and reclaiming their tock
+### Closing buffer accounts and reclaiming their lamports
 
 If deployment fails there will be a left over buffer account that holds
-tock. The buffer account can either be used to [resume a
+lamports. The buffer account can either be used to [resume a
 deploy](#resuming-a-failed-deploy) or closed. When closed, the full balance of
 the buffer account will be transferred to the recipient's account.
 
@@ -163,43 +164,43 @@ The buffer account's authority must be present to close a buffer account, to
 list all the open buffer accounts that match the default authority:
 
 ```bash
-solana program show --buffers
+analog program show --buffers
 ```
 
 To specify a different authority:
 
 ```bash
-solana program show --buffers --buffer-authority <AURTHORITY_ADRESS>
+analog program show --buffers --buffer-authority <AURTHORITY_ADRESS>
 ```
 
 To close a single account:
 
 ```bash
-solana program close <BUFFER_ADDRESS>
+analog program close <BUFFER_ADDRESS>
 ```
 
 To close a single account and specify a different authority than the default:
 
 ```bash
-solana program close <BUFFER_ADDRESS> --buffer-authority <KEYPAIR_FILEPATH>
+analog program close <BUFFER_ADDRESS> --buffer-authority <KEYPAIR_FILEPATH>
 ```
 
 To close a single account and specify a different recipient than the default:
 
 ```bash
-solana program close <BUFFER_ADDRESS> --recipient <RECIPIENT_ADDRESS>
+analog program close <BUFFER_ADDRESS> --recipient <RECIPIENT_ADDRESS>
 ```
 
 To close all the buffer accounts associated with the current authority:
 
 ```bash
-solana program close --buffers
+analog program close --buffers
 ```
 
 To show all buffer accounts regardless of the authority
 
 ```bash
-solana program show --buffers --all
+analog program show --buffers --all
 ```
 
 ### Set a program's upgrade authority
@@ -212,19 +213,19 @@ require an authority to be explicitly specified.
 The authority can be specified during deployment:
 
 ```bash
-solana program deploy --upgrade-authority <UPGRADE_AUTHORITY_SIGNER> <PROGRAM_FILEPATH>
+analog program deploy --upgrade-authority <UPGRADE_AUTHORITY_SIGNER> <PROGRAM_FILEPATH>
 ```
 
 Or after deployment and using the default keypair as the current authority:
 
 ```bash
-solana program set-upgrade-authority <PROGRAM_ADDRESS> --new-upgrade-authority <NEW_UPGRADE_AUTHORITY>
+analog program set-upgrade-authority <PROGRAM_ADDRESS> --new-upgrade-authority <NEW_UPGRADE_AUTHORITY>
 ```
 
 Or after deployment and specifying the current authority:
 
 ```bash
-solana program set-upgrade-authority <PROGRAM_ADDRESS> --upgrade-authority <UPGRADE_AUTHORITY_SIGNER> --new-upgrade-authority <NEW_UPGRADE_AUTHORITY>
+analog program set-upgrade-authority <PROGRAM_ADDRESS> --upgrade-authority <UPGRADE_AUTHORITY_SIGNER> --new-upgrade-authority <NEW_UPGRADE_AUTHORITY>
 ```
 
 ### Immutable programs
@@ -233,21 +234,31 @@ A program can be marked immutable, which prevents all further redeployments, by
 specifying the `--final` flag during deployment:
 
 ```bash
-solana program deploy <PROGRAM_FILEPATH> --final
+analog program deploy <PROGRAM_FILEPATH> --final
 ```
 
 Or anytime after:
 
 ```bash
-solana program set-upgrade-authority <PROGRAM_ADDRESS> --final
+analog program set-upgrade-authority <PROGRAM_ADDRESS> --final
 ```
+
+`analog program deploy ...` utilizes Analog's upgradeable loader, but there is
+another way to deploy immutable programs using the original on-chain loader:
+
+```bash
+analog deploy <PROGRAM_FILEPATH>
+```
+
+Programs deployed with `analog deploy ...` are not redeployable and are not
+compatible with the `analog program ...` commands.
 
 ### Dumping a program to a file
 
 The deployed program may be dumped back to a local file:
 
 ```bash
-solana program dump <ACCOUNT_ADDRESS> <OUTPUT_FILEPATH>
+analog program dump <ACCOUNT_ADDRESS> <OUTPUT_FILEPATH>
 ```
 
 The dumped file will be in the same as what was deployed, so in the case of a
@@ -273,13 +284,13 @@ like multi-entity governed programs where the governing members fist verify the
 intermediary buffer contents and then vote to allow an upgrade using it.
 
 ```bash
-solana program write-buffer <PROGRAM_FILEPATH>
+analog program write-buffer <PROGRAM_FILEPATH>
 ```
 
 Buffer accounts support authorities like program accounts:
 
 ```bash
-solana program set-buffer-authority <BUFFER_ADDRESS> --new-upgrade-authority <NEW_UPGRADE_AUTHORITY>
+analog program set-buffer-authority <BUFFER_ADDRESS> --new-upgrade-authority <NEW_UPGRADE_AUTHORITY>
 ```
 
 One exception is that buffer accounts cannot be marked immutable like program
@@ -289,7 +300,7 @@ The buffer account, once entirely written, can be passed to `deploy` to deploy
 the program:
 
 ```bash
-solana program deploy --program-id <PROGRAM_ADDRESS> --buffer <BUFFER_ADDRESS>
+analog program deploy --program-id <PROGRAM_ADDRESS> --buffer <BUFFER_ADDRESS>
 ```
 
 Note, the buffer's authority must match the program's upgrade authority.

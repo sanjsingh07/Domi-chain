@@ -6,7 +6,7 @@ import {
   ConfirmedTransactionMeta,
   TransactionSignature,
   PublicKey,
-} from "@solana/web3.js";
+} from "@analog/web3.js";
 import { ErrorCard } from "components/common/ErrorCard";
 import { Signature } from "components/common/Signature";
 import { Address } from "components/common/Address";
@@ -79,6 +79,8 @@ export function BlockHistoryCard({ block }: { block: BlockResponse }) {
   }, [block]);
 
   const filteredTransactions = React.useMemo(() => {
+    // console.log("Filter: ", filter);
+    // console.log("invocations", transactions);
     return transactions.filter(({ invocations }) => {
       if (filter === ALL_TRANSACTIONS) {
         return true;

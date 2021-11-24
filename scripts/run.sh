@@ -35,7 +35,7 @@ $ok || {
   exit 1
 }
 
-export RUST_LOG=${RUST_LOG:-solana=info,analog_runtime::message_processor=debug} # if RUST_LOG is unset, default to info
+export RUST_LOG=${RUST_LOG:-analog=info,analog_runtime::message_processor=debug} # if RUST_LOG is unset, default to info
 export RUST_BACKTRACE=1
 dataDir=$PWD/config/"$(basename "$0" .sh)"
 ledgerDir=$PWD/config/ledger
@@ -77,7 +77,7 @@ else
   # shellcheck disable=SC2086
   analog-genesis \
     --hashes-per-tick sleep \
-    --faucet-tock 500000000000000000 \
+    --faucet-lamports 500000000000000000 \
     --bootstrap-validator \
       "$validator_identity" \
       "$validator_vote_account" \

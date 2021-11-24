@@ -67,10 +67,10 @@ impl WalletSubCommands for App<'_, '_> {
                         .help("Write the account data to this file"),
                 )
                 .arg(
-                    Arg::with_name("tock")
-                        .long("tock")
+                    Arg::with_name("tocks")
+                        .long("tocks")
                         .takes_value(false)
-                        .help("Display balance in tock instead of ANLOG"),
+                        .help("Display balance in tocks instead of ANLOG"),
                 ),
         )
         .subcommand(
@@ -112,10 +112,10 @@ impl WalletSubCommands for App<'_, '_> {
                         "The account address of the balance to check. ")
                 )
                 .arg(
-                    Arg::with_name("tock")
-                        .long("tock")
+                    Arg::with_name("tocks")
+                        .long("tocks")
                         .takes_value(false)
-                        .help("Display balance in tock instead of ANLOG"),
+                        .help("Display balance in tocks instead of ANLOG"),
                 ),
         )
         .subcommand(
@@ -285,12 +285,12 @@ pub fn parse_account(
 ) -> Result<CliCommandInfo, CliError> {
     let account_pubkey = pubkey_of_signer(matches, "account_pubkey", wallet_manager)?.unwrap();
     let output_file = matches.value_of("output_file");
-    let use_lamports_unit = matches.is_present("tock");
+    let use_tocks_unit = matches.is_present("tocks");
     Ok(CliCommandInfo {
         command: CliCommand::ShowAccount {
             pubkey: account_pubkey,
             output_file: output_file.map(ToString::to_string),
-            use_lamports_unit,
+            use_tocks_unit,
         },
         signers: vec![],
     })
@@ -307,9 +307,9 @@ pub fn parse_airdrop(
     } else {
         vec![default_signer.signer_from_path(matches, wallet_manager)?]
     };
-    let tock = lamports_of_anlog(matches, "amount").unwrap();
+    let tocks = tocks_of_anlog(matches, "amount").unwrap();
     Ok(CliCommandInfo {
-        command: CliCommand::Airdrop { pubkey, tock },
+        command: CliCommand::Airdrop { pubkey, tocks },
         signers,
     })
 }
@@ -328,7 +328,7 @@ pub fn parse_balance(
     Ok(CliCommandInfo {
         command: CliCommand::Balance {
             pubkey,
-            use_lamports_unit: matches.is_present("tock"),
+            use_tocks_unit: matches.is_present("tocks"),
         },
         signers,
     })
@@ -440,7 +440,7 @@ pub fn process_show_account(
     config: &CliConfig,
     account_pubkey: &Pubkey,
     output_file: &Option<String>,
-    use_lamports_unit: bool,
+    use_tocks_unit: bool,
 ) -> ProcessResult {
     let account = rpc_client.get_account(account_pubkey)?;
     let data = account.data.clone();
@@ -455,7 +455,7 @@ pub fn process_show_account(
                 None,
             ),
         },
-        use_lamports_unit,
+        use_tocks_unit,
     };
 
     let mut account_string = config.output_format.formatted_string(&cli_account);
@@ -481,7 +481,7 @@ pub fn process_airdrop(
     rpc_client: &RpcClient,
     config: &CliConfig,
     pubkey: &Option<Pubkey>,
-    tock: u64,
+    tocks: u64,
 ) -> ProcessResult {
     let pubkey = if let Some(pubkey) = pubkey {
         *pubkey
@@ -490,21 +490,21 @@ pub fn process_airdrop(
     };
     println!(
         "Requesting airdrop of {}",
-        build_balance_message(tock, false, true),
+        build_balance_message(tocks, false, true),
     );
 
     let pre_balance = rpc_client.get_balance(&pubkey)?;
 
-    let result = request_and_confirm_airdrop(rpc_client, config, &pubkey, tock);
+    let result = request_and_confirm_airdrop(rpc_client, config, &pubkey, tocks);
     if let Ok(signature) = result {
         let signature_cli_message = log_instruction_custom_error::<SystemError>(result, config)?;
         println!("{}", signature_cli_message);
 
         let current_balance = rpc_client.get_balance(&pubkey)?;
 
-        if current_balance < pre_balance.saturating_add(tock) {
+        if current_balance < pre_balance.saturating_add(tocks) {
             println!("Balance unchanged");
-            println!("Run `solana confirm -v {:?}` for more info", signature);
+            println!("Run `analog confirm -v {:?}` for more info", signature);
             Ok("".to_string())
         } else {
             Ok(build_balance_message(current_balance, false, true))
@@ -518,7 +518,7 @@ pub fn process_balance(
     rpc_client: &RpcClient,
     config: &CliConfig,
     pubkey: &Option<Pubkey>,
-    use_lamports_unit: bool,
+    use_tocks_unit: bool,
 ) -> ProcessResult {
     let pubkey = if let Some(pubkey) = pubkey {
         *pubkey
@@ -526,7 +526,7 @@ pub fn process_balance(
         config.pubkey()?
     };
     let balance = rpc_client.get_balance(&pubkey)?;
-    Ok(build_balance_message(balance, use_lamports_unit, true))
+    Ok(build_balance_message(balance, use_tocks_unit, true))
 }
 
 pub fn process_confirm(
@@ -674,7 +674,7 @@ pub fn process_transfer(
         None
     };
 
-    let build_message = |tock| {
+    let build_message = |tocks| {
         let ixs = if let Some((base_pubkey, seed, program_id, from_pubkey)) = with_seed.as_ref() {
             vec![system_instruction::transfer_with_seed(
                 from_pubkey,
@@ -682,11 +682,11 @@ pub fn process_transfer(
                 seed.clone(),
                 program_id,
                 to,
-                tock,
+                tocks,
             )]
             .with_memo(memo)
         } else {
-            vec![system_instruction::transfer(&from_pubkey, to, tock)].with_memo(memo)
+            vec![system_instruction::transfer(&from_pubkey, to, tocks)].with_memo(memo)
         };
 
         if let Some(nonce_account) = &nonce_account {

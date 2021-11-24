@@ -266,16 +266,6 @@ export type GetLargestAccountsConfig = {
 };
 
 /**
- * Configuration object for changing `getSupply` request behavior
- */
-export type GetSupplyConfig = {
-  /** The level of commitment desired */
-  commitment?: Commitment;
-  /** Exclude non circulating accounts list from response */
-  excludeNonCirculatingAccountsList?: boolean;
-};
-
-/**
  * Configuration object for changing query behavior
  */
 export type SignatureStatusConfig = {
@@ -307,7 +297,7 @@ export type VoteAccountInfo = {
   votePubkey: string;
   /** Identity public key of the node voting with this account */
   nodePubkey: string;
-  /** The stake, in tock, delegated to this vote account and activated */
+  /** The stake, in tocks, delegated to this vote account and activated */
   activatedStake: number;
   /** Whether the vote account is staked for this epoch */
   epochVoteAccount: boolean;
@@ -357,9 +347,9 @@ export type InflationReward = {
   epoch: number;
   /** the slot in which the rewards are effective */
   effectiveSlot: number;
-  /** reward amount in tock */
+  /** reward amount in tocks */
   amount: number;
-  /** post balance of the account in tock */
+  /** post balance of the account in tocks */
   postBalance: number;
 };
 
@@ -439,13 +429,13 @@ const SignatureReceivedResult = literal('receivedSignature');
  * Version info for a node
  */
 export type Version = {
-  /** Version of analog-core */
-  'analog-core': string;
+  /** Version of solana-core */
+  'solana-core': string;
   'feature-set'?: number;
 };
 
 const VersionResult = pick({
-  'analog-core': string(),
+  'solana-core': string(),
   'feature-set': optional(number()),
 });
 
@@ -454,8 +444,8 @@ export type SimulatedTransactionAccountInfo = {
   executable: boolean;
   /** Identifier of the program that owns the account */
   owner: string;
-  /** Number of tock assigned to the account */
-  tock: number;
+  /** Number of tocks assigned to the account */
+  tocks: number;
   /** Optional data assigned to the account */
   data: string[];
   /** Optional rent epoch info for account */
@@ -479,7 +469,7 @@ const SimulatedTransactionResponseStruct = jsonRpcResultAndContext(
           pick({
             executable: boolean(),
             owner: string(),
-            tock: number(),
+            tocks: number(),
             data: array(string()),
             rentEpoch: optional(number()),
           }),
@@ -681,8 +671,8 @@ export type BlockResponse = {
   rewards?: Array<{
     /** Public key of reward recipient */
     pubkey: string;
-    /** Reward value in tock */
-    tock: number;
+    /** Reward value in tocks */
+    tocks: number;
     /** Account balance after reward is applied */
     postBalance: number | null;
     /** Type of reward received */
@@ -710,7 +700,7 @@ export type ConfirmedBlock = {
   /** Vector of block rewards */
   rewards?: Array<{
     pubkey: string;
-    tock: number;
+    tocks: number;
     postBalance: number | null;
     rewardType: string | null;
   }>;
@@ -825,7 +815,7 @@ function createRpcClient(
         callback(new Error(`${res.status} ${res.statusText}: ${text}`));
       }
     } catch (err) {
-      if (err instanceof Error) callback(err);
+      callback(err);
     } finally {
       agentManager && agentManager.requestEnd();
     }
@@ -898,11 +888,11 @@ const SlotRpcResult = jsonRpcResult(number());
  * Supply
  */
 export type Supply = {
-  /** Total supply in tock */
+  /** Total supply in tocks */
   total: number;
-  /** Circulating supply in tock */
+  /** Circulating supply in tocks */
   circulating: number;
-  /** Non-circulating supply in tock */
+  /** Non-circulating supply in tocks */
   nonCirculating: number;
   /** List of non-circulating account addresses */
   nonCirculatingAccounts: Array<PublicKey>;
@@ -986,7 +976,7 @@ const GetTokenAccountsByOwner = jsonRpcResultAndContext(
       account: pick({
         executable: boolean(),
         owner: PublicKeyFromString,
-        tock: number(),
+        tocks: number(),
         data: BufferFromRawAccountData,
         rentEpoch: number(),
       }),
@@ -1010,7 +1000,7 @@ const GetParsedTokenAccountsByOwner = jsonRpcResultAndContext(
       account: pick({
         executable: boolean(),
         owner: PublicKeyFromString,
-        tock: number(),
+        tocks: number(),
         data: ParsedAccountDataResult,
         rentEpoch: number(),
       }),
@@ -1023,7 +1013,7 @@ const GetParsedTokenAccountsByOwner = jsonRpcResultAndContext(
  */
 export type AccountBalancePair = {
   address: PublicKey;
-  tock: number;
+  tocks: number;
 };
 
 /**
@@ -1032,7 +1022,7 @@ export type AccountBalancePair = {
 const GetLargestAccountsRpcResult = jsonRpcResultAndContext(
   array(
     pick({
-      tock: number(),
+      tocks: number(),
       address: PublicKeyFromString,
     }),
   ),
@@ -1044,7 +1034,7 @@ const GetLargestAccountsRpcResult = jsonRpcResultAndContext(
 const AccountInfoResult = pick({
   executable: boolean(),
   owner: PublicKeyFromString,
-  tock: number(),
+  tocks: number(),
   data: BufferFromRawAccountData,
   rentEpoch: number(),
 });
@@ -1075,7 +1065,7 @@ const ParsedOrRawAccountData = coerce(
 const ParsedAccountInfoResult = pick({
   executable: boolean(),
   owner: PublicKeyFromString,
-  tock: number(),
+  tocks: number(),
   data: ParsedOrRawAccountData,
   rentEpoch: number(),
 });
@@ -1506,7 +1496,7 @@ const GetConfirmedBlockRpcResult = jsonRpcResult(
         array(
           pick({
             pubkey: string(),
-            tock: number(),
+            tocks: number(),
             postBalance: nullable(number()),
             rewardType: nullable(string()),
           }),
@@ -1567,7 +1557,7 @@ const GetRecentBlockhashAndContextRpcResult = jsonRpcResultAndContext(
   pick({
     blockhash: string(),
     feeCalculator: pick({
-      lamportsPerSignature: number(),
+      tocksPerSignature: number(),
     }),
   }),
 );
@@ -1593,7 +1583,7 @@ const GetFeeCalculatorRpcResult = jsonRpcResultAndContext(
   nullable(
     pick({
       feeCalculator: pick({
-        lamportsPerSignature: number(),
+        tocksPerSignature: number(),
       }),
     }),
   ),
@@ -1714,8 +1704,8 @@ export type AccountInfo<T> = {
   executable: boolean;
   /** Identifier of the program that owns the account */
   owner: PublicKey;
-  /** Number of tock assigned to the account */
-  tock: number;
+  /** Number of tocks assigned to the account */
+  tocks: number;
   /** Optional data assigned to the account */
   data: T;
   /** Optional rent epoch infor for account */
@@ -2232,23 +2222,10 @@ export class Connection {
    * Fetch information about the current supply
    */
   async getSupply(
-    config?: GetSupplyConfig | Commitment,
+    commitment?: Commitment,
   ): Promise<RpcResponseAndContext<Supply>> {
-    let configArg: GetSupplyConfig = {};
-    if (typeof config === 'string') {
-      configArg = {commitment: config};
-    } else if (config) {
-      configArg = {
-        ...config,
-        commitment: (config && config.commitment) || this.commitment,
-      };
-    } else {
-      configArg = {
-        commitment: this.commitment,
-      };
-    }
-
-    const unsafeRes = await this._rpcRequest('getSupply', [configArg]);
+    const args = this._buildArgs([], commitment);
+    const unsafeRes = await this._rpcRequest('getSupply', args);
     const res = create(unsafeRes, GetSupplyRpcResult);
     if ('error' in res) {
       throw new Error('failed to get supply: ' + res.error.message);
@@ -2686,7 +2663,7 @@ export class Connection {
       throw new Error(
         `Transaction was not confirmed in ${duration.toFixed(
           2,
-        )} seconds. It is unknown if it succeeded or failed. Check signature ${signature} using the Analog Explorer or CLI tools.`,
+        )} seconds. It is unknown if it succeeded or failed. Check signature ${signature} using the Solana Explorer or CLI tools.`,
       );
     }
 
@@ -2812,16 +2789,18 @@ export class Connection {
   }
 
   /**
-   * Fetch the current total currency supply of the cluster in tock
+   * Fetch the current total currency supply of the cluster in tocks
    *
    * @deprecated Deprecated since v1.2.8. Please use {@link getSupply} instead.
    */
   async getTotalSupply(commitment?: Commitment): Promise<number> {
-    const result = await this.getSupply({
-      commitment,
-      excludeNonCirculatingAccountsList: true,
-    });
-    return result.value.total;
+    const args = this._buildArgs([], commitment);
+    const unsafeRes = await this._rpcRequest('getSupply', args);
+    const res = create(unsafeRes, GetSupplyRpcResult);
+    if ('error' in res) {
+      throw new Error('failed to get total supply: ' + res.error.message);
+    }
+    return res.result.value.total;
   }
 
   /**
@@ -3140,7 +3119,7 @@ export class Connection {
       endSlot !== undefined ? [startSlot, endSlot] : [startSlot],
       commitment,
     );
-    const unsafeRes = await this._rpcRequest('getConfirmedBlocks', args);
+    const unsafeRes = await this._rpcRequest('getBlocks', args);
     const res = create(unsafeRes, jsonRpcResult(array(number())));
     if ('error' in res) {
       throw new Error('failed to get blocks: ' + res.error.message);
@@ -3281,7 +3260,7 @@ export class Connection {
             block.signatures[block.signatures.length - 1].toString();
         }
       } catch (err) {
-        if (err instanceof Error && err.message.includes('skipped')) {
+        if (err.message.includes('skipped')) {
           continue;
         } else {
           throw err;
@@ -3303,7 +3282,7 @@ export class Connection {
             block.signatures[block.signatures.length - 1].toString();
         }
       } catch (err) {
-        if (err instanceof Error && err.message.includes('skipped')) {
+        if (err.message.includes('skipped')) {
           continue;
         } else {
           throw err;
@@ -3422,26 +3401,26 @@ export class Connection {
   }
 
   /**
-   * Request an allocation of tock to the specified address
+   * Request an allocation of tocks to the specified address
    *
    * ```typescript
-   * import { Connection, PublicKey, TOCK_PER_ANLOG } from "@solana/web3.js";
+   * import { Connection, PublicKey, TOCKS_PER_ANLOG } from "@analog/web3.js";
    *
    * (async () => {
    *   const connection = new Connection("https://api.testnet.solana.com", "confirmed");
    *   const myAddress = new PublicKey("2nr1bHFT86W9tGnyvmYW4vcHKsQB3sVQfnddasz4kExM");
-   *   const signature = await connection.requestAirdrop(myAddress, TOCK_PER_ANLOG);
+   *   const signature = await connection.requestAirdrop(myAddress, TOCKS_PER_ANLOG);
    *   await connection.confirmTransaction(signature);
    * })();
    * ```
    */
   async requestAirdrop(
     to: PublicKey,
-    tock: number,
+    tocks: number,
   ): Promise<TransactionSignature> {
     const unsafeRes = await this._rpcRequest('requestAirdrop', [
       to.toBase58(),
-      tock,
+      tocks,
     ]);
     const res = create(unsafeRes, RequestAirdropRpcResult);
     if ('error' in res) {
@@ -3753,13 +3732,7 @@ export class Connection {
           // eslint-disable-next-line require-atomic-updates
           sub.subscriptionId = null;
         }
-        if (err instanceof Error) {
-          console.error(
-            `${rpcMethod} error for argument`,
-            rpcArgs,
-            err.message,
-          );
-        }
+        console.error(`${rpcMethod} error for argument`, rpcArgs, err.message);
       }
     }
   }
@@ -3777,9 +3750,7 @@ export class Connection {
       try {
         await this._rpcWebSocket.call(rpcMethod, [unsubscribeId]);
       } catch (err) {
-        if (err instanceof Error) {
-          console.error(`${rpcMethod} error:`, err.message);
-        }
+        console.error(`${rpcMethod} error:`, err.message);
       }
     }
   }

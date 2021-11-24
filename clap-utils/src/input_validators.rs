@@ -214,9 +214,9 @@ where
 
 pub fn normalize_to_url_if_moniker<T: AsRef<str>>(url_or_moniker: T) -> String {
     match url_or_moniker.as_ref() {
-        "m" | "mainnet-beta" => "https://api.mainnet-beta.solana.com",
-        "t" | "testnet" => "https://api.testnet.solana.com",
-        "d" | "devnet" => "https://api.devnet.solana.com",
+        "m" | "mainnet-beta" => "https://api.mainnet-beta.analog.com",
+        "t" | "testnet" => "https://api.testnet.analog.com",
+        "d" | "devnet" => "https://api.devnet.analog.com",
         "l" | "localhost" => "http://localhost:8899",
         url => url,
     }
@@ -237,16 +237,16 @@ where
     is_parsable_generic::<Slot, _>(slot)
 }
 
-pub fn is_pow2<T>(bins: T) -> Result<(), String>
+pub fn is_bin<T>(bins: T) -> Result<(), String>
 where
     T: AsRef<str> + Display,
 {
     bins.as_ref()
         .parse::<usize>()
-        .map_err(|e| format!("Unable to parse, provided: {}, err: {}", bins, e))
+        .map_err(|e| format!("Unable to parse bins, provided: {}, err: {}", bins, e))
         .and_then(|v| {
             if !v.is_power_of_two() {
-                Err(format!("Must be a power of 2: {}", v))
+                Err(format!("Bins must be a power of 2: {}", v))
             } else {
                 Ok(())
             }
@@ -370,27 +370,6 @@ where
     }
 }
 
-pub fn is_niceness_adjustment_valid<T>(value: T) -> Result<(), String>
-where
-    T: AsRef<str> + Display,
-{
-    let adjustment = value.as_ref().parse::<i8>().map_err(|err| {
-        format!(
-            "error parsing niceness adjustment value '{}': {}",
-            value, err
-        )
-    })?;
-    if analog_perf::thread::is_renice_allowed(adjustment) {
-        Ok(())
-    } else {
-        Err(String::from(
-            "niceness adjustment supported only on Linux; negative adjustment \
-             (priority increase) requires root or CAP_SYS_NICE (see `man 7 capabilities` \
-             for details)",
-        ))
-    }
-}
-
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -406,12 +385,5 @@ mod tests {
         assert!(is_derivation("4294967296").is_err());
         assert!(is_derivation("a/b").is_err());
         assert!(is_derivation("0/4294967296").is_err());
-    }
-
-    #[test]
-    fn test_is_niceness_adjustment_valid() {
-        assert_eq!(is_niceness_adjustment_valid("0"), Ok(()));
-        assert!(is_niceness_adjustment_valid("128").is_err());
-        assert!(is_niceness_adjustment_valid("-129").is_err());
     }
 }

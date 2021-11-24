@@ -3,8 +3,8 @@ use {
     crate::cluster_nodes::ClusterNodesCache,
     itertools::Itertools,
     analog_entry::entry::Entry,
-    analog_gossip::cluster_info::DATA_PLANE_FANOUT,
     analog_ledger::shred::Shredder,
+    analog_runtime::blockhash_queue::BlockhashQueue,
     analog_sdk::{
         hash::Hash,
         signature::{Keypair, Signature, Signer},
@@ -26,6 +26,11 @@ pub struct BroadcastDuplicatesConfig {
 #[derive(Clone)]
 pub(super) struct BroadcastDuplicatesRun {
     config: BroadcastDuplicatesConfig,
+    // Local queue for broadcast to track which duplicate blockhashes we've sent
+    duplicate_queue: BlockhashQueue,
+    // Buffer for duplicate entries
+    duplicate_entries_buffer: Vec<Entry>,
+    last_duplicate_entry_hash: Hash,
     current_slot: Slot,
     next_shred_index: u32,
     shred_version: u16,
@@ -45,7 +50,10 @@ impl BroadcastDuplicatesRun {
         ));
         Self {
             config,
+            duplicate_queue: BlockhashQueue::default(),
+            duplicate_entries_buffer: vec![],
             next_shred_index: u32::MAX,
+            last_duplicate_entry_hash: Hash::default(),
             shred_version,
             current_slot: 0,
             recent_blockhash: None,
@@ -247,11 +255,6 @@ impl BroadcastRun for BroadcastDuplicatesRun {
             (bank_forks.root_bank(), bank_forks.working_bank())
         };
         let self_pubkey = cluster_info.id();
-        let nodes: Vec<_> = cluster_info
-            .all_peers()
-            .into_iter()
-            .map(|(node, _)| node)
-            .collect();
 
         // Creat cluster partition.
         let cluster_partition: HashSet<Pubkey> = {
@@ -279,11 +282,8 @@ impl BroadcastRun for BroadcastDuplicatesRun {
         let packets: Vec<_> = shreds
             .iter()
             .filter_map(|shred| {
-                let addr = cluster_nodes
-                    .get_broadcast_addrs(shred, &root_bank, DATA_PLANE_FANOUT, socket_addr_space)
-                    .first()
-                    .copied()?;
-                let node = nodes.iter().find(|node| node.tvu == addr)?;
+                let seed = shred.seed(self_pubkey, &root_bank);
+                let node = cluster_nodes.get_broadcast_peer(seed)?;
                 if !socket_addr_space.check(&node.tvu) {
                     return None;
                 }

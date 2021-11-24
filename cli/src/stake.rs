@@ -39,11 +39,13 @@ use analog_sdk::{
     stake::{
         self,
         instruction::{self as stake_instruction, LockupArgs, StakeError},
-        state::{Authorized, Lockup, Meta, StakeActivationStatus, StakeAuthorize, StakeState},
+        state::{Authorized, Lockup, Meta, StakeAuthorize, StakeState},
     },
-    stake_history::StakeHistory,
     system_instruction::SystemError,
-    sysvar::{clock, stake_history},
+    sysvar::{
+        clock,
+        stake_history::{self, StakeHistory},
+    },
     transaction::Transaction,
 };
 use analog_vote_program::vote_state::VoteState;
@@ -600,10 +602,10 @@ impl StakeSubCommands for App<'_, '_> {
                         "The stake account to display. ")
                 )
                 .arg(
-                    Arg::with_name("tock")
-                        .long("tock")
+                    Arg::with_name("tocks")
+                        .long("tocks")
                         .takes_value(false)
-                        .help("Display balance in tock instead of ANLOG")
+                        .help("Display balance in tocks instead of ANLOG")
                 )
                 .arg(
                     Arg::with_name("with_rewards")
@@ -627,10 +629,10 @@ impl StakeSubCommands for App<'_, '_> {
                 .about("Show the stake history")
                 .alias("show-stake-history")
                 .arg(
-                    Arg::with_name("tock")
-                        .long("tock")
+                    Arg::with_name("tocks")
+                        .long("tocks")
                         .takes_value(false)
-                        .help("Display balance in tock instead of ANLOG")
+                        .help("Display balance in tocks instead of ANLOG")
                 )
                 .arg(
                     Arg::with_name("limit")
@@ -900,7 +902,7 @@ pub fn parse_split_stake(
         pubkey_of_signer(matches, "stake_account_pubkey", wallet_manager)?.unwrap();
     let (split_stake_account, split_stake_account_pubkey) =
         signer_of(matches, "split_stake_account", wallet_manager)?;
-    let tock = lamports_of_anlog(matches, "amount").unwrap();
+    let tocks = tocks_of_anlog(matches, "amount").unwrap();
     let seed = matches.value_of("seed").map(|s| s.to_string());
 
     let sign_only = matches.is_present(SIGN_ONLY_ARG.name);
@@ -933,7 +935,7 @@ pub fn parse_split_stake(
             memo,
             split_stake_account: signer_info.index_of(split_stake_account_pubkey).unwrap(),
             seed,
-            tock,
+            tocks,
             fee_payer: signer_info.index_of(fee_payer_pubkey).unwrap(),
         },
         signers: signer_info.signers,
@@ -1154,7 +1156,7 @@ pub fn parse_show_stake_account(
 ) -> Result<CliCommandInfo, CliError> {
     let stake_account_pubkey =
         pubkey_of_signer(matches, "stake_account_pubkey", wallet_manager)?.unwrap();
-    let use_lamports_unit = matches.is_present("tock");
+    let use_tocks_unit = matches.is_present("tocks");
     let with_rewards = if matches.is_present("with_rewards") {
         Some(value_of(matches, "num_rewards_epochs").unwrap())
     } else {
@@ -1163,7 +1165,7 @@ pub fn parse_show_stake_account(
     Ok(CliCommandInfo {
         command: CliCommand::ShowStakeAccount {
             pubkey: stake_account_pubkey,
-            use_lamports_unit,
+            use_tocks_unit,
             with_rewards,
         },
         signers: vec![],
@@ -1171,11 +1173,11 @@ pub fn parse_show_stake_account(
 }
 
 pub fn parse_show_stake_history(matches: &ArgMatches<'_>) -> Result<CliCommandInfo, CliError> {
-    let use_lamports_unit = matches.is_present("tock");
+    let use_tocks_unit = matches.is_present("tocks");
     let limit_results = value_of(matches, "limit").unwrap();
     Ok(CliCommandInfo {
         command: CliCommand::ShowStakeHistory {
-            use_lamports_unit,
+            use_tocks_unit,
             limit_results,
         },
         signers: vec![],
@@ -1217,7 +1219,7 @@ pub fn process_create_stake_account(
     let fee_payer = config.signers[fee_payer];
     let nonce_authority = config.signers[nonce_authority];
 
-    let build_message = |tock| {
+    let build_message = |tocks| {
         let authorized = Authorized {
             staker: staker.unwrap_or(from.pubkey()),
             withdrawer: withdrawer.unwrap_or(from.pubkey()),
@@ -1231,7 +1233,7 @@ pub fn process_create_stake_account(
                     &stake_account.pubkey(), // base
                     seed,                    // seed
                     &authorized,
-                    tock,
+                    tocks,
                 )
             }
             (Some(seed), None) => stake_instruction::create_account_with_seed(
@@ -1241,20 +1243,20 @@ pub fn process_create_stake_account(
                 seed,                    // seed
                 &authorized,
                 lockup,
-                tock,
+                tocks,
             ),
             (None, Some(_withdrawer_signer)) => stake_instruction::create_account_checked(
                 &from.pubkey(),
                 &stake_account.pubkey(),
                 &authorized,
-                tock,
+                tocks,
             ),
             (None, None) => stake_instruction::create_account(
                 &from.pubkey(),
                 &stake_account.pubkey(),
                 &authorized,
                 lockup,
-                tock,
+                tocks,
             ),
         }
         .with_memo(memo);
@@ -1272,7 +1274,7 @@ pub fn process_create_stake_account(
 
     let recent_blockhash = blockhash_query.get_blockhash(rpc_client, config.commitment)?;
 
-    let (message, tock) = resolve_spend_tx_and_check_account_balances(
+    let (message, tocks) = resolve_spend_tx_and_check_account_balances(
         rpc_client,
         sign_only,
         amount,
@@ -1299,10 +1301,10 @@ pub fn process_create_stake_account(
         let minimum_balance =
             rpc_client.get_minimum_balance_for_rent_exemption(std::mem::size_of::<StakeState>())?;
 
-        if tock < minimum_balance {
+        if tocks < minimum_balance {
             return Err(CliError::BadParameter(format!(
-                "need at least {} tock for stake account to be rent exempt, provided tock: {}",
-                minimum_balance, tock
+                "need at least {} tocks for stake account to be rent exempt, provided tocks: {}",
+                minimum_balance, tocks
             ))
             .into());
         }
@@ -1455,6 +1457,7 @@ pub fn process_stake_authorize(
         check_account_for_fee_with_commitment(
             rpc_client,
             &tx.message.account_keys[0],
+            &recent_blockhash,
             &tx.message,
             config.commitment,
         )?;
@@ -1533,6 +1536,7 @@ pub fn process_deactivate_stake_account(
         check_account_for_fee_with_commitment(
             rpc_client,
             &tx.message.account_keys[0],
+            &recent_blockhash,
             &tx.message,
             config.commitment,
         )?;
@@ -1573,12 +1577,12 @@ pub fn process_withdraw_stake(
     let fee_payer = config.signers[fee_payer];
     let nonce_authority = config.signers[nonce_authority];
 
-    let build_message = |tock| {
+    let build_message = |tocks| {
         let ixs = vec![stake_instruction::withdraw(
             &stake_account_address,
             &withdraw_authority.pubkey(),
             destination_account_pubkey,
-            tock,
+            tocks,
             custodian.map(|signer| signer.pubkey()).as_ref(),
         )]
         .with_memo(memo);
@@ -1630,6 +1634,7 @@ pub fn process_withdraw_stake(
         check_account_for_fee_with_commitment(
             rpc_client,
             &tx.message.account_keys[0],
+            &recent_blockhash,
             &tx.message,
             config.commitment,
         )?;
@@ -1652,7 +1657,7 @@ pub fn process_split_stake(
     memo: Option<&String>,
     split_stake_account: SignerIndex,
     split_stake_account_seed: &Option<String>,
-    tock: u64,
+    tocks: u64,
     fee_payer: SignerIndex,
 ) -> ProcessResult {
     let split_stake_account = config.signers[split_stake_account];
@@ -1706,10 +1711,10 @@ pub fn process_split_stake(
         let minimum_balance =
             rpc_client.get_minimum_balance_for_rent_exemption(std::mem::size_of::<StakeState>())?;
 
-        if tock < minimum_balance {
+        if tocks < minimum_balance {
             return Err(CliError::BadParameter(format!(
-                "need at least {} tock for stake account to be rent exempt, provided tock: {}",
-                minimum_balance, tock
+                "need at least {} tocks for stake account to be rent exempt, provided tocks: {}",
+                minimum_balance, tocks
             ))
             .into());
         }
@@ -1721,7 +1726,7 @@ pub fn process_split_stake(
         stake_instruction::split_with_seed(
             stake_account_pubkey,
             &stake_authority.pubkey(),
-            tock,
+            tocks,
             &split_stake_account_address,
             &split_stake_account.pubkey(),
             seed,
@@ -1731,7 +1736,7 @@ pub fn process_split_stake(
         stake_instruction::split(
             stake_account_pubkey,
             &stake_authority.pubkey(),
-            tock,
+            tocks,
             &split_stake_account_address,
         )
         .with_memo(memo)
@@ -1773,6 +1778,7 @@ pub fn process_split_stake(
         check_account_for_fee_with_commitment(
             rpc_client,
             &tx.message.account_keys[0],
+            &recent_blockhash,
             &tx.message,
             config.commitment,
         )?;
@@ -1878,6 +1884,7 @@ pub fn process_merge_stake(
         check_account_for_fee_with_commitment(
             rpc_client,
             &tx.message.account_keys[0],
+            &recent_blockhash,
             &tx.message,
             config.commitment,
         )?;
@@ -1972,6 +1979,7 @@ pub fn process_stake_set_lockup(
         check_account_for_fee_with_commitment(
             rpc_client,
             &tx.message.account_keys[0],
+            &recent_blockhash,
             &tx.message,
             config.commitment,
         )?;
@@ -1991,7 +1999,7 @@ fn u64_some_if_not_zero(n: u64) -> Option<u64> {
 pub fn build_stake_state(
     account_balance: u64,
     stake_state: &StakeState,
-    use_lamports_unit: bool,
+    use_tocks_unit: bool,
     stake_history: &StakeHistory,
     clock: &Clock,
 ) -> CliStakeState {
@@ -2005,11 +2013,7 @@ pub fn build_stake_state(
             stake,
         ) => {
             let current_epoch = clock.epoch;
-            let StakeActivationStatus {
-                effective,
-                activating,
-                deactivating,
-            } = stake
+            let (active_stake, activating_stake, deactivating_stake) = stake
                 .delegation
                 .stake_activating_and_deactivating(current_epoch, Some(stake_history));
             let lockup = if lockup.is_in_force(clock, None) {
@@ -2041,12 +2045,12 @@ pub fn build_stake_state(
                 },
                 authorized: Some(authorized.into()),
                 lockup,
-                use_lamports_unit,
+                use_tocks_unit,
                 current_epoch,
                 rent_exempt_reserve: Some(*rent_exempt_reserve),
-                active_stake: u64_some_if_not_zero(effective),
-                activating_stake: u64_some_if_not_zero(activating),
-                deactivating_stake: u64_some_if_not_zero(deactivating),
+                active_stake: u64_some_if_not_zero(active_stake),
+                activating_stake: u64_some_if_not_zero(activating_stake),
+                deactivating_stake: u64_some_if_not_zero(deactivating_stake),
                 ..CliStakeState::default()
             }
         }
@@ -2075,7 +2079,7 @@ pub fn build_stake_state(
                 credits_observed: Some(0),
                 authorized: Some(authorized.into()),
                 lockup,
-                use_lamports_unit,
+                use_tocks_unit,
                 rent_exempt_reserve: Some(*rent_exempt_reserve),
                 ..CliStakeState::default()
             }
@@ -2213,7 +2217,7 @@ pub fn process_show_stake_account(
     rpc_client: &RpcClient,
     config: &CliConfig,
     stake_account_address: &Pubkey,
-    use_lamports_unit: bool,
+    use_tocks_unit: bool,
     with_rewards: Option<usize>,
 ) -> ProcessResult {
     let stake_account = rpc_client.get_account(stake_account_address)?;
@@ -2236,9 +2240,9 @@ pub fn process_show_stake_account(
             })?;
 
             let mut state = build_stake_state(
-                stake_account.tock,
+                stake_account.tocks,
                 &stake_state,
-                use_lamports_unit,
+                use_tocks_unit,
                 &stake_history,
                 &clock,
             );
@@ -2268,7 +2272,7 @@ pub fn process_show_stake_account(
 pub fn process_show_stake_history(
     rpc_client: &RpcClient,
     config: &CliConfig,
-    use_lamports_unit: bool,
+    use_tocks_unit: bool,
     limit_results: usize,
 ) -> ProcessResult {
     let stake_history_account = rpc_client.get_account(&stake_history::id())?;
@@ -2293,7 +2297,7 @@ pub fn process_show_stake_history(
     }
     let stake_history_output = CliStakeHistory {
         entries,
-        use_lamports_unit,
+        use_tocks_unit,
     };
     Ok(config.output_format.formatted_string(&stake_history_output))
 }
@@ -2413,6 +2417,7 @@ pub fn process_delegate_stake(
         check_account_for_fee_with_commitment(
             rpc_client,
             &tx.message.account_keys[0],
+            &recent_blockhash,
             &tx.message,
             config.commitment,
         )?;
@@ -4418,7 +4423,7 @@ mod tests {
                     memo: None,
                     split_stake_account: 1,
                     seed: None,
-                    tock: 50_000_000_000,
+                    tocks: 50_000_000_000,
                     fee_payer: 0,
                 },
                 signers: vec![
@@ -4484,7 +4489,7 @@ mod tests {
                     memo: None,
                     split_stake_account: 2,
                     seed: None,
-                    tock: 50_000_000_000,
+                    tocks: 50_000_000_000,
                     fee_payer: 1,
                 },
                 signers: vec![

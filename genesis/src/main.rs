@@ -17,7 +17,7 @@ use analog_sdk::{
     fee_calculator::FeeRateGovernor,
     genesis_config::{ClusterType, GenesisConfig},
     inflation::Inflation,
-    native_token::anlog_to_tock,
+    native_token::anlog_to_tocks,
     poh_config::PohConfig,
     pubkey::Pubkey,
     rent::Rent,
@@ -53,7 +53,7 @@ fn pubkey_from_str(key_str: &str) -> Result<Pubkey, Box<dyn error::Error>> {
 }
 
 pub fn load_genesis_accounts(file: &str, genesis_config: &mut GenesisConfig) -> io::Result<u64> {
-    let mut tock = 0;
+    let mut tocks = 0;
     let accounts_file = File::open(file.to_string())?;
 
     let genesis_accounts: HashMap<String, Base64Account> =
@@ -87,11 +87,11 @@ pub fn load_genesis_accounts(file: &str, genesis_config: &mut GenesisConfig) -> 
             );
         }
         account.set_executable(account_details.executable);
-        tock += account.tock();
+        tocks += account.tocks();
         genesis_config.add_account(pubkey, account);
     }
 
-    Ok(tock)
+    Ok(tocks)
 }
 
 #[allow(clippy::cognitive_complexity)]
@@ -99,12 +99,12 @@ fn main() -> Result<(), Box<dyn error::Error>> {
     let default_faucet_pubkey = analog_cli_config::Config::default().keypair_path;
     let fee_rate_governor = FeeRateGovernor::default();
     let (
-        default_target_lamports_per_signature,
+        default_target_tocks_per_signature,
         default_target_signatures_per_slot,
         default_fee_burn_percentage,
     ) = {
         (
-            &fee_rate_governor.target_lamports_per_signature.to_string(),
+            &fee_rate_governor.target_tocks_per_signature.to_string(),
             &fee_rate_governor.target_signatures_per_slot.to_string(),
             &fee_rate_governor.burn_percent.to_string(),
         )
@@ -112,23 +112,23 @@ fn main() -> Result<(), Box<dyn error::Error>> {
 
     let rent = Rent::default();
     let (
-        default_lamports_per_byte_year,
+        default_tocks_per_byte_year,
         default_rent_exemption_threshold,
         default_rent_burn_percentage,
     ) = {
         (
-            &rent.lamports_per_byte_year.to_string(),
+            &rent.tocks_per_byte_year.to_string(),
             &rent.exemption_threshold.to_string(),
             &rent.burn_percent.to_string(),
         )
     };
 
     // vote account
-    let default_bootstrap_validator_lamports = &anlog_to_tock(500.0)
+    let default_bootstrap_validator_tocks = &anlog_to_tocks(500.0)
         .max(VoteState::get_rent_exempt_reserve(&rent))
         .to_string();
     // stake account
-    let default_bootstrap_validator_stake_lamports = &anlog_to_tock(0.5)
+    let default_bootstrap_validator_stake_tocks = &anlog_to_tocks(0.5)
         .max(StakeState::get_rent_exempt_reserve(&rent))
         .to_string();
 
@@ -171,12 +171,12 @@ fn main() -> Result<(), Box<dyn error::Error>> {
                 .help("Use directory as persistent ledger location"),
         )
         .arg(
-            Arg::with_name("faucet_lamports")
+            Arg::with_name("faucet_tocks")
                 .short("t")
-                .long("faucet-tock")
-                .value_name("LAMPORTS")
+                .long("faucet-tocks")
+                .value_name("TOCKS")
                 .takes_value(true)
-                .help("Number of tock to assign to the faucet"),
+                .help("Number of tocks to assign to the faucet"),
         )
         .arg(
             Arg::with_name("faucet_pubkey")
@@ -185,7 +185,7 @@ fn main() -> Result<(), Box<dyn error::Error>> {
                 .value_name("PUBKEY")
                 .takes_value(true)
                 .validator(is_pubkey_or_keypair)
-                .requires("faucet_lamports")
+                .requires("faucet_tocks")
                 .default_value(&default_faucet_pubkey)
                 .help("Path to file containing the faucet's pubkey"),
         )
@@ -201,40 +201,40 @@ fn main() -> Result<(), Box<dyn error::Error>> {
                 ),
         )
         .arg(
-            Arg::with_name("bootstrap_validator_lamports")
-                .long("bootstrap-validator-tock")
-                .value_name("LAMPORTS")
+            Arg::with_name("bootstrap_validator_tocks")
+                .long("bootstrap-validator-tocks")
+                .value_name("TOCKS")
                 .takes_value(true)
-                .default_value(default_bootstrap_validator_lamports)
-                .help("Number of tock to assign to the bootstrap validator"),
+                .default_value(default_bootstrap_validator_tocks)
+                .help("Number of tocks to assign to the bootstrap validator"),
         )
         .arg(
-            Arg::with_name("bootstrap_validator_stake_lamports")
-                .long("bootstrap-validator-stake-tock")
-                .value_name("LAMPORTS")
+            Arg::with_name("bootstrap_validator_stake_tocks")
+                .long("bootstrap-validator-stake-tocks")
+                .value_name("TOCKS")
                 .takes_value(true)
-                .default_value(default_bootstrap_validator_stake_lamports)
-                .help("Number of tock to assign to the bootstrap validator's stake account"),
+                .default_value(default_bootstrap_validator_stake_tocks)
+                .help("Number of tocks to assign to the bootstrap validator's stake account"),
         )
         .arg(
-            Arg::with_name("target_lamports_per_signature")
-                .long("target-tock-per-signature")
-                .value_name("LAMPORTS")
+            Arg::with_name("target_tocks_per_signature")
+                .long("target-tocks-per-signature")
+                .value_name("TOCKS")
                 .takes_value(true)
-                .default_value(default_target_lamports_per_signature)
+                .default_value(default_target_tocks_per_signature)
                 .help(
-                    "The cost in tock that the cluster will charge for signature \
+                    "The cost in tocks that the cluster will charge for signature \
                      verification when the cluster is operating at target-signatures-per-slot",
                 ),
         )
         .arg(
-            Arg::with_name("lamports_per_byte_year")
-                .long("tock-per-byte-year")
-                .value_name("LAMPORTS")
+            Arg::with_name("tocks_per_byte_year")
+                .long("tocks-per-byte-year")
+                .value_name("TOCKS")
                 .takes_value(true)
-                .default_value(default_lamports_per_byte_year)
+                .default_value(default_tocks_per_byte_year)
                 .help(
-                    "The cost in tock that the cluster will charge per byte per year \
+                    "The cost in tocks that the cluster will charge per byte per year \
                      for accounts with data",
                 ),
         )
@@ -285,7 +285,7 @@ fn main() -> Result<(), Box<dyn error::Error>> {
                 .help(
                     "Used to estimate the desired processing capacity of the cluster. \
                     When the latest slot processes fewer/greater signatures than this \
-                    value, the tock-per-signature fee will decrease/increase for \
+                    value, the tocks-per-signature fee will decrease/increase for \
                     the next slot. A value of 0 disables signature-based fee adjustments",
                 ),
         )
@@ -383,24 +383,24 @@ fn main() -> Result<(), Box<dyn error::Error>> {
     let ledger_path = PathBuf::from(matches.value_of("ledger_path").unwrap());
 
     let rent = Rent {
-        lamports_per_byte_year: value_t_or_exit!(matches, "lamports_per_byte_year", u64),
+        tocks_per_byte_year: value_t_or_exit!(matches, "tocks_per_byte_year", u64),
         exemption_threshold: value_t_or_exit!(matches, "rent_exemption_threshold", f64),
         burn_percent: value_t_or_exit!(matches, "rent_burn_percentage", u8),
     };
 
     fn rent_exempt_check(matches: &ArgMatches<'_>, name: &str, exempt: u64) -> io::Result<u64> {
-        let tock = value_t_or_exit!(matches, name, u64);
+        let tocks = value_t_or_exit!(matches, name, u64);
 
-        if tock < exempt {
+        if tocks < exempt {
             Err(io::Error::new(
                 io::ErrorKind::Other,
                 format!(
                     "error: insufficient {}: {} for rent exemption, requires {}",
-                    name, tock, exempt
+                    name, tocks, exempt
                 ),
             ))
         } else {
-            Ok(tock)
+            Ok(tocks)
         }
     }
 
@@ -418,24 +418,24 @@ fn main() -> Result<(), Box<dyn error::Error>> {
         }
     }
 
-    let bootstrap_validator_lamports =
-        value_t_or_exit!(matches, "bootstrap_validator_lamports", u64);
+    let bootstrap_validator_tocks =
+        value_t_or_exit!(matches, "bootstrap_validator_tocks", u64);
 
-    let bootstrap_validator_stake_lamports = rent_exempt_check(
+    let bootstrap_validator_stake_tocks = rent_exempt_check(
         &matches,
-        "bootstrap_validator_stake_lamports",
+        "bootstrap_validator_stake_tocks",
         StakeState::get_rent_exempt_reserve(&rent),
     )?;
 
     let bootstrap_stake_authorized_pubkey =
         pubkey_of(&matches, "bootstrap_stake_authorized_pubkey");
-    let faucet_lamports = value_t!(matches, "faucet_lamports", u64).unwrap_or(0);
+    let faucet_tocks = value_t!(matches, "faucet_tocks", u64).unwrap_or(0);
     let faucet_pubkey = pubkey_of(&matches, "faucet_pubkey");
 
     let ticks_per_slot = value_t_or_exit!(matches, "ticks_per_slot", u64);
 
     let mut fee_rate_governor = FeeRateGovernor::new(
-        value_t_or_exit!(matches, "target_lamports_per_signature", u64),
+        value_t_or_exit!(matches, "target_tocks_per_signature", u64),
         value_t_or_exit!(matches, "target_signatures_per_slot", u64),
     );
     fee_rate_governor.burn_percent = value_t_or_exit!(matches, "fee_burn_percentage", u8);
@@ -520,7 +520,7 @@ fn main() -> Result<(), Box<dyn error::Error>> {
 
         genesis_config.add_account(
             *identity_pubkey,
-            AccountSharedData::new(bootstrap_validator_lamports, 0, &system_program::id()),
+            AccountSharedData::new(bootstrap_validator_tocks, 0, &system_program::id()),
         );
 
         let vote_account = vote_state::create_account_with_authorized(
@@ -540,7 +540,7 @@ fn main() -> Result<(), Box<dyn error::Error>> {
                 vote_pubkey,
                 &vote_account,
                 &rent,
-                bootstrap_validator_stake_lamports,
+                bootstrap_validator_stake_tocks,
             ),
         );
 
@@ -554,7 +554,7 @@ fn main() -> Result<(), Box<dyn error::Error>> {
     if let Some(faucet_pubkey) = faucet_pubkey {
         genesis_config.add_account(
             faucet_pubkey,
-            AccountSharedData::new(faucet_lamports, 0, &system_program::id()),
+            AccountSharedData::new(faucet_tocks, 0, &system_program::id()),
         );
     }
 
@@ -572,13 +572,13 @@ fn main() -> Result<(), Box<dyn error::Error>> {
     let max_genesis_archive_unpacked_size =
         value_t_or_exit!(matches, "max_genesis_archive_unpacked_size", u64);
 
-    let issued_lamports = genesis_config
+    let issued_tocks = genesis_config
         .accounts
         .iter()
-        .map(|(_key, account)| account.tock)
+        .map(|(_key, account)| account.tocks)
         .sum::<u64>();
 
-    add_genesis_accounts(&mut genesis_config, issued_lamports - faucet_lamports);
+    add_genesis_accounts(&mut genesis_config, issued_tocks - faucet_tocks);
 
     if let Some(values) = matches.values_of("bpf_program") {
         let values: Vec<&str> = values.collect::<Vec<_>>();
@@ -605,7 +605,7 @@ fn main() -> Result<(), Box<dyn error::Error>> {
                     genesis_config.add_account(
                         address,
                         AccountSharedData::from(Account {
-                            tock: genesis_config.rent.minimum_balance(program_data.len()),
+                            tocks: genesis_config.rent.minimum_balance(program_data.len()),
                             data: program_data,
                             executable: true,
                             owner: loader,
@@ -703,7 +703,7 @@ mod tests {
 
                 assert_eq!(
                     b64_account.balance,
-                    genesis_config.accounts[&pubkey].tock
+                    genesis_config.accounts[&pubkey].tocks
                 );
 
                 assert_eq!(
@@ -772,7 +772,7 @@ mod tests {
             let pubkey = &pubkey_str.parse().unwrap();
             assert_eq!(
                 b64_account.balance,
-                genesis_config.accounts[pubkey].tock,
+                genesis_config.accounts[pubkey].tocks,
             );
         }
 
@@ -786,7 +786,7 @@ mod tests {
 
             assert_eq!(
                 b64_account.balance,
-                genesis_config.accounts[&pubkey].tock,
+                genesis_config.accounts[&pubkey].tocks,
             );
 
             assert_eq!(
@@ -855,7 +855,7 @@ mod tests {
             let pubkey = pubkey_str.parse().unwrap();
             assert_eq!(
                 b64_account.balance,
-                genesis_config.accounts[&pubkey].tock,
+                genesis_config.accounts[&pubkey].tocks,
             );
         }
 
@@ -869,7 +869,7 @@ mod tests {
 
             assert_eq!(
                 b64_account.balance,
-                genesis_config.accounts[&pubkey].tock,
+                genesis_config.accounts[&pubkey].tocks,
             );
 
             assert_eq!(
@@ -894,7 +894,7 @@ mod tests {
 
             assert_eq!(
                 genesis_accounts2[&keypair_str].balance,
-                genesis_config.accounts[&pubkey].tock,
+                genesis_config.accounts[&pubkey].tocks,
             );
 
             assert_eq!(

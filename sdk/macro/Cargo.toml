@@ -1,9 +1,9 @@
 [package]
 name = "analog-sdk-macro"
-version = "1.9.0"
+version = "1.8.2"
 description = "Analog SDK Macro"
 authors = ["Analog Maintainers <maintainers@analog.foundation>"]
-repository = "https://github.com/analog-labs/analog"
+repository = "https://github.com/analog/testnet"
 homepage = "https://analog.com/"
 documentation = "https://docs.rs/analog-sdk-macro"
 license = "Apache-2.0"

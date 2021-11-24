@@ -24,10 +24,9 @@ genesisOptions="${15}"
 extraNodeArgs="${16}"
 gpuMode="${17:-auto}"
 maybeWarpSlot="${18}"
-maybeFullRpc="${19}"
-waitForNodeInit="${20}"
-extraPrimordialStakes="${21:=0}"
-tmpfsAccounts="${22:false}"
+waitForNodeInit="${19}"
+extraPrimordialStakes="${20:=0}"
+tmpfsAccounts="${21:false}"
 set +x
 
 missing() {
@@ -179,7 +178,7 @@ EOF
       # shellcheck disable=SC2206 # Do not want to quote $genesisOptions
       genesis_args=($genesisOptions)
       for i in "${!genesis_args[@]}"; do
-        if [[ "${genesis_args[$i]}" = --target-tock-per-signature ]]; then
+        if [[ "${genesis_args[$i]}" = --target-lamports-per-signature ]]; then
           lamports_per_signature="${genesis_args[$((i+1))]}"
           break
         fi
@@ -188,7 +187,7 @@ EOF
       for i in $(seq 0 $((numBenchTpsClients-1))); do
         # shellcheck disable=SC2086 # Do not want to quote $benchTpsExtraArgs
         analog-bench-tps --write-client-keys config/bench-tps"$i".yml \
-          --target-tock-per-signature "$lamports_per_signature" $benchTpsExtraArgs
+          --target-lamports-per-signature "$lamports_per_signature" $benchTpsExtraArgs
         # Skip first line, as it contains header
         tail -n +2 -q config/bench-tps"$i".yml >> config/client-accounts.yml
         echo "" >> config/client-accounts.yml
@@ -204,10 +203,10 @@ EOF
       fi
 
       if [[ -n $internalNodesStakeLamports ]]; then
-        args+=(--bootstrap-validator-stake-tock "$internalNodesStakeLamports")
+        args+=(--bootstrap-validator-stake-lamports "$internalNodesStakeLamports")
       fi
       if [[ -n $internalNodesLamports ]]; then
-        args+=(--bootstrap-validator-tock "$internalNodesLamports")
+        args+=(--bootstrap-validator-lamports "$internalNodesLamports")
       fi
       # shellcheck disable=SC2206 # Do not want to quote $genesisOptions
       args+=($genesisOptions)
@@ -278,11 +277,6 @@ EOF
       args+=(--accounts /mnt/analog-accounts)
     fi
 
-    if $maybeFullRpc; then
-      args+=(--enable-rpc-transaction-history)
-      args+=(--enable-cpi-and-log-storage)
-    fi
-
     if [[ $airdropsEnabled = true ]]; then
 cat >> ~/analog/on-reboot <<EOF
       ./multinode-demo/faucet.sh > faucet.log 2>&1 &
@@ -348,7 +342,7 @@ EOF
       )
     else
       if [[ -n $internalNodesLamports ]]; then
-        args+=(--node-tock "$internalNodesLamports")
+        args+=(--node-lamports "$internalNodesLamports")
       fi
     fi
 
@@ -404,11 +398,6 @@ EOF
 
     if [[ "$tmpfsAccounts" = "true" ]]; then
       args+=(--accounts /mnt/analog-accounts)
-    fi
-
-    if $maybeFullRpc; then
-      args+=(--enable-rpc-transaction-history)
-      args+=(--enable-cpi-and-log-storage)
     fi
 
 cat >> ~/analog/on-reboot <<EOF

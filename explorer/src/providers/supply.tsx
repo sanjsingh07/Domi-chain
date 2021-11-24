@@ -1,6 +1,6 @@
 import React from "react";
 
-import { Supply, Connection } from "@solana/web3.js";
+import { Supply, Connection } from "@analog/web3.js";
 import { useCluster, ClusterStatus, Cluster } from "./cluster";
 import { reportError } from "utils/sentry";
 
@@ -44,9 +44,7 @@ async function fetch(dispatch: Dispatch, cluster: Cluster, url: string) {
 
   try {
     const connection = new Connection(url, "finalized");
-    const supply = (
-      await connection.getSupply({ excludeNonCirculatingAccountsList: true })
-    ).value;
+    const supply = (await connection.getSupply()).value;
 
     // Update state if still connecting
     dispatch((state) => {

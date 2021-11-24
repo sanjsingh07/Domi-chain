@@ -13,7 +13,7 @@ pub(crate) struct NewArgs<P, K> {
     pub fee_payer: K,
     pub funding_keypair: K,
     pub base_keypair: K,
-    pub tock: u64,
+    pub tocks: u64,
     pub stake_authority: P,
     pub withdraw_authority: P,
     pub index: usize,
@@ -246,7 +246,7 @@ pub(crate) fn resolve_command(
                     "withdraw authority",
                     &mut wallet_manager,
                 )?,
-                tock: args.tock,
+                tocks: args.tocks,
                 index: args.index,
             };
             Ok(Command::New(resolved_args))

@@ -162,7 +162,7 @@ fn test_local_cluster_start_and_exit_with_config(socket_addr_space: SocketAddrSp
     let mut config = ClusterConfig {
         validator_configs: make_identical_validator_configs(&ValidatorConfig::default(), NUM_NODES),
         node_stakes: vec![3; NUM_NODES],
-        cluster_lamports: 100,
+        cluster_tocks: 100,
         ticks_per_slot: 8,
         slots_per_epoch: MINIMUM_SLOTS_PER_EPOCH as u64,
         stakers_slot_offset: MINIMUM_SLOTS_PER_EPOCH as u64,
@@ -195,7 +195,7 @@ fn test_replica_bootstrap() {
     let stake = 10_000;
     let mut config = ClusterConfig {
         node_stakes: vec![stake],
-        cluster_lamports: 1_000_000,
+        cluster_tocks: 1_000_000,
         validator_configs: make_identical_validator_configs(
             &leader_snapshot_test_config.validator_config,
             1,

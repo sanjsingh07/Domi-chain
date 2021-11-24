@@ -10,6 +10,6 @@ Use the Analog Program Crate to write on-chain programs in Rust.  If writing cli
 
 More information about Analog is available in the [Analog documentation](https://docs.analog.com/).
 
-[Helloworld](https://github.com/analog-labs/example-helloworld) and the [Analog Program Library](https://github.com/analog-labs/analog-program-library) provide examples of how to use this crate.
+[Helloworld](https://github.com/analog/example-helloworld) and the [Analog Program Library](https://github.com/analog/testnet-program-library) provide examples of how to use this crate.
 
 Still have questions?  Ask us on [Discord](https://discordapp.com/invite/pquxPsq)

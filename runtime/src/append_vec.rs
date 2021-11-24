@@ -2,7 +2,7 @@
 //!
 //! For more information, see:
 //!
-//! <https://docs.solana.com/implemented-proposals/persistent-account-storage>
+//! <https://docs.analog.com/implemented-proposals/persistent-account-storage>
 
 use log::*;
 use memmap2::MmapMut;
@@ -53,8 +53,8 @@ pub struct StoredMeta {
 /// So the data layout must be stable and consistent across the entire cluster!
 #[derive(Serialize, Deserialize, Clone, Debug, Default, Eq, PartialEq)]
 pub struct AccountMeta {
-    /// tock in the account
-    pub tock: u64,
+    /// tocks in the account
+    pub tocks: u64,
     /// the program that owns this account. If executable, the program that loads this account.
     pub owner: Pubkey,
     /// this account's data contains a loaded program (and is now read-only)
@@ -66,7 +66,7 @@ pub struct AccountMeta {
 impl<'a, T: ReadableAccount> From<&'a T> for AccountMeta {
     fn from(account: &'a T) -> Self {
         Self {
-            tock: account.tock(),
+            tocks: account.tocks(),
             owner: *account.owner(),
             executable: account.executable(),
             rent_epoch: account.rent_epoch(),
@@ -100,7 +100,7 @@ impl<'a> StoredAccountMeta<'a> {
     /// Return a new Account by copying all the data referenced by the `StoredAccountMeta`.
     pub fn clone_account(&self) -> AccountSharedData {
         AccountSharedData::from(Account {
-            tock: self.account_meta.tock,
+            tocks: self.account_meta.tocks,
             owner: self.account_meta.owner,
             executable: self.account_meta.executable,
             rent_epoch: self.account_meta.rent_epoch,
@@ -109,7 +109,7 @@ impl<'a> StoredAccountMeta<'a> {
     }
 
     fn sanitize(&self) -> bool {
-        self.sanitize_executable() && self.sanitize_lamports()
+        self.sanitize_executable() && self.sanitize_tocks()
     }
 
     fn sanitize_executable(&self) -> bool {
@@ -117,9 +117,9 @@ impl<'a> StoredAccountMeta<'a> {
         self.ref_executable_byte() & !1 == 0
     }
 
-    fn sanitize_lamports(&self) -> bool {
-        // Sanitize 0 tock to ensure to be same as AccountSharedData::default()
-        self.account_meta.tock != 0 || self.clone_account() == AccountSharedData::default()
+    fn sanitize_tocks(&self) -> bool {
+        // Sanitize 0 tocks to ensure to be same as AccountSharedData::default()
+        self.account_meta.tocks != 0 || self.clone_account() == AccountSharedData::default()
     }
 
     fn ref_executable_byte(&self) -> &u8 {
@@ -633,13 +633,13 @@ pub mod tests {
     #[test]
     fn test_account_meta_non_default() {
         let def1 = AccountMeta {
-            tock: 1,
+            tocks: 1,
             owner: Pubkey::new_unique(),
             executable: true,
             rent_epoch: 3,
         };
         let def2_account = Account {
-            tock: def1.tock,
+            tocks: def1.tocks,
             owner: def1.owner,
             executable: def1.executable,
             rent_epoch: def1.rent_epoch,
@@ -778,7 +778,7 @@ pub mod tests {
     }
 
     #[test]
-    fn test_new_from_file_crafted_zero_lamport_account() {
+    fn test_new_from_file_crafted_zero_tock_account() {
         let file = get_append_vec_path("test_append");
         let path = &file.path;
         let mut av = AppendVec::new(path, true, 1024 * 1024);
@@ -895,7 +895,6 @@ pub mod tests {
             // assert_eq! thinks *executable_bool is equal to false but the if condition thinks it's not, contradictorily.
             assert!(!*executable_bool);
             const FALSE: bool = false; // keep clippy happy
-            #[allow(clippy::if_then_panic)]
             if *executable_bool == FALSE {
                 panic!("This didn't occur if this test passed.");
             }

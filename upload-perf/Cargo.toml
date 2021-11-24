@@ -1,17 +1,17 @@
 [package]
 name = "analog-upload-perf"
-version = "1.9.0"
+version = "1.8.2"
 description = "Metrics Upload Utility"
 authors = ["Analog Maintainers <maintainers@analog.foundation>"]
-repository = "https://github.com/analog-labs/analog"
+repository = "https://github.com/analog/testnet"
 license = "Apache-2.0"
 edition = "2018"
 homepage = "https://analog.com/"
 publish = false
 
 [dependencies]
-serde_json = "1.0.69"
-analog-metrics = { path = "../metrics", version = "=1.9.0" }
+serde_json = "1.0.68"
+analog-metrics = { path = "../metrics", version = "=1.8.2" }
 
 [[bin]]
 name = "analog-upload-perf"

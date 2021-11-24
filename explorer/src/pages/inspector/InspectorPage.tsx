@@ -1,8 +1,8 @@
 import React from "react";
-import { Message, PACKET_DATA_SIZE } from "@solana/web3.js";
+import { Message, PACKET_DATA_SIZE } from "@analog/web3.js";
 
 import { TableCardBody } from "components/common/TableCardBody";
-import { SolBalance } from "utils";
+import { AnlogBalance } from "utils";
 import { useQuery } from "utils/url";
 import { useHistory, useLocation } from "react-router";
 import {
@@ -286,7 +286,7 @@ function LoadedView({
 }
 
 const DEFAULT_FEES = {
-  lamportsPerSignature: 5000,
+  tocksPerSignature: 5000,
 };
 
 function OverviewCard({
@@ -299,7 +299,7 @@ function OverviewCard({
   onClear: () => void;
 }) {
   const fee =
-    message.header.numRequiredSignatures * DEFAULT_FEES.lamportsPerSignature;
+    message.header.numRequiredSignatures * DEFAULT_FEES.tocksPerSignature;
   const feePayerValidator = createFeePayerValidator(fee);
 
   const size = React.useMemo(() => {
@@ -336,9 +336,9 @@ function OverviewCard({
             <td>Fees</td>
             <td className="text-lg-right">
               <div className="d-flex align-items-end flex-column">
-                <SolBalance tock={fee} />
+                <AnlogBalance tocks={fee} />
                 <span className="text-muted">
-                  {`Each signature costs ${DEFAULT_FEES.lamportsPerSignature} tock`}
+                  {`Each signature costs ${DEFAULT_FEES.tocksPerSignature} tocks`}
                 </span>
               </div>
             </td>

@@ -1,6 +1,6 @@
-//! Example Rust-based BPF program that tests call depth and stack usage
+//! @brief Example Rust-based BPF program that tests call depth and stack usage
 
-use solana_program::{custom_panic_default, entrypoint::SUCCESS, msg};
+use analog_program::{custom_panic_default, entrypoint::SUCCESS, msg};
 
 #[inline(never)]
 pub fn recurse(data: &mut [u8]) {

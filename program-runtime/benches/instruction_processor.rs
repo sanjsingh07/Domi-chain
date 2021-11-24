@@ -3,7 +3,7 @@
 extern crate test;
 
 use log::*;
-use solana_program_runtime::instruction_processor::{ExecuteDetailsTimings, PreAccount};
+use analog_program_runtime::{ExecuteDetailsTimings, PreAccount};
 use analog_sdk::{account::AccountSharedData, pubkey, rent::Rent};
 use test::Bencher;
 
@@ -26,7 +26,6 @@ fn bench_verify_account_changes_data(bencher: &mut Bencher) {
             &post,
             &mut ExecuteDetailsTimings::default(),
             false,
-            true,
         ),
         Ok(())
     );
@@ -40,7 +39,6 @@ fn bench_verify_account_changes_data(bencher: &mut Bencher) {
             &post,
             &mut ExecuteDetailsTimings::default(),
             false,
-            true,
         )
         .unwrap();
     });
@@ -65,7 +63,6 @@ fn bench_verify_account_changes_data(bencher: &mut Bencher) {
             &post,
             &mut ExecuteDetailsTimings::default(),
             false,
-            true,
         )
         .unwrap();
     });

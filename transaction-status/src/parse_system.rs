@@ -1,12 +1,10 @@
-use {
-    crate::parse_instruction::{
-        check_num_accounts, ParsableProgram, ParseInstructionError, ParsedInstructionEnum,
-    },
-    bincode::deserialize,
-    serde_json::json,
-    analog_sdk::{
-        instruction::CompiledInstruction, pubkey::Pubkey, system_instruction::SystemInstruction,
-    },
+use crate::parse_instruction::{
+    check_num_accounts, ParsableProgram, ParseInstructionError, ParsedInstructionEnum,
+};
+use bincode::deserialize;
+use serde_json::json;
+use analog_sdk::{
+    instruction::CompiledInstruction, pubkey::Pubkey, system_instruction::SystemInstruction,
 };
 
 pub fn parse_system(
@@ -26,7 +24,7 @@ pub fn parse_system(
     }
     match system_instruction {
         SystemInstruction::CreateAccount {
-            tock,
+            tocks,
             space,
             owner,
         } => {
@@ -36,7 +34,7 @@ pub fn parse_system(
                 info: json!({
                     "source": account_keys[instruction.accounts[0] as usize].to_string(),
                     "newAccount": account_keys[instruction.accounts[1] as usize].to_string(),
-                    "tock": tock,
+                    "tocks": tocks,
                     "space": space,
                     "owner": owner.to_string(),
                 }),
@@ -52,21 +50,21 @@ pub fn parse_system(
                 }),
             })
         }
-        SystemInstruction::Transfer { tock } => {
+        SystemInstruction::Transfer { tocks } => {
             check_num_system_accounts(&instruction.accounts, 2)?;
             Ok(ParsedInstructionEnum {
                 instruction_type: "transfer".to_string(),
                 info: json!({
                     "source": account_keys[instruction.accounts[0] as usize].to_string(),
                     "destination": account_keys[instruction.accounts[1] as usize].to_string(),
-                    "tock": tock,
+                    "tocks": tocks,
                 }),
             })
         }
         SystemInstruction::CreateAccountWithSeed {
             base,
             seed,
-            tock,
+            tocks,
             space,
             owner,
         } => {
@@ -78,7 +76,7 @@ pub fn parse_system(
                     "newAccount": account_keys[instruction.accounts[1] as usize].to_string(),
                     "base": base.to_string(),
                     "seed": seed,
-                    "tock": tock,
+                    "tocks": tocks,
                     "space": space,
                     "owner": owner.to_string(),
                 }),
@@ -95,7 +93,7 @@ pub fn parse_system(
                 }),
             })
         }
-        SystemInstruction::WithdrawNonceAccount(tock) => {
+        SystemInstruction::WithdrawNonceAccount(tocks) => {
             check_num_system_accounts(&instruction.accounts, 5)?;
             Ok(ParsedInstructionEnum {
                 instruction_type: "withdrawFromNonce".to_string(),
@@ -105,7 +103,7 @@ pub fn parse_system(
                     "recentBlockhashesSysvar": account_keys[instruction.accounts[2] as usize].to_string(),
                     "rentSysvar": account_keys[instruction.accounts[3] as usize].to_string(),
                     "nonceAuthority": account_keys[instruction.accounts[4] as usize].to_string(),
-                    "tock": tock,
+                    "tocks": tocks,
                 }),
             })
         }
@@ -173,7 +171,7 @@ pub fn parse_system(
             })
         }
         SystemInstruction::TransferWithSeed {
-            tock,
+            tocks,
             from_seed,
             from_owner,
         } => {
@@ -184,7 +182,7 @@ pub fn parse_system(
                     "source": account_keys[instruction.accounts[0] as usize].to_string(),
                     "sourceBase": account_keys[instruction.accounts[1] as usize].to_string(),
                     "destination": account_keys[instruction.accounts[2] as usize].to_string(),
-                    "tock": tock,
+                    "tocks": tocks,
                     "sourceSeed": from_seed,
                     "sourceOwner": from_owner.to_string(),
                 }),
@@ -199,10 +197,8 @@ fn check_num_system_accounts(accounts: &[u8], num: usize) -> Result<(), ParseIns
 
 #[cfg(test)]
 mod test {
-    use {
-        super::*,
-        analog_sdk::{message::Message, pubkey::Pubkey, system_instruction},
-    };
+    use super::*;
+    use analog_sdk::{message::Message, pubkey::Pubkey, system_instruction};
 
     #[test]
     #[allow(clippy::same_item_push)]
@@ -212,11 +208,11 @@ mod test {
             keys.push(analog_sdk::pubkey::new_rand());
         }
 
-        let tock = 55;
+        let tocks = 55;
         let space = 128;
 
         let instruction =
-            system_instruction::create_account(&keys[0], &keys[1], tock, space, &keys[2]);
+            system_instruction::create_account(&keys[0], &keys[1], tocks, space, &keys[2]);
         let message = Message::new(&[instruction], None);
         assert_eq!(
             parse_system(&message.instructions[0], &keys[0..2]).unwrap(),
@@ -225,7 +221,7 @@ mod test {
                 info: json!({
                     "source": keys[0].to_string(),
                     "newAccount": keys[1].to_string(),
-                    "tock": tock,
+                    "tocks": tocks,
                     "owner": keys[2].to_string(),
                     "space": space,
                 }),
@@ -247,7 +243,7 @@ mod test {
         );
         assert!(parse_system(&message.instructions[0], &[]).is_err());
 
-        let instruction = system_instruction::transfer(&keys[0], &keys[1], tock);
+        let instruction = system_instruction::transfer(&keys[0], &keys[1], tocks);
         let message = Message::new(&[instruction], None);
         assert_eq!(
             parse_system(&message.instructions[0], &keys[0..2]).unwrap(),
@@ -256,7 +252,7 @@ mod test {
                 info: json!({
                     "source": keys[0].to_string(),
                     "destination": keys[1].to_string(),
-                    "tock": tock,
+                    "tocks": tocks,
                 }),
             }
         );
@@ -264,7 +260,7 @@ mod test {
 
         let seed = "test_seed";
         let instruction = system_instruction::create_account_with_seed(
-            &keys[0], &keys[2], &keys[1], seed, tock, space, &keys[3],
+            &keys[0], &keys[2], &keys[1], seed, tocks, space, &keys[3],
         );
         let message = Message::new(&[instruction], None);
         assert_eq!(
@@ -274,7 +270,7 @@ mod test {
                 info: json!({
                     "source": keys[0].to_string(),
                     "newAccount": keys[2].to_string(),
-                    "tock": tock,
+                    "tocks": tocks,
                     "base": keys[1].to_string(),
                     "seed": seed,
                     "owner": keys[3].to_string(),
@@ -285,7 +281,7 @@ mod test {
 
         let seed = "test_seed";
         let instruction = system_instruction::create_account_with_seed(
-            &keys[0], &keys[1], &keys[0], seed, tock, space, &keys[3],
+            &keys[0], &keys[1], &keys[0], seed, tocks, space, &keys[3],
         );
         let message = Message::new(&[instruction], None);
         assert_eq!(
@@ -295,7 +291,7 @@ mod test {
                 info: json!({
                     "source": keys[0].to_string(),
                     "newAccount": keys[1].to_string(),
-                    "tock": tock,
+                    "tocks": tocks,
                     "base": keys[0].to_string(),
                     "seed": seed,
                     "owner": keys[3].to_string(),
@@ -359,7 +355,7 @@ mod test {
             seed.to_string(),
             &keys[3],
             &keys[2],
-            tock,
+            tocks,
         );
         let message = Message::new(&[instruction], None);
         assert_eq!(
@@ -371,7 +367,7 @@ mod test {
                     "sourceBase": keys[0].to_string(),
                     "sourceSeed": seed,
                     "sourceOwner": keys[3].to_string(),
-                    "tock": tock,
+                    "tocks": tocks,
                     "destination": keys[2].to_string()
                 }),
             }
@@ -402,9 +398,9 @@ mod test {
         );
         assert!(parse_system(&message.instructions[0], &keys[0..2]).is_err());
 
-        let tock = 55;
+        let tocks = 55;
         let instruction =
-            system_instruction::withdraw_nonce_account(&keys[1], &keys[0], &keys[2], tock);
+            system_instruction::withdraw_nonce_account(&keys[1], &keys[0], &keys[2], tocks);
         let message = Message::new(&[instruction], None);
         assert_eq!(
             parse_system(&message.instructions[0], &keys[0..5]).unwrap(),
@@ -416,14 +412,14 @@ mod test {
                     "recentBlockhashesSysvar": keys[3].to_string(),
                     "rentSysvar": keys[4].to_string(),
                     "nonceAuthority": keys[0].to_string(),
-                    "tock": tock
+                    "tocks": tocks
                 }),
             }
         );
         assert!(parse_system(&message.instructions[0], &keys[0..4]).is_err());
 
         let instructions =
-            system_instruction::create_nonce_account(&keys[0], &keys[1], &keys[4], tock);
+            system_instruction::create_nonce_account(&keys[0], &keys[1], &keys[4], tocks);
         let message = Message::new(&instructions, None);
         assert_eq!(
             parse_system(&message.instructions[1], &keys[0..4]).unwrap(),

@@ -8,7 +8,7 @@ here=$(dirname "$0")
 # shellcheck source=multinode-demo/common.sh
 source "$here"/common.sh
 
-stake_anlog=1   # default number of ANLOG to assign as stake (1 ANLOG)
+stake_sol=1   # default number of SOL to assign as stake (1 SOL)
 url=http://127.0.0.1:8899   # default RPC url
 
 usage() {
@@ -18,7 +18,7 @@ usage() {
   fi
   cat <<EOF
 
-usage: $0 [OPTIONS] <ANLOG to stake ($stake_anlog)>
+usage: $0 [OPTIONS] <SOL to stake ($stake_sol)>
 
 Add stake to a validator
 
@@ -85,7 +85,7 @@ if [[ ${#positional_args[@]} -gt 1 ]]; then
   usage "$@"
 fi
 if [[ -n ${positional_args[0]} ]]; then
-  stake_anlog=${positional_args[0]}
+  stake_sol=${positional_args[0]}
 fi
 
 VALIDATOR_KEYS_DIR=$ANALOG_CONFIG_DIR/validator$label
@@ -104,7 +104,7 @@ if ((airdrops_enabled)); then
   fi
   $analog_cli \
     "${common_args[@]}" --keypair "$ANALOG_CONFIG_DIR/faucet.json" \
-    transfer --allow-unfunded-recipient "$keypair" "$stake_anlog"
+    transfer --allow-unfunded-recipient "$keypair" "$stake_sol"
 fi
 
 if [[ -n $keypair ]]; then
@@ -121,7 +121,7 @@ set -x
 $analog_cli "${common_args[@]}" \
   vote-account "$vote_account"
 $analog_cli "${common_args[@]}" \
-  create-stake-account "$stake_account" "$stake_anlog"
+  create-stake-account "$stake_account" "$stake_sol"
 $analog_cli "${common_args[@]}" \
   delegate-stake $maybe_force "$stake_account" "$vote_account"
 $analog_cli "${common_args[@]}" stakes "$stake_account"

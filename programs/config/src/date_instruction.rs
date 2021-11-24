@@ -45,9 +45,9 @@ impl ConfigState for DateConfig {
 pub fn create_account(
     payer_pubkey: &Pubkey,
     date_pubkey: &Pubkey,
-    tock: u64,
+    tocks: u64,
 ) -> Vec<Instruction> {
-    config_instruction::create_account::<DateConfig>(payer_pubkey, date_pubkey, tock, vec![])
+    config_instruction::create_account::<DateConfig>(payer_pubkey, date_pubkey, tocks, vec![])
 }
 
 /// Set the date in the date account. The account pubkey must be signed in the

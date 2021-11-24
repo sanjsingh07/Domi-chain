@@ -1,6 +1,6 @@
-//! Analog Rust-based BPF program utility functions and types
+//! @brief Analog Rust-based BPF program utility functions and types
 
-extern crate solana_program;
+extern crate analog_program;
 
 pub fn uadd(x: u128, y: u128) -> u128 {
     x + y

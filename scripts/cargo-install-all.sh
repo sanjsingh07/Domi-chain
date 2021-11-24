@@ -4,7 +4,6 @@
 # other workspace crates or native program crates.
 here="$(dirname "$0")"
 readlink_cmd="readlink"
-echo "OSTYPE IS: $OSTYPE"
 if [[ $OSTYPE == darwin* ]]; then
   # Mac OS X's version of `readlink` does not support the -f option,
   # But `greadlink` does, which you can get with `brew install coreutils`
@@ -114,7 +113,7 @@ else
   fi
 
   #XXX: Ensure `analog-genesis` is built LAST!
-  # See https://github.com/analog-labs/solana/issues/5826
+  # See https://github.com/analog/testnet/issues/5826
   BINS+=(analog-genesis)
 fi
 
@@ -152,7 +151,7 @@ cp -a sdk/bpf/* "$installDir"/bin/sdk/bpf
   set -x
   # deps dir can be empty
   shopt -s nullglob
-  for dep in target/"$buildVariant"/deps/libsolana*program.*; do
+  for dep in target/"$buildVariant"/deps/libanalog*program.*; do
     cp -fv "$dep" "$installDir/bin/deps"
   done
 )

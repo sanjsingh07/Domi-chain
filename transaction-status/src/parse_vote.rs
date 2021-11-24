@@ -1,12 +1,10 @@
-use {
-    crate::parse_instruction::{
-        check_num_accounts, ParsableProgram, ParseInstructionError, ParsedInstructionEnum,
-    },
-    bincode::deserialize,
-    serde_json::json,
-    analog_sdk::{instruction::CompiledInstruction, pubkey::Pubkey},
-    analog_vote_program::vote_instruction::VoteInstruction,
+use crate::parse_instruction::{
+    check_num_accounts, ParsableProgram, ParseInstructionError, ParsedInstructionEnum,
 };
+use bincode::deserialize;
+use serde_json::json;
+use analog_sdk::{instruction::CompiledInstruction, pubkey::Pubkey};
+use analog_vote_program::vote_instruction::VoteInstruction;
 
 pub fn parse_vote(
     instruction: &CompiledInstruction,
@@ -70,7 +68,7 @@ pub fn parse_vote(
                 }),
             })
         }
-        VoteInstruction::Withdraw(tock) => {
+        VoteInstruction::Withdraw(tocks) => {
             check_num_vote_accounts(&instruction.accounts, 3)?;
             Ok(ParsedInstructionEnum {
                 instruction_type: "withdraw".to_string(),
@@ -78,7 +76,7 @@ pub fn parse_vote(
                     "voteAccount": account_keys[instruction.accounts[0] as usize].to_string(),
                     "destination": account_keys[instruction.accounts[1] as usize].to_string(),
                     "withdrawAuthority": account_keys[instruction.accounts[2] as usize].to_string(),
-                    "tock": tock,
+                    "tocks": tocks,
                 }),
             })
         }
@@ -145,13 +143,11 @@ fn check_num_vote_accounts(accounts: &[u8], num: usize) -> Result<(), ParseInstr
 
 #[cfg(test)]
 mod test {
-    use {
-        super::*,
-        analog_sdk::{hash::Hash, message::Message, pubkey::Pubkey},
-        analog_vote_program::{
-            vote_instruction,
-            vote_state::{Vote, VoteAuthorize, VoteInit},
-        },
+    use super::*;
+    use analog_sdk::{hash::Hash, message::Message, pubkey::Pubkey};
+    use analog_vote_program::{
+        vote_instruction,
+        vote_state::{Vote, VoteAuthorize, VoteInit},
     };
 
     #[test]
@@ -162,8 +158,8 @@ mod test {
             keys.push(analog_sdk::pubkey::new_rand());
         }
 
-        let tock = 55;
-        let hash = Hash::new_from_array([1; 32]);
+        let tocks = 55;
+        let hash = Hash([1; 32]);
         let vote = Vote {
             slots: vec![1, 2, 4],
             hash,
@@ -184,7 +180,7 @@ mod test {
             &analog_sdk::pubkey::new_rand(),
             &keys[1],
             &vote_init,
-            tock,
+            tocks,
         );
         let message = Message::new(&instructions, None);
         assert_eq!(
@@ -243,7 +239,7 @@ mod test {
         );
         assert!(parse_vote(&message.instructions[0], &keys[0..3]).is_err());
 
-        let instruction = vote_instruction::withdraw(&keys[1], &keys[0], tock, &keys[2]);
+        let instruction = vote_instruction::withdraw(&keys[1], &keys[0], tocks, &keys[2]);
         let message = Message::new(&[instruction], None);
         assert_eq!(
             parse_vote(&message.instructions[0], &keys[0..3]).unwrap(),
@@ -253,7 +249,7 @@ mod test {
                     "voteAccount": keys[1].to_string(),
                     "destination": keys[2].to_string(),
                     "withdrawAuthority": keys[0].to_string(),
-                    "tock": tock,
+                    "tocks": tocks,
                 }),
             }
         );
@@ -289,7 +285,7 @@ mod test {
         );
         assert!(parse_vote(&message.instructions[0], &keys[0..1]).is_err());
 
-        let proof_hash = Hash::new_from_array([2; 32]);
+        let proof_hash = Hash([2; 32]);
         let instruction = vote_instruction::vote_switch(&keys[1], &keys[0], vote, proof_hash);
         let message = Message::new(&[instruction], None);
         assert_eq!(

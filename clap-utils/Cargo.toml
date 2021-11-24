@@ -1,22 +1,21 @@
 [package]
 name = "analog-clap-utils"
-version = "1.9.0"
+version = "1.8.2"
 description = "Analog utilities for the clap"
-authors = ["Analog Maintainers <maintainers@solana.foundation>"]
-repository = "https://github.com/analog-labs/solana"
+authors = ["Analog Maintainers <maintainers@analog.foundation>"]
+repository = "https://github.com/analog/testnet"
 license = "Apache-2.0"
-homepage = "https://solana.com/"
+homepage = "https://analog.com/"
 documentation = "https://docs.rs/analog-clap-utils"
 edition = "2018"
 
 [dependencies]
 clap = "2.33.0"
 rpassword = "5.0"
-analog-perf = { path = "../perf", version = "=1.9.0" }
-analog-remote-wallet = { path = "../remote-wallet", version = "=1.9.0" }
-analog-sdk = { path = "../sdk", version = "=1.9.0" }
-thiserror = "1.0.30"
-tiny-bip39 = "0.8.2"
+analog-remote-wallet = { path = "../remote-wallet", version = "=1.8.2" }
+analog-sdk = { path = "../sdk", version = "=1.8.2" }
+thiserror = "1.0.29"
+tiny-bip39 = "0.8.1"
 uriparse = "0.6.3"
 url = "2.2.2"
 chrono = "0.4"

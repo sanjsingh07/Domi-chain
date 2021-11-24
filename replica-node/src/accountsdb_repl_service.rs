@@ -22,7 +22,7 @@ impl AccountsDbReplService {
     ) -> Result<Self, ReplicaRpcError> {
         let accountsdb_repl_client = AccountsDbReplClientService::new(config)?;
         let thread = Builder::new()
-            .name("anlog-accountsdb-repl-svc".to_string())
+            .name("sol-accountsdb-repl-svc".to_string())
             .spawn(move || {
                 Self::run_service(last_replicated_slot, accountsdb_repl_client);
             })

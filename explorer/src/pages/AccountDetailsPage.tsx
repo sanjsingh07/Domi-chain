@@ -1,13 +1,11 @@
 import React from "react";
-import { PublicKey } from "@solana/web3.js";
+import { PublicKey } from "@analog/web3.js";
 import { CacheEntry, FetchStatus } from "providers/cache";
 import {
   useFetchAccountInfo,
   useAccountInfo,
   Account,
   ProgramData,
-  TokenProgramData,
-  useMintAccountInfo,
 } from "providers/accounts";
 import { StakeAccountSection } from "components/account/StakeAccountSection";
 import { TokenAccountSection } from "components/account/TokenAccountSection";
@@ -36,10 +34,6 @@ import { TransactionHistoryCard } from "components/account/history/TransactionHi
 import { TokenTransfersCard } from "components/account/history/TokenTransfersCard";
 import { TokenInstructionsCard } from "components/account/history/TokenInstructionsCard";
 import { RewardsCard } from "components/account/RewardsCard";
-import { MetaplexMetadataCard } from "components/account/MetaplexMetadataCard";
-import { NFTHeader } from "components/account/MetaplexNFTHeader";
-import { DomainsCard } from "components/account/DomainsCard";
-import isMetaplexNFT from "providers/accounts/utils/isMetaplexNFT";
 
 const IDENTICON_WIDTH = 64;
 
@@ -59,13 +53,6 @@ const TABS_LOOKUP: { [id: string]: Tab[] } = {
       slug: "largest",
       title: "Distribution",
       path: "/largest",
-    },
-  ],
-  "spl-token:mint:metaplexNFT": [
-    {
-      slug: "metadata",
-      title: "Metadata",
-      path: "/metadata",
     },
   ],
   stake: [
@@ -132,7 +119,15 @@ export function AccountDetailsPage({ address, tab }: Props) {
   // Fetch account on load
   React.useEffect(() => {
     if (!info && status === ClusterStatus.Connected && pubkey) {
-      fetchAccount(pubkey);
+      // console.log("status ",status);
+      // console.log("address ", address);
+      // console.log("ClusterStatus.Connected: ",ClusterStatus.Connected);
+      // console.log("info: ",info);
+      // console.log("pubkey: ",pubkey);
+      // console.log("this is getting called");
+      
+      let detail = fetchAccount(pubkey);
+      console.log("details : ",detail);
     }
   }, [address, status]); // eslint-disable-line react-hooks/exhaustive-deps
 
@@ -161,19 +156,9 @@ export function AccountHeader({
 }) {
   const { tokenRegistry } = useTokenRegistry();
   const tokenDetails = tokenRegistry.get(address);
-  const mintInfo = useMintAccountInfo(address);
   const account = info?.data;
   const data = account?.details?.data;
   const isToken = data?.program === "spl-token" && data?.parsed.type === "mint";
-
-  if (isMetaplexNFT(data, mintInfo)) {
-    return (
-      <NFTHeader
-        nftData={(data as TokenProgramData).nftData!}
-        address={address}
-      />
-    );
-  }
 
   if (tokenDetails || isToken) {
     return (
@@ -232,8 +217,9 @@ function DetailsSections({
     return <LoadingCard />;
   } else if (
     info.status === FetchStatus.FetchFailed ||
-    info.data?.tock === undefined
+    info.data?.tocks === undefined
   ) {
+      // console.log("printing smth: ",fetchAccount);
     return <ErrorCard retry={() => fetchAccount(pubkey)} text="Fetch Failed" />;
   }
 
@@ -317,9 +303,7 @@ export type MoreTabs =
   | "blockhashes"
   | "transfers"
   | "instructions"
-  | "rewards"
-  | "metadata"
-  | "domains";
+  | "rewards";
 
 function MoreSection({
   account,
@@ -383,12 +367,6 @@ function MoreSection({
         data.parsed.type === "recentBlockhashes" && (
           <BlockhashesCard blockhashes={data.parsed.info} />
         )}
-      {tab === "metadata" && (
-        <MetaplexMetadataCard
-          nftData={(account.details?.data as TokenProgramData).nftData!}
-        />
-      )}
-      {tab === "domains" && <DomainsCard pubkey={pubkey} />}
     </>
   );
 }
@@ -415,15 +393,6 @@ function getTabs(data?: ProgramData): Tab[] {
     tabs.push(...TABS_LOOKUP[programTypeKey]);
   }
 
-  // Add the key for Metaplex NFTs
-  if (
-    data &&
-    programTypeKey === "spl-token:mint" &&
-    (data as TokenProgramData).nftData
-  ) {
-    tabs.push(...TABS_LOOKUP[`${programTypeKey}:metaplexNFT`]);
-  }
-
   if (
     !data ||
     !(
@@ -435,11 +404,6 @@ function getTabs(data?: ProgramData): Tab[] {
       slug: "tokens",
       title: "Tokens",
       path: "/tokens",
-    });
-    tabs.push({
-      slug: "domains",
-      title: "Domains",
-      path: "/domains",
     });
   }
 

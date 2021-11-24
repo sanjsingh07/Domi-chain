@@ -5,14 +5,14 @@
 #include <analog_sdk.h>
 
 /**
- * Number of SolKeyedAccount expected. The program should bail if an
+ * Number of AnlogKeyedAccount expected. The program should bail if an
  * unexpected number of accounts are passed to the program's entrypoint
  */
 #define NUM_KA 3
 
 extern uint64_t entrypoint(const uint8_t *input) {
-  SolAccountInfo ka[NUM_KA];
-  SolParameters params = (SolParameters) { .ka = ka };
+  AnlogAccountInfo ka[NUM_KA];
+  AnlogParameters params = (AnlogParameters) { .ka = ka };
 
   if (!anlog_deserialize(input, &params, ANLOG_ARRAY_SIZE(ka))) {
     return ERROR_INVALID_ARGUMENT;
@@ -23,13 +23,13 @@ extern uint64_t entrypoint(const uint8_t *input) {
     return ERROR_MISSING_REQUIRED_SIGNATURES;
   }
 
-  int64_t tock = *(int64_t *)params.data;
-  if (*params.ka[0].tock >= tock) {
-    *params.ka[0].tock -= tock;
-    *params.ka[2].tock += tock;
-    // anlog_log_64(0, 0, *ka[0].tock, *ka[2].tock, tock);
+  int64_t tocks = *(int64_t *)params.data;
+  if (*params.ka[0].tocks >= tocks) {
+    *params.ka[0].tocks -= tocks;
+    *params.ka[2].tocks += tocks;
+    // anlog_log_64(0, 0, *ka[0].tocks, *ka[2].tocks, tocks);
   } else {
-    // anlog_log_64(0, 0, 0xFF, *ka[0].tock, tock);
+    // anlog_log_64(0, 0, 0xFF, *ka[0].tocks, tocks);
   }
   return SUCCESS;
 }

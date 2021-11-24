@@ -4,7 +4,7 @@ use crossbeam_channel::unbounded;
 use log::*;
 use rand::{thread_rng, Rng};
 use rayon::prelude::*;
-use analog_core::banking_stage::BankingStage;
+use analog_core::{banking_stage::BankingStage, cost_model::CostModel, cost_tracker::CostTracker};
 use analog_gossip::{cluster_info::ClusterInfo, cluster_info::Node};
 use analog_ledger::{
     blockstore::Blockstore,
@@ -16,7 +16,6 @@ use analog_perf::packet::to_packets_chunked;
 use analog_poh::poh_recorder::{create_test_recorder, PohRecorder, WorkingBankEntry};
 use analog_runtime::{
     accounts_background_service::AbsRequestSender, bank::Bank, bank_forks::BankForks,
-    cost_model::CostModel,
 };
 use analog_sdk::{
     hash::Hash,
@@ -167,7 +166,6 @@ fn main() {
 
     let (verified_sender, verified_receiver) = unbounded();
     let (vote_sender, vote_receiver) = unbounded();
-    let (tpu_vote_sender, tpu_vote_receiver) = unbounded();
     let (replay_vote_sender, _replay_vote_receiver) = unbounded();
     let bank0 = Bank::new_for_benches(&genesis_config);
     let mut bank_forks = BankForks::new(bank0);
@@ -229,11 +227,12 @@ fn main() {
             &cluster_info,
             &poh_recorder,
             verified_receiver,
-            tpu_vote_receiver,
             vote_receiver,
             None,
             replay_vote_sender,
-            Arc::new(RwLock::new(CostModel::default())),
+            Arc::new(RwLock::new(CostTracker::new(Arc::new(RwLock::new(
+                CostModel::default(),
+            ))))),
         );
         poh_recorder.lock().unwrap().set_bank(&bank);
 
@@ -385,7 +384,6 @@ fn main() {
         );
 
         drop(verified_sender);
-        drop(tpu_vote_sender);
         drop(vote_sender);
         exit.store(true, Ordering::Relaxed);
         banking_stage.join().unwrap();

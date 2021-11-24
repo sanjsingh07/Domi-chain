@@ -1,6 +1,6 @@
 #![cfg_attr(RUSTC_WITH_SPECIALIZATION, feature(min_specialization))]
 #![allow(clippy::integer_arithmetic)]
-//! The `solana` library implements the Analog high-performance blockchain architecture.
+//! The `analog` library implements the Analog high-performance blockchain architecture.
 //! It includes a full Rust implementation of the architecture (see
 //! [Validator](server/struct.Validator.html)) as well as hooks to GPU implementations of its most
 //! paralellizable components (i.e. [SigVerify](sigverify/index.html)).  It also includes
@@ -20,8 +20,11 @@ pub mod cluster_slots_service;
 pub mod commitment_service;
 pub mod completed_data_sets_service;
 pub mod consensus;
+pub mod cost_model;
+pub mod cost_tracker;
 pub mod cost_update_service;
 pub mod duplicate_repair_status;
+pub mod execute_cost_table;
 pub mod fetch_stage;
 pub mod fork_choice;
 pub mod gen_keys;
@@ -49,7 +52,7 @@ pub mod sigverify;
 pub mod sigverify_shreds;
 pub mod sigverify_stage;
 pub mod snapshot_packager_service;
-pub mod system_monitor_service;
+pub mod test_validator;
 pub mod tower_storage;
 pub mod tpu;
 pub mod tree_diff;

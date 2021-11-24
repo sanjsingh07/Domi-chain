@@ -7,8 +7,8 @@
 extern uint64_t entrypoint(const uint8_t *input) {
   anlog_log("Invoked C program");
 
-  SolAccountInfo accounts[4];
-  SolParameters params = (SolParameters){.ka = accounts};
+  AnlogAccountInfo accounts[4];
+  AnlogParameters params = (AnlogParameters){.ka = accounts};
 
   if (!anlog_deserialize(input, &params, 0)) {
     return ERROR_INVALID_ARGUMENT;
@@ -31,13 +31,13 @@ extern uint64_t entrypoint(const uint8_t *input) {
     static const int INVOKED_PROGRAM_DUP_INDEX = 3;
     anlog_assert(anlog_deserialize(input, &params, 4));
 
-    SolPubkey bpf_loader_id =
-        (SolPubkey){.x = {2,  168, 246, 145, 78,  136, 161, 110, 57,  90, 225,
+    AnlogPubkey bpf_loader_id =
+        (AnlogPubkey){.x = {2,  168, 246, 145, 78,  136, 161, 110, 57,  90, 225,
                           40, 148, 143, 250, 105, 86,  147, 55,  104, 24, 221,
                           71, 67,  82,  33,  243, 198, 0,   0,   0,   0}};
 
-    SolPubkey bpf_loader_deprecated_id =
-        (SolPubkey){.x = {2,   168, 246, 145, 78,  136, 161, 107, 189, 35,  149,
+    AnlogPubkey bpf_loader_deprecated_id =
+        (AnlogPubkey){.x = {2,   168, 246, 145, 78,  136, 161, 107, 189, 35,  149,
                           133, 95,  100, 4,   217, 180, 244, 86,  183, 130, 27,
                           176, 20,  87,  73,  66,  140, 0,   0,   0,   0}};
 
@@ -46,7 +46,7 @@ extern uint64_t entrypoint(const uint8_t *input) {
     }
     anlog_assert(params.ka_num == 4);
 
-    anlog_assert(*accounts[ARGUMENT_INDEX].tock == 42);
+    anlog_assert(*accounts[ARGUMENT_INDEX].tocks == 42);
     anlog_assert(accounts[ARGUMENT_INDEX].data_len == 100);
     anlog_assert(accounts[ARGUMENT_INDEX].is_signer);
     anlog_assert(accounts[ARGUMENT_INDEX].is_writable);
@@ -56,9 +56,9 @@ extern uint64_t entrypoint(const uint8_t *input) {
       anlog_assert(accounts[ARGUMENT_INDEX].data[i] == i);
     }
 
-    anlog_assert(SolPubkey_same(accounts[INVOKED_ARGUMENT_INDEX].owner,
+    anlog_assert(AnlogPubkey_same(accounts[INVOKED_ARGUMENT_INDEX].owner,
                               accounts[INVOKED_PROGRAM_INDEX].key));
-    anlog_assert(*accounts[INVOKED_ARGUMENT_INDEX].tock == 10);
+    anlog_assert(*accounts[INVOKED_ARGUMENT_INDEX].tocks == 10);
     anlog_assert(accounts[INVOKED_ARGUMENT_INDEX].data_len == 10);
     anlog_assert(accounts[INVOKED_ARGUMENT_INDEX].is_signer);
     anlog_assert(accounts[INVOKED_ARGUMENT_INDEX].is_writable);
@@ -66,20 +66,20 @@ extern uint64_t entrypoint(const uint8_t *input) {
     anlog_assert(!accounts[INVOKED_ARGUMENT_INDEX].executable);
 
     anlog_assert(
-        SolPubkey_same(accounts[INVOKED_PROGRAM_INDEX].key, params.program_id))
-        anlog_assert(SolPubkey_same(accounts[INVOKED_PROGRAM_INDEX].owner,
+        AnlogPubkey_same(accounts[INVOKED_PROGRAM_INDEX].key, params.program_id))
+        anlog_assert(AnlogPubkey_same(accounts[INVOKED_PROGRAM_INDEX].owner,
                                   &bpf_loader_id));
     anlog_assert(!accounts[INVOKED_PROGRAM_INDEX].is_signer);
     anlog_assert(!accounts[INVOKED_PROGRAM_INDEX].is_writable);
     anlog_assert(accounts[INVOKED_PROGRAM_INDEX].rent_epoch == 0);
     anlog_assert(accounts[INVOKED_PROGRAM_INDEX].executable);
 
-    anlog_assert(SolPubkey_same(accounts[INVOKED_PROGRAM_INDEX].key,
+    anlog_assert(AnlogPubkey_same(accounts[INVOKED_PROGRAM_INDEX].key,
                               accounts[INVOKED_PROGRAM_DUP_INDEX].key));
-    anlog_assert(SolPubkey_same(accounts[INVOKED_PROGRAM_INDEX].owner,
+    anlog_assert(AnlogPubkey_same(accounts[INVOKED_PROGRAM_INDEX].owner,
                               accounts[INVOKED_PROGRAM_DUP_INDEX].owner));
-    anlog_assert(*accounts[INVOKED_PROGRAM_INDEX].tock ==
-               *accounts[INVOKED_PROGRAM_DUP_INDEX].tock);
+    anlog_assert(*accounts[INVOKED_PROGRAM_INDEX].tocks ==
+               *accounts[INVOKED_PROGRAM_DUP_INDEX].tocks);
     anlog_assert(accounts[INVOKED_PROGRAM_INDEX].is_signer ==
                accounts[INVOKED_PROGRAM_DUP_INDEX].is_signer);
     anlog_assert(accounts[INVOKED_PROGRAM_INDEX].is_writable ==
@@ -119,23 +119,23 @@ extern uint64_t entrypoint(const uint8_t *input) {
     uint8_t bump_seed2 = params.data[1];
     uint8_t bump_seed3 = params.data[2];
 
-    SolAccountMeta arguments[] = {
+    AnlogAccountMeta arguments[] = {
         {accounts[DERIVED_KEY1_INDEX].key, true, false},
         {accounts[DERIVED_KEY2_INDEX].key, true, true},
         {accounts[DERIVED_KEY3_INDEX].key, false, true}};
     uint8_t data[] = {VERIFY_NESTED_SIGNERS};
-    const SolInstruction instruction = {accounts[INVOKED_PROGRAM_INDEX].key,
+    const AnlogInstruction instruction = {accounts[INVOKED_PROGRAM_INDEX].key,
                                         arguments, ANLOG_ARRAY_SIZE(arguments),
                                         data, ANLOG_ARRAY_SIZE(data)};
     uint8_t seed1[] = {'L', 'i', 'l', '\''};
     uint8_t seed2[] = {'B', 'i', 't', 's'};
-    const SolSignerSeed seeds1[] = {{seed1, ANLOG_ARRAY_SIZE(seed1)},
+    const AnlogSignerSeed seeds1[] = {{seed1, ANLOG_ARRAY_SIZE(seed1)},
                                     {seed2, ANLOG_ARRAY_SIZE(seed2)},
                                     {&bump_seed2, 1}};
-    const SolSignerSeed seeds2[] = {
+    const AnlogSignerSeed seeds2[] = {
         {(uint8_t *)accounts[DERIVED_KEY2_INDEX].key, SIZE_PUBKEY},
         {&bump_seed3, 1}};
-    const SolSignerSeeds signers_seeds[] = {{seeds1, ANLOG_ARRAY_SIZE(seeds1)},
+    const AnlogSignerSeeds signers_seeds[] = {{seeds1, ANLOG_ARRAY_SIZE(seeds1)},
                                             {seeds2, ANLOG_ARRAY_SIZE(seeds2)}};
 
     anlog_assert(SUCCESS == anlog_invoke_signed(&instruction, accounts,
@@ -188,10 +188,10 @@ extern uint64_t entrypoint(const uint8_t *input) {
 
     anlog_assert(false == accounts[INVOKED_ARGUMENT_INDEX].is_signer);
     anlog_assert(false == accounts[INVOKED_ARGUMENT_INDEX].is_writable);
-    SolAccountMeta arguments[] = {
+    AnlogAccountMeta arguments[] = {
         {accounts[INVOKED_ARGUMENT_INDEX].key, true, false}};
     uint8_t data[] = {VERIFY_PRIVILEGE_ESCALATION};
-    const SolInstruction instruction = {accounts[INVOKED_PROGRAM_INDEX].key,
+    const AnlogInstruction instruction = {accounts[INVOKED_PROGRAM_INDEX].key,
                                         arguments, ANLOG_ARRAY_SIZE(arguments),
                                         data, ANLOG_ARRAY_SIZE(data)};
     anlog_assert(SUCCESS ==
@@ -207,10 +207,10 @@ extern uint64_t entrypoint(const uint8_t *input) {
 
     anlog_assert(false == accounts[INVOKED_ARGUMENT_INDEX].is_signer);
     anlog_assert(false == accounts[INVOKED_ARGUMENT_INDEX].is_writable);
-    SolAccountMeta arguments[] = {
+    AnlogAccountMeta arguments[] = {
         {accounts[INVOKED_ARGUMENT_INDEX].key, false, true}};
     uint8_t data[] = {VERIFY_PRIVILEGE_ESCALATION};
-    const SolInstruction instruction = {accounts[INVOKED_PROGRAM_INDEX].key,
+    const AnlogInstruction instruction = {accounts[INVOKED_PROGRAM_INDEX].key,
                                         arguments, ANLOG_ARRAY_SIZE(arguments),
                                         data, ANLOG_ARRAY_SIZE(data)};
     anlog_assert(SUCCESS ==
@@ -234,18 +234,18 @@ extern uint64_t entrypoint(const uint8_t *input) {
     anlog_assert(accounts[INVOKED_ARGUMENT_INDEX].is_signer);
     anlog_assert(accounts[ARGUMENT_INDEX].is_signer);
 
-    *accounts[INVOKED_ARGUMENT_INDEX].tock -= 1;
-    *accounts[ARGUMENT_INDEX].tock += 1;
+    *accounts[INVOKED_ARGUMENT_INDEX].tocks -= 1;
+    *accounts[ARGUMENT_INDEX].tocks += 1;
 
     uint8_t remaining_invokes = params.data[1];
     if (remaining_invokes > 1) {
       anlog_log("Invoke again");
-      SolAccountMeta arguments[] = {
+      AnlogAccountMeta arguments[] = {
           {accounts[INVOKED_ARGUMENT_INDEX].key, true, true},
           {accounts[ARGUMENT_INDEX].key, true, true},
           {accounts[INVOKED_PROGRAM_INDEX].key, false, false}};
       uint8_t data[] = {NESTED_INVOKE, remaining_invokes - 1};
-      const SolInstruction instruction = {accounts[INVOKED_PROGRAM_INDEX].key,
+      const AnlogInstruction instruction = {accounts[INVOKED_PROGRAM_INDEX].key,
                                           arguments, ANLOG_ARRAY_SIZE(arguments),
                                           data, ANLOG_ARRAY_SIZE(data)};
       anlog_assert(SUCCESS == anlog_invoke(&instruction, accounts, params.ka_num));

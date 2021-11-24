@@ -3,9 +3,10 @@
 //! packing transactions into block; it also triggers persisting cost
 //! table to blockstore.
 
+use crate::cost_model::CostModel;
 use analog_ledger::blockstore::Blockstore;
 use analog_measure::measure::Measure;
-use analog_runtime::{bank::Bank, bank::ExecuteTimings, cost_model::CostModel};
+use analog_runtime::bank::ExecuteTimings;
 use analog_sdk::timing::timestamp;
 use std::{
     sync::{
@@ -65,12 +66,7 @@ impl CostUpdateServiceTiming {
     }
 }
 
-pub enum CostUpdate {
-    FrozenBank { bank: Arc<Bank> },
-    ExecuteTiming { execute_timings: ExecuteTimings },
-}
-
-pub type CostUpdateReceiver = Receiver<CostUpdate>;
+pub type CostUpdateReceiver = Receiver<ExecuteTimings>;
 
 pub struct CostUpdateService {
     thread_hdl: JoinHandle<()>,
@@ -118,15 +114,8 @@ impl CostUpdateService {
             update_count = 0_u64;
             let mut update_cost_model_time = Measure::start("update_cost_model_time");
             for cost_update in cost_update_receiver.try_iter() {
-                match cost_update {
-                    CostUpdate::FrozenBank { bank } => {
-                        bank.read_cost_tracker().unwrap().report_stats(bank.slot());
-                    }
-                    CostUpdate::ExecuteTiming { execute_timings } => {
-                        dirty |= Self::update_cost_model(&cost_model, &execute_timings);
-                        update_count += 1;
-                    }
-                }
+                dirty |= Self::update_cost_model(&cost_model, &cost_update);
+                update_count += 1;
             }
             update_cost_model_time.stop();
 
@@ -204,7 +193,7 @@ impl CostUpdateService {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use solana_program_runtime::instruction_processor::ProgramTiming;
+    use analog_program_runtime::ProgramTiming;
     use analog_sdk::pubkey::Pubkey;
 
     #[test]

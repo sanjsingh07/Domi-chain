@@ -1,4 +1,4 @@
-use solana_program::{
+use analog_program::{
     account_info::AccountInfo,
     entrypoint,
     entrypoint::ProgramResult,

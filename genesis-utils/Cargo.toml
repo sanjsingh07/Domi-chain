@@ -1,18 +1,18 @@
 [package]
 name = "analog-genesis-utils"
-version = "1.9.0"
+version = "1.8.2"
 description = "Analog Genesis Utils"
-authors = ["Analog Maintainers <maintainers@solana.foundation>"]
-repository = "https://github.com/analog-labs/solana"
+authors = ["Analog Maintainers <maintainers@analog.foundation>"]
+repository = "https://github.com/analog/testnet"
 license = "Apache-2.0"
-homepage = "https://solana.com/"
+homepage = "https://analog.com/"
 documentation = "https://docs.rs/analog-download-utils"
 edition = "2018"
 
 [dependencies]
-analog-sdk = { path = "../sdk", version = "=1.9.0" }
-analog-download-utils = { path = "../download-utils", version = "=1.9.0" }
-analog-runtime = { path = "../runtime", version = "=1.9.0" }
+analog-sdk = { path = "../sdk", version = "=1.8.2" }
+analog-download-utils = { path = "../download-utils", version = "=1.8.2" }
+analog-runtime = { path = "../runtime", version = "=1.8.2" }
 
 [lib]
 crate-type = ["lib"]

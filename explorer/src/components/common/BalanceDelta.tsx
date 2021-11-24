@@ -1,18 +1,18 @@
 import React from "react";
 import { BigNumber } from "bignumber.js";
-import { SolBalance } from "utils";
+import { AnlogBalance } from "utils";
 
 export function BalanceDelta({
   delta,
   isAnlog = false,
 }: {
   delta: BigNumber;
-  isSol?: boolean;
+  isAnlog?: boolean;
 }) {
   let sols;
 
-  if (isSol) {
-    sols = <SolBalance tock={delta.toNumber()} />;
+  if (isAnlog) {
+    sols = <AnlogBalance tocks={delta.toNumber()} />;
   }
 
   if (delta.gt(0)) {

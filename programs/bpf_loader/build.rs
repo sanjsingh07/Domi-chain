@@ -24,12 +24,13 @@ fn main() {
     let path = PathBuf::from("../../sdk/bpf/syscalls.txt");
     let file = match File::create(&path) {
         Ok(x) => x,
-        _ => exit(1),
+        // _ => exit(0),
+        _ => return,
+
     };
     let mut out = BufWriter::new(file);
     let sysc_re = Regex::new(r#"register_syscall_by_name\([[:space:]]*b"([^"]+)","#).unwrap();
     for caps in sysc_re.captures_iter(text) {
-        let name = caps[1].to_string();
-        writeln!(out, "{}", name).unwrap();
+        writeln!(out, "{}", caps[1].to_string()).unwrap();
     }
 }

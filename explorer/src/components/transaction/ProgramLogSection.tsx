@@ -1,7 +1,7 @@
 import React from "react";
 import { SignatureProps } from "pages/TransactionDetailsPage";
 import { useTransactionDetails } from "providers/transactions";
-import { TransactionError } from "@solana/web3.js";
+import { TransactionError } from "@analog/web3.js";
 
 const transactionErrorMessage: Map<string, string> = new Map([
   ["AccountInUse", "Account in use"],
@@ -64,7 +64,7 @@ const instructionErrorMessage: Map<string, string> = new Map([
   ],
   ["ModifiedProgramId", "instruction modified the program id of an account"],
   [
-    "ExternalAccountLamportSpend",
+    "ExternalAccountTockSpend",
     "instruction spent from the balance of an account it does not own",
   ],
   [
@@ -72,7 +72,7 @@ const instructionErrorMessage: Map<string, string> = new Map([
     "instruction modified data of an account it does not own",
   ],
   [
-    "ReadonlyLamportChange",
+    "ReadonlyTockChange",
     "instruction changed the balance of a read-only account",
   ],
   ["ReadonlyDataModified", "instruction modified data of a read-only account"],
@@ -98,7 +98,7 @@ const instructionErrorMessage: Map<string, string> = new Map([
   ["InvalidError", "program returned invalid error code"],
   ["ExecutableDataModified", "instruction changed executable accounts data"],
   [
-    "ExecutableLamportChange",
+    "ExecutableTockChange",
     "instruction changed the balance of a executable account",
   ],
   ["ExecutableAccountNotRentExempt", "executable accounts must be rent exempt"],
@@ -131,7 +131,7 @@ const instructionErrorMessage: Map<string, string> = new Map([
   ["BorshIoError", "Failed to serialize or deserialize account data: {0}"],
   [
     "AccountNotRentExempt",
-    "An account does not have enough tock to be rent-exempt",
+    "An account does not have enough tocks to be rent-exempt",
   ],
   ["InvalidAccountOwner", "Invalid account owner"],
   ["ArithmeticOverflow", "Program arithmetic overflowed"],

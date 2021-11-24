@@ -2,8 +2,8 @@
 #![cfg_attr(RUSTC_WITH_SPECIALIZATION, feature(specialization))]
 #![cfg_attr(RUSTC_NEEDS_PROC_MACRO_HYGIENE, feature(proc_macro_hygiene))]
 
-// Allows macro expansion of `use ::solana_program::*` to work within this crate
-extern crate self as solana_program;
+// Allows macro expansion of `use ::analog_program::*` to work within this crate
+extern crate self as analog_program;
 
 pub mod account_info;
 pub mod blake3;
@@ -23,7 +23,7 @@ pub mod hash;
 pub mod incinerator;
 pub mod instruction;
 pub mod keccak;
-pub mod tock;
+pub mod tocks;
 pub mod loader_instruction;
 pub mod loader_upgradeable_instruction;
 pub mod log;
@@ -75,10 +75,10 @@ pub use analog_sdk_macro::program_declare_deprecated_id as declare_deprecated_id
 /// # // wrapper is used so that the macro invocation occurs in the item position
 /// # // rather than in the statement position which isn't allowed.
 /// use std::str::FromStr;
-/// use solana_program::{declare_id, pubkey::Pubkey};
+/// use analog_program::{declare_id, pubkey::Pubkey};
 ///
 /// # mod item_wrapper {
-/// #   use solana_program::declare_id;
+/// #   use analog_program::declare_id;
 /// declare_id!("My11111111111111111111111111111111111111111");
 /// # }
 /// # use item_wrapper::id;
@@ -101,7 +101,7 @@ extern crate analog_frozen_abi_macro;
 /// doctests to cover failure modes
 /// Literal denominator div-by-zero fails
 /// ```compile_fail
-/// # use solana_program::unchecked_div_by_const;
+/// # use analog_program::unchecked_div_by_const;
 /// # fn main() {
 /// # let _ = unchecked_div_by_const!(10, 0);
 /// # }
@@ -109,7 +109,7 @@ extern crate analog_frozen_abi_macro;
 /// #
 /// # Const denominator div-by-zero fails
 /// ```compile_fail
-/// # use solana_program::unchecked_div_by_const;
+/// # use analog_program::unchecked_div_by_const;
 /// # fn main() {
 /// # const D: u64 = 0;
 /// # let _ = unchecked_div_by_const!(10, D);
@@ -118,7 +118,7 @@ extern crate analog_frozen_abi_macro;
 /// #
 /// # Non-const denominator fails
 /// ```compile_fail
-/// # use solana_program::unchecked_div_by_const;
+/// # use analog_program::unchecked_div_by_const;
 /// # fn main() {
 /// # let d = 0;
 /// # let _ = unchecked_div_by_const!(10, d);
@@ -127,7 +127,7 @@ extern crate analog_frozen_abi_macro;
 /// #
 /// Literal denominator div-by-zero fails
 /// ```compile_fail
-/// # use solana_program::unchecked_div_by_const;
+/// # use analog_program::unchecked_div_by_const;
 /// # fn main() {
 /// # const N: u64 = 10;
 /// # let _ = unchecked_div_by_const!(N, 0);
@@ -136,7 +136,7 @@ extern crate analog_frozen_abi_macro;
 /// #
 /// # Const denominator div-by-zero fails
 /// ```compile_fail
-/// # use solana_program::unchecked_div_by_const;
+/// # use analog_program::unchecked_div_by_const;
 /// # fn main() {
 /// # const N: u64 = 10;
 /// # const D: u64 = 0;
@@ -146,7 +146,7 @@ extern crate analog_frozen_abi_macro;
 /// #
 /// # Non-const denominator fails
 /// ```compile_fail
-/// # use solana_program::unchecked_div_by_const;
+/// # use analog_program::unchecked_div_by_const;
 /// # fn main() {
 /// # const N: u64 = 10;
 /// # let d = 0;
@@ -156,7 +156,7 @@ extern crate analog_frozen_abi_macro;
 /// #
 /// Literal denominator div-by-zero fails
 /// ```compile_fail
-/// # use solana_program::unchecked_div_by_const;
+/// # use analog_program::unchecked_div_by_const;
 /// # fn main() {
 /// # let n = 10;
 /// # let _ = unchecked_div_by_const!(n, 0);
@@ -165,7 +165,7 @@ extern crate analog_frozen_abi_macro;
 /// #
 /// # Const denominator div-by-zero fails
 /// ```compile_fail
-/// # use solana_program::unchecked_div_by_const;
+/// # use analog_program::unchecked_div_by_const;
 /// # fn main() {
 /// # let n = 10;
 /// # const D: u64 = 0;
@@ -175,7 +175,7 @@ extern crate analog_frozen_abi_macro;
 /// #
 /// # Non-const denominator fails
 /// ```compile_fail
-/// # use solana_program::unchecked_div_by_const;
+/// # use analog_program::unchecked_div_by_const;
 /// # fn main() {
 /// # let n = 10;
 /// # let d = 0;

@@ -23,49 +23,38 @@ impl FetchStage {
     pub fn new(
         sockets: Vec<UdpSocket>,
         tpu_forwards_sockets: Vec<UdpSocket>,
-        tpu_vote_sockets: Vec<UdpSocket>,
         exit: &Arc<AtomicBool>,
         poh_recorder: &Arc<Mutex<PohRecorder>>,
         coalesce_ms: u64,
-    ) -> (Self, PacketReceiver, PacketReceiver) {
+    ) -> (Self, PacketReceiver) {
         let (sender, receiver) = channel();
-        let (vote_sender, vote_receiver) = channel();
         (
             Self::new_with_sender(
                 sockets,
                 tpu_forwards_sockets,
-                tpu_vote_sockets,
                 exit,
                 &sender,
-                &vote_sender,
                 poh_recorder,
                 coalesce_ms,
             ),
             receiver,
-            vote_receiver,
         )
     }
-
     pub fn new_with_sender(
         sockets: Vec<UdpSocket>,
         tpu_forwards_sockets: Vec<UdpSocket>,
-        tpu_vote_sockets: Vec<UdpSocket>,
         exit: &Arc<AtomicBool>,
         sender: &PacketSender,
-        vote_sender: &PacketSender,
         poh_recorder: &Arc<Mutex<PohRecorder>>,
         coalesce_ms: u64,
     ) -> Self {
         let tx_sockets = sockets.into_iter().map(Arc::new).collect();
         let tpu_forwards_sockets = tpu_forwards_sockets.into_iter().map(Arc::new).collect();
-        let tpu_vote_sockets = tpu_vote_sockets.into_iter().map(Arc::new).collect();
         Self::new_multi_socket(
             tx_sockets,
             tpu_forwards_sockets,
-            tpu_vote_sockets,
             exit,
             sender,
-            vote_sender,
             poh_recorder,
             coalesce_ms,
         )
@@ -95,7 +84,6 @@ impl FetchStage {
         {
             inc_new_counter_debug!("fetch_stage-honor_forwards", len);
             for packets in batch {
-                #[allow(clippy::question_mark)]
                 if sendr.send(packets).is_err() {
                     return Err(Error::Send);
                 }
@@ -110,10 +98,8 @@ impl FetchStage {
     fn new_multi_socket(
         sockets: Vec<Arc<UdpSocket>>,
         tpu_forwards_sockets: Vec<Arc<UdpSocket>>,
-        tpu_vote_sockets: Vec<Arc<UdpSocket>>,
         exit: &Arc<AtomicBool>,
         sender: &PacketSender,
-        vote_sender: &PacketSender,
         poh_recorder: &Arc<Mutex<PohRecorder>>,
         coalesce_ms: u64,
     ) -> Self {
@@ -144,18 +130,6 @@ impl FetchStage {
             )
         });
 
-        let tpu_vote_threads = tpu_vote_sockets.into_iter().map(|socket| {
-            streamer::receiver(
-                socket,
-                exit,
-                vote_sender.clone(),
-                recycler.clone(),
-                "fetch_vote_stage",
-                coalesce_ms,
-                true,
-            )
-        });
-
         let sender = sender.clone();
         let poh_recorder = poh_recorder.clone();
 
@@ -176,10 +150,7 @@ impl FetchStage {
             })
             .unwrap();
 
-        let mut thread_hdls: Vec<_> = tpu_threads
-            .chain(tpu_forwards_threads)
-            .chain(tpu_vote_threads)
-            .collect();
+        let mut thread_hdls: Vec<_> = tpu_threads.chain(tpu_forwards_threads).collect();
         thread_hdls.push(fwd_thread_hdl);
         Self { thread_hdls }
     }

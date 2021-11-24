@@ -39,7 +39,7 @@ A nonce account is created by first generating a new keypair, then create the ac
 
 ```bash
 analog-keygen new -o nonce-keypair.json
-solana create-nonce-account nonce-keypair.json 1
+analog create-nonce-account nonce-keypair.json 1
 ```
 
 - Output
@@ -61,7 +61,7 @@ presently stored nonce value with
 - Command
 
 ```bash
-solana nonce nonce-keypair.json
+analog nonce nonce-keypair.json
 ```
 
 - Output
@@ -80,7 +80,7 @@ value can be advanced by
 - Command
 
 ```bash
-solana new-nonce nonce-keypair.json
+analog new-nonce nonce-keypair.json
 ```
 
 - Output
@@ -98,14 +98,14 @@ Inspect a nonce account in a more human friendly format with
 - Command
 
 ```bash
-solana nonce-account nonce-keypair.json
+analog nonce-account nonce-keypair.json
 ```
 
 - Output
 
 ```text
-balance: 0.5 ANLOG
-minimum balance required: 0.00136416 ANLOG
+balance: 0.5 SOL
+minimum balance required: 0.00136416 SOL
 nonce: DZar6t2EaCFQTbUP4DHKwZ1wT8gCPW2aRfkVWhydkBvS
 ```
 
@@ -118,7 +118,7 @@ Withdraw funds from a nonce account with
 - Command
 
 ```bash
-solana withdraw-from-nonce-account nonce-keypair.json ~/.config/solana/id.json 0.5
+analog withdraw-from-nonce-account nonce-keypair.json ~/.config/analog/id.json 0.5
 ```
 
 - Output
@@ -138,7 +138,7 @@ Reassign the authority of a nonce account after creation with
 - Command
 
 ```bash
-solana authorize-nonce-account nonce-keypair.json nonce-authority.json
+analog authorize-nonce-account nonce-keypair.json nonce-authority.json
 ```
 
 - Output
@@ -165,7 +165,7 @@ The following subcommands have received this treatment so far
 
 ### Example Pay Using Durable Nonce
 
-Here we demonstrate Alice paying Bob 1 ANLOG using a durable nonce. The procedure
+Here we demonstrate Alice paying Bob 1 SOL using a durable nonce. The procedure
 is the same for all subcommands supporting durable nonces
 
 #### - Create accounts
@@ -181,11 +181,11 @@ $ analog-keygen new -o bob.json
 #### - Fund Alice's account
 
 Alice will need some funds to create a nonce account and send to Bob. Airdrop
-her some ANLOG
+her some SOL
 
 ```bash
 $ analog airdrop -k alice.json 1
-1 ANLOG
+1 SOL
 ```
 
 #### - Create Alice's nonce account
@@ -219,8 +219,8 @@ blockhash stored there
 
 ```bash
 $ analog nonce-account nonce.json
-balance: 0.1 ANLOG
-minimum balance required: 0.00136416 ANLOG
+balance: 0.1 SOL
+minimum balance required: 0.00136416 SOL
 nonce: F7vmkY3DTaxfagttWjQweib42b6ZHADSx94Tw8gHx3W7
 ```
 
@@ -231,17 +231,17 @@ HR1368UKHVZyenmH7yVz5sBAijV6XAPeWbEiXEGVYQorRMcoijeNAbzZqEZiH8cDB8tk65ckqeegFjK8
 
 #### - Success!
 
-The transaction succeeds! Bob receives 0.01 ANLOG from Alice and Alice's stored
+The transaction succeeds! Bob receives 0.01 SOL from Alice and Alice's stored
 nonce advances to a new value
 
 ```bash
 $ analog balance -k bob.json
-0.01 ANLOG
+0.01 SOL
 ```
 
 ```bash
 $ analog nonce-account nonce.json
-balance: 0.1 ANLOG
-minimum balance required: 0.00136416 ANLOG
+balance: 0.1 SOL
+minimum balance required: 0.00136416 SOL
 nonce: 6bjroqDcZgTv6Vavhqf81oBHTv3aMnX19UTB51YhAZnN
 ```

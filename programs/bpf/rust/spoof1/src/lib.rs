@@ -1,4 +1,4 @@
-use solana_program::{
+use analog_program::{
     account_info::AccountInfo,
     entrypoint,
     entrypoint::ProgramResult,
@@ -38,7 +38,7 @@ fn process_instruction(
     ];
     let ix = Instruction::new_with_bincode(
         system_program::id(),
-        &SystemInstruction::Transfer { tock: 1 },
+        &SystemInstruction::Transfer { tocks: 1 },
         account_metas,
     );
 

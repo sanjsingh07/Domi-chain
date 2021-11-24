@@ -1,12 +1,12 @@
 [package]
 name = "analog-bpf-programs"
 description = "Blockchain, Rebuilt for Scale"
-version = "1.9.0"
-documentation = "https://docs.rs/solana"
-homepage = "https://solana.com/"
+version = "1.8.2"
+documentation = "https://docs.rs/analog"
+homepage = "https://analog.com/"
 readme = "README.md"
-repository = "https://github.com/analog-labs/solana"
-authors = ["Analog Maintainers <maintainers@solana.foundation>"]
+repository = "https://github.com/analog/testnet"
+authors = ["Analog Maintainers <maintainers@analog.foundation>"]
 license = "Apache-2.0"
 edition = "2018"
 publish = false
@@ -26,19 +26,16 @@ itertools = "0.10.1"
 log = "0.4.11"
 miow = "0.3.6"
 net2 = "0.2.37"
-analog-bpf-rust-invoke = { path = "rust/invoke", version = "=1.9.0"}
-analog-bpf-loader-program = { path = "../bpf_loader", version = "=1.9.0"}
-analog-bpf-rust-realloc = { path = "rust/realloc", version = "=1.9.0"}
-analog-bpf-rust-realloc-invoke = { path = "rust/realloc_invoke", version = "=1.9.0"}
-analog-cli-output = { path = "../../cli-output", version = "=1.9.0" }
-analog-logger = { path = "../../logger", version = "=1.9.0" }
-analog-measure = { path = "../../measure", version = "=1.9.0" }
-solana_rbpf = "=0.2.14"
-analog-runtime = { path = "../../runtime", version = "=1.9.0" }
-analog-program-runtime = { path = "../../program-runtime", version = "=1.9.0" }
-analog-sdk = { path = "../../sdk", version = "=1.9.0" }
-analog-transaction-status = { path = "../../transaction-status", version = "=1.9.0" }
-analog-account-decoder = { path = "../../account-decoder", version = "=1.9.0" }
+analog-bpf-loader-program = { path = "../bpf_loader", version = "=1.8.2" }
+analog-cli-output = { path = "../../cli-output", version = "=1.8.2" }
+analog-logger = { path = "../../logger", version = "=1.8.2" }
+analog-measure = { path = "../../measure", version = "=1.8.2" }
+analog_rbpf = "=0.2.14"
+analog-runtime = { path = "../../runtime", version = "=1.8.2" }
+analog-sdk = { path = "../../sdk", version = "=1.8.2" }
+analog-transaction-status = { path = "../../transaction-status", version = "=1.8.2" }
+analog-account-decoder = { path = "../../account-decoder", version = "=1.8.2" }
+
 
 [[bench]]
 name = "bpf_loader"
@@ -74,8 +71,6 @@ members = [
     "rust/param_passing",
     "rust/param_passing_dep",
     "rust/rand",
-    "rust/realloc",
-    "rust/realloc_invoke",
     "rust/ro_modify",
     "rust/ro_account_modify",
     "rust/sanity",

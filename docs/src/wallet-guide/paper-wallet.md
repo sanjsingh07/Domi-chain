@@ -9,10 +9,12 @@ tools.
 
 ## Overview
 
-Analog provides a key generation tool to derive keys from
-[BIP39](https://github.com/bitcoin/bips/blob/master/bip-0039.mediawiki)-compliant
-seed phrases. Analog CLI commands for running a validator and staking tokens all
+Analog provides a key generation tool to derive keys from BIP39 compliant seed
+phrases. Analog CLI commands for running a validator and staking tokens all
 support keypair input via seed phrases.
+
+To learn more about the BIP39 standard, visit the Bitcoin BIPs Github repository
+[here](https://github.com/bitcoin/bips/blob/master/bip-0039.mediawiki).
 
 ## Paper Wallet Usage
 
@@ -59,7 +61,7 @@ have not made any errors.
 analog-keygen new --no-outfile
 ```
 
-> If the `--no-outfile` flag is **omitted**, the default behavior is to write the keypair to `~/.config/solana/id.json`, resulting in a [file system wallet](file-system-wallet.md).
+> If the `--no-outfile` flag is **omitted**, the default behavior is to write the keypair to `~/.config/analog/id.json`, resulting in a [file system wallet](file-system-wallet.md)
 
 The output of this command will display a line like this:
 
@@ -74,7 +76,7 @@ and "wallet address" are sometimes used interchangably.
 
 > For added security, increase the seed phrase word count using the `--word-count` argument
 
-For full usage details, run:
+For full usage details run:
 
 ```bash
 analog-keygen new --help
@@ -87,7 +89,7 @@ Public keys can be derived from a seed phrase and a passphrase if you choose to
 use one. This is useful for using an offline-generated seed phrase to derive a
 valid public key. The `analog-keygen pubkey` command will walk you through how
 to use your seed phrase (and a passphrase if you chose to use one) as a signer
-with the analog command-line tools using the `prompt` URI scheme.
+with the analog command-line tools using the `ask` uri scheme.
 
 ```bash
 analog-keygen pubkey prompt://
@@ -106,7 +108,7 @@ analog-keygen pubkey prompt:// --skip-seed-phrase-validation
 ```
 
 After entering your seed phrase with `analog-keygen pubkey prompt://` the console
-will display a string of base-58 characters. This is the [derived](#hierarchical-derivation) analog BIP44 _wallet address_
+will display a string of base-58 character. This is the [derived](#hierarchical-derivation) analog BIP44 _wallet address_
 associated with your seed phrase.
 
 > Copy the derived address to a USB stick for easy usage on networked computers
@@ -119,7 +121,7 @@ analog-keygen pubkey ASK
 
 > A common next step is to [check the balance](#checking-account-balance) of the account associated with a public key
 
-For full usage details, run:
+For full usage details run:
 
 ```bash
 analog-keygen pubkey --help
@@ -177,17 +179,17 @@ To retrieve public keys securely from a paper wallet, follow the
 Public keys can then be typed manually or transferred via a USB stick to a
 networked machine.
 
-Next, configure the `solana` CLI tool to
+Next, configure the `analog` CLI tool to
 [connect to a particular cluster](../cli/choose-a-cluster.md):
 
 ```bash
-solana config set --url <CLUSTER URL> # (i.e. https://api.mainnet-beta.solana.com)
+analog config set --url <CLUSTER URL> # (i.e. https://api.mainnet-beta.analog.com)
 ```
 
 Finally, to check the balance, run the following command:
 
 ```bash
-solana balance <PUBKEY>
+analog balance <PUBKEY>
 ```
 
 ## Creating Multiple Paper Wallet Addresses

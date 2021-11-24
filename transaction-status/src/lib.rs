@@ -15,26 +15,25 @@ pub mod parse_token;
 pub mod parse_vote;
 pub mod token_balances;
 
-pub use {crate::extract_memos::extract_and_fmt_memos, analog_runtime::bank::RewardType};
-use {
-    crate::{
-        parse_accounts::{parse_accounts, ParsedAccount},
-        parse_instruction::{parse, ParsedInstruction},
-    },
-    analog_account_decoder::parse_token::UiTokenAmount,
-    analog_sdk::{
-        clock::{Slot, UnixTimestamp},
-        commitment_config::CommitmentConfig,
-        deserialize_utils::default_on_eof,
-        instruction::CompiledInstruction,
-        message::{Message, MessageHeader},
-        pubkey::Pubkey,
-        sanitize::Sanitize,
-        signature::Signature,
-        transaction::{Result, Transaction, TransactionError},
-    },
-    std::fmt,
+pub use crate::extract_memos::extract_and_fmt_memos;
+use crate::{
+    parse_accounts::{parse_accounts, ParsedAccount},
+    parse_instruction::{parse, ParsedInstruction},
 };
+use analog_account_decoder::parse_token::UiTokenAmount;
+pub use analog_runtime::bank::RewardType;
+use analog_sdk::{
+    clock::{Slot, UnixTimestamp},
+    commitment_config::CommitmentConfig,
+    deserialize_utils::default_on_eof,
+    instruction::CompiledInstruction,
+    message::{Message, MessageHeader},
+    pubkey::Pubkey,
+    sanitize::Sanitize,
+    signature::Signature,
+    transaction::{Result, Transaction, TransactionError},
+};
+use std::fmt;
 /// A duplicate representation of an Instruction for pretty JSON serialization
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase", untagged)]
@@ -127,7 +126,6 @@ pub struct TransactionTokenBalance {
     pub account_index: u8,
     pub mint: String,
     pub ui_token_amount: UiTokenAmount,
-    pub owner: String,
 }
 
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
@@ -136,8 +134,6 @@ pub struct UiTransactionTokenBalance {
     pub account_index: u8,
     pub mint: String,
     pub ui_token_amount: UiTokenAmount,
-    #[serde(default, skip_serializing_if = "Option::is_none")]
-    pub owner: Option<String>,
 }
 
 impl From<TransactionTokenBalance> for UiTransactionTokenBalance {
@@ -146,11 +142,6 @@ impl From<TransactionTokenBalance> for UiTransactionTokenBalance {
             account_index: token_balance.account_index,
             mint: token_balance.mint,
             ui_token_amount: token_balance.ui_token_amount,
-            owner: if !token_balance.owner.is_empty() {
-                Some(token_balance.owner)
-            } else {
-                None
-            },
         }
     }
 }
@@ -221,7 +212,7 @@ impl Default for TransactionStatusMeta {
 #[serde(rename_all = "camelCase")]
 pub struct UiTransactionStatusMeta {
     pub err: Option<TransactionError>,
-    pub status: Result<()>, // This field is deprecated.  See https://github.com/analog-labs/solana/issues/9302
+    pub status: Result<()>, // This field is deprecated.  See https://github.com/analog/testnet/issues/9302
     pub fee: u64,
     pub pre_balances: Vec<u64>,
     pub post_balances: Vec<u64>,
@@ -347,8 +338,8 @@ pub struct ConfirmedTransactionStatusWithSignature {
 #[serde(rename_all = "camelCase")]
 pub struct Reward {
     pub pubkey: String,
-    pub tock: i64,
-    pub post_balance: u64, // Account balance in tock after `tock` was applied
+    pub tocks: i64,
+    pub post_balance: u64, // Account balance in tocks after `tocks` was applied
     pub reward_type: Option<RewardType>,
     pub commission: Option<u8>, // Vote account commission when the reward was credited, only present for voting and staking rewards
 }

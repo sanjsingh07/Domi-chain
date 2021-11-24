@@ -1,27 +1,27 @@
 [package]
 name = "analog-banks-client"
-version = "1.9.0"
+version = "1.8.2"
 description = "Analog banks client"
-authors = ["Analog Maintainers <maintainers@solana.foundation>"]
-repository = "https://github.com/analog-labs/solana"
+authors = ["Analog Maintainers <maintainers@analog.foundation>"]
+repository = "https://github.com/analog/testnet"
 license = "Apache-2.0"
-homepage = "https://solana.com/"
+homepage = "https://analog.com/"
 documentation = "https://docs.rs/analog-banks-client"
 edition = "2018"
 
 [dependencies]
 borsh = "0.9.1"
 futures = "0.3"
-analog-banks-interface = { path = "../banks-interface", version = "=1.9.0" }
-solana-program= { path = "../sdk/program", version = "=1.9.0" }
-analog-sdk = { path = "../sdk", version = "=1.9.0" }
+analog-banks-interface = { path = "../banks-interface", version = "=1.8.2" }
+analog-program = { path = "../sdk/program", version = "=1.8.2" }
+analog-sdk = { path = "../sdk", version = "=1.8.2" }
 tarpc = { version = "0.26.2", features = ["full"] }
 tokio = { version = "1", features = ["full"] }
 tokio-serde = { version = "0.8", features = ["bincode"] }
 
 [dev-dependencies]
-analog-runtime = { path = "../runtime", version = "=1.9.0" }
-analog-banks-server = { path = "../banks-server", version = "=1.9.0" }
+analog-runtime = { path = "../runtime", version = "=1.8.2" }
+analog-banks-server = { path = "../banks-server", version = "=1.8.2" }
 
 [lib]
 crate-type = ["lib"]

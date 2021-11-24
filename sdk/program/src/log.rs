@@ -1,4 +1,4 @@
-//! Analog Rust-based BPF program logging
+//! @brief Analog Rust-based BPF program logging
 
 use crate::account_info::AccountInfo;
 
@@ -125,8 +125,8 @@ pub fn anlog_log_params(accounts: &[AccountInfo], data: &[u8]) {
         msg!(0, 0, 0, 0, account.is_signer);
         msg!("- Key");
         account.key.log();
-        msg!("- Lamports");
-        msg!(0, 0, 0, 0, account.tock());
+        msg!("- Tocks");
+        msg!(0, 0, 0, 0, account.tocks());
         msg!("- Account data length");
         msg!(0, 0, 0, 0, account.data_len());
         msg!("- Owner");

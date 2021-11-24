@@ -1,6 +1,5 @@
 use {
-    clap::{crate_name, value_t, value_t_or_exit, App, Arg},
-    log::*,
+    clap::{value_t, value_t_or_exit, App, Arg},
     analog_clap_utils::{
         input_parsers::{pubkey_of, pubkeys_of, value_of},
         input_validators::{
@@ -16,7 +15,7 @@ use {
         account::AccountSharedData,
         clock::Slot,
         epoch_schedule::{EpochSchedule, MINIMUM_SLOTS_PER_EPOCH},
-        native_token::anlog_to_tock,
+        native_token::anlog_to_tocks,
         pubkey::Pubkey,
         rent::Rent,
         rpc_port,
@@ -26,7 +25,7 @@ use {
     analog_streamer::socket::SocketAddrSpace,
     analog_validator::{
         admin_rpc_service, dashboard::Dashboard, ledger_lockfile, lock_ledger, println_name_value,
-        redirect_stderr_to_file, analog_test_validator::*,
+        redirect_stderr_to_file, test_validator::*,
     },
     std::{
         collections::HashSet,
@@ -45,7 +44,7 @@ use {
  */
 const DEFAULT_MAX_LEDGER_SHREDS: u64 = 10_000;
 
-const DEFAULT_FAUCET_SOL: f64 = 1_000_000.;
+const DEFAULT_FAUCET_ANLOG: f64 = 1_000_000.;
 
 #[derive(PartialEq)]
 enum Output {
@@ -58,7 +57,7 @@ fn main() {
     let default_rpc_port = rpc_port::DEFAULT_RPC_PORT.to_string();
     let default_faucet_port = FAUCET_PORT.to_string();
     let default_limit_ledger_size = DEFAULT_MAX_LEDGER_SHREDS.to_string();
-    let default_faucet_anlog = DEFAULT_FAUCET_SOL.to_string();
+    let default_faucet_anlog = DEFAULT_FAUCET_ANLOG.to_string();
 
     let matches = App::new("analog-test-validator")
         .about("Test Validator")
@@ -156,14 +155,13 @@ fn main() {
         .arg(
             Arg::with_name("bpf_program")
                 .long("bpf-program")
-                .value_name("ADDRESS_OR_PATH BPF_PROGRAM.SO")
+                .value_name("ADDRESS BPF_PROGRAM.SO")
                 .takes_value(true)
                 .number_of_values(2)
                 .multiple(true)
                 .help(
                     "Add a BPF program to the genesis configuration. \
-                       If the ledger already exists then this parameter is silently ignored. \
-                       First argument can be a public key or path to file that can be parsed as a keypair",
+                       If the ledger already exists then this parameter is silently ignored",
                 ),
         )
         .arg(
@@ -342,8 +340,6 @@ fn main() {
     };
     let _logger_thread = redirect_stderr_to_file(logfile);
 
-    info!("{} {}", crate_name!(), analog_version::version!());
-    info!("Starting validator with: {:#?}", std::env::args_os());
     analog_core::validator::report_target_features();
 
     // TODO: Ideally test-validator should *only* allow private addresses.
@@ -393,6 +389,11 @@ fn main() {
         IpAddr::V4(Ipv4Addr::new(0, 0, 0, 0)),
         faucet_port,
     ));
+    // JIT not supported on the BPF VM in Windows currently: https://github.com/analog/rbpf/issues/217
+    #[cfg(target_family = "windows")]
+    let bpf_jit = false;
+    #[cfg(not(target_family = "windows"))]
+    let bpf_jit = !matches.is_present("no_bpf_jit");
 
     let mut programs = vec![];
     if let Some(values) = matches.values_of("bpf_program") {
@@ -400,13 +401,10 @@ fn main() {
         for address_program in values.chunks(2) {
             match address_program {
                 [address, program] => {
-                    let address = address
-                        .parse::<Pubkey>()
-                        .or_else(|_| read_keypair_file(address).map(|keypair| keypair.pubkey()))
-                        .unwrap_or_else(|err| {
-                            println!("Error: invalid address {}: {}", address, err);
-                            exit(1);
-                        });
+                    let address = address.parse::<Pubkey>().unwrap_or_else(|err| {
+                        println!("Error: invalid address {}: {}", address, err);
+                        exit(1);
+                    });
 
                     let program_path = PathBuf::from(program);
                     if !program_path.exists() {
@@ -451,7 +449,7 @@ fn main() {
         None
     };
 
-    let faucet_lamports = anlog_to_tock(value_of(&matches, "faucet_anlog").unwrap());
+    let faucet_tocks = anlog_to_tocks(value_of(&matches, "faucet_anlog").unwrap());
     let faucet_keypair_file = ledger_path.join("faucet-keypair.json");
     if !faucet_keypair_file.exists() {
         write_keypair_file(&Keypair::new(), faucet_keypair_file.to_str().unwrap()).unwrap_or_else(
@@ -501,7 +499,7 @@ fn main() {
     } else if random_mint {
         println_name_value(
             "\nNotice!",
-            "No wallet available. `solana airdrop` localnet ANLOG after creating one\n",
+            "No wallet available. `analog airdrop` localnet ANLOG after creating one\n",
         );
     }
 
@@ -544,7 +542,7 @@ fn main() {
         .tower_storage(tower_storage)
         .add_account(
             faucet_pubkey,
-            AccountSharedData::new(faucet_lamports, 0, &system_program::id()),
+            AccountSharedData::new(faucet_tocks, 0, &system_program::id()),
         )
         .rpc_config(JsonRpcConfig {
             enable_rpc_transaction_history: true,
@@ -552,7 +550,7 @@ fn main() {
             faucet_addr,
             ..JsonRpcConfig::default()
         })
-        .bpf_jit(!matches.is_present("no_bpf_jit"))
+        .bpf_jit(bpf_jit)
         .rpc_port(rpc_port)
         .add_programs_with_path(&programs);
 

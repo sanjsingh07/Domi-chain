@@ -6,7 +6,7 @@ Analog supports several different types of wallets that can be used to interface
 directly with the Analog command-line tools.
 
 **If you are unfamiliar with using command line programs and just want to be able
-to send and receive ANLOG tokens, we recommend setting up a third-party
+to send and receive SOL tokens, we recommend setting up a third-party
 [App Wallet](apps.md)**.
 
 To use a Command Line Wallet, you must first [install the Analog CLI tools](../cli/install-analog-cli-tools.md)

@@ -1,11 +1,11 @@
 [package]
 name = "analog-version"
-version = "1.9.0"
+version = "1.8.2"
 description = "Analog Version"
-authors = ["Analog Maintainers <maintainers@solana.foundation>"]
-repository = "https://github.com/analog-labs/solana"
+authors = ["Analog Maintainers <maintainers@analog.foundation>"]
+repository = "https://github.com/analog/testnet"
 license = "Apache-2.0"
-homepage = "https://solana.com/"
+homepage = "https://analog.com/"
 documentation = "https://docs.rs/analog-version"
 edition = "2018"
 
@@ -13,9 +13,9 @@ edition = "2018"
 log = "0.4.14"
 serde = "1.0.130"
 serde_derive = "1.0.103"
-analog-frozen-abi = { path = "../frozen-abi", version = "=1.9.0" }
-analog-frozen-abi-macro = { path = "../frozen-abi/macro", version = "=1.9.0" }
-analog-sdk = { path = "../sdk", version = "=1.9.0" }
+analog-frozen-abi = { path = "../frozen-abi", version = "=1.8.2" }
+analog-frozen-abi-macro = { path = "../frozen-abi/macro", version = "=1.8.2" }
+analog-sdk = { path = "../sdk", version = "=1.8.2" }
 
 [lib]
 name = "analog_version"

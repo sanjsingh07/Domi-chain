@@ -3,7 +3,7 @@ import {
   Connection,
   TransactionSignature,
   ParsedConfirmedTransaction,
-} from "@solana/web3.js";
+} from "@analog/web3.js";
 import { useCluster, Cluster } from "../cluster";
 import * as Cache from "providers/cache";
 import { ActionType, FetchStatus } from "providers/cache";
@@ -56,8 +56,7 @@ async function fetchDetails(
   let transaction;
   try {
     transaction = await new Connection(url).getParsedConfirmedTransaction(
-      signature,
-      "confirmed"
+      signature
     );
     fetchStatus = FetchStatus.Fetched;
   } catch (error) {

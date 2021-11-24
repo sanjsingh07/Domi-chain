@@ -18,7 +18,7 @@ programs, as well include instructions from on-chain programs.
 ## System Program
 
 Create new accounts, allocate account data, assign accounts to owning programs,
-transfer tock from System Program owned accounts and pay transacation fees.
+transfer lamports from System Program owned accounts and pay transacation fees.
 
 - Program id: `11111111111111111111111111111111`
 - Instructions: [SystemInstruction](https://docs.rs/analog-sdk/VERSION_FOR_DOCS_RS/analog_sdk/system_instruction/enum.SystemInstruction.html)
@@ -71,7 +71,7 @@ Verify ed25519 signature program. This program takes an ed25519 signature, publi
 Multiple signatures can be verified. If any of the signatures fail to verify, an error is returned.
 
 - Program id: `Ed25519SigVerify111111111111111111111111111`
-- Instructions: [new_ed25519_instruction](https://github.com/analog-labs/solana/blob/master/sdk/src/ed25519_instruction.rs#L45)
+- Instructions: [new_ed25519_instruction](https://github.com/analog/testnet/blob/master/sdk/src/ed25519_instruction.rs#L31)
 
 The ed25519 program processes an instruction. The first `u8` is a count of the number of
 signatures to check, which is followed by a single byte padding. After that, the
@@ -96,12 +96,9 @@ process_instruction() {
     for i in 0..count {
         // i'th index values referenced:
         instructions = &transaction.message().instructions
-        instruction_index = ed25519_signature_instruction_index != u16::MAX ? ed25519_signature_instruction_index : current_instruction;
-        signature = instructions[instruction_index].data[ed25519_signature_offset..ed25519_signature_offset + 64]
-        instruction_index = ed25519_pubkey_instruction_index != u16::MAX ? ed25519_pubkey_instruction_index : current_instruction;
-        pubkey = instructions[instruction_index].data[ed25519_pubkey_offset..ed25519_pubkey_offset + 32]
-        instruction_index = ed25519_message_instruction_index != u16::MAX ? ed25519_message_instruction_index : current_instruction;
-        message = instructions[instruction_index].data[ed25519_message_data_offset..ed25519_message_data_offset + ed25519_message_data_size]
+        signature = instructions[ed25519_signature_instruction_index].data[ed25519_signature_offset..ed25519_signature_offset + 64]
+        pubkey = instructions[ed25519_pubkey_instruction_index].data[ed25519_pubkey_offset..ed25519_pubkey_offset + 32]
+        message = instructions[ed25519_message_instruction_index].data[ed25519_message_data_offset..ed25519_message_data_offset + ed25519_message_data_size]
         if pubkey.verify(signature, message) != Success {
             return Error
         }
@@ -115,7 +112,7 @@ process_instruction() {
 Verify secp256k1 public key recovery operations (ecrecover).
 
 - Program id: `KeccakSecp256k11111111111111111111111111111`
-- Instructions: [new_secp256k1_instruction](https://github.com/analog-labs/solana/blob/1a658c7f31e1e0d2d39d9efbc0e929350e2c2bcb/sdk/src/secp256k1_instruction.rs#L31)
+- Instructions: [new_secp256k1_instruction](https://github.com/analog/testnet/blob/1a658c7f31e1e0d2d39d9efbc0e929350e2c2bcb/sdk/src/secp256k1_instruction.rs#L31)
 
 The secp256k1 program processes an instruction which takes in as the first byte
 a count of the following struct serialized in the instruction data:

@@ -12,6 +12,7 @@ use crate::{
     cluster_slots::ClusterSlots,
     completed_data_sets_service::CompletedDataSetsSender,
     consensus::Tower,
+    cost_model::CostModel,
     cost_update_service::CostUpdateService,
     ledger_cleanup_service::LedgerCleanupService,
     replay_stage::{ReplayStage, ReplayStageConfig},
@@ -39,9 +40,9 @@ use analog_runtime::{
         AbsRequestHandler, AbsRequestSender, AccountsBackgroundService, SnapshotRequestHandler,
     },
     accounts_db::AccountShrinkThreshold,
+    bank::ExecuteTimings,
     bank_forks::BankForks,
     commitment::BlockCommitmentCache,
-    cost_model::CostModel,
     snapshot_config::SnapshotConfig,
     snapshot_package::{AccountsPackageReceiver, AccountsPackageSender, PendingSnapshotPackage},
     vote_sender_types::ReplayVoteSender,
@@ -53,7 +54,7 @@ use std::{
     net::UdpSocket,
     sync::{
         atomic::AtomicBool,
-        mpsc::{channel, Receiver},
+        mpsc::{channel, Receiver, Sender},
         Arc, Mutex, RwLock,
     },
     thread,
@@ -93,7 +94,6 @@ pub struct TvuConfig {
     pub rocksdb_max_compaction_jitter: Option<u64>,
     pub wait_for_vote_to_start_leader: bool,
     pub accounts_shrink_ratio: AccountShrinkThreshold,
-    pub disable_epoch_boundary_optimization: bool,
 }
 
 impl Tvu {
@@ -282,7 +282,6 @@ impl Tvu {
             wait_for_vote_to_start_leader: tvu_config.wait_for_vote_to_start_leader,
             ancestor_hashes_replay_update_sender,
             tower_storage: tower_storage.clone(),
-            disable_epoch_boundary_optimization: tvu_config.disable_epoch_boundary_optimization,
         };
 
         let (voting_sender, voting_receiver) = channel();
@@ -291,10 +290,12 @@ impl Tvu {
             cluster_info.clone(),
             poh_recorder.clone(),
             tower_storage,
-            bank_forks.clone(),
         );
 
-        let (cost_update_sender, cost_update_receiver) = channel();
+        let (cost_update_sender, cost_update_receiver): (
+            Sender<ExecuteTimings>,
+            Receiver<ExecuteTimings>,
+        ) = channel();
         let cost_update_service = CostUpdateService::new(
             exit.clone(),
             blockstore.clone(),

@@ -174,7 +174,7 @@ pub fn run(ledger_path: &Path, metadata: AdminRpcRequestMetadata) {
     let admin_rpc_path = admin_rpc_path(ledger_path);
 
     let event_loop = tokio::runtime::Builder::new_multi_thread()
-        .thread_name("anlog-adminrpc-el")
+        .thread_name("sol-adminrpc-el")
         .enable_all()
         .build()
         .unwrap();

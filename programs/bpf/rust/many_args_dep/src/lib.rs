@@ -1,7 +1,7 @@
-//! Analog Rust-based BPF program utility functions and types
+//! @brief Analog Rust-based BPF program utility functions and types
 
-extern crate solana_program;
-use solana_program::msg;
+extern crate analog_program;
+use analog_program::msg;
 
 pub fn many_args(
     arg1: u64,

@@ -8,6 +8,8 @@ use log::*;
 use rand::{thread_rng, Rng};
 use rayon::prelude::*;
 use analog_core::banking_stage::{BankingStage, BankingStageStats};
+use analog_core::cost_model::CostModel;
+use analog_core::cost_tracker::CostTracker;
 use analog_entry::entry::{next_hash, Entry};
 use analog_gossip::cluster_info::ClusterInfo;
 use analog_gossip::cluster_info::Node;
@@ -18,7 +20,6 @@ use analog_perf::packet::to_packets_chunked;
 use analog_perf::test_tx::test_tx;
 use analog_poh::poh_recorder::{create_test_recorder, WorkingBankEntry};
 use analog_runtime::bank::Bank;
-use analog_runtime::cost_model::CostModel;
 use analog_sdk::genesis_config::GenesisConfig;
 use analog_sdk::hash::Hash;
 use analog_sdk::message::Message;
@@ -93,7 +94,9 @@ fn bench_consume_buffered(bencher: &mut Bencher) {
                 None::<Box<dyn Fn()>>,
                 &BankingStageStats::default(),
                 &recorder,
-                &Arc::new(RwLock::new(CostModel::default())),
+                &Arc::new(RwLock::new(CostTracker::new(Arc::new(RwLock::new(
+                    CostModel::new(std::u64::MAX, std::u64::MAX),
+                ))))),
             );
         });
 
@@ -160,17 +163,11 @@ fn bench_banking(bencher: &mut Bencher, tx_type: TransactionType) {
     genesis_config.ticks_per_slot = 10_000;
 
     let (verified_sender, verified_receiver) = unbounded();
-    let (tpu_vote_sender, tpu_vote_receiver) = unbounded();
     let (vote_sender, vote_receiver) = unbounded();
     let mut bank = Bank::new_for_benches(&genesis_config);
     // Allow arbitrary transaction processing time for the purposes of this bench
     bank.ns_per_slot = std::u128::MAX;
     let bank = Arc::new(Bank::new_for_benches(&genesis_config));
-
-    // set cost tracker limits to MAX so it will not filter out TXs
-    bank.write_cost_tracker()
-        .unwrap()
-        .set_limits(std::u64::MAX, std::u64::MAX);
 
     debug!("threads: {} txs: {}", num_threads, txes);
 
@@ -221,11 +218,12 @@ fn bench_banking(bencher: &mut Bencher, tx_type: TransactionType) {
             &cluster_info,
             &poh_recorder,
             verified_receiver,
-            tpu_vote_receiver,
             vote_receiver,
             None,
             s,
-            Arc::new(RwLock::new(CostModel::default())),
+            Arc::new(RwLock::new(CostTracker::new(Arc::new(RwLock::new(
+                CostModel::new(std::u64::MAX, std::u64::MAX),
+            ))))),
         );
         poh_recorder.lock().unwrap().set_bank(&bank);
 
@@ -269,7 +267,6 @@ fn bench_banking(bencher: &mut Bencher, tx_type: TransactionType) {
             start += chunk_len;
             start %= verified.len();
         });
-        drop(tpu_vote_sender);
         drop(vote_sender);
         exit.store(true, Ordering::Relaxed);
         poh_service.join().unwrap();
@@ -293,13 +290,13 @@ fn simulate_process_entries(
     mut tx_vector: Vec<VersionedTransaction>,
     genesis_config: &GenesisConfig,
     keypairs: &[Keypair],
-    initial_lamports: u64,
+    initial_tocks: u64,
     num_accounts: usize,
 ) {
     let bank = Arc::new(Bank::new_for_benches(genesis_config));
 
     for i in 0..(num_accounts / 2) {
-        bank.transfer(initial_lamports, mint_keypair, &keypairs[i * 2].pubkey())
+        bank.transfer(initial_tocks, mint_keypair, &keypairs[i * 2].pubkey())
             .unwrap();
     }
 
@@ -308,14 +305,14 @@ fn simulate_process_entries(
             system_transaction::transfer(
                 &keypairs[i],
                 &keypairs[i + 1].pubkey(),
-                initial_lamports,
+                initial_tocks,
                 bank.last_blockhash(),
             )
             .into(),
         );
     }
 
-    // Transfer tock to each other
+    // Transfer tocks to each other
     let entry = Entry {
         num_hashes: 1,
         hash: next_hash(&bank.last_blockhash(), 1, &tx_vector),
@@ -329,7 +326,7 @@ fn bench_process_entries(randomize_txs: bool, bencher: &mut Bencher) {
     // entropy multiplier should be big enough to provide sufficient entropy
     // but small enough to not take too much time while executing the test.
     let entropy_multiplier: usize = 25;
-    let initial_lamports = 100;
+    let initial_tocks = 100;
 
     // number of accounts need to be in multiple of 4 for correct
     // execution of the test.
@@ -338,7 +335,7 @@ fn bench_process_entries(randomize_txs: bool, bencher: &mut Bencher) {
         genesis_config,
         mint_keypair,
         ..
-    } = create_genesis_config((num_accounts + 1) as u64 * initial_lamports);
+    } = create_genesis_config((num_accounts + 1) as u64 * initial_tocks);
 
     let mut keypairs: Vec<Keypair> = vec![];
     let tx_vector: Vec<VersionedTransaction> = Vec::with_capacity(num_accounts / 2);
@@ -355,7 +352,7 @@ fn bench_process_entries(randomize_txs: bool, bencher: &mut Bencher) {
             tx_vector.clone(),
             &genesis_config,
             &keypairs,
-            initial_lamports,
+            initial_tocks,
             num_accounts,
         );
     });

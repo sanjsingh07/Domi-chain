@@ -67,8 +67,8 @@ pub struct ClusterConfig {
     pub validator_keys: Option<Vec<(Arc<Keypair>, bool)>>,
     /// The stakes of each node
     pub node_stakes: Vec<u64>,
-    /// The total tock available to the cluster
-    pub cluster_lamports: u64,
+    /// The total tocks available to the cluster
+    pub cluster_tocks: u64,
     pub ticks_per_slot: u64,
     pub slots_per_epoch: u64,
     pub stakers_slot_offset: u64,
@@ -86,7 +86,7 @@ impl Default for ClusterConfig {
             num_listeners: 0,
             validator_keys: None,
             node_stakes: vec![],
-            cluster_lamports: 0,
+            cluster_tocks: 0,
             ticks_per_slot: DEFAULT_TICKS_PER_SLOT,
             slots_per_epoch: DEFAULT_DEV_SLOTS_PER_EPOCH,
             stakers_slot_offset: DEFAULT_DEV_SLOTS_PER_EPOCH,
@@ -111,14 +111,14 @@ pub struct LocalCluster {
 impl LocalCluster {
     pub fn new_with_equal_stakes(
         num_nodes: usize,
-        cluster_lamports: u64,
-        lamports_per_node: u64,
+        cluster_tocks: u64,
+        tocks_per_node: u64,
         socket_addr_space: SocketAddrSpace,
     ) -> Self {
-        let stakes: Vec<_> = (0..num_nodes).map(|_| lamports_per_node).collect();
+        let stakes: Vec<_> = (0..num_nodes).map(|_| tocks_per_node).collect();
         let mut config = ClusterConfig {
             node_stakes: stakes,
-            cluster_lamports,
+            cluster_tocks,
             validator_configs: make_identical_validator_configs(
                 &ValidatorConfig::default(),
                 num_nodes,
@@ -177,7 +177,7 @@ impl LocalCluster {
             mint_keypair,
             ..
         } = create_genesis_config_with_vote_accounts_and_cluster_type(
-            config.cluster_lamports,
+            config.cluster_tocks,
             &keys_in_genesis,
             stakes_in_genesis,
             config.cluster_type,
@@ -352,7 +352,7 @@ impl LocalCluster {
             // setup as a listener
             info!("listener {} ", validator_pubkey,);
         } else {
-            // Give the validator some tock to setup vote accounts
+            // Give the validator some tocks to setup vote accounts
             if should_create_vote_pubkey {
                 let validator_balance = Self::transfer_with_client(
                     &client,
@@ -421,12 +421,12 @@ impl LocalCluster {
         self.close_preserve_ledgers();
     }
 
-    pub fn transfer(&self, source_keypair: &Keypair, dest_pubkey: &Pubkey, tock: u64) -> u64 {
+    pub fn transfer(&self, source_keypair: &Keypair, dest_pubkey: &Pubkey, tocks: u64) -> u64 {
         let client = create_client(
             self.entry_point_info.client_facing_addr(),
             VALIDATOR_PORT_RANGE,
         );
-        Self::transfer_with_client(&client, source_keypair, dest_pubkey, tock)
+        Self::transfer_with_client(&client, source_keypair, dest_pubkey, tocks)
     }
 
     pub fn check_for_new_roots(
@@ -483,16 +483,16 @@ impl LocalCluster {
         client: &ThinClient,
         source_keypair: &Keypair,
         dest_pubkey: &Pubkey,
-        tock: u64,
+        tocks: u64,
     ) -> u64 {
         trace!("getting leader blockhash");
         let (blockhash, _) = client
             .get_latest_blockhash_with_commitment(CommitmentConfig::processed())
             .unwrap();
-        let mut tx = system_transaction::transfer(source_keypair, dest_pubkey, tock, blockhash);
+        let mut tx = system_transaction::transfer(source_keypair, dest_pubkey, tocks, blockhash);
         info!(
             "executing transfer of {} from {} to {}",
-            tock,
+            tocks,
             source_keypair.pubkey(),
             *dest_pubkey
         );
@@ -502,7 +502,7 @@ impl LocalCluster {
         client
             .wait_for_balance_with_commitment(
                 dest_pubkey,
-                Some(tock),
+                Some(tocks),
                 CommitmentConfig::processed(),
             )
             .expect("get balance")
@@ -781,7 +781,7 @@ mod test {
                 NUM_NODES,
             ),
             node_stakes: vec![3; NUM_NODES],
-            cluster_lamports: 100,
+            cluster_tocks: 100,
             ticks_per_slot: 8,
             slots_per_epoch: MINIMUM_SLOTS_PER_EPOCH as u64,
             stakers_slot_offset: MINIMUM_SLOTS_PER_EPOCH as u64,

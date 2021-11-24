@@ -5,9 +5,10 @@ use rand::{thread_rng, Rng};
 use rayon::prelude::*;
 use analog_account_decoder::parse_token::spl_token_v2_0_pubkey;
 use analog_clap_utils::input_parsers::pubkey_of;
-use analog_client::{rpc_client::RpcClient, transaction_executor::TransactionExecutor};
+use analog_client::rpc_client::RpcClient;
 use analog_faucet::faucet::{request_airdrop_transaction, FAUCET_PORT};
 use analog_gossip::gossip_service::discover;
+use analog_measure::measure::Measure;
 use analog_runtime::inline_spl_token_v2_0;
 use analog_sdk::{
     commitment_config::CommitmentConfig,
@@ -15,8 +16,9 @@ use analog_sdk::{
     message::Message,
     pubkey::Pubkey,
     rpc_port::DEFAULT_RPC_PORT,
-    signature::{read_keypair_file, Keypair, Signer},
+    signature::{read_keypair_file, Keypair, Signature, Signer},
     system_instruction, system_program,
+    timing::timestamp,
     transaction::Transaction,
 };
 use analog_streamer::socket::SocketAddrSpace;
@@ -25,14 +27,14 @@ use std::{
     net::SocketAddr,
     process::exit,
     sync::{
-        atomic::{AtomicU64, Ordering},
-        Arc,
+        atomic::{AtomicBool, AtomicU64, Ordering},
+        Arc, RwLock,
     },
-    thread::sleep,
+    thread::{sleep, Builder, JoinHandle},
     time::{Duration, Instant},
 };
 
-pub fn airdrop_lamports(
+pub fn airdrop_tocks(
     client: &RpcClient,
     faucet_addr: &SocketAddr,
     id: &Keypair,
@@ -44,7 +46,7 @@ pub fn airdrop_lamports(
     if starting_balance < desired_balance {
         let airdrop_amount = desired_balance - starting_balance;
         info!(
-            "Airdropping {:?} tock from {} for {}",
+            "Airdropping {:?} tocks from {} for {}",
             airdrop_amount,
             faucet_addr,
             id.pubkey(),
@@ -93,6 +95,160 @@ pub fn airdrop_lamports(
         }
     }
     true
+}
+
+// signature, timestamp, id
+type PendingQueue = Vec<(Signature, u64, u64)>;
+
+struct TransactionExecutor {
+    sig_clear_t: JoinHandle<()>,
+    sigs: Arc<RwLock<PendingQueue>>,
+    cleared: Arc<RwLock<Vec<u64>>>,
+    exit: Arc<AtomicBool>,
+    counter: AtomicU64,
+    client: RpcClient,
+}
+
+impl TransactionExecutor {
+    fn new(entrypoint_addr: SocketAddr) -> Self {
+        let sigs = Arc::new(RwLock::new(Vec::new()));
+        let cleared = Arc::new(RwLock::new(Vec::new()));
+        let exit = Arc::new(AtomicBool::new(false));
+        let sig_clear_t = Self::start_sig_clear_thread(&exit, &sigs, &cleared, entrypoint_addr);
+        let client =
+            RpcClient::new_socket_with_commitment(entrypoint_addr, CommitmentConfig::confirmed());
+        Self {
+            sigs,
+            cleared,
+            sig_clear_t,
+            exit,
+            counter: AtomicU64::new(0),
+            client,
+        }
+    }
+
+    fn num_outstanding(&self) -> usize {
+        self.sigs.read().unwrap().len()
+    }
+
+    fn push_transactions(&self, txs: Vec<Transaction>) -> Vec<u64> {
+        let mut ids = vec![];
+        let new_sigs = txs.into_iter().filter_map(|tx| {
+            let id = self.counter.fetch_add(1, Ordering::Relaxed);
+            ids.push(id);
+            match self.client.send_transaction(&tx) {
+                Ok(sig) => {
+                    return Some((sig, timestamp(), id));
+                }
+                Err(e) => {
+                    info!("error: {:#?}", e);
+                }
+            }
+            None
+        });
+        let mut sigs_w = self.sigs.write().unwrap();
+        sigs_w.extend(new_sigs);
+        ids
+    }
+
+    fn drain_cleared(&self) -> Vec<u64> {
+        std::mem::take(&mut *self.cleared.write().unwrap())
+    }
+
+    fn close(self) {
+        self.exit.store(true, Ordering::Relaxed);
+        self.sig_clear_t.join().unwrap();
+    }
+
+    fn start_sig_clear_thread(
+        exit: &Arc<AtomicBool>,
+        sigs: &Arc<RwLock<PendingQueue>>,
+        cleared: &Arc<RwLock<Vec<u64>>>,
+        entrypoint_addr: SocketAddr,
+    ) -> JoinHandle<()> {
+        let sigs = sigs.clone();
+        let exit = exit.clone();
+        let cleared = cleared.clone();
+        Builder::new()
+            .name("sig_clear".to_string())
+            .spawn(move || {
+                let client = RpcClient::new_socket_with_commitment(
+                    entrypoint_addr,
+                    CommitmentConfig::confirmed(),
+                );
+                let mut success = 0;
+                let mut error_count = 0;
+                let mut timed_out = 0;
+                let mut last_log = Instant::now();
+                while !exit.load(Ordering::Relaxed) {
+                    let sigs_len = sigs.read().unwrap().len();
+                    if sigs_len > 0 {
+                        let mut sigs_w = sigs.write().unwrap();
+                        let mut start = Measure::start("sig_status");
+                        let statuses: Vec<_> = sigs_w
+                            .chunks(200)
+                            .flat_map(|sig_chunk| {
+                                let only_sigs: Vec<_> = sig_chunk.iter().map(|s| s.0).collect();
+                                client
+                                    .get_signature_statuses(&only_sigs)
+                                    .expect("status fail")
+                                    .value
+                            })
+                            .collect();
+                        let mut num_cleared = 0;
+                        let start_len = sigs_w.len();
+                        let now = timestamp();
+                        let mut new_ids = vec![];
+                        let mut i = 0;
+                        let mut j = 0;
+                        while i != sigs_w.len() {
+                            let mut retain = true;
+                            let sent_ts = sigs_w[i].1;
+                            if let Some(e) = &statuses[j] {
+                                debug!("error: {:?}", e);
+                                if e.status.is_ok() {
+                                    success += 1;
+                                } else {
+                                    error_count += 1;
+                                }
+                                num_cleared += 1;
+                                retain = false;
+                            } else if now - sent_ts > 30_000 {
+                                retain = false;
+                                timed_out += 1;
+                            }
+                            if !retain {
+                                new_ids.push(sigs_w.remove(i).2);
+                            } else {
+                                i += 1;
+                            }
+                            j += 1;
+                        }
+                        let final_sigs_len = sigs_w.len();
+                        drop(sigs_w);
+                        cleared.write().unwrap().extend(new_ids);
+                        start.stop();
+                        debug!(
+                            "sigs len: {:?} success: {} took: {}ms cleared: {}/{}",
+                            final_sigs_len,
+                            success,
+                            start.as_ms(),
+                            num_cleared,
+                            start_len,
+                        );
+                        if last_log.elapsed().as_millis() > 5000 {
+                            info!(
+                                "success: {} error: {} timed_out: {}",
+                                success, error_count, timed_out,
+                            );
+                            last_log = Instant::now();
+                        }
+                    }
+                    sleep(Duration::from_millis(200));
+                }
+            })
+            .unwrap()
+    }
 }
 
 struct SeedTracker {
@@ -206,7 +362,7 @@ fn run_accounts_bench(
     maybe_space: Option<u64>,
     batch_size: usize,
     close_nth_batch: u64,
-    maybe_lamports: Option<u64>,
+    maybe_tocks: Option<u64>,
     num_instructions: usize,
     mint: Option<Pubkey>,
 ) {
@@ -229,9 +385,9 @@ fn run_accounts_bench(
         .collect();
     let mut last_balance = Instant::now();
 
-    let default_max_lamports = 1000;
-    let min_balance = maybe_lamports.unwrap_or_else(|| {
-        let space = maybe_space.unwrap_or(default_max_lamports);
+    let default_max_tocks = 1000;
+    let min_balance = maybe_tocks.unwrap_or_else(|| {
+        let space = maybe_space.unwrap_or(default_max_tocks);
         client
             .get_minimum_balance_for_rent_exemption(space as usize)
             .expect("min balance")
@@ -248,7 +404,7 @@ fn run_accounts_bench(
     let executor = TransactionExecutor::new(entrypoint_addr);
 
     // Create and close messages both require 2 signatures, fake a 2 signature message to calculate fees
-    let mut message = Message::new(
+    let message = Message::new(
         &[
             Instruction::new_with_bytes(
                 Pubkey::new_unique(),
@@ -270,28 +426,27 @@ fn run_accounts_bench(
             latest_blockhash = Instant::now();
         }
 
-        message.recent_blockhash = blockhash;
         let fee = client
-            .get_fee_for_message(&message)
+            .get_fee_for_message(&blockhash, &message)
             .expect("get_fee_for_message");
-        let tock = min_balance + fee;
+        let tocks = min_balance + fee;
 
         for (i, balance) in balances.iter_mut().enumerate() {
-            if *balance < tock || last_balance.elapsed().as_millis() > 2000 {
+            if *balance < tocks || last_balance.elapsed().as_millis() > 2000 {
                 if let Ok(b) = client.get_balance(&payer_keypairs[i].pubkey()) {
                     *balance = b;
                 }
                 last_balance = Instant::now();
-                if *balance < tock * 2 {
+                if *balance < tocks * 2 {
                     info!(
                         "Balance {} is less than needed: {}, doing aidrop...",
-                        balance, tock
+                        balance, tocks
                     );
-                    if !airdrop_lamports(
+                    if !airdrop_tocks(
                         &client,
                         &faucet_addr,
                         payer_keypairs[i],
-                        tock * 100_000,
+                        tocks * 100_000,
                     ) {
                         warn!("failed airdrop, exiting");
                         return;
@@ -325,7 +480,7 @@ fn run_accounts_bench(
                                 Transaction::new(&signers, message, blockhash)
                             })
                             .collect();
-                        balances[i] = balances[i].saturating_sub(tock * txs.len() as u64);
+                        balances[i] = balances[i].saturating_sub(tocks * txs.len() as u64);
                         info!("txs: {}", txs.len());
                         let new_ids = executor.push_transactions(txs);
                         info!("ids: {}", new_ids.len());
@@ -414,11 +569,11 @@ fn main() {
                 .help("Size of accounts to create"),
         )
         .arg(
-            Arg::with_name("tock")
-                .long("tock")
+            Arg::with_name("tocks")
+                .long("tocks")
                 .takes_value(true)
-                .value_name("LAMPORTS")
-                .help("How many tock to fund each account"),
+                .value_name("TOCKS")
+                .help("How many tocks to fund each account"),
         )
         .arg(
             Arg::with_name("identity")
@@ -494,7 +649,7 @@ fn main() {
     }
 
     let space = value_t!(matches, "space", u64).ok();
-    let tock = value_t!(matches, "tock", u64).ok();
+    let tocks = value_t!(matches, "tocks", u64).ok();
     let batch_size = value_t!(matches, "batch_size", usize).unwrap_or(4);
     let close_nth_batch = value_t!(matches, "close_nth_batch", u64).unwrap_or(0);
     let iterations = value_t!(matches, "iterations", usize).unwrap_or(10);
@@ -551,7 +706,7 @@ fn main() {
         space,
         batch_size,
         close_nth_batch,
-        tock,
+        tocks,
         num_instructions,
         mint,
     );
@@ -565,7 +720,6 @@ pub mod test {
         local_cluster::{ClusterConfig, LocalCluster},
         validator_configs::make_identical_validator_configs,
     };
-    use analog_measure::measure::Measure;
     use analog_sdk::poh_config::PohConfig;
 
     #[test]
@@ -574,7 +728,7 @@ pub mod test {
         let validator_config = ValidatorConfig::default();
         let num_nodes = 1;
         let mut config = ClusterConfig {
-            cluster_lamports: 10_000_000,
+            cluster_tocks: 10_000_000,
             poh_config: PohConfig::new_sleep(Duration::from_millis(50)),
             node_stakes: vec![100; num_nodes],
             validator_configs: make_identical_validator_configs(&validator_config, num_nodes),
@@ -587,7 +741,7 @@ pub mod test {
         let maybe_space = None;
         let batch_size = 100;
         let close_nth_batch = 100;
-        let maybe_lamports = None;
+        let maybe_tocks = None;
         let num_instructions = 2;
         let mut start = Measure::start("total accounts run");
         run_accounts_bench(
@@ -598,7 +752,7 @@ pub mod test {
             maybe_space,
             batch_size,
             close_nth_batch,
-            maybe_lamports,
+            maybe_tocks,
             num_instructions,
             None,
         );

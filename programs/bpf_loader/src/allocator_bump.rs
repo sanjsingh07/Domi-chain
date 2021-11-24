@@ -1,12 +1,11 @@
 use crate::alloc;
 
 use alloc::{Alloc, AllocErr};
-use solana_rbpf::aligned_memory::AlignedMemory;
+use analog_rbpf::aligned_memory::AlignedMemory;
 use std::alloc::Layout;
 
 #[derive(Debug)]
 pub struct BpfAllocator {
-    #[allow(dead_code)]
     heap: AlignedMemory,
     start: u64,
     len: u64,

@@ -1,9 +1,9 @@
-//! Example Rust-based BPF program that tests rand behavior
+//! @brief Example Rust-based BPF program that tests rand behavior
 
 #![allow(unreachable_code)]
 
-extern crate solana_program;
-use solana_program::{
+extern crate analog_program;
+use analog_program::{
     account_info::AccountInfo, entrypoint, entrypoint::ProgramResult, msg, pubkey::Pubkey,
 };
 

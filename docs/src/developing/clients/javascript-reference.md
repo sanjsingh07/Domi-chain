@@ -8,16 +8,16 @@ title: Web3 API Reference
 
 ### Connection
 
-[Source Documentation](https://analog-labs.github.io/analog-web3.js/classes/Connection.html)
+[Source Documentation](https://analog.github.io/analog-web3.js/classes/Connection.html)
 
-Connection is used to interact with the [Analog JSON RPC](https://docs.solana.com/developing/clients/jsonrpc-api). You can use Connection to confirm transactions, get account info, and more.
+Connection is used to interact with the [Analog JSON RPC](https://docs.analog.com/developing/clients/jsonrpc-api). You can use Connection to confirm transactions, get account info, and more.
 
 You create a connection by defining the JSON RPC cluster endpoint and the desired commitment. Once this is complete, you can use this connection object to interact with any of the Analog JSON RPC API.
 
 #### Example Usage
 
 ```javascript
-const web3 = require("@solana/web3.js");
+const web3 = require("@analog/web3.js");
 
 let connection = new web3.Connection(web3.clusterApiUrl('devnet'), 'confirmed');
 
@@ -49,27 +49,27 @@ console.log(slotLeader);
 //49AqLYbpJYc2DrzGUAH1fhWJy62yxBxpLEkfJwjKy2jr
 ```
 
-The above example shows only a few of the methods on Connection. Please see the [source generated docs](https://analog-labs.github.io/analog-web3.js/classes/Connection.html) for the full list.
+The above example shows only a few of the methods on Connection. Please see the [source generated docs](https://analog.github.io/analog-web3.js/classes/Connection.html) for the full list.
 
 ### Transaction
 
-[SourceDocumentation](https://analog-labs.github.io/analog-web3.js/classes/Transaction.html)
+[SourceDocumentation](https://analog.github.io/analog-web3.js/classes/Transaction.html)
 
 A transaction is used to interact with programs on the Analog blockchain. These transactions are constructed with TransactionInstructions, containing all the accounts possible to interact with, as well as any needed data or program addresses. Each TransactionInstruction consists of keys, data, and a programId. You can do multiple instructions in a single transaction, interacting with multiple programs at once.
 
 #### Example Usage
 
 ```javascript
-const web3 = require('@solana/web3.js');
+const web3 = require('@analog/web3.js');
 const nacl = require('tweetnacl');
 
-// Airdrop ANLOG for paying transactions
+// Airdrop SOL for paying transactions
 let payer = web3.Keypair.generate();
 let connection = new web3.Connection(web3.clusterApiUrl('devnet'), 'confirmed');
 
 let airdropSignature = await connection.requestAirdrop(
     payer.publicKey,
-    web3.TOCK_PER_ANLOG,
+    web3.LAMPORTS_PER_SOL,
 );
 
 await connection.confirmTransaction(airdropSignature);
@@ -83,7 +83,7 @@ let transaction = new web3.Transaction();
 transaction.add(web3.SystemProgram.transfer({
     fromPubkey: payer.publicKey,
     toPubkey: toAccount.publicKey,
-    tock: 1000,
+    lamports: 1000,
 }));
 
 // Send and confirm transaction
@@ -99,7 +99,7 @@ let manualTransaction = new web3.Transaction({
 manualTransaction.add(web3.SystemProgram.transfer({
     fromPubkey: payer.publicKey,
     toPubkey: toAccount.publicKey,
-    tock: 1000,
+    lamports: 1000,
 }));
 
 let transactionBuffer = manualTransaction.serializeMessage();
@@ -119,14 +119,14 @@ await web3.sendAndConfirmRawTransaction(connection, rawTransaction);
 
 ### Keypair
 
-[Source Documentation](https://analog-labs.github.io/analog-web3.js/classes/Keypair.html)
+[Source Documentation](https://analog.github.io/analog-web3.js/classes/Keypair.html)
 
 The keypair is used to create an account with a public key and secret key within Analog. You can either generate, generate from a seed, or create from a secret key.
 
 #### Example Usage
 
 ```javascript
-const {Keypair} = require("@solana/web3.js")
+const {Keypair} = require("@analog/web3.js")
 
 let account = Keypair.generate();
 
@@ -183,9 +183,9 @@ Using `generate` generates a random Keypair for use as an account on Analog. Usi
 
 ### PublicKey
 
-[Source Documentation](https://analog-labs.github.io/analog-web3.js/classes/PublicKey.html)
+[Source Documentation](https://analog.github.io/analog-web3.js/classes/PublicKey.html)
 
-PublicKey is used throughout `@solana/web3.js` in transactions, keypairs, and programs. You require publickey when listing each account in a transaction and as a general identifier on Analog.
+PublicKey is used throughout `@analog/web3.js` in transactions, keypairs, and programs. You require publickey when listing each account in a transaction and as a general identifier on Analog.
 
 A PublicKey can be created with a base58 encoded string, buffer, Uint8Array, number, and an array of numbers.
 
@@ -193,7 +193,7 @@ A PublicKey can be created with a base58 encoded string, buffer, Uint8Array, num
 
 ```javascript
 const {Buffer} = require('buffer');
-const web3 = require('@solana/web3.js');
+const web3 = require('@analog/web3.js');
 const crypto = require('crypto');
 
 // Create a PublicKey with a base58 encoded string
@@ -218,22 +218,22 @@ console.log(`Valid Program Address: ${validProgramAddress}`);
 
 ### SystemProgram
 
-[SourceDocumentation](https://analog-labs.github.io/analog-web3.js/classes/SystemProgram.html)
+[SourceDocumentation](https://analog.github.io/analog-web3.js/classes/SystemProgram.html)
 
-The SystemProgram grants the ability to create accounts, allocate account data, assign an account to programs, work with nonce accounts, and transfer tock. You can use the SystemInstruction class to help with decoding and reading individual instructions
+The SystemProgram grants the ability to create accounts, allocate account data, assign an account to programs, work with nonce accounts, and transfer lamports. You can use the SystemInstruction class to help with decoding and reading individual instructions
 
 #### Example Usage
 
 ```javascript
-const web3 = require("@solana/web3.js");
+const web3 = require("@analog/web3.js");
 
-// Airdrop ANLOG for paying transactions
+// Airdrop SOL for paying transactions
 let payer = web3.Keypair.generate();
 let connection = new web3.Connection(web3.clusterApiUrl('devnet'), 'confirmed');
 
 let airdropSignature = await connection.requestAirdrop(
     payer.publicKey,
-    web3.TOCK_PER_ANLOG,
+    web3.LAMPORTS_PER_SOL,
 );
 
 await connection.confirmTransaction(airdropSignature);
@@ -258,7 +258,7 @@ web3.SystemProgram.createNonceAccount({
     fromPubkey: payer.publicKey,
     noncePubkey: nonceAccount.publicKey,
     authorizedPubkey: payer.publicKey,
-    tock: minimumAmountForNonceAccount,
+    lamports: minimumAmountForNonceAccount,
 }),
 );
 
@@ -274,14 +274,14 @@ let advanceNonceTransaction = new web3.Transaction().add(
 
 await web3.sendAndConfirmTransaction(connection, advanceNonceTransaction, [payer])
 
-// Transfer tock between accounts
+// Transfer lamports between accounts
 let toAccount = web3.Keypair.generate();
 
 let transferTransaction = new web3.Transaction().add(
 web3.SystemProgram.transfer({
     fromPubkey: payer.publicKey,
     toPubkey: toAccount.publicKey,
-    tock: 1000,
+    lamports: 1000,
 }),
 );
 await web3.sendAndConfirmTransaction(connection, transferTransaction, [payer])
@@ -302,7 +302,7 @@ await web3.sendAndConfirmTransaction(connection, assignTransaction, [payer, assi
 
 ### Secp256k1Program
 
-[Source Documentation](https://analog-labs.github.io/analog-web3.js/classes/Secp256k1Program.html)
+[Source Documentation](https://analog.github.io/analog-web3.js/classes/Secp256k1Program.html)
 
 The Secp256k1Program is used to verify Secp256k1 signatures, which are used by both Bitcoin and Ethereum.
 
@@ -310,7 +310,7 @@ The Secp256k1Program is used to verify Secp256k1 signatures, which are used by b
 
 ```javascript
 const {keccak_256} = require('js-sha3');
-const web3 = require("@solana/web3.js");
+const web3 = require("@analog/web3.js");
 const secp256k1 = require('secp256k1');
 
 // Create a Ethereum Address from secp256k1
@@ -332,7 +332,7 @@ let connection = new web3.Connection(web3.clusterApiUrl('devnet'), 'confirmed');
 
 let airdropSignature = await connection.requestAirdrop(
     fromPublicKey.publicKey,
-    web3.TOCK_PER_ANLOG,
+    web3.LAMPORTS_PER_SOL,
 );
 await connection.confirmTransaction(airdropSignature);
 
@@ -360,7 +360,7 @@ await web3.sendAndConfirmTransaction(connection, transaction, [fromPublicKey]);
 
 ### Message
 
-[Source Documentation](https://analog-labs.github.io/analog-web3.js/classes/Message.html)
+[Source Documentation](https://analog.github.io/analog-web3.js/classes/Message.html)
 
 Message is used as another way to construct transactions. You can construct a message using the accounts, header, instructions, and recentBlockhash that are a part of a transaction. A [Transaction](javascript-api.md#Transaction) is a Message plus the list of required signatures required to execute the transaction.
 
@@ -369,7 +369,7 @@ Message is used as another way to construct transactions. You can construct a me
 ```javascript
 const {Buffer} = require("buffer");
 const bs58 = require('bs58');
-const web3 = require('@solana/web3.js');
+const web3 = require('@analog/web3.js');
 
 let toPublicKey = web3.Keypair.generate().publicKey;
 let fromPublicKey = web3.Keypair.generate();
@@ -381,7 +381,7 @@ let connection = new web3.Connection(
 
 let airdropSignature = await connection.requestAirdrop(
     fromPublicKey.publicKey,
-    web3.TOCK_PER_ANLOG,
+    web3.LAMPORTS_PER_SOL,
 );
 
 await connection.confirmTransaction(airdropSignature);
@@ -426,7 +426,7 @@ await web3.sendAndConfirmTransaction(connection, transaction, [fromPublicKey])
 
 ### Struct
 
-[SourceDocumentation](https://analog-labs.github.io/analog-web3.js/classes/Struct.html)
+[SourceDocumentation](https://analog.github.io/analog-web3.js/classes/Struct.html)
 
 The struct class is used to create Rust compatible structs in javascript. This class is only compatible with Borsch encoded Rust structs.
 
@@ -443,7 +443,7 @@ pub struct Fee {
 Using web3:
 ```javascript
 import BN from 'bn.js';
-import {Struct} from '@solana/web3.js';
+import {Struct} from '@analog/web3.js';
 
 export class Fee extends Struct {
   denominator: BN;
@@ -453,7 +453,7 @@ export class Fee extends Struct {
 
 ### Enum
 
-[Source Documentation](https://analog-labs.github.io/analog-web3.js/classes/Enum.html)
+[Source Documentation](https://analog.github.io/analog-web3.js/classes/Enum.html)
 
 The Enum class is used to represent a Rust compatible Enum in javascript. The enum will just be a string representation if logged but can be properly encoded/decoded when used in conjunction with [Struct](javascript-api.md#Struct). This class is only compatible with Borsch encoded Rust enumerations.
 
@@ -470,14 +470,14 @@ pub enum AccountType {
 
 Web3:
 ```javascript
-import {Enum} from '@solana/web3.js';
+import {Enum} from '@analog/web3.js';
 
 export class AccountType extends Enum {}
 ```
 
 ### NonceAccount
 
-[Source Documentation](https://analog-labs.github.io/analog-web3.js/classes/NonceAccount.html)
+[Source Documentation](https://analog.github.io/analog-web3.js/classes/NonceAccount.html)
 
 Normally a transaction is rejected if a transaction's `recentBlockhash` field is too old. To provide for certain custodial services, Nonce Accounts are used. Transactions which use a `recentBlockhash` captured on-chain by a Nonce Account do not expire as long at the Nonce Account is not advanced.
 
@@ -486,7 +486,7 @@ You can create a nonce account by first creating a normal account, then using `S
 #### Example Usage
 
 ```javascript
-const web3 = require('@solana/web3.js');
+const web3 = require('@analog/web3.js');
 
 // Create connection
 let connection = new web3.Connection(
@@ -501,7 +501,7 @@ let nonceAccount = web3.Keypair.generate();
 // Fund account
 let airdropSignature = await connection.requestAirdrop(
     account.publicKey,
-    web3.TOCK_PER_ANLOG,
+    web3.LAMPORTS_PER_SOL,
 );
 
 await connection.confirmTransaction(airdropSignature);
@@ -517,7 +517,7 @@ web3.SystemProgram.createNonceAccount({
     fromPubkey: account.publicKey,
     noncePubkey: nonceAccount.publicKey,
     authorizedPubkey: account.publicKey,
-    tock: minimumAmount,
+    lamports: minimumAmount,
 }),
 );
 // Create Nonce Account
@@ -564,14 +564,14 @@ The above example shows both how to create a `NonceAccount` using `SystemProgram
 
 ### VoteAccount
 
-[SourceDocumentation](https://analog-labs.github.io/analog-web3.js/classes/VoteAccount.html)
+[SourceDocumentation](https://analog.github.io/analog-web3.js/classes/VoteAccount.html)
 
 Vote account is an object that grants the capability of decoding vote accounts from the native vote account program on the network.
 
 #### Example Usage
 
 ```javascript
-const web3 = require('@solana/web3.js');
+const web3 = require('@analog/web3.js');
 
 let voteAccountInfo = await connection.getProgramAccounts(web3.VOTE_PROGRAM_ID);
 let voteAccountFromData = web3.VoteAccount.fromAccountData(voteAccountInfo[0].account.data);
@@ -614,14 +614,14 @@ VoteAccount {
 
 ### StakeProgram
 
-[SourceDocumentation](https://analog-labs.github.io/analog-web3.js/classes/StakeProgram.html)
+[SourceDocumentation](https://analog.github.io/analog-web3.js/classes/StakeProgram.html)
 
-The StakeProgram facilitates staking ANLOG and delegating them to any validators on the network. You can use StakeProgram to create a stake account, stake some ANLOG, authorize accounts for withdrawal of your stake, deactivate your stake, and withdraw your funds. The StakeInstruction class is used to decode and read more instructions from transactions calling the StakeProgram
+The StakeProgram facilitates staking SOL and delegating them to any validators on the network. You can use StakeProgram to create a stake account, stake some SOL, authorize accounts for withdrawal of your stake, deactivate your stake, and withdraw your funds. The StakeInstruction class is used to decode and read more instructions from transactions calling the StakeProgram
 
 #### Example Usage
 
 ```javascript
-const web3 = require("@solana/web3.js");
+const web3 = require("@analog/web3.js");
 
 // Fund a key to create transactions
 let fromPublicKey = web3.Keypair.generate();
@@ -629,7 +629,7 @@ let connection = new web3.Connection(web3.clusterApiUrl('devnet'), 'confirmed');
 
 let airdropSignature = await connection.requestAirdrop(
     fromPublicKey.publicKey,
-    web3.TOCK_PER_ANLOG,
+    web3.LAMPORTS_PER_SOL,
 );
 await connection.confirmTransaction(airdropSignature);
 
@@ -637,13 +637,13 @@ await connection.confirmTransaction(airdropSignature);
 let stakeAccount = web3.Keypair.generate();
 let authorizedAccount = web3.Keypair.generate();
 /* Note: This is the minimum amount for a stake account -- Add additional Lamports for staking
-    For example, we add 50 tock as part of the stake */
+    For example, we add 50 lamports as part of the stake */
 let lamportsForStakeAccount = (await connection.getMinimumBalanceForRentExemption(web3.StakeProgram.space)) + 50;
 
 let createAccountTransaction = web3.StakeProgram.createAccount({
     fromPubkey: fromPublicKey.publicKey,
     authorized: new web3.Authorized(authorizedAccount.publicKey, authorizedAccount.publicKey),
-    tock: lamportsForStakeAccount,
+    lamports: lamportsForStakeAccount,
     lockup: new web3.Lockup(0, 0, fromPublicKey.publicKey),
     stakePubkey: stakeAccount.publicKey
 });
@@ -686,7 +686,7 @@ let withdrawTransaction = web3.StakeProgram.withdraw({
     stakePubkey: stakeAccount.publicKey,
     authorizedPubkey: authorizedAccount.publicKey,
     toPubkey: fromPublicKey.publicKey,
-    tock: stakeBalance,
+    lamports: stakeBalance,
 });
 
 await web3.sendAndConfirmTransaction(connection, withdrawTransaction, [fromPublicKey, authorizedAccount]);
@@ -694,7 +694,7 @@ await web3.sendAndConfirmTransaction(connection, withdrawTransaction, [fromPubli
 
 ### Authorized
 
-[Source Documentation](https://analog-labs.github.io/analog-web3.js/classes/Authorized.html)
+[Source Documentation](https://analog.github.io/analog-web3.js/classes/Authorized.html)
 
 Authorized is an object used when creating an authorized account for staking within Analog. You can designate a `staker` and `withdrawer` separately, allowing for a different account to withdraw other than the staker.
 
@@ -702,14 +702,14 @@ You can find more usage of the `Authorized` object under [`StakeProgram`](javasc
 
 ### Lockup
 
-[Source Documentation](https://analog-labs.github.io/analog-web3.js/classes/Lockup.html)
+[Source Documentation](https://analog.github.io/analog-web3.js/classes/Lockup.html)
 
 Lockup is used in conjunction with the [StakeProgram](javascript-api.md#StakeProgram) to create an account. The Lockup is used to determine how long the stake will be locked, or unable to be retrieved. If the Lockup is set to 0 for both epoch and the Unix timestamp, the lockup will be disabled for the stake account.
 
 #### Example Usage
 
 ```javascript
-const {Authorized, Keypair, Lockup, StakeProgram} = require("@solana/web3.js");
+const {Authorized, Keypair, Lockup, StakeProgram} = require("@analog/web3.js");
 
 let account = Keypair.generate();
 let stakeAccount = Keypair.generate();
@@ -719,7 +719,7 @@ let lockup = new Lockup(0, 0, account.publicKey);
 let createStakeAccountInstruction = StakeProgram.createAccount({
     fromPubkey: account.publicKey,
     authorized: authorized,
-    tock: 1000,
+    lamports: 1000,
     lockup: lockup,
     stakePubkey: stakeAccount.publicKey
 });

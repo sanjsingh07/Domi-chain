@@ -1,8 +1,8 @@
-//! Example Rust-based BPF program that test dynamic memory allocation
+//! @brief Example Rust-based BPF program that test dynamic memory allocation
 
 #[macro_use]
 extern crate alloc;
-use solana_program::{custom_panic_default, entrypoint::SUCCESS, msg};
+use analog_program::{custom_panic_default, entrypoint::SUCCESS, msg};
 use std::{alloc::Layout, mem};
 
 #[no_mangle]

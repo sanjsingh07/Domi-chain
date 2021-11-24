@@ -25,6 +25,6 @@ export * from './util/send-and-confirm-raw-transaction';
 export * from './util/cluster';
 
 /**
- * There are 1-billion tock in one ANLOG
+ * There are 1-billion tocks in one SOL
  */
-export const TOCK_PER_ANLOG = 1000000000;
+export const TOCKS_PER_ANLOG = 1000000000;

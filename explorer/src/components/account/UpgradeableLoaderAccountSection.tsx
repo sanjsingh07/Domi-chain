@@ -1,6 +1,6 @@
 import React from "react";
 import { TableCardBody } from "components/common/TableCardBody";
-import { SolBalance } from "utils";
+import { AnlogBalance } from "utils";
 import { Account, useFetchAccountInfo } from "providers/accounts";
 import { Address } from "components/common/Address";
 import {
@@ -100,9 +100,9 @@ export function UpgradeableProgramSection({
           </tr>
         )}
         <tr>
-          <td>Balance (ANLOG)</td>
+          <td>Balance (GM)</td>
           <td className="text-lg-right text-uppercase">
-            <SolBalance tock={account.tock || 0} />
+            <AnlogBalance tocks={account.tocks || 0} />
           </td>
         </tr>
         <tr>
@@ -171,9 +171,9 @@ export function UpgradeableProgramDataSection({
           </td>
         </tr>
         <tr>
-          <td>Balance (ANLOG)</td>
+          <td>Balance (GM)</td>
           <td className="text-lg-right text-uppercase">
-            <SolBalance tock={account.tock || 0} />
+            <AnlogBalance tocks={account.tocks || 0} />
           </td>
         </tr>
         {account.details?.space !== undefined && (
@@ -238,9 +238,9 @@ export function UpgradeableProgramBufferSection({
           </td>
         </tr>
         <tr>
-          <td>Balance (ANLOG)</td>
+          <td>Balance (GM)</td>
           <td className="text-lg-right text-uppercase">
-            <SolBalance tock={account.tock || 0} />
+            <AnlogBalance tocks={account.tocks || 0} />
           </td>
         </tr>
         {account.details?.space !== undefined && (

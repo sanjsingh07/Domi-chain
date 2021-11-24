@@ -1,10 +1,12 @@
 use {
     crate::{
+        fee_calculator::FeeCalculator,
         hash::Hash,
         instruction::{CompiledInstruction, Instruction},
         message::{MappedAddresses, MappedMessage, Message, MessageHeader},
         pubkey::Pubkey,
         sanitize::{Sanitize, SanitizeError},
+        secp256k1_program,
         serialize_utils::{append_slice, append_u16, append_u8},
     },
     bitflags::bitflags,
@@ -289,12 +291,22 @@ impl SanitizedMessage {
         })
     }
 
-    /// Inspect all message keys for the bpf upgradeable loader
-    pub fn is_upgradeable_loader_present(&self) -> bool {
-        match self {
-            Self::Legacy(message) => message.is_upgradeable_loader_present(),
-            Self::V0(message) => message.is_upgradeable_loader_present(),
+    /// Calculate the total fees for a transaction given a fee calculator
+    pub fn calculate_fee(&self, fee_calculator: &FeeCalculator) -> u64 {
+        let mut num_secp256k1_signatures: u64 = 0;
+        for (program_id, instruction) in self.program_instructions_iter() {
+            if secp256k1_program::check_id(program_id) {
+                if let Some(num_signatures) = instruction.data.get(0) {
+                    num_secp256k1_signatures =
+                        num_secp256k1_signatures.saturating_add(u64::from(*num_signatures));
+                }
+            }
         }
+
+        fee_calculator.tocks_per_signature.saturating_mul(
+            u64::from(self.header().num_required_signatures)
+                .saturating_add(num_secp256k1_signatures),
+        )
     }
 }
 
@@ -304,6 +316,7 @@ mod tests {
     use crate::{
         instruction::{AccountMeta, Instruction},
         message::v0,
+        secp256k1_program, system_instruction,
     };
 
     #[test]
@@ -443,6 +456,25 @@ mod tests {
     }
 
     #[test]
+    fn test_calculate_fee() {
+        // Default: no fee.
+        let message =
+            SanitizedMessage::try_from(Message::new(&[], Some(&Pubkey::new_unique()))).unwrap();
+        assert_eq!(message.calculate_fee(&FeeCalculator::default()), 0);
+
+        // One signature, a fee.
+        assert_eq!(message.calculate_fee(&FeeCalculator::new(1)), 1);
+
+        // Two signatures, double the fee.
+        let key0 = Pubkey::new_unique();
+        let key1 = Pubkey::new_unique();
+        let ix0 = system_instruction::transfer(&key0, &key1, 1);
+        let ix1 = system_instruction::transfer(&key1, &key0, 1);
+        let message = SanitizedMessage::try_from(Message::new(&[ix0, ix1], Some(&key0))).unwrap();
+        assert_eq!(message.calculate_fee(&FeeCalculator::new(2)), 4);
+    }
+
+    #[test]
     fn test_try_compile_instruction() {
         let key0 = Pubkey::new_unique();
         let key1 = Pubkey::new_unique();
@@ -523,5 +555,43 @@ mod tests {
                 .try_compile_instruction(&invalid_account_key_instruction)
                 .is_none());
         }
+    }
+
+    #[test]
+    fn test_calculate_fee_secp256k1() {
+        let key0 = Pubkey::new_unique();
+        let key1 = Pubkey::new_unique();
+        let ix0 = system_instruction::transfer(&key0, &key1, 1);
+
+        let mut secp_instruction1 = Instruction {
+            program_id: secp256k1_program::id(),
+            accounts: vec![],
+            data: vec![],
+        };
+        let mut secp_instruction2 = Instruction {
+            program_id: secp256k1_program::id(),
+            accounts: vec![],
+            data: vec![1],
+        };
+
+        let message = SanitizedMessage::try_from(Message::new(
+            &[
+                ix0.clone(),
+                secp_instruction1.clone(),
+                secp_instruction2.clone(),
+            ],
+            Some(&key0),
+        ))
+        .unwrap();
+        assert_eq!(message.calculate_fee(&FeeCalculator::new(1)), 2);
+
+        secp_instruction1.data = vec![0];
+        secp_instruction2.data = vec![10];
+        let message = SanitizedMessage::try_from(Message::new(
+            &[ix0, secp_instruction1, secp_instruction2],
+            Some(&key0),
+        ))
+        .unwrap();
+        assert_eq!(message.calculate_fee(&FeeCalculator::new(1)), 11);
     }
 }

@@ -1,16 +1,16 @@
 [package]
 name = "noop"
-version = "1.9.0"
+version = "1.8.2"
 description = "Analog BPF test program written in Rust"
 authors = ["Analog Maintainers <maintainers@analog.foundation>"]
-repository = "https://github.com/analog-labs/analog"
+repository = "https://github.com/analog/testnet"
 license = "Apache-2.0"
 homepage = "https://analog.com/"
 edition = "2018"
 publish = false
 
 [dependencies]
-solana-program= { path = "../../../../program", version = "=1.9.0" }
+analog-program = { path = "../../../../program", version = "=1.8.2" }
 
 [lib]
 crate-type = ["cdylib"]

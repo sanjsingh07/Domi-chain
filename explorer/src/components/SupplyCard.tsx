@@ -2,7 +2,7 @@ import React from "react";
 import { useSupply, useFetchSupply, Status } from "providers/supply";
 import { LoadingCard } from "./common/LoadingCard";
 import { ErrorCard } from "./common/ErrorCard";
-import { SolBalance } from "utils";
+import { AnlogBalance } from "utils";
 import { TableCardBody } from "./common/TableCardBody";
 
 export function SupplyCard() {
@@ -31,27 +31,27 @@ export function SupplyCard() {
 
       <TableCardBody>
         <tr>
-          <td className="w-100">Total Supply (ANLOG)</td>
+          <td className="w-100">Total Supply (GM)</td>
           <td className="text-lg-right">
-            <SolBalance tock={supply.total} maximumFractionDigits={0} />
+            <AnlogBalance tocks={supply.total} maximumFractionDigits={0} />
           </td>
         </tr>
 
         <tr>
-          <td className="w-100">Circulating Supply (ANLOG)</td>
+          <td className="w-100">Circulating Supply (GM)</td>
           <td className="text-lg-right">
-            <SolBalance
-              tock={supply.circulating}
+            <AnlogBalance
+              tocks={supply.circulating}
               maximumFractionDigits={0}
             />
           </td>
         </tr>
 
         <tr>
-          <td className="w-100">Non-Circulating Supply (ANLOG)</td>
+          <td className="w-100">Non-Circulating Supply (GM)</td>
           <td className="text-lg-right">
-            <SolBalance
-              tock={supply.nonCirculating}
+            <AnlogBalance
+              tocks={supply.nonCirculating}
               maximumFractionDigits={0}
             />
           </td>

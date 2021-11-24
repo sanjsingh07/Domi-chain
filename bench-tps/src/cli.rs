@@ -7,7 +7,7 @@ use analog_sdk::{
 };
 use std::{net::SocketAddr, process::exit, time::Duration};
 
-const NUM_LAMPORTS_PER_ACCOUNT_DEFAULT: u64 = analog_sdk::native_token::TOCK_PER_ANLOG;
+const NUM_TOCKS_PER_ACCOUNT_DEFAULT: u64 = analog_sdk::native_token::TOCKS_PER_ANLOG;
 
 /// Holds the configuration for a single run of the benchmark
 pub struct Config {
@@ -24,9 +24,9 @@ pub struct Config {
     pub client_ids_and_stake_file: String,
     pub write_to_client_file: bool,
     pub read_from_client_file: bool,
-    pub target_lamports_per_signature: u64,
+    pub target_tocks_per_signature: u64,
     pub multi_client: bool,
-    pub num_lamports_per_account: u64,
+    pub num_tocks_per_account: u64,
     pub target_slots_per_epoch: u64,
     pub target_node: Option<Pubkey>,
 }
@@ -47,9 +47,9 @@ impl Default for Config {
             client_ids_and_stake_file: String::new(),
             write_to_client_file: false,
             read_from_client_file: false,
-            target_lamports_per_signature: FeeRateGovernor::default().target_lamports_per_signature,
+            target_tocks_per_signature: FeeRateGovernor::default().target_tocks_per_signature,
             multi_client: true,
-            num_lamports_per_account: NUM_LAMPORTS_PER_ACCOUNT_DEFAULT,
+            num_tocks_per_account: NUM_TOCKS_PER_ACCOUNT_DEFAULT,
             target_slots_per_epoch: 0,
             target_node: None,
         }
@@ -162,22 +162,22 @@ pub fn build_args<'a, 'b>(version: &'b str) -> App<'a, 'b> {
                 .help("Read client keys and stakes from the YAML file"),
         )
         .arg(
-            Arg::with_name("target_lamports_per_signature")
-                .long("target-tock-per-signature")
-                .value_name("LAMPORTS")
+            Arg::with_name("target_tocks_per_signature")
+                .long("target-tocks-per-signature")
+                .value_name("TOCKS")
                 .takes_value(true)
                 .help(
-                    "The cost in tock that the cluster will charge for signature \
+                    "The cost in tocks that the cluster will charge for signature \
                      verification when the cluster is operating at target-signatures-per-slot",
                 ),
         )
         .arg(
-            Arg::with_name("num_lamports_per_account")
-                .long("num-tock-per-account")
-                .value_name("LAMPORTS")
+            Arg::with_name("num_tocks_per_account")
+                .long("num-tocks-per-account")
+                .value_name("TOCKS")
                 .takes_value(true)
                 .help(
-                    "Number of tock per account.",
+                    "Number of tocks per account.",
                 ),
         )
         .arg(
@@ -265,8 +265,8 @@ pub fn extract_args(matches: &ArgMatches) -> Config {
         args.client_ids_and_stake_file = s.to_string();
     }
 
-    if let Some(v) = matches.value_of("target_lamports_per_signature") {
-        args.target_lamports_per_signature = v.to_string().parse().expect("can't parse tock");
+    if let Some(v) = matches.value_of("target_tocks_per_signature") {
+        args.target_tocks_per_signature = v.to_string().parse().expect("can't parse tocks");
     }
 
     args.multi_client = !matches.is_present("no-multi-client");
@@ -274,8 +274,8 @@ pub fn extract_args(matches: &ArgMatches) -> Config {
         .value_of("target_node")
         .map(|target_str| target_str.parse().unwrap());
 
-    if let Some(v) = matches.value_of("num_lamports_per_account") {
-        args.num_lamports_per_account = v.to_string().parse().expect("can't parse tock");
+    if let Some(v) = matches.value_of("num_tocks_per_account") {
+        args.num_tocks_per_account = v.to_string().parse().expect("can't parse tocks");
     }
 
     if let Some(t) = matches.value_of("target_slots_per_epoch") {

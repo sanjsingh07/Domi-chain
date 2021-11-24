@@ -17,7 +17,7 @@ apt-get install -y buildkite-agent
 
 
 # Configure the installation
-echo "Go to https://buildkite.com/organizations/analog-labs/agents"
+echo "Go to https://buildkite.com/organizations/analog/agents"
 echo "Click Reveal Agent Token"
 echo "Paste the Agent Token, then press Enter:"
 

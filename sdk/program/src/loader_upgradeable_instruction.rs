@@ -47,8 +47,8 @@ pub enum UpgradeableLoaderInstruction {
     /// follows:
     ///
     /// ```
-    /// # use solana_program::pubkey::Pubkey;
-    /// # use solana_program::bpf_loader_upgradeable;
+    /// # use analog_program::pubkey::Pubkey;
+    /// # use analog_program::bpf_loader_upgradeable;
     /// # let program_address = &[];
     /// let (program_data_address, _) = Pubkey::find_program_address(
     ///      &[program_address],
@@ -84,8 +84,8 @@ pub enum UpgradeableLoaderInstruction {
     /// A program can be updated as long as the program's authority has not been
     /// set to `None`.
     ///
-    /// The Buffer account must contain sufficient tock to fund the
-    /// ProgramData account to be rent-exempt, any additional tock left over
+    /// The Buffer account must contain sufficient tocks to fund the
+    /// ProgramData account to be rent-exempt, any additional tocks left over
     /// will be transferred to the spill account, leaving the Buffer account
     /// balance at zero.
     ///
@@ -113,13 +113,13 @@ pub enum UpgradeableLoaderInstruction {
     ///      not be upgradeable.
     SetAuthority,
 
-    /// Closes an account owned by the upgradeable loader of all tock and
-    /// withdraws all the tock
+    /// Closes an account owned by the upgradeable loader of all tocks and
+    /// withdraws all the tocks
     ///
     /// # Account references
     ///   0. `[writable]` The account to close, if closing a program must be the
     ///      ProgramData account.
-    ///   1. `[writable]` The account to deposit the closed account's tock.
+    ///   1. `[writable]` The account to deposit the closed account's tocks.
     ///   2. `[signer]` The account's authority, Optional, required for
     ///      initialized accounts.
     ///   3. `[writable]` The associated Program account if the account to close

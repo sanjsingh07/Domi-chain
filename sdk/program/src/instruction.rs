@@ -62,25 +62,25 @@ pub enum InstructionError {
     #[error("instruction requires an initialized account")]
     UninitializedAccount,
 
-    /// Program's instructiontockbalance does not equal the balance after the instruction
+    /// Program's instruction tock balance does not equal the balance after the instruction
     #[error("sum of account balances before and after instruction do not match")]
     UnbalancedInstruction,
 
-    /// Program illegally modified an account's program id
-    #[error("instruction illegally modified the program id of an account")]
+    /// Program modified an account's program id
+    #[error("instruction modified the program id of an account")]
     ModifiedProgramId,
 
-    /// Program spent the tock of an account that doesn't belong to it
+    /// Program spent the tocks of an account that doesn't belong to it
     #[error("instruction spent from the balance of an account it does not own")]
-    ExternalAccountLamportSpend,
+    ExternalAccountTockSpend,
 
     /// Program modified the data of an account that doesn't belong to it
     #[error("instruction modified data of an account it does not own")]
     ExternalAccountDataModified,
 
-    /// Read-only account's tock modified
+    /// Read-only account's tocks modified
     #[error("instruction changed the balance of a read-only account")]
-    ReadonlyLamportChange,
+    ReadonlyTockChange,
 
     /// Read-only account's data was modified
     #[error("instruction modified data of a read-only account")]
@@ -103,8 +103,8 @@ pub enum InstructionError {
     #[error("insufficient account keys for instruction")]
     NotEnoughAccountKeys,
 
-    /// Program other than the account's owner changed the size of the account data
-    #[error("program other than the account's owner changed the size of the account data")]
+    /// A non-system program changed the size of the account data
+    #[error("non-system instruction changed account size")]
     AccountDataSizeChanged,
 
     /// The instruction expected an executable account
@@ -140,9 +140,9 @@ pub enum InstructionError {
     #[error("instruction changed executable accounts data")]
     ExecutableDataModified,
 
-    /// Executable account's tock modified
+    /// Executable account's tocks modified
     #[error("instruction changed the balance of a executable account")]
-    ExecutableLamportChange,
+    ExecutableTockChange,
 
     /// Executable accounts must be rent exempt
     #[error("executable accounts must be rent exempt")]
@@ -216,8 +216,8 @@ pub enum InstructionError {
     #[error("Failed to serialize or deserialize account data: {0}")]
     BorshIoError(String),
 
-    /// An account does not have enough tock to be rent-exempt
-    #[error("An account does not have enough tock to be rent-exempt")]
+    /// An account does not have enough tocks to be rent-exempt
+    #[error("An account does not have enough tocks to be rent-exempt")]
     AccountNotRentExempt,
 
     /// Invalid account owner

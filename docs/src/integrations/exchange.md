@@ -2,7 +2,7 @@
 title: Add Analog to Your Exchange
 ---
 
-This guide describes how to add Analog's native token ANLOG to your cryptocurrency
+This guide describes how to add Analog's native token SOL to your cryptocurrency
 exchange.
 
 ## Node Setup
@@ -54,7 +54,7 @@ under 500GB. More or less disk usage may be requested by adding an argument to
 `--limit-ledger-size` if desired. Check `analog-validator --help` for the
 default limit value used by `--limit-ledger-size`. More information about
 selecting a custom limit value is [available
-here](https://github.com/analog-labs/solana/blob/583cec922b6107e0f85c7e14cb5e642bc7dfb340/core/src/ledger_cleanup_service.rs#L15-L26).
+here](https://github.com/analog/testnet/blob/583cec922b6107e0f85c7e14cb5e642bc7dfb340/core/src/ledger_cleanup_service.rs#L15-L26).
 
 Specifying one or more `--known-validator` parameters can protect you from booting from a malicious snapshot. [More on the value of booting with known validators](../running-validator/validator-start.md#known-validators)
 
@@ -70,7 +70,7 @@ ensure you miss as little data as possible. Running the analog software as a
 systemd service is one great option.
 
 For monitoring, we provide
-[`analog-watchtower`](https://github.com/analog-labs/solana/blob/master/watchtower/README.md),
+[`analog-watchtower`](https://github.com/analog/testnet/blob/master/watchtower/README.md),
 which can monitor your validator and detect with the `analog-validator` process
 is unhealthy. It can directly be configured to alert you via Slack, Telegram,
 Discord, or Twillio. For details, run `analog-watchtower --help`.
@@ -148,14 +148,14 @@ validators and only on the _Gossip_, _Repair_ and _ServeR_ ports.
 ## Setting up Deposit Accounts
 
 Analog accounts do not require any on-chain initialization; once they contain
-some ANLOG, they exist. To set up a deposit account for your exchange, simply
+some SOL, they exist. To set up a deposit account for your exchange, simply
 generate a Analog keypair using any of our [wallet tools](../wallet-guide/cli.md).
 
 We recommend using a unique deposit account for each of your users.
 
 Analog accounts are charged [rent](developing/programming-model/accounts.md#rent) on creation and once per
 epoch, but they can be made rent-exempt if they contain 2-years worth of rent in
-ANLOG. In order to find the minimum rent-exempt balance for your deposit accounts,
+SOL. In order to find the minimum rent-exempt balance for your deposit accounts,
 query the
 [`getMinimumBalanceForRentExemption` endpoint](developing/clients/jsonrpc-api.md#getminimumbalanceforrentexemption):
 
@@ -168,12 +168,12 @@ curl -X POST -H "Content-Type: application/json" -d '{"jsonrpc": "2.0","id":1,"m
 ### Offline Accounts
 
 You may wish to keep the keys for one or more collection accounts offline for
-greater security. If so, you will need to move ANLOG to hot accounts using our
+greater security. If so, you will need to move SOL to hot accounts using our
 [offline methods](../offline-signing.md).
 
 ## Listening for Deposits
 
-When a user wants to deposit ANLOG into your exchange, instruct them to send a
+When a user wants to deposit SOL into your exchange, instruct them to send a
 transfer to the appropriate deposit address.
 
 ### Poll for Blocks
@@ -262,15 +262,15 @@ curl -X POST -H "Content-Type: application/json" -d '{"jsonrpc": "2.0","id":1,"m
 The `preBalances` and `postBalances` fields allow you to track the balance
 changes in every account without having to parse the entire transaction. They
 list the starting and ending balances of each account in
-[tock](../terminology.md#lamport), indexed to the `accountKeys` list. For
+[lamports](../terminology.md#lamport), indexed to the `accountKeys` list. For
 example, if the deposit address if interest is
 `47Sbuv6jL7CViK9F2NMW51aQGhfdpUu7WNvKyH645Rfi`, this transaction represents a
-transfer of 218099990000 - 207099990000 = 11000000000 tock = 11 ANLOG
+transfer of 218099990000 - 207099990000 = 11000000000 lamports = 11 SOL
 
 If you need more information about the transaction type or other specifics, you
 can request the block from RPC in binary format, and parse it using either our
-[Rust SDK](https://github.com/analog-labs/solana) or
-[Javascript SDK](https://github.com/analog-labs/analog-web3.js).
+[Rust SDK](https://github.com/analog/testnet) or
+[Javascript SDK](https://github.com/analog/testnet-web3.js).
 
 ### Address History
 
@@ -374,7 +374,7 @@ curl -X POST -H "Content-Type: application/json" -d '{"jsonrpc": "2.0","id":1,"m
 
 ## Sending Withdrawals
 
-To accommodate a user's request to withdraw ANLOG, you must generate a Analog
+To accommodate a user's request to withdraw SOL, you must generate a Analog
 transfer transaction, and send it to the api node to be forwarded to your
 cluster.
 
@@ -383,16 +383,16 @@ cluster.
 Sending a synchronous transfer to the Analog cluster allows you to easily ensure
 that a transfer is successful and finalized by the cluster.
 
-Analog's command-line tool offers a simple command, `solana transfer`, to
+Analog's command-line tool offers a simple command, `analog transfer`, to
 generate, submit, and confirm transfer transactions. By default, this method
 will wait and track progress on stderr until the transaction has been finalized
 by the cluster. If the transaction fails, it will report any transaction errors.
 
 ```bash
-solana transfer <USER_ADDRESS> <AMOUNT> --allow-unfunded-recipient --keypair <KEYPAIR> --url http://localhost:8899
+analog transfer <USER_ADDRESS> <AMOUNT> --allow-unfunded-recipient --keypair <KEYPAIR> --url http://localhost:8899
 ```
 
-The [Analog Javascript SDK](https://github.com/analog-labs/analog-web3.js)
+The [Analog Javascript SDK](https://github.com/analog/testnet-web3.js)
 offers a similar approach for the JS ecosystem. Use the `SystemProgram` to build
 a transfer transaction, and submit it using the `sendAndConfirmTransaction`
 method.
@@ -414,14 +414,14 @@ First, get a recent blockhash using the [`getFees` endpoint](developing/clients/
 or the CLI command:
 
 ```bash
-solana fees --url http://localhost:8899
+analog fees --url http://localhost:8899
 ```
 
 In the command-line tool, pass the `--no-wait` argument to send a transfer
 asynchronously, and include your recent blockhash with the `--blockhash` argument:
 
 ```bash
-solana transfer <USER_ADDRESS> <AMOUNT> --no-wait --allow-unfunded-recipient --blockhash <RECENT_BLOCKHASH> --keypair <KEYPAIR> --url http://localhost:8899
+analog transfer <USER_ADDRESS> <AMOUNT> --no-wait --allow-unfunded-recipient --blockhash <RECENT_BLOCKHASH> --keypair <KEYPAIR> --url http://localhost:8899
 ```
 
 You can also build, sign, and serialize the transaction manually, and fire it off to
@@ -569,10 +569,10 @@ public class PubkeyValidator
 
 ## Supporting the SPL Token Standard
 
-[SPL Token](https://spl.solana.com/token) is the standard for wrapped/synthetic
+[SPL Token](https://spl.analog.com/token) is the standard for wrapped/synthetic
 token creation and exchange on the Analog blockchain.
 
-The SPL Token workflow is similar to that of native ANLOG tokens, but there are a
+The SPL Token workflow is similar to that of native SOL tokens, but there are a
 few differences which will be discussed in this section.
 
 ### Token Mints
@@ -620,8 +620,8 @@ accounts do not:
    `spl-token transfer --fund-recipient ...` command.
 1. SPL Token accounts must remain [rent-exempt](developing/programming-model/accounts.md#rent-exemption)
    for the duration of their existence and therefore require a small amount of
-   native ANLOG tokens be deposited at account creation. For SPL Token v2 accounts,
-   this amount is 0.00203928 ANLOG (2,039,280 tock).
+   native SOL tokens be deposited at account creation. For SPL Token v2 accounts,
+   this amount is 0.00203928 SOL (2,039,280 lamports).
 
 #### Command Line
 
@@ -695,15 +695,15 @@ Signature: 3R6tsog17QM8KfzbcbdP4aoMfwgo6hBggJDVy7dZPVmH2xbCWjEj31JKD53NzMrf25ChF
 ### Depositing
 
 Since each `(wallet, mint)` pair requires a separate account on chain. It is
-recommended that the addresses for these accounts be derived from ANLOG deposit
+recommended that the addresses for these accounts be derived from SOL deposit
 wallets using the
-[Associated Token Account](https://spl.solana.com/associated-token-account) (ATA)
+[Associated Token Account](https://spl.analog.com/associated-token-account) (ATA)
 scheme and that _only_ deposits from ATA addresses be accepted.
 
 Monitoring for deposit transactions should follow the [block polling](#poll-for-blocks)
 method described above. Each new block should be scanned for successful transactions
-issuing SPL Token [Transfer](https://github.com/analog-labs/analog-program-library/blob/fc0d6a2db79bd6499f04b9be7ead0c400283845e/token/program/src/instruction.rs#L105)
-or [TransferChecked](https://github.com/analog-labs/analog-program-library/blob/fc0d6a2db79bd6499f04b9be7ead0c400283845e/token/program/src/instruction.rs#L268)
+issuing SPL Token [Transfer](https://github.com/analog/testnet-program-library/blob/fc0d6a2db79bd6499f04b9be7ead0c400283845e/token/program/src/instruction.rs#L105)
+or [TransferChecked](https://github.com/analog/testnet-program-library/blob/fc0d6a2db79bd6499f04b9be7ead0c400283845e/token/program/src/instruction.rs#L268)
 instructions referencing user accounts. It is possible that a transfer is initiated
 by a smart contract via [Cross Program Invocation](/developing/programming-model/calling-between-programs#cross-program-invocations),
 so [inner instructions](/terminology#inner-instruction) must be checked as well.
@@ -712,20 +712,20 @@ must then be used to determine the effective balance change.
 
 ### Withdrawing
 
-The withdrawal address a user provides must be the that of their ANLOG wallet.
+The withdrawal address a user provides must be the that of their SOL wallet.
 
 Before executing a withdrawal [transfer](#token-transfers),
 the exchange should check the address as
 [described above](#validating-user-supplied-account-addresses-for-withdrawals).
-Additionally this address must be owned by the System Program and have no account data.  If the address has no ANLOG balance, user confirmation should be obtained before proceeding with the withdrawal.  All other withdrawal addresses must be rejected.
+Additionally this address must be owned by the System Program and have no account data.  If the address has no SOL balance, user confirmation should be obtained before proceeding with the withdrawal.  All other withdrawal addresses must be rejected.
 
-From the withdrawal address, the [Associated Token Account](https://spl.solana.com/associated-token-account)
+From the withdrawal address, the [Associated Token Account](https://spl.analog.com/associated-token-account)
 (ATA) for the correct mint is derived and the transfer issued to that account via a
-[TransferChecked](https://github.com/analog-labs/analog-program-library/blob/fc0d6a2db79bd6499f04b9be7ead0c400283845e/token/program/src/instruction.rs#L268)
+[TransferChecked](https://github.com/analog/testnet-program-library/blob/fc0d6a2db79bd6499f04b9be7ead0c400283845e/token/program/src/instruction.rs#L268)
 instruction. Note that it is possible that the ATA address does not yet exist, at which point the
 exchange should fund the account on behalf of the user. For SPL Token v2
-accounts, funding the withdrawal account will require 0.00203928 ANLOG (2,039,280
-tock).
+accounts, funding the withdrawal account will require 0.00203928 SOL (2,039,280
+lamports).
 
 Template `spl-token transfer` command for a withdrawal:
 
@@ -739,7 +739,7 @@ $ spl-token transfer --fund-recipient <exchange token account> <withdrawal amoun
 
 For regulatory compliance reasons, an SPL Token issuing entity may optionally
 choose to hold "Freeze Authority" over all accounts created in association with
-its mint. This allows them to [freeze](https://spl.solana.com/token#freezing-accounts)
+its mint. This allows them to [freeze](https://spl.analog.com/token#freezing-accounts)
 the assets in a given account at will, rendering the account unusable until thawed.
 If this feature is in use, the freeze authority's pubkey will be registered in
 the SPL Token's mint account.
@@ -750,4 +750,4 @@ Be sure to test your complete workflow on Analog devnet and testnet
 [clusters](../clusters.md) before moving to production on mainnet-beta. Devnet
 is the most open and flexible, and ideal for initial development, while testnet
 offers more realistic cluster configuration. Both devnet and testnet support a faucet,
-run `solana airdrop 1` to obtain some devnet or testnet ANLOG for developement and testing.
+run `analog airdrop 1` to obtain some devnet or testnet SOL for developement and testing.

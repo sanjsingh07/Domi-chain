@@ -1,13 +1,13 @@
 use crate::{
-    checks::{check_account_for_balance_with_commitment, get_fee_for_messages},
+    checks::{check_account_for_balance_with_commitment, get_fee_for_message},
     cli::CliError,
 };
 use clap::ArgMatches;
-use analog_clap_utils::{input_parsers::lamports_of_anlog, offline::SIGN_ONLY_ARG};
+use analog_clap_utils::{input_parsers::tocks_of_anlog, offline::SIGN_ONLY_ARG};
 use analog_client::rpc_client::RpcClient;
 use analog_sdk::{
     commitment_config::CommitmentConfig, hash::Hash, message::Message,
-    native_token::tock_to_anlog, pubkey::Pubkey,
+    native_token::tocks_to_anlog, pubkey::Pubkey,
 };
 
 #[derive(Debug, PartialEq, Clone, Copy)]
@@ -25,14 +25,14 @@ impl Default for SpendAmount {
 impl SpendAmount {
     pub fn new(amount: Option<u64>, sign_only: bool) -> Self {
         match amount {
-            Some(tock) => Self::Some(tock),
+            Some(tocks) => Self::Some(tocks),
             None if !sign_only => Self::All,
             _ => panic!("ALL amount not supported for sign-only operations"),
         }
     }
 
     pub fn new_from_matches(matches: &ArgMatches<'_>, name: &str) -> Self {
-        let amount = lamports_of_anlog(matches, name);
+        let amount = tocks_of_anlog(matches, name);
         let sign_only = matches.is_present(SIGN_ONLY_ARG.name);
         SpendAmount::new(amount, sign_only)
     }
@@ -107,22 +107,22 @@ where
         if from_pubkey == fee_pubkey {
             if from_balance == 0 || from_balance < spend + fee {
                 return Err(CliError::InsufficientFundsForSpendAndFee(
-                   tock_to_anlog(spend),
-                   tock_to_anlog(fee),
+                    tocks_to_anlog(spend),
+                    tocks_to_anlog(fee),
                     *from_pubkey,
                 ));
             }
         } else {
             if from_balance < spend {
                 return Err(CliError::InsufficientFundsForSpend(
-                   tock_to_anlog(spend),
+                    tocks_to_anlog(spend),
                     *from_pubkey,
                 ));
             }
             if !check_account_for_balance_with_commitment(rpc_client, fee_pubkey, fee, commitment)?
             {
                 return Err(CliError::InsufficientFundsForFee(
-                   tock_to_anlog(fee),
+                    tocks_to_anlog(fee),
                     *fee_pubkey,
                 ));
             }
@@ -145,31 +145,30 @@ where
 {
     let fee = match blockhash {
         Some(blockhash) => {
-            let mut dummy_message = build_message(0);
-            dummy_message.recent_blockhash = *blockhash;
-            get_fee_for_messages(rpc_client, &[&dummy_message])?
+            let dummy_message = build_message(0);
+            get_fee_for_message(rpc_client, blockhash, &[&dummy_message])?
         }
         None => 0, // Offline, cannot calulate fee
     };
 
     match amount {
-        SpendAmount::Some(tock) => Ok((
-            build_message(tock),
+        SpendAmount::Some(tocks) => Ok((
+            build_message(tocks),
             SpendAndFee {
-                spend: tock,
+                spend: tocks,
                 fee,
             },
         )),
         SpendAmount::All => {
-            let tock = if from_pubkey == fee_pubkey {
+            let tocks = if from_pubkey == fee_pubkey {
                 from_balance.saturating_sub(fee)
             } else {
                 from_balance
             };
             Ok((
-                build_message(tock),
+                build_message(tocks),
                 SpendAndFee {
-                    spend: tock,
+                    spend: tocks,
                     fee,
                 },
             ))

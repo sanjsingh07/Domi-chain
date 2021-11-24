@@ -41,7 +41,7 @@ pub enum ProgramError {
     InvalidSeeds,
     #[error("IO Error: {0}")]
     BorshIoError(String),
-    #[error("An account does not have enough tock to be rent-exempt")]
+    #[error("An account does not have enough tocks to be rent-exempt")]
     AccountNotRentExempt,
     #[error("Unsupported sysvar")]
     UnsupportedSysvar,
@@ -169,7 +169,7 @@ impl From<u64> for ProgramError {
             ACCOUNT_BORROW_FAILED => Self::AccountBorrowFailed,
             MAX_SEED_LENGTH_EXCEEDED => Self::MaxSeedLengthExceeded,
             INVALID_SEEDS => Self::InvalidSeeds,
-            BORSH_IO_ERROR => Self::BorshIoError("Unknown".to_string()),
+            BORSH_IO_ERROR => Self::BorshIoError("Unkown".to_string()),
             ACCOUNT_NOT_RENT_EXEMPT => Self::AccountNotRentExempt,
             UNSUPPORTED_SYSVAR => Self::UnsupportedSysvar,
             ILLEGAL_OWNER => Self::IllegalOwner,
@@ -227,7 +227,7 @@ where
             ACCOUNT_BORROW_FAILED => Self::AccountBorrowFailed,
             MAX_SEED_LENGTH_EXCEEDED => Self::MaxSeedLengthExceeded,
             INVALID_SEEDS => Self::InvalidSeeds,
-            BORSH_IO_ERROR => Self::BorshIoError("Unknown".to_string()),
+            BORSH_IO_ERROR => Self::BorshIoError("Unkown".to_string()),
             ACCOUNT_NOT_RENT_EXEMPT => Self::AccountNotRentExempt,
             UNSUPPORTED_SYSVAR => Self::UnsupportedSysvar,
             ILLEGAL_OWNER => Self::IllegalOwner,

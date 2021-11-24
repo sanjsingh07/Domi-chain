@@ -12,7 +12,7 @@ use analog_client::client_error::ClientError;
 use analog_client::rpc_client::RpcClient;
 use analog_sdk::{
     message::Message,
-    native_token::tock_to_anlog,
+    native_token::tocks_to_anlog,
     pubkey::Pubkey,
     signature::{unique_signers, Signature, Signer},
     signers::Signers,
@@ -71,7 +71,7 @@ fn process_new_stake_account(
         &args.fee_payer.pubkey(),
         &args.funding_keypair.pubkey(),
         &args.base_keypair.pubkey(),
-        args.tock,
+        args.tocks,
         &args.stake_authority,
         &args.withdraw_authority,
         &Pubkey::default(),
@@ -259,8 +259,8 @@ fn main() -> Result<(), Box<dyn Error>> {
                 args.num_accounts,
             );
             let balances = get_balances(&client, addresses)?;
-            let tock: u64 = balances.into_iter().map(|(_, bal)| bal).sum();
-            let anlog =tock_to_anlog(tock);
+            let tocks: u64 = balances.into_iter().map(|(_, bal)| bal).sum();
+            let anlog = tocks_to_anlog(tocks);
             println!("{} ANLOG", anlog);
         }
         Command::Authorize(args) => {

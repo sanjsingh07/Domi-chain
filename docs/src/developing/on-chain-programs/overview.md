@@ -100,7 +100,7 @@ possible.
 
 The Analog Program Library math tests will report the performance of some math
 operations:
-https://github.com/analog-labs/analog-program-library/tree/master/libraries/math
+https://github.com/analog/testnet-program-library/tree/master/libraries/math
 
 To run the test, sync the repo, and run:
 
@@ -134,9 +134,9 @@ Adding a signed division instruction is a consideration.
 
 Programs are deployed with and executed by runtime loaders, currently there are
 two supported loaders [BPF
-Loader](https://github.com/analog-labs/solana/blob/7ddf10e602d2ed87a9e3737aa8c32f1db9f909d8/sdk/program/src/bpf_loader.rs#L17)
+Loader](https://github.com/analog/testnet/blob/7ddf10e602d2ed87a9e3737aa8c32f1db9f909d8/sdk/program/src/bpf_loader.rs#L17)
 and [BPF loader
-deprecated](https://github.com/analog-labs/solana/blob/7ddf10e602d2ed87a9e3737aa8c32f1db9f909d8/sdk/program/src/bpf_loader_deprecated.rs#L14)
+deprecated](https://github.com/analog/testnet/blob/7ddf10e602d2ed87a9e3737aa8c32f1db9f909d8/sdk/program/src/bpf_loader_deprecated.rs#L14)
 
 Loaders may support different application binary interfaces so developers must
 write their programs for and deploy them to the same loader. If a program
@@ -159,10 +159,10 @@ loader see:
 BPF program deployment is the process of uploading a BPF shared object into a
 program account's data and marking the account executable. A client breaks the
 BPF shared object into smaller pieces and sends them as the instruction data of
-[`Write`](https://github.com/analog-labs/solana/blob/bc7133d7526a041d1aaee807b80922baa89b6f90/sdk/program/src/loader_instruction.rs#L13)
+[`Write`](https://github.com/analog/testnet/blob/bc7133d7526a041d1aaee807b80922baa89b6f90/sdk/program/src/loader_instruction.rs#L13)
 instructions to the loader where loader writes that data into the program's
 account data. Once all the pieces are received the client sends a
-[`Finalize`](https://github.com/analog-labs/solana/blob/bc7133d7526a041d1aaee807b80922baa89b6f90/sdk/program/src/loader_instruction.rs#L30)
+[`Finalize`](https://github.com/analog/testnet/blob/bc7133d7526a041d1aaee807b80922baa89b6f90/sdk/program/src/loader_instruction.rs#L30)
 instruction to the loader, the loader then validates that the BPF data is valid
 and marks the program account as _executable_. Once the program account is
 marked executable, subsequent transactions may issue instructions for that
@@ -208,7 +208,7 @@ encoding is little endian):
       - 4 bytes of padding
       - 32 bytes of the account public key
       - 32 bytes of the account's owner public key
-      - 8 byte unsigned number of tock owned by the account
+      - 8 byte unsigned number of lamports owned by the account
       - 8 bytes unsigned number of bytes of account data
       - x bytes of account data
       - 10k bytes of padding, used for realloc

@@ -5,10 +5,9 @@ use crate::{
         ACCOUNTS_DB_CONFIG_FOR_TESTING,
     },
     accounts_index::{AccountSecondaryIndexes, IndexKey, ScanResult},
-    accounts_update_notifier_interface::AccountsUpdateNotifier,
     ancestors::Ancestors,
     bank::{
-        Bank, NonceRollbackFull, NonceRollbackInfo, RentDebits, TransactionCheckResult,
+        NonceRollbackFull, NonceRollbackInfo, RentDebits, TransactionCheckResult,
         TransactionExecutionResult,
     },
     blockhash_queue::BlockhashQueue,
@@ -27,6 +26,7 @@ use analog_sdk::{
     bpf_loader_upgradeable::{self, UpgradeableLoaderState},
     clock::{BankId, Slot, INITIAL_RENT_EPOCH},
     feature_set::{self, FeatureSet},
+    fee_calculator::FeeCalculator,
     genesis_config::ClusterType,
     hash::Hash,
     message::SanitizedMessage,
@@ -34,7 +34,6 @@ use analog_sdk::{
     nonce::NONCED_TX_MARKER_IX_INDEX,
     pubkey::Pubkey,
     system_program, sysvar,
-    sysvar::instructions::construct_instructions_data,
     transaction::{Result, SanitizedTransaction, TransactionError},
 };
 use std::{
@@ -140,7 +139,6 @@ impl Accounts {
             caching_enabled,
             shrink_ratio,
             Some(ACCOUNTS_DB_CONFIG_FOR_TESTING),
-            None,
         )
     }
 
@@ -158,7 +156,6 @@ impl Accounts {
             caching_enabled,
             shrink_ratio,
             Some(ACCOUNTS_DB_CONFIG_FOR_BENCHMARKS),
-            None,
         )
     }
 
@@ -169,7 +166,6 @@ impl Accounts {
         caching_enabled: bool,
         shrink_ratio: AccountShrinkThreshold,
         accounts_db_config: Option<AccountsDbConfig>,
-        accounts_update_notifier: Option<AccountsUpdateNotifier>,
     ) -> Self {
         Self {
             accounts_db: Arc::new(AccountsDb::new_with_config(
@@ -179,7 +175,6 @@ impl Accounts {
                 caching_enabled,
                 shrink_ratio,
                 accounts_db_config,
-                accounts_update_notifier,
             )),
             account_locks: Mutex::new(AccountLocks::default()),
         }
@@ -206,7 +201,9 @@ impl Accounts {
         is_owned_by_sysvar: bool,
         demote_program_write_locks: bool,
     ) -> AccountSharedData {
-        let data = construct_instructions_data(message, demote_program_write_locks);
+        let mut data = message.serialize_instructions(demote_program_write_locks);
+        // add room for current instruction index.
+        data.resize(data.len() + 2, 0);
         let owner = if is_owned_by_sysvar {
             sysvar::id()
         } else {
@@ -244,6 +241,7 @@ impl Accounts {
             let rent_for_sysvars = feature_set.is_active(&feature_set::rent_for_sysvars::id());
             let demote_program_write_locks =
                 feature_set.is_active(&feature_set::demote_program_write_locks::id());
+            let is_upgradeable_loader_present = is_upgradeable_loader_present(message);
 
             for (i, key) in message.account_keys_iter().enumerate() {
                 let account = if !message.is_non_loader_key(i) {
@@ -271,7 +269,6 @@ impl Accounts {
                                         key,
                                         &mut account,
                                         rent_for_sysvars,
-                                        self.accounts_db.filler_account_suffix.as_ref(),
                                     );
                                     (account, rent_due)
                                 } else {
@@ -283,7 +280,7 @@ impl Accounts {
                         if bpf_loader_upgradeable::check_id(account.owner()) {
                             if demote_program_write_locks
                                 && message.is_writable(i, demote_program_write_locks)
-                                && !message.is_upgradeable_loader_present()
+                                && !is_upgradeable_loader_present
                             {
                                 error_counters.invalid_writable_account += 1;
                                 return Err(TransactionError::InvalidWritableAccount);
@@ -319,7 +316,7 @@ impl Accounts {
                         }
 
                         tx_rent += rent;
-                        rent_debits.insert(key, rent, account.tock());
+                        rent_debits.push(key, rent, account.tocks());
 
                         account
                     }
@@ -339,7 +336,7 @@ impl Accounts {
                     warn!("Payer index should be 0! {:?}", tx);
                 }
                 let payer_account = &mut accounts[payer_index].1;
-                if payer_account.tock() == 0 {
+                if payer_account.tocks() == 0 {
                     error_counters.account_not_found += 1;
                     return Err(TransactionError::AccountNotFound);
                 }
@@ -355,12 +352,12 @@ impl Accounts {
                     }
                 };
 
-                if payer_account.tock() < fee + min_balance {
+                if payer_account.tocks() < fee + min_balance {
                     error_counters.insufficient_funds += 1;
                     return Err(TransactionError::InsufficientFundsForFee);
                 }
                 payer_account
-                    .checked_sub_lamports(fee)
+                    .checked_sub_tocks(fee)
                     .map_err(|_| TransactionError::InsufficientFundsForFee)?;
 
                 let program_indices = message
@@ -427,7 +424,7 @@ impl Accounts {
 
             // Add loader to chain
             let program_owner = *program.owner();
-            account_indices.insert(0, program_account_index);
+
             if bpf_loader_upgradeable::check_id(&program_owner) {
                 // The upgradeable loader requires the derived ProgramData account
                 if let Ok(UpgradeableLoaderState::Program {
@@ -455,6 +452,7 @@ impl Accounts {
                 }
             }
 
+            account_indices.insert(0, program_account_index);
             program_id = program_owner;
         }
         Ok(account_indices)
@@ -474,15 +472,17 @@ impl Accounts {
             .zip(lock_results)
             .map(|etx| match etx {
                 (tx, (Ok(()), nonce_rollback)) => {
-                    let lamports_per_signature = nonce_rollback
+                    let fee_calculator = nonce_rollback
                         .as_ref()
-                        .map(|nonce_rollback| nonce_rollback.lamports_per_signature())
+                        .map(|nonce_rollback| nonce_rollback.fee_calculator())
                         .unwrap_or_else(|| {
                             #[allow(deprecated)]
-                            hash_queue.get_lamports_per_signature(tx.message().recent_blockhash())
+                            hash_queue
+                                .get_fee_calculator(tx.message().recent_blockhash())
+                                .cloned()
                         });
-                    let fee = if let Some(lamports_per_signature) = lamports_per_signature {
-                        Bank::calculate_fee(tx.message(), lamports_per_signature)
+                    let fee = if let Some(fee_calculator) = fee_calculator {
+                        tx.message().calculate_fee(&fee_calculator)
                     } else {
                         return (Err(TransactionError::BlockhashNotFound), None);
                     };
@@ -505,7 +505,6 @@ impl Accounts {
                             nonce_rollback,
                             tx.message(),
                             &loaded_transaction.accounts,
-                            &loaded_transaction.rent_debits,
                         ) {
                             Ok(nonce_rollback) => Some(nonce_rollback),
                             Err(e) => return (Err(e), None),
@@ -521,11 +520,11 @@ impl Accounts {
             .collect()
     }
 
-    fn filter_zero_lamport_account(
+    fn filter_zero_tock_account(
         account: AccountSharedData,
         slot: Slot,
     ) -> Option<(AccountSharedData, Slot)> {
-        if account.tock() > 0 {
+        if account.tocks() > 0 {
             Some((account, slot))
         } else {
             None
@@ -540,7 +539,7 @@ impl Accounts {
         load_hint: LoadHint,
     ) -> Option<(AccountSharedData, Slot)> {
         let (account, slot) = self.accounts_db.load(ancestors, pubkey, load_hint)?;
-        Self::filter_zero_lamport_account(account, slot)
+        Self::filter_zero_tock_account(account, slot)
     }
 
     pub fn load_with_fixed_root(
@@ -644,7 +643,7 @@ impl Accounts {
             bank_id,
             |collector: &mut BinaryHeap<Reverse<(u64, Pubkey)>>, option| {
                 if let Some((pubkey, account, _slot)) = option {
-                    if account.tock() == 0 {
+                    if account.tocks() == 0 {
                         return;
                     }
                     let contains_address = filter_by_address.contains(pubkey);
@@ -659,12 +658,12 @@ impl Accounts {
                         let Reverse(entry) = collector
                             .peek()
                             .expect("BinaryHeap::peek should succeed when len > 0");
-                        if *entry >= (account.tock(), *pubkey) {
+                        if *entry >= (account.tocks(), *pubkey) {
                             return;
                         }
                         collector.pop();
                     }
-                    collector.push(Reverse((account.tock(), *pubkey)));
+                    collector.push(Reverse((account.tocks(), *pubkey)));
                 }
             },
         )?;
@@ -683,7 +682,6 @@ impl Accounts {
         debug_verify: bool,
     ) -> u64 {
         let use_index = false;
-        let is_startup = false; // there may be conditions where this is called at startup.
         self.accounts_db
             .update_accounts_hash_with_index_option(
                 use_index,
@@ -693,24 +691,22 @@ impl Accounts {
                 None,
                 can_cached_slot_be_unflushed,
                 None,
-                is_startup,
             )
             .1
     }
 
-    /// Only called from startup or test code.
     #[must_use]
-    pub fn verify_bank_hash_and_lamports(
+    pub fn verify_bank_hash_and_tocks(
         &self,
         slot: Slot,
         ancestors: &Ancestors,
-        total_lamports: u64,
+        total_tocks: u64,
         test_hash_calculation: bool,
     ) -> bool {
-        if let Err(err) = self.accounts_db.verify_bank_hash_and_lamports(
+        if let Err(err) = self.accounts_db.verify_bank_hash_and_tocks(
             slot,
             ancestors,
-            total_lamports,
+            total_tocks,
             test_hash_calculation,
         ) {
             warn!("verify_bank_hash failed: {:?}", err);
@@ -720,10 +716,10 @@ impl Accounts {
         }
     }
 
-    fn is_loadable(tock: u64) -> bool {
-        // Don't ever load zerotockaccounts into runtime because
-        // the existence of zero-lamport accounts are never deterministic!!
-        tock > 0
+    fn is_loadable(tocks: u64) -> bool {
+        // Don't ever load zero tock accounts into runtime because
+        // the existence of zero-tock accounts are never deterministic!!
+        tocks > 0
     }
 
     fn load_while_filtering<F: Fn(&AccountSharedData) -> bool>(
@@ -732,7 +728,7 @@ impl Accounts {
         filter: F,
     ) {
         if let Some(mapped_account_tuple) = some_account_tuple
-            .filter(|(_, account, _)| Self::is_loadable(account.tock()) && filter(account))
+            .filter(|(_, account, _)| Self::is_loadable(account.tocks()) && filter(account))
             .map(|(pubkey, account, _slot)| (*pubkey, account))
         {
             collector.push(mapped_account_tuple)
@@ -809,7 +805,7 @@ impl Accounts {
             bank_id,
             |collector: &mut Vec<(Pubkey, AccountSharedData, Slot)>, some_account_tuple| {
                 if let Some((pubkey, account, slot)) = some_account_tuple
-                    .filter(|(_, account, _)| Self::is_loadable(account.tock()))
+                    .filter(|(_, account, _)| Self::is_loadable(account.tocks()))
                 {
                     collector.push((*pubkey, account, slot))
                 }
@@ -926,9 +922,9 @@ impl Accounts {
         let keys: Vec<_> = txs
             .map(|tx| tx.get_account_locks(demote_program_write_locks))
             .collect();
-        let account_locks = &mut self.account_locks.lock().unwrap();
+        let mut account_locks = &mut self.account_locks.lock().unwrap();
         keys.into_iter()
-            .map(|keys| self.lock_account(account_locks, keys.writable, keys.readonly))
+            .map(|keys| self.lock_account(&mut account_locks, keys.writable, keys.readonly))
             .collect()
     }
 
@@ -966,8 +962,7 @@ impl Accounts {
         res: &'a [TransactionExecutionResult],
         loaded: &'a mut [TransactionLoadResult],
         rent_collector: &RentCollector,
-        blockhash: &Hash,
-        lamports_per_signature: u64,
+        last_blockhash_with_fee_calculator: &(Hash, FeeCalculator),
         rent_for_sysvars: bool,
         merge_nonce_error_into_system_error: bool,
         demote_program_write_locks: bool,
@@ -977,8 +972,7 @@ impl Accounts {
             res,
             loaded,
             rent_collector,
-            blockhash,
-            lamports_per_signature,
+            last_blockhash_with_fee_calculator,
             rent_for_sysvars,
             merge_nonce_error_into_system_error,
             demote_program_write_locks,
@@ -998,15 +992,13 @@ impl Accounts {
         self.accounts_db.add_root(slot)
     }
 
-    #[allow(clippy::too_many_arguments)]
     fn collect_accounts_to_store<'a>(
         &self,
         txs: &'a [SanitizedTransaction],
         res: &'a [TransactionExecutionResult],
         loaded: &'a mut [TransactionLoadResult],
         rent_collector: &RentCollector,
-        blockhash: &Hash,
-        lamports_per_signature: u64,
+        last_blockhash_with_fee_calculator: &(Hash, FeeCalculator),
         rent_for_sysvars: bool,
         merge_nonce_error_into_system_error: bool,
         demote_program_write_locks: bool,
@@ -1052,8 +1044,7 @@ impl Accounts {
                     key,
                     res,
                     maybe_nonce_rollback,
-                    blockhash,
-                    lamports_per_signature,
+                    last_blockhash_with_fee_calculator,
                 );
                 if fee_payer_index.is_none() {
                     fee_payer_index = Some(i);
@@ -1085,7 +1076,7 @@ impl Accounts {
                         loaded_transaction.rent += rent;
                         loaded_transaction
                             .rent_debits
-                            .insert(key, rent, account.tock());
+                            .push(key, rent, account.tocks());
                     }
                     accounts.push((&*key, &*account));
                 }
@@ -1105,8 +1096,7 @@ pub fn prepare_if_nonce_account(
         Option<&AccountSharedData>,
         bool,
     )>,
-    blockhash: &Hash,
-    lamports_per_signature: u64,
+    last_blockhash_with_fee_calculator: &(Hash, FeeCalculator),
 ) -> bool {
     if let Some((nonce_key, nonce_acc, _maybe_fee_account, advance_blockhash)) =
         maybe_nonce_rollback
@@ -1128,7 +1118,11 @@ pub fn prepare_if_nonce_account(
                     .convert_to_current();
                 if let nonce::State::Initialized(ref data) = state {
                     let new_data = nonce::state::Versions::new_current(nonce::State::Initialized(
-                        nonce::state::Data::new(data.authority, *blockhash, lamports_per_signature),
+                        nonce::state::Data {
+                            blockhash: last_blockhash_with_fee_calculator.0,
+                            fee_calculator: last_blockhash_with_fee_calculator.1.clone(),
+                            ..data.clone()
+                        },
                     ));
                     account.set_state(&new_data).unwrap();
                 }
@@ -1137,6 +1131,12 @@ pub fn prepare_if_nonce_account(
         }
     }
     false
+}
+
+fn is_upgradeable_loader_present(message: &SanitizedMessage) -> bool {
+    message
+        .account_keys_iter()
+        .any(|&key| key == bpf_loader_upgradeable::id())
 }
 
 pub fn create_test_accounts(
@@ -1171,6 +1171,7 @@ mod tests {
     use analog_sdk::{
         account::{AccountSharedData, WritableAccount},
         epoch_schedule::EpochSchedule,
+        fee_calculator::FeeCalculator,
         genesis_config::ClusterType,
         hash::Hash,
         instruction::{CompiledInstruction, InstructionError},
@@ -1192,22 +1193,19 @@ mod tests {
         message: Message,
         recent_blockhash: Hash,
     ) -> SanitizedTransaction {
-        SanitizedTransaction::from_transaction_for_tests(Transaction::new(
-            from_keypairs,
-            message,
-            recent_blockhash,
-        ))
+        SanitizedTransaction::try_from(Transaction::new(from_keypairs, message, recent_blockhash))
+            .unwrap()
     }
 
     fn load_accounts_with_fee_and_rent(
         tx: Transaction,
         ka: &[(Pubkey, AccountSharedData)],
-        lamports_per_signature: u64,
+        fee_calculator: &FeeCalculator,
         rent_collector: &RentCollector,
         error_counters: &mut ErrorCounters,
     ) -> Vec<TransactionLoadResult> {
         let mut hash_queue = BlockhashQueue::new(100);
-        hash_queue.register_hash(&tx.message().recent_blockhash, lamports_per_signature);
+        hash_queue.register_hash(&tx.message().recent_blockhash, fee_calculator);
         let accounts = Accounts::new_with_config_for_tests(
             Vec::new(),
             &ClusterType::Development,
@@ -1220,7 +1218,7 @@ mod tests {
         }
 
         let ancestors = vec![(0, 0)].into_iter().collect();
-        let sanitized_tx = SanitizedTransaction::from_transaction_for_tests(tx);
+        let sanitized_tx = SanitizedTransaction::try_from(tx).unwrap();
         accounts.load_accounts(
             &ancestors,
             &[sanitized_tx],
@@ -1235,16 +1233,11 @@ mod tests {
     fn load_accounts_with_fee(
         tx: Transaction,
         ka: &[(Pubkey, AccountSharedData)],
-        lamports_per_signature: u64,
+        fee_calculator: &FeeCalculator,
         error_counters: &mut ErrorCounters,
     ) -> Vec<TransactionLoadResult> {
-        load_accounts_with_fee_and_rent(
-            tx,
-            ka,
-            lamports_per_signature,
-            &RentCollector::default(),
-            error_counters,
-        )
+        let rent_collector = RentCollector::default();
+        load_accounts_with_fee_and_rent(tx, ka, fee_calculator, &rent_collector, error_counters)
     }
 
     fn load_accounts(
@@ -1252,7 +1245,8 @@ mod tests {
         ka: &[(Pubkey, AccountSharedData)],
         error_counters: &mut ErrorCounters,
     ) -> Vec<TransactionLoadResult> {
-        load_accounts_with_fee(tx, ka, 0, error_counters)
+        let fee_calculator = FeeCalculator::default();
+        load_accounts_with_fee(tx, ka, &fee_calculator, error_counters)
     }
 
     #[test]
@@ -1275,7 +1269,7 @@ mod tests {
         let bins = idx.account_maps.len();
         // use bins * 2 to get the first half of the range within bin 0
         let bins_2 = bins * 2;
-        let binner = crate::pubkey_bins::PubkeyBinCalculator24::new(bins_2);
+        let binner = crate::pubkey_bins::PubkeyBinCalculator16::new(bins_2);
         let range2 =
             binner.lowest_pubkey_from_bin(0, bins_2)..binner.lowest_pubkey_from_bin(1, bins_2);
         let range2_inclusive = range2.start..=range2.end;
@@ -1388,13 +1382,13 @@ mod tests {
             instructions,
         );
 
-        let fee = Bank::calculate_fee(
-            &SanitizedMessage::try_from(tx.message().clone()).unwrap(),
-            10,
-        );
+        let fee_calculator = FeeCalculator::new(10);
+        #[allow(deprecated)]
+        let fee = fee_calculator.calculate_fee(tx.message());
         assert_eq!(fee, 10);
 
-        let loaded_accounts = load_accounts_with_fee(tx, &accounts, 10, &mut error_counters);
+        let loaded_accounts =
+            load_accounts_with_fee(tx, &accounts, &fee_calculator, &mut error_counters);
 
         assert_eq!(error_counters.insufficient_funds, 1);
         assert_eq!(loaded_accounts.len(), 1);
@@ -1442,11 +1436,12 @@ mod tests {
             &EpochSchedule::default(),
             500_000.0,
             &Rent {
-                lamports_per_byte_year: 42,
+                tocks_per_byte_year: 42,
                 ..Rent::default()
             },
         );
         let min_balance = rent_collector.rent.minimum_balance(nonce::State::size());
+        let fee_calculator = FeeCalculator::new(min_balance);
         let nonce = Keypair::new();
         let mut accounts = vec![(
             nonce.pubkey(),
@@ -1472,21 +1467,21 @@ mod tests {
         let loaded_accounts = load_accounts_with_fee_and_rent(
             tx.clone(),
             &accounts,
-            min_balance,
+            &fee_calculator,
             &rent_collector,
             &mut error_counters,
         );
         assert_eq!(loaded_accounts.len(), 1);
         let (load_res, _nonce_rollback) = &loaded_accounts[0];
         let loaded_transaction = load_res.as_ref().unwrap();
-        assert_eq!(loaded_transaction.accounts[0].1.tock(), min_balance);
+        assert_eq!(loaded_transaction.accounts[0].1.tocks(), min_balance);
 
         // Fee leaves zero balance fails
-        accounts[0].1.set_lamports(min_balance);
+        accounts[0].1.set_tocks(min_balance);
         let loaded_accounts = load_accounts_with_fee_and_rent(
             tx.clone(),
             &accounts,
-            min_balance,
+            &fee_calculator,
             &rent_collector,
             &mut error_counters,
         );
@@ -1495,11 +1490,11 @@ mod tests {
         assert_eq!(*load_res, Err(TransactionError::InsufficientFundsForFee));
 
         // Fee leaves non-zero, but sub-min_balance balance fails
-        accounts[0].1.set_lamports(3 * min_balance / 2);
+        accounts[0].1.set_tocks(3 * min_balance / 2);
         let loaded_accounts = load_accounts_with_fee_and_rent(
             tx,
             &accounts,
-            min_balance,
+            &fee_calculator,
             &rent_collector,
             &mut error_counters,
         );
@@ -1929,8 +1924,8 @@ mod tests {
         let result = loaded_accounts[0].0.as_ref().unwrap();
         assert_eq!(result.accounts[..2], accounts[..2]);
         assert_eq!(result.accounts[result.program_indices[0][0]], accounts[5]);
-        assert_eq!(result.accounts[result.program_indices[0][1]], accounts[4]);
-        assert_eq!(result.accounts[result.program_indices[0][2]], accounts[3]);
+        assert_eq!(result.accounts[result.program_indices[0][1]], accounts[3]);
+        assert_eq!(result.accounts[result.program_indices[0][2]], accounts[4]);
     }
 
     #[test]
@@ -2407,8 +2402,7 @@ mod tests {
             &programs,
             loaded.as_mut_slice(),
             &rent_collector,
-            &Hash::default(),
-            0,
+            &(Hash::default(), FeeCalculator::default()),
             true,
             true, // merge_nonce_error_into_system_error
             true, // demote_program_write_locks
@@ -2464,10 +2458,11 @@ mod tests {
     }
 
     fn load_accounts_no_store(accounts: &Accounts, tx: Transaction) -> Vec<TransactionLoadResult> {
-        let tx = SanitizedTransaction::from_transaction_for_tests(tx);
+        let tx = SanitizedTransaction::try_from(tx).unwrap();
         let rent_collector = RentCollector::default();
+        let fee_calculator = FeeCalculator::new(10);
         let mut hash_queue = BlockhashQueue::new(100);
-        hash_queue.register_hash(tx.message().recent_blockhash(), 10);
+        hash_queue.register_hash(tx.message().recent_blockhash(), &fee_calculator);
 
         let ancestors = vec![(0, 0)].into_iter().collect();
         let mut error_counters = ErrorCounters::default();
@@ -2514,7 +2509,7 @@ mod tests {
         AccountSharedData,
         AccountSharedData,
         Hash,
-        u64,
+        FeeCalculator,
         Option<AccountSharedData>,
     ) {
         let data = nonce::state::Versions::new_current(nonce::State::Initialized(
@@ -2522,13 +2517,15 @@ mod tests {
         ));
         let account = AccountSharedData::new_data(42, &data, &system_program::id()).unwrap();
         let mut pre_account = account.clone();
-        pre_account.set_lamports(43);
+        pre_account.set_tocks(43);
         (
             Pubkey::default(),
             pre_account,
             account,
             Hash::new(&[1u8; 32]),
-            1234,
+            FeeCalculator {
+                tocks_per_signature: 1234,
+            },
             None,
         )
     }
@@ -2543,8 +2540,7 @@ mod tests {
             Option<&AccountSharedData>,
             bool,
         )>,
-        blockhash: &Hash,
-        lamports_per_signature: u64,
+        last_blockhash_with_fee_calculator: &(Hash, FeeCalculator),
         expect_account: &AccountSharedData,
     ) -> bool {
         // Verify expect_account's relationship
@@ -2567,8 +2563,7 @@ mod tests {
             account_pubkey,
             tx_result,
             maybe_nonce_rollback,
-            blockhash,
-            lamports_per_signature,
+            last_blockhash_with_fee_calculator,
         );
         expect_account == account
     }
@@ -2579,8 +2574,8 @@ mod tests {
             pre_account_pubkey,
             pre_account,
             mut post_account,
-            blockhash,
-            lamports_per_signature,
+            last_blockhash,
+            last_fee_calculator,
             maybe_fee_account,
         ) = create_accounts_prepare_if_nonce_account();
         let post_account_pubkey = pre_account_pubkey;
@@ -2601,8 +2596,7 @@ mod tests {
                 maybe_fee_account.as_ref(),
                 false,
             )),
-            &blockhash,
-            lamports_per_signature,
+            &(last_blockhash, last_fee_calculator),
             &expect_account,
         ));
     }
@@ -2613,8 +2607,8 @@ mod tests {
             pre_account_pubkey,
             _pre_account,
             _post_account,
-            blockhash,
-            lamports_per_signature,
+            last_blockhash,
+            last_fee_calculator,
             _maybe_fee_account,
         ) = create_accounts_prepare_if_nonce_account();
         let post_account_pubkey = pre_account_pubkey;
@@ -2626,8 +2620,7 @@ mod tests {
             &post_account_pubkey,
             &Ok(()),
             None,
-            &blockhash,
-            lamports_per_signature,
+            &(last_blockhash, last_fee_calculator),
             &expect_account,
         ));
     }
@@ -2638,8 +2631,8 @@ mod tests {
             pre_account_pubkey,
             pre_account,
             mut post_account,
-            blockhash,
-            lamports_per_signature,
+            last_blockhash,
+            last_fee_calculator,
             maybe_fee_account,
         ) = create_accounts_prepare_if_nonce_account();
 
@@ -2655,8 +2648,7 @@ mod tests {
                 maybe_fee_account.as_ref(),
                 true,
             )),
-            &blockhash,
-            lamports_per_signature,
+            &(last_blockhash, last_fee_calculator),
             &expect_account,
         ));
     }
@@ -2667,8 +2659,8 @@ mod tests {
             pre_account_pubkey,
             pre_account,
             mut post_account,
-            blockhash,
-            lamports_per_signature,
+            last_blockhash,
+            last_fee_calculator,
             maybe_fee_account,
         ) = create_accounts_prepare_if_nonce_account();
         let post_account_pubkey = pre_account_pubkey;
@@ -2676,11 +2668,11 @@ mod tests {
         let mut expect_account = pre_account.clone();
         expect_account
             .set_state(&nonce::state::Versions::new_current(
-                nonce::State::Initialized(nonce::state::Data::new(
-                    Pubkey::default(),
-                    blockhash,
-                    lamports_per_signature,
-                )),
+                nonce::State::Initialized(nonce::state::Data {
+                    blockhash: last_blockhash,
+                    fee_calculator: last_fee_calculator.clone(),
+                    ..nonce::state::Data::default()
+                }),
             ))
             .unwrap();
 
@@ -2697,8 +2689,7 @@ mod tests {
                 maybe_fee_account.as_ref(),
                 true,
             )),
-            &blockhash,
-            lamports_per_signature,
+            &(last_blockhash, last_fee_calculator),
             &expect_account,
         ));
     }
@@ -2712,9 +2703,12 @@ mod tests {
         let from = keypair_from_seed(&[1; 32]).unwrap();
         let from_address = from.pubkey();
         let to_address = Pubkey::new_unique();
-        let nonce_state = nonce::state::Versions::new_current(nonce::State::Initialized(
-            nonce::state::Data::new(nonce_authority.pubkey(), Hash::new_unique(), 0),
-        ));
+        let nonce_state =
+            nonce::state::Versions::new_current(nonce::State::Initialized(nonce::state::Data {
+                authority: nonce_authority.pubkey(),
+                blockhash: Hash::new_unique(),
+                fee_calculator: FeeCalculator::default(),
+            }));
         let nonce_account_post =
             AccountSharedData::new_data(43, &nonce_state, &system_program::id()).unwrap();
         let from_account_post = AccountSharedData::new(4199, 0, &Pubkey::default());
@@ -2737,9 +2731,12 @@ mod tests {
         ];
         let tx = new_sanitized_tx(&[&nonce_authority, &from], message, blockhash);
 
-        let nonce_state = nonce::state::Versions::new_current(nonce::State::Initialized(
-            nonce::state::Data::new(nonce_authority.pubkey(), Hash::new_unique(), 0),
-        ));
+        let nonce_state =
+            nonce::state::Versions::new_current(nonce::State::Initialized(nonce::state::Data {
+                authority: nonce_authority.pubkey(),
+                blockhash,
+                fee_calculator: FeeCalculator::default(),
+            }));
         let nonce_account_pre =
             AccountSharedData::new_data(42, &nonce_state, &system_program::id()).unwrap();
         let from_account_pre = AccountSharedData::new(4242, 0, &Pubkey::default());
@@ -2783,8 +2780,7 @@ mod tests {
             &programs,
             loaded.as_mut_slice(),
             &rent_collector,
-            &next_blockhash,
-            0,
+            &(next_blockhash, FeeCalculator::default()),
             true,
             true, // merge_nonce_error_into_system_error
             true, // demote_program_write_locks
@@ -2806,8 +2802,8 @@ mod tests {
             .cloned()
             .unwrap();
         assert_eq!(
-            collected_nonce_account.tock(),
-            nonce_account_pre.tock(),
+            collected_nonce_account.tocks(),
+            nonce_account_pre.tocks(),
         );
         assert!(nonce_account::verify_nonce_account(
             &collected_nonce_account,
@@ -2824,9 +2820,12 @@ mod tests {
         let from = keypair_from_seed(&[1; 32]).unwrap();
         let from_address = from.pubkey();
         let to_address = Pubkey::new_unique();
-        let nonce_state = nonce::state::Versions::new_current(nonce::State::Initialized(
-            nonce::state::Data::new(nonce_authority.pubkey(), Hash::new_unique(), 0),
-        ));
+        let nonce_state =
+            nonce::state::Versions::new_current(nonce::State::Initialized(nonce::state::Data {
+                authority: nonce_authority.pubkey(),
+                blockhash: Hash::new_unique(),
+                fee_calculator: FeeCalculator::default(),
+            }));
         let nonce_account_post =
             AccountSharedData::new_data(43, &nonce_state, &system_program::id()).unwrap();
         let from_account_post = AccountSharedData::new(4200, 0, &Pubkey::default());
@@ -2849,9 +2848,12 @@ mod tests {
         ];
         let tx = new_sanitized_tx(&[&nonce_authority, &from], message, blockhash);
 
-        let nonce_state = nonce::state::Versions::new_current(nonce::State::Initialized(
-            nonce::state::Data::new(nonce_authority.pubkey(), Hash::new_unique(), 0),
-        ));
+        let nonce_state =
+            nonce::state::Versions::new_current(nonce::State::Initialized(nonce::state::Data {
+                authority: nonce_authority.pubkey(),
+                blockhash,
+                fee_calculator: FeeCalculator::default(),
+            }));
         let nonce_account_pre =
             AccountSharedData::new_data(42, &nonce_state, &system_program::id()).unwrap();
 
@@ -2894,8 +2896,7 @@ mod tests {
             &programs,
             loaded.as_mut_slice(),
             &rent_collector,
-            &next_blockhash,
-            0,
+            &(next_blockhash, FeeCalculator::default()),
             true,
             true, // merge_nonce_error_into_system_error
             true, // demote_program_write_locks
@@ -2908,8 +2909,8 @@ mod tests {
             .cloned()
             .unwrap();
         assert_eq!(
-            collected_nonce_account.tock(),
-            nonce_account_pre.tock()
+            collected_nonce_account.tocks(),
+            nonce_account_pre.tocks()
         );
         assert!(nonce_account::verify_nonce_account(
             &collected_nonce_account,

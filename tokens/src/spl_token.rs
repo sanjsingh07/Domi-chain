@@ -8,7 +8,7 @@ use analog_account_decoder::parse_token::{
     spl_token_v2_0_pubkey,
 };
 use analog_client::rpc_client::RpcClient;
-use analog_sdk::{instruction::Instruction, message::Message, native_token::tock_to_anlog};
+use analog_sdk::{instruction::Instruction, message::Message, native_token::tocks_to_anlog};
 use analog_transaction_status::parse_token::spl_token_v2_0_instruction;
 use spl_associated_token_account_v1_0::{
     create_associated_token_account, get_associated_token_address,
@@ -97,9 +97,10 @@ pub fn check_spl_token_balances(
         .expect("spl_token_args must be some");
     let allocation_amount: u64 = allocations.iter().map(|x| x.amount).sum();
 
+    let blockhash = client.get_latest_blockhash()?;
     let fees: u64 = messages
         .iter()
-        .map(|message| client.get_fee_for_message(message))
+        .map(|message| client.get_fee_for_message(&blockhash, message))
         .collect::<Result<Vec<_>, _>>()
         .unwrap()
         .iter()
@@ -112,7 +113,7 @@ pub fn check_spl_token_balances(
     if fee_payer_balance < fees + account_creation_amount {
         return Err(Error::InsufficientFunds(
             vec![FundingSource::FeePayer].into(),
-           tock_to_anlog(fees + account_creation_amount).to_string(),
+            tocks_to_anlog(fees + account_creation_amount).to_string(),
         ));
     }
     let source_token_account = client
@@ -172,7 +173,7 @@ pub fn print_token_balances(
 mod tests {
     // The following unit tests were written for v1.4 using the ProgramTest framework, passing its
     // BanksClient into the `analog-tokens` methods. With the revert to RpcClient in this module
-    // (https://github.com/analog-labs/analog/pull/13623), that approach was no longer viable.
+    // (https://github.com/analog/testnet/pull/13623), that approach was no longer viable.
     // These tests were removed rather than rewritten to avoid accruing technical debt. Once a new
     // rpc/client framework is implemented, they should be restored.
     //
@@ -180,5 +181,5 @@ mod tests {
     // async fn test_process_spl_token_transfer_amount_allocations()
     // async fn test_check_spl_token_balances()
     //
-    // https://github.com/analog-labs/analog/blob/5511d52c6284013a24ced10966d11d8f4585799e/tokens/src/spl_token.rs#L490-L685
+    // https://github.com/analog/testnet/blob/5511d52c6284013a24ced10966d11d8f4585799e/tokens/src/spl_token.rs#L490-L685
 }

@@ -136,10 +136,10 @@ impl NonceSubCommands for App<'_, '_> {
                         "Address of the nonce account to display. "),
                 )
                 .arg(
-                    Arg::with_name("tock")
-                        .long("tock")
+                    Arg::with_name("tocks")
+                        .long("tocks")
                         .takes_value(false)
-                        .help("Display balance in tock instead of ANLOG"),
+                        .help("Display balance in tocks instead of ANLOG"),
                 ),
         )
         .subcommand(
@@ -280,12 +280,12 @@ pub fn parse_show_nonce_account(
 ) -> Result<CliCommandInfo, CliError> {
     let nonce_account_pubkey =
         pubkey_of_signer(matches, "nonce_account_pubkey", wallet_manager)?.unwrap();
-    let use_lamports_unit = matches.is_present("tock");
+    let use_tocks_unit = matches.is_present("tocks");
 
     Ok(CliCommandInfo {
         command: CliCommand::ShowNonceAccount {
             nonce_account_pubkey,
-            use_lamports_unit,
+            use_tocks_unit,
         },
         signers: vec![],
     })
@@ -299,7 +299,7 @@ pub fn parse_withdraw_from_nonce_account(
     let nonce_account = pubkey_of_signer(matches, "nonce_account_pubkey", wallet_manager)?.unwrap();
     let destination_account_pubkey =
         pubkey_of_signer(matches, "destination_account_pubkey", wallet_manager)?.unwrap();
-    let tock = lamports_of_anlog(matches, "amount").unwrap();
+    let tocks = tocks_of_anlog(matches, "amount").unwrap();
     let memo = matches.value_of(MEMO_ARG.name).map(String::from);
     let (nonce_authority, nonce_authority_pubkey) =
         signer_of(matches, NONCE_AUTHORITY_ARG.name, wallet_manager)?;
@@ -317,7 +317,7 @@ pub fn parse_withdraw_from_nonce_account(
             nonce_authority: signer_info.index_of(nonce_authority_pubkey).unwrap(),
             memo,
             destination_account_pubkey,
-            tock,
+            tocks,
         },
         signers: signer_info.signers,
     })
@@ -367,6 +367,7 @@ pub fn process_authorize_nonce_account(
     check_account_for_fee_with_commitment(
         rpc_client,
         &config.signers[0].pubkey(),
+        &latest_blockhash,
         &tx.message,
         config.commitment,
     )?;
@@ -410,7 +411,7 @@ pub fn process_create_nonce_account(
 
     let nonce_authority = nonce_authority.unwrap_or_else(|| config.signers[0].pubkey());
 
-    let build_message = |tock| {
+    let build_message = |tocks| {
         let ixs = if let Some(seed) = seed.clone() {
             create_nonce_account_with_seed(
                 &config.signers[0].pubkey(), // from
@@ -418,7 +419,7 @@ pub fn process_create_nonce_account(
                 &nonce_account_pubkey,       // base
                 &seed,                       // seed
                 &nonce_authority,
-                tock,
+                tocks,
             )
             .with_memo(memo)
         } else {
@@ -426,7 +427,7 @@ pub fn process_create_nonce_account(
                 &config.signers[0].pubkey(),
                 &nonce_account_pubkey,
                 &nonce_authority,
-                tock,
+                tocks,
             )
             .with_memo(memo)
         };
@@ -435,7 +436,7 @@ pub fn process_create_nonce_account(
 
     let latest_blockhash = rpc_client.get_latest_blockhash()?;
 
-    let (message, tock) = resolve_spend_tx_and_check_account_balance(
+    let (message, tocks) = resolve_spend_tx_and_check_account_balance(
         rpc_client,
         false,
         amount,
@@ -458,10 +459,10 @@ pub fn process_create_nonce_account(
     }
 
     let minimum_balance = rpc_client.get_minimum_balance_for_rent_exemption(State::size())?;
-    if tock < minimum_balance {
+    if tocks < minimum_balance {
         return Err(CliError::BadParameter(format!(
-            "need at least {} tock for nonce account to be rent exempt, provided tock: {}",
-            minimum_balance, tock
+            "need at least {} tocks for nonce account to be rent exempt, provided tocks: {}",
+            minimum_balance, tocks
         ))
         .into());
     }
@@ -509,7 +510,6 @@ pub fn process_get_nonce(
     config: &CliConfig,
     nonce_account_pubkey: &Pubkey,
 ) -> ProcessResult {
-    #[allow(clippy::redundant_closure)]
     match get_account_with_commitment(rpc_client, nonce_account_pubkey, config.commitment)
         .and_then(|ref a| state_from_account(a))?
     {
@@ -551,6 +551,7 @@ pub fn process_new_nonce(
     check_account_for_fee_with_commitment(
         rpc_client,
         &config.signers[0].pubkey(),
+        &latest_blockhash,
         &tx.message,
         config.commitment,
     )?;
@@ -575,21 +576,21 @@ pub fn process_show_nonce_account(
     rpc_client: &RpcClient,
     config: &CliConfig,
     nonce_account_pubkey: &Pubkey,
-    use_lamports_unit: bool,
+    use_tocks_unit: bool,
 ) -> ProcessResult {
     let nonce_account =
         get_account_with_commitment(rpc_client, nonce_account_pubkey, config.commitment)?;
     let print_account = |data: Option<&nonce::state::Data>| {
         let mut nonce_account = CliNonceAccount {
-            balance: nonce_account.tock,
+            balance: nonce_account.tocks,
             minimum_balance_for_rent_exemption: rpc_client
                 .get_minimum_balance_for_rent_exemption(State::size())?,
-            use_lamports_unit,
+            use_tocks_unit,
             ..CliNonceAccount::default()
         };
         if let Some(data) = data {
             nonce_account.nonce = Some(data.blockhash.to_string());
-            nonce_account.lamports_per_signature = Some(data.fee_calculator.lamports_per_signature);
+            nonce_account.tocks_per_signature = Some(data.fee_calculator.tocks_per_signature);
             nonce_account.authority = Some(data.authority.to_string());
         }
 
@@ -608,7 +609,7 @@ pub fn process_withdraw_from_nonce_account(
     nonce_authority: SignerIndex,
     memo: Option<&String>,
     destination_account_pubkey: &Pubkey,
-    tock: u64,
+    tocks: u64,
 ) -> ProcessResult {
     let latest_blockhash = rpc_client.get_latest_blockhash()?;
 
@@ -617,7 +618,7 @@ pub fn process_withdraw_from_nonce_account(
         nonce_account,
         &nonce_authority.pubkey(),
         destination_account_pubkey,
-        tock,
+        tocks,
     )]
     .with_memo(memo);
     let message = Message::new(&ixs, Some(&config.signers[0].pubkey()));
@@ -626,6 +627,7 @@ pub fn process_withdraw_from_nonce_account(
     check_account_for_fee_with_commitment(
         rpc_client,
         &config.signers[0].pubkey(),
+        &latest_blockhash,
         &tx.message,
         config.commitment,
     )?;
@@ -653,6 +655,7 @@ mod tests {
     use analog_sdk::{
         account::Account,
         account_utils::StateMut,
+        fee_calculator::FeeCalculator,
         hash::hash,
         nonce::{self, state::Versions, State},
         nonce_account,
@@ -845,7 +848,7 @@ mod tests {
             CliCommandInfo {
                 command: CliCommand::ShowNonceAccount {
                     nonce_account_pubkey: nonce_account_keypair.pubkey(),
-                    use_lamports_unit: false,
+                    use_tocks_unit: false,
                 },
                 signers: vec![],
             }
@@ -872,7 +875,7 @@ mod tests {
                     nonce_authority: 0,
                     memo: None,
                     destination_account_pubkey: nonce_account_pubkey,
-                    tock: 42_000_000_000
+                    tocks: 42_000_000_000
                 },
                 signers: vec![read_keypair_file(&default_keypair_file).unwrap().into()],
             }
@@ -901,7 +904,7 @@ mod tests {
                     nonce_authority: 1,
                     memo: None,
                     destination_account_pubkey: nonce_account_pubkey,
-                    tock: 42_000_000_000
+                    tocks: 42_000_000_000
                 },
                 signers: vec![
                     read_keypair_file(&default_keypair_file).unwrap().into(),
@@ -915,11 +918,11 @@ mod tests {
     fn test_check_nonce_account() {
         let blockhash = Hash::default();
         let nonce_pubkey = analog_sdk::pubkey::new_rand();
-        let data = Versions::new_current(State::Initialized(nonce::state::Data::new(
-            nonce_pubkey,
+        let data = Versions::new_current(State::Initialized(nonce::state::Data {
+            authority: nonce_pubkey,
             blockhash,
-            0,
-        )));
+            fee_calculator: FeeCalculator::default(),
+        }));
         let valid = Account::new_data(1, &data, &system_program::ID);
         assert!(check_nonce_account(&valid.unwrap(), &nonce_pubkey, &blockhash).is_ok());
 
@@ -937,11 +940,11 @@ mod tests {
             assert_eq!(err, Error::InvalidAccountData,);
         }
 
-        let data = Versions::new_current(State::Initialized(nonce::state::Data::new(
-            nonce_pubkey,
-            hash(b"invalid"),
-            0,
-        )));
+        let data = Versions::new_current(State::Initialized(nonce::state::Data {
+            authority: nonce_pubkey,
+            blockhash: hash(b"invalid"),
+            fee_calculator: FeeCalculator::default(),
+        }));
         let invalid_hash = Account::new_data(1, &data, &system_program::ID);
         if let CliError::InvalidNonce(err) =
             check_nonce_account(&invalid_hash.unwrap(), &nonce_pubkey, &blockhash).unwrap_err()
@@ -949,11 +952,11 @@ mod tests {
             assert_eq!(err, Error::InvalidHash,);
         }
 
-        let data = Versions::new_current(State::Initialized(nonce::state::Data::new(
-            analog_sdk::pubkey::new_rand(),
+        let data = Versions::new_current(State::Initialized(nonce::state::Data {
+            authority: analog_sdk::pubkey::new_rand(),
             blockhash,
-            0,
-        )));
+            fee_calculator: FeeCalculator::default(),
+        }));
         let invalid_authority = Account::new_data(1, &data, &system_program::ID);
         if let CliError::InvalidNonce(err) =
             check_nonce_account(&invalid_authority.unwrap(), &nonce_pubkey, &blockhash).unwrap_err()
@@ -994,7 +997,11 @@ mod tests {
         let mut nonce_account = nonce_account::create_account(1).into_inner();
         assert_eq!(state_from_account(&nonce_account), Ok(State::Uninitialized));
 
-        let data = nonce::state::Data::new(Pubkey::new(&[1u8; 32]), Hash::new(&[42u8; 32]), 42);
+        let data = nonce::state::Data {
+            authority: Pubkey::new(&[1u8; 32]),
+            blockhash: Hash::new(&[42u8; 32]),
+            fee_calculator: FeeCalculator::new(42),
+        };
         nonce_account
             .set_state(&Versions::new_current(State::Initialized(data.clone())))
             .unwrap();
@@ -1023,7 +1030,11 @@ mod tests {
             Err(Error::InvalidStateForOperation)
         );
 
-        let data = nonce::state::Data::new(Pubkey::new(&[1u8; 32]), Hash::new(&[42u8; 32]), 42);
+        let data = nonce::state::Data {
+            authority: Pubkey::new(&[1u8; 32]),
+            blockhash: Hash::new(&[42u8; 32]),
+            fee_calculator: FeeCalculator::new(42),
+        };
         nonce_account
             .set_state(&Versions::new_current(State::Initialized(data.clone())))
             .unwrap();

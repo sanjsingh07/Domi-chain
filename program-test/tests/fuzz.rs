@@ -111,7 +111,7 @@ async fn run_fuzz_instructions(
             .await
             .expect("account exists")
             .unwrap();
-        assert!(account.tock > 0);
+        assert!(account.tocks > 0);
         assert!(!account.data.is_empty());
     }
 }

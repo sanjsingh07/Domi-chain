@@ -8,13 +8,13 @@ of different commands for each action you might want to take. You can view the l
 of all possible commands by running:
 
 ```bash
-solana --help
+analog --help
 ```
 
 To zoom in on how to use a particular command, run:
 
 ```bash
-solana <COMMAND> --help
+analog <COMMAND> --help
 ```
 
 where you replace the text `<COMMAND>` with the name of the command you want
@@ -30,11 +30,11 @@ the base58 encoding of your public key, such as
 ## Keypair conventions
 
 Many commands using the CLI tools require a value for a `<KEYPAIR>`. The value
-you should use for the keypair depends on what type of
+you should use for the keypair depend on what type of
 [command line wallet you created](../wallet-guide/cli.md).
 
-For example, the CLI help shows that the way to display any wallet's address
-(also known as the keypair's pubkey), is:
+For example, the way to display any wallet's address
+(also known as the keypair's pubkey), the CLI help document shows:
 
 ```bash
 analog-keygen pubkey <KEYPAIR>
@@ -63,10 +63,10 @@ With a file system wallet, the keypair is stored in a file on your computer.
 Replace `<KEYPAIR>` with the complete file path to the keypair file.
 
 For example, if the file system keypair file location is
-`/home/solana/my_wallet.json`, to display the address, do:
+`/home/analog/my_wallet.json`, to display the address, do:
 
 ```bash
-analog-keygen pubkey /home/solana/my_wallet.json
+analog-keygen pubkey /home/analog/my_wallet.json
 ```
 
 #### Hardware Wallet

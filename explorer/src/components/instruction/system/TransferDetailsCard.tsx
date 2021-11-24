@@ -3,8 +3,8 @@ import {
   SystemProgram,
   SignatureResult,
   ParsedInstruction,
-} from "@solana/web3.js";
-import { SolBalance } from "utils";
+} from "@analog/web3.js";
+import { AnlogBalance } from "utils";
 import { InstructionCard } from "../InstructionCard";
 import { Address } from "components/common/Address";
 import { TransferInfo } from "./types";
@@ -50,9 +50,9 @@ export function TransferDetailsCard(props: {
       </tr>
 
       <tr>
-        <td>Transfer Amount (ANLOG)</td>
+        <td>Transfer Amount (GM)</td>
         <td className="text-lg-right">
-          <SolBalance tock={info.tock} />
+          <AnlogBalance tocks={info.tocks} />
         </td>
       </tr>
     </InstructionCard>

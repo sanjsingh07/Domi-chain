@@ -9,7 +9,7 @@ use std::{
     collections::{HashMap, HashSet},
     sync::{Arc, RwLock},
 };
-
+    
 pub struct SelectVoteAndResetForkResult {
     pub vote_bank: Option<(Arc<Bank>, SwitchForkDecision)>,
     pub reset_bank: Option<Arc<Bank>>,

@@ -1,9 +1,9 @@
 use crate::{
     clock::{Epoch, INITIAL_RENT_EPOCH},
-    tock::LamportsError,
+    tocks::TocksError,
     pubkey::Pubkey,
 };
-use solana_program::{account_info::AccountInfo, sysvar::Sysvar};
+use analog_program::{account_info::AccountInfo, sysvar::Sysvar};
 use std::{cell::Ref, cell::RefCell, cmp, fmt, rc::Rc, sync::Arc};
 
 /// An Account with data that is stored on chain
@@ -12,8 +12,8 @@ use std::{cell::Ref, cell::RefCell, cmp, fmt, rc::Rc, sync::Arc};
 #[derive(Serialize, Deserialize, PartialEq, Eq, Clone, Default, AbiExample)]
 #[serde(rename_all = "camelCase")]
 pub struct Account {
-    /// tock in the account
-    pub tock: u64,
+    /// tocks in the account
+    pub tocks: u64,
     /// data held in this account
     #[serde(with = "serde_bytes")]
     pub data: Vec<u8>,
@@ -30,8 +30,8 @@ pub struct Account {
 /// The existing 'Account' structure cannot easily change due to downstream projects.
 #[derive(PartialEq, Eq, Clone, Default, AbiExample)]
 pub struct AccountSharedData {
-    /// tock in the account
-    tock: u64,
+    /// tocks in the account
+    tocks: u64,
     /// data held in this account
     data: Arc<Vec<u8>>,
     /// the program that owns this account. If executable, the program that loads this account.
@@ -46,7 +46,7 @@ pub struct AccountSharedData {
 ///
 /// Returns true if accounts are essentially equivalent as in all fields are equivalent.
 pub fn accounts_equal<T: ReadableAccount, U: ReadableAccount>(me: &T, other: &U) -> bool {
-    me.tock() == other.tock()
+    me.tocks() == other.tocks()
         && me.data() == other.data()
         && me.owner() == other.owner()
         && me.executable() == other.executable()
@@ -57,7 +57,7 @@ impl From<AccountSharedData> for Account {
     fn from(mut other: AccountSharedData) -> Self {
         let account_data = Arc::make_mut(&mut other.data);
         Self {
-            tock: other.tock,
+            tocks: other.tocks,
             data: std::mem::take(account_data),
             owner: other.owner,
             executable: other.executable,
@@ -69,7 +69,7 @@ impl From<AccountSharedData> for Account {
 impl From<Account> for AccountSharedData {
     fn from(other: Account) -> Self {
         Self {
-            tock: other.tock,
+            tocks: other.tocks,
             data: Arc::new(other.data),
             owner: other.owner,
             executable: other.executable,
@@ -79,20 +79,20 @@ impl From<Account> for AccountSharedData {
 }
 
 pub trait WritableAccount: ReadableAccount {
-    fn set_lamports(&mut self, tock: u64);
-    fn checked_add_lamports(&mut self, tock: u64) -> Result<(), LamportsError> {
-        self.set_lamports(
-            self.tock()
-                .checked_add(tock)
-                .ok_or(LamportsError::ArithmeticOverflow)?,
+    fn set_tocks(&mut self, tocks: u64);
+    fn checked_add_tocks(&mut self, tocks: u64) -> Result<(), TocksError> {
+        self.set_tocks(
+            self.tocks()
+                .checked_add(tocks)
+                .ok_or(TocksError::ArithmeticOverflow)?,
         );
         Ok(())
     }
-    fn checked_sub_lamports(&mut self, tock: u64) -> Result<(), LamportsError> {
-        self.set_lamports(
-            self.tock()
-                .checked_sub(tock)
-                .ok_or(LamportsError::ArithmeticUnderflow)?,
+    fn checked_sub_tocks(&mut self, tocks: u64) -> Result<(), TocksError> {
+        self.set_tocks(
+            self.tocks()
+                .checked_sub(tocks)
+                .ok_or(TocksError::ArithmeticUnderflow)?,
         );
         Ok(())
     }
@@ -102,7 +102,7 @@ pub trait WritableAccount: ReadableAccount {
     fn set_executable(&mut self, executable: bool);
     fn set_rent_epoch(&mut self, epoch: Epoch);
     fn create(
-        tock: u64,
+        tocks: u64,
         data: Vec<u8>,
         owner: Pubkey,
         executable: bool,
@@ -111,14 +111,14 @@ pub trait WritableAccount: ReadableAccount {
 }
 
 pub trait ReadableAccount: Sized {
-    fn tock(&self) -> u64;
+    fn tocks(&self) -> u64;
     fn data(&self) -> &[u8];
     fn owner(&self) -> &Pubkey;
     fn executable(&self) -> bool;
     fn rent_epoch(&self) -> Epoch;
     fn to_account_shared_data(&self) -> AccountSharedData {
         AccountSharedData::create(
-            self.tock(),
+            self.tocks(),
             self.data().to_vec(),
             *self.owner(),
             self.executable(),
@@ -128,8 +128,8 @@ pub trait ReadableAccount: Sized {
 }
 
 impl ReadableAccount for Account {
-    fn tock(&self) -> u64 {
-        self.tock
+    fn tocks(&self) -> u64 {
+        self.tocks
     }
     fn data(&self) -> &[u8] {
         &self.data
@@ -146,8 +146,8 @@ impl ReadableAccount for Account {
 }
 
 impl WritableAccount for Account {
-    fn set_lamports(&mut self, tock: u64) {
-        self.tock = tock;
+    fn set_tocks(&mut self, tocks: u64) {
+        self.tocks = tocks;
     }
     fn data_as_mut_slice(&mut self) -> &mut [u8] {
         &mut self.data
@@ -165,14 +165,14 @@ impl WritableAccount for Account {
         self.rent_epoch = epoch;
     }
     fn create(
-        tock: u64,
+        tocks: u64,
         data: Vec<u8>,
         owner: Pubkey,
         executable: bool,
         rent_epoch: Epoch,
     ) -> Self {
         Account {
-            tock,
+            tocks,
             data,
             owner,
             executable,
@@ -182,8 +182,8 @@ impl WritableAccount for Account {
 }
 
 impl WritableAccount for AccountSharedData {
-    fn set_lamports(&mut self, tock: u64) {
-        self.tock = tock;
+    fn set_tocks(&mut self, tocks: u64) {
+        self.tocks = tocks;
     }
     fn data_as_mut_slice(&mut self) -> &mut [u8] {
         let data = Arc::make_mut(&mut self.data);
@@ -202,14 +202,14 @@ impl WritableAccount for AccountSharedData {
         self.rent_epoch = epoch;
     }
     fn create(
-        tock: u64,
+        tocks: u64,
         data: Vec<u8>,
         owner: Pubkey,
         executable: bool,
         rent_epoch: Epoch,
     ) -> Self {
         AccountSharedData {
-            tock,
+            tocks,
             data: Arc::new(data),
             owner,
             executable,
@@ -219,8 +219,8 @@ impl WritableAccount for AccountSharedData {
 }
 
 impl ReadableAccount for AccountSharedData {
-    fn tock(&self) -> u64 {
-        self.tock
+    fn tocks(&self) -> u64 {
+        self.tocks
     }
     fn data(&self) -> &[u8] {
         &self.data
@@ -237,8 +237,8 @@ impl ReadableAccount for AccountSharedData {
 }
 
 impl ReadableAccount for Ref<'_, AccountSharedData> {
-    fn tock(&self) -> u64 {
-        self.tock
+    fn tocks(&self) -> u64 {
+        self.tocks
     }
     fn data(&self) -> &[u8] {
         &self.data
@@ -255,8 +255,8 @@ impl ReadableAccount for Ref<'_, AccountSharedData> {
 }
 
 impl ReadableAccount for Ref<'_, Account> {
-    fn tock(&self) -> u64 {
-        self.tock
+    fn tocks(&self) -> u64 {
+        self.tocks
     }
     fn data(&self) -> &[u8] {
         &self.data
@@ -281,8 +281,8 @@ fn debug_fmt<T: ReadableAccount>(item: &T, f: &mut fmt::Formatter<'_>) -> fmt::R
     };
     write!(
         f,
-        "Account {{ tock: {} data.len: {} owner: {} executable: {} rent_epoch: {}{} }}",
-        item.tock(),
+        "Account {{ tocks: {} data.len: {} owner: {} executable: {} rent_epoch: {}{} }}",
+        item.tocks(),
         item.data().len(),
         item.owner(),
         item.executable(),
@@ -303,9 +303,9 @@ impl fmt::Debug for AccountSharedData {
     }
 }
 
-fn shared_new<T: WritableAccount>(tock: u64, space: usize, owner: &Pubkey) -> T {
+fn shared_new<T: WritableAccount>(tocks: u64, space: usize, owner: &Pubkey) -> T {
     T::create(
-        tock,
+        tocks,
         vec![0u8; space],
         *owner,
         bool::default(),
@@ -314,21 +314,21 @@ fn shared_new<T: WritableAccount>(tock: u64, space: usize, owner: &Pubkey) -> T 
 }
 
 fn shared_new_ref<T: WritableAccount>(
-    tock: u64,
+    tocks: u64,
     space: usize,
     owner: &Pubkey,
 ) -> Rc<RefCell<T>> {
-    Rc::new(RefCell::new(shared_new::<T>(tock, space, owner)))
+    Rc::new(RefCell::new(shared_new::<T>(tocks, space, owner)))
 }
 
 fn shared_new_data<T: serde::Serialize, U: WritableAccount>(
-    tock: u64,
+    tocks: u64,
     state: &T,
     owner: &Pubkey,
 ) -> Result<U, bincode::Error> {
     let data = bincode::serialize(state)?;
     Ok(U::create(
-        tock,
+        tocks,
         data,
         *owner,
         bool::default(),
@@ -336,35 +336,35 @@ fn shared_new_data<T: serde::Serialize, U: WritableAccount>(
     ))
 }
 fn shared_new_ref_data<T: serde::Serialize, U: WritableAccount>(
-    tock: u64,
+    tocks: u64,
     state: &T,
     owner: &Pubkey,
 ) -> Result<RefCell<U>, bincode::Error> {
     Ok(RefCell::new(shared_new_data::<T, U>(
-        tock, state, owner,
+        tocks, state, owner,
     )?))
 }
 
 fn shared_new_data_with_space<T: serde::Serialize, U: WritableAccount>(
-    tock: u64,
+    tocks: u64,
     state: &T,
     space: usize,
     owner: &Pubkey,
 ) -> Result<U, bincode::Error> {
-    let mut account = shared_new::<U>(tock, space, owner);
+    let mut account = shared_new::<U>(tocks, space, owner);
 
     shared_serialize_data(&mut account, state)?;
 
     Ok(account)
 }
 fn shared_new_ref_data_with_space<T: serde::Serialize, U: WritableAccount>(
-    tock: u64,
+    tocks: u64,
     state: &T,
     space: usize,
     owner: &Pubkey,
 ) -> Result<RefCell<U>, bincode::Error> {
     Ok(RefCell::new(shared_new_data_with_space::<T, U>(
-        tock, state, space, owner,
+        tocks, state, space, owner,
     )?))
 }
 
@@ -385,41 +385,41 @@ fn shared_serialize_data<T: serde::Serialize, U: WritableAccount>(
 }
 
 impl Account {
-    pub fn new(tock: u64, space: usize, owner: &Pubkey) -> Self {
-        shared_new(tock, space, owner)
+    pub fn new(tocks: u64, space: usize, owner: &Pubkey) -> Self {
+        shared_new(tocks, space, owner)
     }
-    pub fn new_ref(tock: u64, space: usize, owner: &Pubkey) -> Rc<RefCell<Self>> {
-        shared_new_ref(tock, space, owner)
+    pub fn new_ref(tocks: u64, space: usize, owner: &Pubkey) -> Rc<RefCell<Self>> {
+        shared_new_ref(tocks, space, owner)
     }
     pub fn new_data<T: serde::Serialize>(
-        tock: u64,
+        tocks: u64,
         state: &T,
         owner: &Pubkey,
     ) -> Result<Self, bincode::Error> {
-        shared_new_data(tock, state, owner)
+        shared_new_data(tocks, state, owner)
     }
     pub fn new_ref_data<T: serde::Serialize>(
-        tock: u64,
+        tocks: u64,
         state: &T,
         owner: &Pubkey,
     ) -> Result<RefCell<Self>, bincode::Error> {
-        shared_new_ref_data(tock, state, owner)
+        shared_new_ref_data(tocks, state, owner)
     }
     pub fn new_data_with_space<T: serde::Serialize>(
-        tock: u64,
+        tocks: u64,
         state: &T,
         space: usize,
         owner: &Pubkey,
     ) -> Result<Self, bincode::Error> {
-        shared_new_data_with_space(tock, state, space, owner)
+        shared_new_data_with_space(tocks, state, space, owner)
     }
     pub fn new_ref_data_with_space<T: serde::Serialize>(
-        tock: u64,
+        tocks: u64,
         state: &T,
         space: usize,
         owner: &Pubkey,
     ) -> Result<RefCell<Self>, bincode::Error> {
-        shared_new_ref_data_with_space(tock, state, space, owner)
+        shared_new_ref_data_with_space(tocks, state, space, owner)
     }
     pub fn deserialize_data<T: serde::de::DeserializeOwned>(&self) -> Result<T, bincode::Error> {
         shared_deserialize_data(self)
@@ -441,41 +441,41 @@ impl AccountSharedData {
     pub fn set_data(&mut self, data: Vec<u8>) {
         self.data = Arc::new(data);
     }
-    pub fn new(tock: u64, space: usize, owner: &Pubkey) -> Self {
-        shared_new(tock, space, owner)
+    pub fn new(tocks: u64, space: usize, owner: &Pubkey) -> Self {
+        shared_new(tocks, space, owner)
     }
-    pub fn new_ref(tock: u64, space: usize, owner: &Pubkey) -> Rc<RefCell<Self>> {
-        shared_new_ref(tock, space, owner)
+    pub fn new_ref(tocks: u64, space: usize, owner: &Pubkey) -> Rc<RefCell<Self>> {
+        shared_new_ref(tocks, space, owner)
     }
     pub fn new_data<T: serde::Serialize>(
-        tock: u64,
+        tocks: u64,
         state: &T,
         owner: &Pubkey,
     ) -> Result<Self, bincode::Error> {
-        shared_new_data(tock, state, owner)
+        shared_new_data(tocks, state, owner)
     }
     pub fn new_ref_data<T: serde::Serialize>(
-        tock: u64,
+        tocks: u64,
         state: &T,
         owner: &Pubkey,
     ) -> Result<RefCell<Self>, bincode::Error> {
-        shared_new_ref_data(tock, state, owner)
+        shared_new_ref_data(tocks, state, owner)
     }
     pub fn new_data_with_space<T: serde::Serialize>(
-        tock: u64,
+        tocks: u64,
         state: &T,
         space: usize,
         owner: &Pubkey,
     ) -> Result<Self, bincode::Error> {
-        shared_new_data_with_space(tock, state, space, owner)
+        shared_new_data_with_space(tocks, state, space, owner)
     }
     pub fn new_ref_data_with_space<T: serde::Serialize>(
-        tock: u64,
+        tocks: u64,
         state: &T,
         space: usize,
         owner: &Pubkey,
     ) -> Result<RefCell<Self>, bincode::Error> {
-        shared_new_ref_data_with_space(tock, state, space, owner)
+        shared_new_ref_data_with_space(tocks, state, space, owner)
     }
     pub fn deserialize_data<T: serde::de::DeserializeOwned>(&self) -> Result<T, bincode::Error> {
         shared_deserialize_data(self)
@@ -493,16 +493,16 @@ pub const DUMMY_INHERITABLE_ACCOUNT_FIELDS: InheritableAccountFields = (1, INITI
     since = "1.5.17",
     note = "Please use `create_account_for_test` instead"
 )]
-pub fn create_account<S: Sysvar>(sysvar: &S, tock: u64) -> Account {
-    create_account_with_fields(sysvar, (tock, INITIAL_RENT_EPOCH))
+pub fn create_account<S: Sysvar>(sysvar: &S, tocks: u64) -> Account {
+    create_account_with_fields(sysvar, (tocks, INITIAL_RENT_EPOCH))
 }
 
 pub fn create_account_with_fields<S: Sysvar>(
     sysvar: &S,
-    (tock, rent_epoch): InheritableAccountFields,
+    (tocks, rent_epoch): InheritableAccountFields,
 ) -> Account {
     let data_len = S::size_of().max(bincode::serialized_size(sysvar).unwrap() as usize);
-    let mut account = Account::new(tock, data_len, &solana_program::sysvar::id());
+    let mut account = Account::new(tocks, data_len, &analog_program::sysvar::id());
     to_account::<S, Account>(sysvar, &mut account).unwrap();
     account.rent_epoch = rent_epoch;
     account
@@ -517,10 +517,10 @@ pub fn create_account_for_test<S: Sysvar>(sysvar: &S) -> Account {
     since = "1.5.17",
     note = "Please use `create_account_shared_data_for_test` instead"
 )]
-pub fn create_account_shared_data<S: Sysvar>(sysvar: &S, tock: u64) -> AccountSharedData {
+pub fn create_account_shared_data<S: Sysvar>(sysvar: &S, tocks: u64) -> AccountSharedData {
     AccountSharedData::from(create_account_with_fields(
         sysvar,
-        (tock, INITIAL_RENT_EPOCH),
+        (tocks, INITIAL_RENT_EPOCH),
     ))
 }
 
@@ -550,10 +550,10 @@ pub fn to_account<S: Sysvar, T: WritableAccount>(sysvar: &S, account: &mut T) ->
 
 /// Return the information required to construct an `AccountInfo`.  Used by the
 /// `AccountInfo` conversion implementations.
-impl solana_program::account_info::Account for Account {
+impl analog_program::account_info::Account for Account {
     fn get(&mut self) -> (&mut u64, &mut [u8], &Pubkey, bool, Epoch) {
         (
-            &mut self.tock,
+            &mut self.tocks,
             &mut self.data,
             &self.owner,
             self.executable,
@@ -573,7 +573,7 @@ pub fn create_is_signer_account_infos<'a>(
                 key,
                 *is_signer,
                 false,
-                &mut account.tock,
+                &mut account.tocks,
                 &mut account.data,
                 &account.owner,
                 account.executable,
@@ -694,8 +694,8 @@ pub mod tests {
         let (account1, account2) = make_two_accounts(&key);
         assert!(accounts_equal(&account1, &account2));
         let account = account1;
-        assert_eq!(account.tock, 1);
-        assert_eq!(account.tock(), 1);
+        assert_eq!(account.tocks, 1);
+        assert_eq!(account.tocks(), 1);
         assert_eq!(account.data.len(), 2);
         assert_eq!(account.data().len(), 2);
         assert_eq!(account.owner, key);
@@ -705,8 +705,8 @@ pub mod tests {
         assert_eq!(account.rent_epoch, 4);
         assert_eq!(account.rent_epoch(), 4);
         let account = account2;
-        assert_eq!(account.tock, 1);
-        assert_eq!(account.tock(), 1);
+        assert_eq!(account.tocks, 1);
+        assert_eq!(account.tocks(), 1);
         assert_eq!(account.data.len(), 2);
         assert_eq!(account.data().len(), 2);
         assert_eq!(account.owner, key);
@@ -747,50 +747,50 @@ pub mod tests {
     }
 
     #[test]
-    fn test_account_add_sub_lamports() {
+    fn test_account_add_sub_tocks() {
         let key = Pubkey::new_unique();
         let (mut account1, mut account2) = make_two_accounts(&key);
         assert!(accounts_equal(&account1, &account2));
-        account1.checked_add_lamports(1).unwrap();
-        account2.checked_add_lamports(1).unwrap();
+        account1.checked_add_tocks(1).unwrap();
+        account2.checked_add_tocks(1).unwrap();
         assert!(accounts_equal(&account1, &account2));
-        assert_eq!(account1.tock(), 2);
-        account1.checked_sub_lamports(2).unwrap();
-        account2.checked_sub_lamports(2).unwrap();
+        assert_eq!(account1.tocks(), 2);
+        account1.checked_sub_tocks(2).unwrap();
+        account2.checked_sub_tocks(2).unwrap();
         assert!(accounts_equal(&account1, &account2));
-        assert_eq!(account1.tock(), 0);
+        assert_eq!(account1.tocks(), 0);
     }
 
     #[test]
     #[should_panic(expected = "Overflow")]
-    fn test_account_checked_add_lamports_overflow() {
+    fn test_account_checked_add_tocks_overflow() {
         let key = Pubkey::new_unique();
         let (mut account1, _account2) = make_two_accounts(&key);
-        account1.checked_add_lamports(u64::MAX).unwrap();
+        account1.checked_add_tocks(u64::MAX).unwrap();
     }
 
     #[test]
     #[should_panic(expected = "Underflow")]
-    fn test_account_checked_sub_lamports_underflow() {
+    fn test_account_checked_sub_tocks_underflow() {
         let key = Pubkey::new_unique();
         let (mut account1, _account2) = make_two_accounts(&key);
-        account1.checked_sub_lamports(u64::MAX).unwrap();
+        account1.checked_sub_tocks(u64::MAX).unwrap();
     }
 
     #[test]
     #[should_panic(expected = "Overflow")]
-    fn test_account_checked_add_lamports_overflow2() {
+    fn test_account_checked_add_tocks_overflow2() {
         let key = Pubkey::new_unique();
         let (_account1, mut account2) = make_two_accounts(&key);
-        account2.checked_add_lamports(u64::MAX).unwrap();
+        account2.checked_add_tocks(u64::MAX).unwrap();
     }
 
     #[test]
     #[should_panic(expected = "Underflow")]
-    fn test_account_checked_sub_lamports_underflow2() {
+    fn test_account_checked_sub_tocks_underflow2() {
         let key = Pubkey::new_unique();
         let (_account1, mut account2) = make_two_accounts(&key);
-        account2.checked_sub_lamports(u64::MAX).unwrap();
+        account2.checked_sub_tocks(u64::MAX).unwrap();
     }
 
     #[test]
@@ -810,15 +810,15 @@ pub mod tests {
             for pass in 0..4 {
                 if field_index == 0 {
                     if pass == 0 {
-                        account1.checked_add_lamports(1).unwrap();
+                        account1.checked_add_tocks(1).unwrap();
                     } else if pass == 1 {
-                        account_expected.checked_add_lamports(1).unwrap();
-                        account2.set_lamports(account2.tock + 1);
+                        account_expected.checked_add_tocks(1).unwrap();
+                        account2.set_tocks(account2.tocks + 1);
                     } else if pass == 2 {
-                        account1.set_lamports(account1.tock + 1);
+                        account1.set_tocks(account1.tocks + 1);
                     } else if pass == 3 {
-                        account_expected.checked_add_lamports(1).unwrap();
-                        account2.checked_add_lamports(1).unwrap();
+                        account_expected.checked_add_tocks(1).unwrap();
+                        account2.checked_add_tocks(1).unwrap();
                     }
                 } else if field_index == 1 {
                     if pass == 0 {
@@ -877,13 +877,13 @@ pub mod tests {
                 if should_be_equal {
                     assert!(accounts_equal(
                         &Account::new_ref(
-                            account_expected.tock(),
+                            account_expected.tocks(),
                             account_expected.data().len(),
                             account_expected.owner()
                         )
                         .borrow(),
                         &AccountSharedData::new_ref(
-                            account_expected.tock(),
+                            account_expected.tocks(),
                             account_expected.data().len(),
                             account_expected.owner()
                         )
@@ -893,13 +893,13 @@ pub mod tests {
                     {
                         // test new_data
                         let account1_with_data = Account::new_data(
-                            account_expected.tock(),
+                            account_expected.tocks(),
                             &account_expected.data()[0],
                             account_expected.owner(),
                         )
                         .unwrap();
                         let account2_with_data = AccountSharedData::new_data(
-                            account_expected.tock(),
+                            account_expected.tocks(),
                             &account_expected.data()[0],
                             account_expected.owner(),
                         )
@@ -915,14 +915,14 @@ pub mod tests {
                     // test new_data_with_space
                     assert!(accounts_equal(
                         &Account::new_data_with_space(
-                            account_expected.tock(),
+                            account_expected.tocks(),
                             &account_expected.data()[0],
                             1,
                             account_expected.owner()
                         )
                         .unwrap(),
                         &AccountSharedData::new_data_with_space(
-                            account_expected.tock(),
+                            account_expected.tocks(),
                             &account_expected.data()[0],
                             1,
                             account_expected.owner()
@@ -933,14 +933,14 @@ pub mod tests {
                     // test new_ref_data
                     assert!(accounts_equal(
                         &Account::new_ref_data(
-                            account_expected.tock(),
+                            account_expected.tocks(),
                             &account_expected.data()[0],
                             account_expected.owner()
                         )
                         .unwrap()
                         .borrow(),
                         &AccountSharedData::new_ref_data(
-                            account_expected.tock(),
+                            account_expected.tocks(),
                             &account_expected.data()[0],
                             account_expected.owner()
                         )
@@ -951,7 +951,7 @@ pub mod tests {
                     //new_ref_data_with_space
                     assert!(accounts_equal(
                         &Account::new_ref_data_with_space(
-                            account_expected.tock(),
+                            account_expected.tocks(),
                             &account_expected.data()[0],
                             1,
                             account_expected.owner()
@@ -959,7 +959,7 @@ pub mod tests {
                         .unwrap()
                         .borrow(),
                         &AccountSharedData::new_ref_data_with_space(
-                            account_expected.tock(),
+                            account_expected.tocks(),
                             &account_expected.data()[0],
                             1,
                             account_expected.owner()

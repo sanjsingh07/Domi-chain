@@ -14,7 +14,6 @@ use {
         consensus::{
             ComputedBankState, Stake, SwitchForkDecision, Tower, VotedStakes, SWITCH_FORK_THRESHOLD,
         },
-        cost_update_service::CostUpdate,
         fork_choice::{ForkChoice, SelectVoteAndResetForkResult},
         heaviest_subtree_fork_choice::HeaviestSubtreeForkChoice,
         latest_validator_votes_for_frozen_banks::LatestValidatorVotesForFrozenBanks,
@@ -44,7 +43,7 @@ use {
     },
     analog_runtime::{
         accounts_background_service::AbsRequestSender, bank::Bank, bank::ExecuteTimings,
-        bank::NewBankOptions, bank_forks::BankForks, commitment::BlockCommitmentCache,
+        bank_forks::BankForks, commitment::BlockCommitmentCache,
         vote_sender_types::ReplayVoteSender,
     },
     analog_sdk::{
@@ -133,7 +132,6 @@ pub struct ReplayStageConfig {
     pub wait_for_vote_to_start_leader: bool,
     pub ancestor_hashes_replay_update_sender: AncestorHashesReplayUpdateSender,
     pub tower_storage: Arc<dyn TowerStorage>,
-    pub disable_epoch_boundary_optimization: bool,
 }
 
 #[derive(Default)]
@@ -324,7 +322,7 @@ impl ReplayStage {
         gossip_duplicate_confirmed_slots_receiver: GossipDuplicateConfirmedSlotsReceiver,
         gossip_verified_vote_hash_receiver: GossipVerifiedVoteHashReceiver,
         cluster_slots_update_sender: ClusterSlotsUpdateSender,
-        cost_update_sender: Sender<CostUpdate>,
+        cost_update_sender: Sender<ExecuteTimings>,
         voting_sender: Sender<VoteOp>,
     ) -> Self {
         let ReplayStageConfig {
@@ -343,7 +341,6 @@ impl ReplayStage {
             wait_for_vote_to_start_leader,
             ancestor_hashes_replay_update_sender,
             tower_storage,
-            disable_epoch_boundary_optimization,
         } = config;
 
         trace!("replay stage");
@@ -772,7 +769,6 @@ impl ReplayStage {
                             &retransmit_slots_sender,
                             &mut skipped_slots_info,
                             has_new_vote_been_rooted,
-                            disable_epoch_boundary_optimization,
                         );
 
                         let poh_bank = poh_recorder.lock().unwrap().bank();
@@ -1345,7 +1341,6 @@ impl ReplayStage {
         }
     }
 
-    #[allow(clippy::too_many_arguments)]
     fn maybe_start_leader(
         my_pubkey: &Pubkey,
         bank_forks: &Arc<RwLock<BankForks>>,
@@ -1356,7 +1351,6 @@ impl ReplayStage {
         retransmit_slots_sender: &RetransmitSlotsSender,
         skipped_slots_info: &mut SkippedSlotsInfo,
         has_new_vote_been_rooted: bool,
-        disable_epoch_boundary_optimization: bool,
     ) {
         // all the individual calls to poh_recorder.lock() are designed to
         // increase granularity, decrease contention
@@ -1474,10 +1468,7 @@ impl ReplayStage {
                 root_slot,
                 my_pubkey,
                 rpc_subscriptions,
-                NewBankOptions {
-                    vote_only_bank,
-                    disable_epoch_boundary_optimization,
-                },
+                vote_only_bank,
             );
 
             let tpu_bank = bank_forks.write().unwrap().insert(tpu_bank);
@@ -1987,7 +1978,7 @@ impl ReplayStage {
         unfrozen_gossip_verified_vote_hashes: &mut UnfrozenGossipVerifiedVoteHashes,
         latest_validator_votes_for_frozen_banks: &mut LatestValidatorVotesForFrozenBanks,
         cluster_slots_update_sender: &ClusterSlotsUpdateSender,
-        cost_update_sender: &Sender<CostUpdate>,
+        cost_update_sender: &Sender<ExecuteTimings>,
         duplicate_slots_to_repair: &mut DuplicateSlotsToRepair,
         ancestor_hashes_replay_update_sender: &AncestorHashesReplayUpdateSender,
     ) -> bool {
@@ -2085,13 +2076,6 @@ impl ReplayStage {
                     transaction_status_sender.send_transaction_status_freeze_message(&bank);
                 }
                 bank.freeze();
-                // report cost tracker stats
-                cost_update_sender
-                    .send(CostUpdate::FrozenBank { bank: bank.clone() })
-                    .unwrap_or_else(|err| {
-                        warn!("cost_update_sender failed sending bank stats: {:?}", err)
-                    });
-
                 let bank_hash = bank.hash();
                 assert_ne!(bank_hash, Hash::default());
                 // Needs to be updated before `check_slot_agrees_with_cluster()` so that
@@ -2158,7 +2142,7 @@ impl ReplayStage {
         // send accumulated excute-timings to cost_update_service
         if !execute_timings.details.per_program_timings.is_empty() {
             cost_update_sender
-                .send(CostUpdate::ExecuteTiming { execute_timings })
+                .send(execute_timings)
                 .unwrap_or_else(|err| warn!("cost_update_sender failed: {:?}", err));
         }
 
@@ -2810,7 +2794,7 @@ impl ReplayStage {
                     forks.root(),
                     &leader,
                     rpc_subscriptions,
-                    NewBankOptions::default(),
+                    false,
                 );
                 let empty: Vec<Pubkey> = vec![];
                 Self::update_fork_propagated_threshold_from_votes(
@@ -2837,10 +2821,10 @@ impl ReplayStage {
         root_slot: u64,
         leader: &Pubkey,
         rpc_subscriptions: &Arc<RpcSubscriptions>,
-        new_bank_options: NewBankOptions,
+        vote_only_bank: bool,
     ) -> Bank {
         rpc_subscriptions.notify_slot(slot, parent.slot(), root_slot);
-        Bank::new_from_parent_with_options(parent, leader, slot, new_bank_options)
+        Bank::new_from_parent_with_vote_only(parent, leader, slot, vote_only_bank)
     }
 
     fn record_rewards(bank: &Bank, rewards_recorder_sender: &Option<RewardsRecorderSender>) {
@@ -3543,7 +3527,7 @@ pub mod tests {
             let bank1 = Bank::new_from_parent(&bank0, &Pubkey::default(), 1);
             bank_forks.write().unwrap().insert(bank1);
             let bank1 = bank_forks.read().unwrap().get(1).cloned().unwrap();
-            let bank1_progress = progress
+            let mut bank1_progress = progress
                 .entry(bank1.slot())
                 .or_insert_with(|| ForkProgress::new(bank1.last_blockhash(), None, None, 0, 0));
             let shreds = shred_to_insert(
@@ -3556,7 +3540,7 @@ pub mod tests {
             let res = ReplayStage::replay_blockstore_into_bank(
                 &bank1,
                 &blockstore,
-                bank1_progress,
+                &mut bank1_progress,
                 None,
                 &replay_vote_sender,
                 &VerifyRecyclers::default(),
@@ -3612,9 +3596,9 @@ pub mod tests {
         }
 
         let leader_pubkey = analog_sdk::pubkey::new_rand();
-        let leader_lamports = 3;
+        let leader_tocks = 3;
         let genesis_config_info =
-            create_genesis_config_with_leader(50, &leader_pubkey, leader_lamports);
+            create_genesis_config_with_leader(50, &leader_pubkey, leader_tocks);
         let mut genesis_config = genesis_config_info.genesis_config;
         let leader_voting_pubkey = genesis_config_info.voting_keypair.pubkey();
         genesis_config.epoch_schedule.warmup = false;
@@ -3669,7 +3653,7 @@ pub mod tests {
             ReplayStage::update_commitment_cache(
                 arc_bank.clone(),
                 0,
-                leader_lamports,
+                leader_tocks,
                 &lockouts_sender,
             );
             arc_bank.freeze();
@@ -3690,7 +3674,7 @@ pub mod tests {
         }
 
         let mut expected0 = BlockCommitment::default();
-        expected0.increase_confirmation_stake(3, leader_lamports);
+        expected0.increase_confirmation_stake(3, leader_tocks);
         assert_eq!(
             block_commitment_cache
                 .read()
@@ -3700,7 +3684,7 @@ pub mod tests {
             &expected0,
         );
         let mut expected1 = BlockCommitment::default();
-        expected1.increase_confirmation_stake(2, leader_lamports);
+        expected1.increase_confirmation_stake(2, leader_tocks);
         assert_eq!(
             block_commitment_cache
                 .read()
@@ -3710,7 +3694,7 @@ pub mod tests {
             &expected1
         );
         let mut expected2 = BlockCommitment::default();
-        expected2.increase_confirmation_stake(1, leader_lamports);
+        expected2.increase_confirmation_stake(1, leader_tocks);
         assert_eq!(
             block_commitment_cache
                 .read()
@@ -3931,7 +3915,7 @@ pub mod tests {
             .values()
             .cloned()
             .collect();
-        let heaviest_subtree_fork_choice = &mut vote_simulator.heaviest_subtree_fork_choice;
+        let mut heaviest_subtree_fork_choice = &mut vote_simulator.heaviest_subtree_fork_choice;
         let mut latest_validator_votes_for_frozen_banks =
             LatestValidatorVotesForFrozenBanks::default();
         let ancestors = vote_simulator.bank_forks.read().unwrap().ancestors();
@@ -3946,7 +3930,7 @@ pub mod tests {
             &VoteTracker::default(),
             &ClusterSlots::default(),
             &vote_simulator.bank_forks,
-            heaviest_subtree_fork_choice,
+            &mut heaviest_subtree_fork_choice,
             &mut latest_validator_votes_for_frozen_banks,
         );
 
@@ -5629,7 +5613,6 @@ pub mod tests {
             &poh_recorder,
             &tower_storage,
             vote_info,
-            false,
         );
 
         let mut cursor = Cursor::default();
@@ -5693,7 +5676,6 @@ pub mod tests {
             &poh_recorder,
             &tower_storage,
             vote_info,
-            false,
         );
         let (_, votes) = cluster_info.get_votes(&mut cursor);
         assert_eq!(votes.len(), 1);
@@ -5761,7 +5743,6 @@ pub mod tests {
             &poh_recorder,
             &tower_storage,
             vote_info,
-            false,
         );
 
         assert!(last_vote_refresh_time.last_refresh_time > clone_refresh_time);

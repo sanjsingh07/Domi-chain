@@ -26,7 +26,7 @@ A cluster is a set of computers that work together and can be viewed from the ou
 
 ## What are SOLs?
 
-A ANLOG is the name of Analog's native token, which can be passed to nodes in a Analog cluster in exchange for running an on-chain program or validating its output. The system may perform micropayments of fractional SOLs, which are called _lamports_. They are named in honor of Analog's biggest technical influence, [Leslie Lamport](https://en.wikipedia.org/wiki/Leslie_Lamport). Atockhas a value of 0.000000001 ANLOG.
+A SOL is the name of Analog's native token, which can be passed to nodes in a Analog cluster in exchange for running an on-chain program or validating its output. The system may perform micropayments of fractional SOLs, which are called _lamports_. They are named in honor of Analog's biggest technical influence, [Leslie Lamport](https://en.wikipedia.org/wiki/Leslie_Lamport). A lamport has a value of 0.000000001 SOL.
 
 ## Disclaimer
 

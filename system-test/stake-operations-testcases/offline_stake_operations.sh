@@ -182,7 +182,7 @@ execution_step VIEW SPLIT STAKE ACCOUNT AFTER CHANGING LOCKUP
 execution_step OFFLINE STAKE WITHDRAWAL
 ##########################
 
-# Withdraw the tock from the stake account that was split off and return them to the offline system account
+# Withdraw the lamports from the stake account that was split off and return them to the offline system account
 
 nonce="$(analog nonce $nonce_account_pubkey)"
 

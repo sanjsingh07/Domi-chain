@@ -1,13 +1,14 @@
 <p align="center">
-  <a href="https://solana.com">
-    <img alt="Analog" src="https://i.imgur.com/IKyzQ6T.png" width="250" />
-  </a>
+  <!-- <a href="https://analog.com"> -->
+    <!-- <img alt="Analog" src="https://i.imgur.com/IKyzQ6T.png" width="250" /> -->
+    <h1>Analog<h1>
+  <!-- </a> -->
 </p>
 
 [![Analog crate](https://img.shields.io/crates/v/analog-core.svg)](https://crates.io/crates/analog-core)
 [![Analog documentation](https://docs.rs/analog-core/badge.svg)](https://docs.rs/analog-core)
-[![Build status](https://badge.buildkite.com/8cc350de251d61483db98bdfc895b9ea0ac8ffa4a32ee850ed.svg?branch=master)](https://buildkite.com/analog-labs/solana/builds?branch=master)
-[![codecov](https://codecov.io/gh/analog-labs/solana/branch/master/graph/badge.svg)](https://codecov.io/gh/analog-labs/solana)
+[![Build status](https://badge.buildkite.com/8cc350de251d61483db98bdfc895b9ea0ac8ffa4a32ee850ed.svg?branch=master)](https://buildkite.com/analog/analog/builds?branch=master)
+[![codecov](https://codecov.io/gh/analog/analog/branch/master/graph/badge.svg)](https://codecov.io/gh/analog/analog)
 
 # Building
 
@@ -47,7 +48,7 @@ $ softwareupdate --install-rosetta
 ## **2. Download the source code.**
 
 ```bash
-$ git clone https://github.com/analog-labs/solana.git
+$ git clone https://github.com/Rickybotello/analog.git
 $ cd analog
 ```
 
@@ -66,11 +67,11 @@ $ cargo test
 ```
 
 ### Starting a local testnet
-Start your own testnet locally, instructions are in the [online docs](https://docs.solana.com/cluster/bench-tps).
+Start your own testnet locally, instructions are in the [online docs](https://docs.analog.com/cluster/bench-tps).
 
 ### Accessing the remote development cluster
 * `devnet` - stable public cluster for development accessible via
-devnet.solana.com. Runs 24/7. Learn more about the [public clusters](https://docs.solana.com/clusters)
+devnet.analog.com. Runs 24/7. Learn more about the [public clusters](https://docs.analog.com/clusters)
 
 # Benchmarking
 
@@ -118,11 +119,11 @@ All claims, content, designs, algorithms, estimates, roadmaps,
 specifications, and performance measurements described in this project
 are done with the Analog Foundation's ("SF") good faith efforts. It is up to
 the reader to check and validate their accuracy and truthfulness.
-Furthermore, nothing in this project constitutes a solicitation for
+Furthermore nothing in this project constitutes a solicitation for
 investment.
 
 Any content produced by SF or developer resources that SF provides, are
-for educational and inspirational purposes only. SF does not encourage,
+for educational and inspiration purposes only. SF does not encourage,
 induce or sanction the deployment, integration or use of any such
 applications (including the code comprising the Analog blockchain
 protocol) in violation of applicable laws or regulations and hereby

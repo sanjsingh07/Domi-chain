@@ -95,14 +95,14 @@ entire transaction to fail immediately.
 Programs typically provide helper functions to construct instructions they
 support. For example, the system program provides the following Rust helper to
 construct a
-[`SystemInstruction::CreateAccount`](https://github.com/analog-labs/solana/blob/6606590b8132e56dab9e60b3f7d20ba7412a736c/sdk/program/src/system_instruction.rs#L63)
+[`SystemInstruction::CreateAccount`](https://github.com/analog/testnet/blob/6606590b8132e56dab9e60b3f7d20ba7412a736c/sdk/program/src/system_instruction.rs#L63)
 instruction:
 
 ```rust
 pub fn create_account(
     from_pubkey: &Pubkey,
     to_pubkey: &Pubkey,
-    tock: u64,
+    lamports: u64,
     space: u64,
     owner: &Pubkey,
 ) -> Instruction {
@@ -113,7 +113,7 @@ pub fn create_account(
     Instruction::new_with_bincode(
         system_program::id(),
         &SystemInstruction::CreateAccount {
-            tock,
+            lamports,
             space,
             owner: *owner,
         },
@@ -124,7 +124,7 @@ pub fn create_account(
 
 Which can be found here:
 
-https://github.com/analog-labs/solana/blob/6606590b8132e56dab9e60b3f7d20ba7412a736c/sdk/program/src/system_instruction.rs#L220
+https://github.com/analog/testnet/blob/6606590b8132e56dab9e60b3f7d20ba7412a736c/sdk/program/src/system_instruction.rs#L220
 
 ### Program Id
 
@@ -163,10 +163,10 @@ been observed that some common encodings (Rust's bincode for example) are very
 inefficient.
 
 The [Analog Program Library's Token
-program](https://github.com/analog-labs/analog-program-library/tree/master/token)
+program](https://github.com/analog/testnet-program-library/tree/master/token)
 gives one example of how instruction data can be encoded efficiently, but note
 that this method only supports fixed sized types. Token utilizes the
-[Pack](https://github.com/analog-labs/solana/blob/master/sdk/program/src/program_pack.rs)
+[Pack](https://github.com/analog/testnet/blob/master/sdk/program/src/program_pack.rs)
 trait to encode/decode instruction data for both token instructions as well as
 token account states.
 
@@ -178,14 +178,14 @@ program has not been protected against. Programs should be hardened to properly
 and safely handle any possible instruction sequence.
 
 One not so obvious example is account deinitialization. Some programs may
-attempt to deinitialize an account by setting its tock to zero, with the
+attempt to deinitialize an account by setting its lamports to zero, with the
 assumption that the runtime will delete the account. This assumption may be
 valid between transactions, but it is not between instructions or cross-program
 invocations. To harden against this, the program should also explicitly zero out the
 account's data.
 
 An example of where this could be a problem is if a token program, upon
-transferring the token out of an account, sets the account's tock to zero,
+transferring the token out of an account, sets the account's lamports to zero,
 assuming it will be deleted by the runtime. If the program does not zero out the
 account's data, a malicious user could trail this instruction with another that
 transfers the tokens a second time.

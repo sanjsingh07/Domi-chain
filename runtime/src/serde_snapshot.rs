@@ -6,7 +6,6 @@ use {
             BankHashInfo,
         },
         accounts_index::AccountSecondaryIndexes,
-        accounts_update_notifier_interface::AccountsUpdateNotifier,
         ancestors::Ancestors,
         append_vec::{AppendVec, StoredMetaWriteVersion},
         bank::{Bank, BankFieldsToDeserialize, BankRc},
@@ -24,11 +23,12 @@ use {
     rayon::prelude::*,
     serde::{de::DeserializeOwned, Deserialize, Serialize},
     analog_measure::measure::Measure,
-    solana_program_runtime::instruction_processor::InstructionProcessor,
+    analog_program_runtime::InstructionProcessor,
     analog_sdk::{
         clock::{Epoch, Slot, UnixTimestamp},
         epoch_schedule::EpochSchedule,
         fee_calculator::{FeeCalculator, FeeRateGovernor},
+        genesis_config::ClusterType,
         genesis_config::GenesisConfig,
         hard_forks::HardForks,
         hash::Hash,
@@ -44,7 +44,6 @@ use {
             atomic::{AtomicUsize, Ordering},
             Arc, RwLock,
         },
-        thread::Builder,
     },
 };
 
@@ -205,7 +204,6 @@ pub(crate) fn bank_from_streams<R>(
     shrink_ratio: AccountShrinkThreshold,
     verify_index: bool,
     accounts_db_config: Option<AccountsDbConfig>,
-    accounts_update_notifier: Option<AccountsUpdateNotifier>,
 ) -> std::result::Result<Bank, Error>
 where
     R: Read,
@@ -244,7 +242,6 @@ where
                 shrink_ratio,
                 verify_index,
                 accounts_db_config,
-                accounts_update_notifier,
             )?;
             Ok(bank)
         }};
@@ -338,7 +335,6 @@ fn reconstruct_bank_from_fields<E>(
     shrink_ratio: AccountShrinkThreshold,
     verify_index: bool,
     accounts_db_config: Option<AccountsDbConfig>,
-    accounts_update_notifier: Option<AccountsUpdateNotifier>,
 ) -> Result<Bank, Error>
 where
     E: SerializableStorage + std::marker::Sync,
@@ -347,14 +343,13 @@ where
         snapshot_accounts_db_fields,
         account_paths,
         unpacked_append_vec_map,
-        genesis_config,
+        &genesis_config.cluster_type,
         account_secondary_indexes,
         caching_enabled,
         limit_load_slot_count_from_snapshot,
         shrink_ratio,
         verify_index,
         accounts_db_config,
-        accounts_update_notifier,
     )?;
     accounts_db.freeze_accounts(
         &Ancestors::from(&bank_fields.ancestors),
@@ -373,8 +368,6 @@ where
         additional_builtins,
         debug_do_not_add_builtins,
     );
-
-    info!("rent_collector: {:?}", bank.rent_collector());
 
     Ok(bank)
 }
@@ -404,26 +397,24 @@ fn reconstruct_accountsdb_from_fields<E>(
     snapshot_accounts_db_fields: SnapshotAccountsDbFields<E>,
     account_paths: &[PathBuf],
     unpacked_append_vec_map: UnpackedAppendVecMap,
-    genesis_config: &GenesisConfig,
+    cluster_type: &ClusterType,
     account_secondary_indexes: AccountSecondaryIndexes,
     caching_enabled: bool,
     limit_load_slot_count_from_snapshot: Option<usize>,
     shrink_ratio: AccountShrinkThreshold,
     verify_index: bool,
     accounts_db_config: Option<AccountsDbConfig>,
-    accounts_update_notifier: Option<AccountsUpdateNotifier>,
 ) -> Result<AccountsDb, Error>
 where
     E: SerializableStorage + std::marker::Sync,
 {
     let mut accounts_db = AccountsDb::new_with_config(
         account_paths.to_vec(),
-        &genesis_config.cluster_type,
+        cluster_type,
         account_secondary_indexes,
         caching_enabled,
         shrink_ratio,
         accounts_db_config,
-        accounts_update_notifier,
     );
 
     let AccountsDbFields(
@@ -537,27 +528,7 @@ where
     accounts_db
         .write_version
         .fetch_add(snapshot_version, Ordering::Relaxed);
-
-    let mut measure_notify = Measure::start("accounts_notify");
-
-    let accounts_db = Arc::new(accounts_db);
-    let accoounts_db_clone = accounts_db.clone();
-    let handle = Builder::new()
-        .name("notify_account_restore_from_snapshot".to_string())
-        .spawn(move || {
-            accoounts_db_clone.notify_account_restore_from_snapshot();
-        })
-        .unwrap();
-
-    accounts_db.generate_index(
-        limit_load_slot_count_from_snapshot,
-        verify_index,
-        genesis_config,
-    );
-    accounts_db.maybe_add_filler_accounts(&genesis_config.epoch_schedule);
-
-    handle.join().unwrap();
-    measure_notify.stop();
+    accounts_db.generate_index(limit_load_slot_count_from_snapshot, verify_index);
 
     datapoint_info!(
         "reconstruct_accountsdb_from_fields()",
@@ -567,8 +538,7 @@ where
             num_collisions.load(Ordering::Relaxed),
             i64
         ),
-        ("accountsdb-notify-at-start-us", measure_notify.as_us(), i64),
     );
 
-    Ok(Arc::try_unwrap(accounts_db).unwrap())
+    Ok(accounts_db)
 }

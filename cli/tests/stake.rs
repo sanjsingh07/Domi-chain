@@ -1,4 +1,3 @@
-#![allow(clippy::redundant_closure)]
 use analog_cli::{
     cli::{process_command, request_and_confirm_airdrop, CliCommand, CliConfig},
     spend_utils::SpendAmount,
@@ -11,6 +10,7 @@ use analog_client::{
     nonce_utils,
     rpc_client::RpcClient,
 };
+use analog_core::test_validator::TestValidator;
 use analog_faucet::faucet::run_local_faucet;
 use analog_sdk::{
     account_utils::StateMut,
@@ -25,7 +25,6 @@ use analog_sdk::{
     },
 };
 use analog_streamer::socket::SocketAddrSpace;
-use analog_test_validator::TestValidator;
 
 #[test]
 fn test_stake_delegation_force() {
@@ -1127,7 +1126,7 @@ fn test_stake_split() {
         memo: None,
         split_stake_account: 1,
         seed: None,
-        tock: 2 * minimum_stake_balance,
+        tocks: 2 * minimum_stake_balance,
         fee_payer: 0,
     };
     config_offline.output_format = OutputFormat::JsonCompact;
@@ -1150,7 +1149,7 @@ fn test_stake_split() {
         memo: None,
         split_stake_account: 1,
         seed: None,
-        tock: 2 * minimum_stake_balance,
+        tocks: 2 * minimum_stake_balance,
         fee_payer: 0,
     };
     process_command(&config).unwrap();

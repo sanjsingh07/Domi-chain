@@ -1,6 +1,6 @@
 # Note: when the rust version is changed also modify
 # ci/rust-version.sh to pick up the new image tag
-FROM rust:1.56.0
+FROM rust:1.54.0
 
 # Add Google Protocol Buffers for Libra's metrics library.
 ENV PROTOC_VERSION 3.8.0
@@ -14,10 +14,11 @@ RUN set -x \
  && apt update \
  && apt install -y \
       buildkite-agent \
-      clang \
+      clang-7 \
       cmake \
       lcov \
       libudev-dev \
+      libclang-common-7-dev \
       mscgen \
       net-tools \
       rsync \
@@ -29,10 +30,9 @@ RUN set -x \
  && rustup component add rustfmt \
  && rustup component add clippy \
  && cargo install cargo-audit \
+ && cargo install svgbob_cli \
  && cargo install mdbook \
  && cargo install mdbook-linkcheck \
- && cargo install svgbob_cli \
- && cargo install wasm-pack \
  && rustc --version \
  && cargo --version \
  && curl -OL https://github.com/google/protobuf/releases/download/v$PROTOC_VERSION/$PROTOC_ZIP \

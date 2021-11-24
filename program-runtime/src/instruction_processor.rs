@@ -4,15 +4,13 @@ use analog_sdk::{
     account::{AccountSharedData, ReadableAccount, WritableAccount},
     account_utils::StateMut,
     bpf_loader_upgradeable::{self, UpgradeableLoaderState},
-    feature_set::{demote_program_write_locks, do_support_realloc, remove_native_loader},
+    feature_set::{demote_program_write_locks, fix_write_privs},
     ic_msg,
     instruction::{Instruction, InstructionError},
-    keyed_account::keyed_account_at_index,
     message::Message,
     process_instruction::{Executor, InvokeContext, ProcessInstructionWithContext},
     pubkey::Pubkey,
     rent::Rent,
-    system_instruction::MAX_PERMITTED_DATA_LENGTH,
     system_program,
 };
 use std::{
@@ -22,10 +20,17 @@ use std::{
     sync::Arc,
 };
 
-#[derive(Default)]
 pub struct Executors {
     pub executors: HashMap<Pubkey, Arc<dyn Executor>>,
     pub is_dirty: bool,
+}
+impl Default for Executors {
+    fn default() -> Self {
+        Self {
+            executors: HashMap::default(),
+            is_dirty: false,
+        }
+    }
 }
 impl Executors {
     pub fn insert(&mut self, key: Pubkey, executor: Arc<dyn Executor>) {
@@ -58,20 +63,14 @@ pub struct ExecuteDetailsTimings {
 }
 impl ExecuteDetailsTimings {
     pub fn accumulate(&mut self, other: &ExecuteDetailsTimings) {
-        self.serialize_us = self.serialize_us.saturating_add(other.serialize_us);
-        self.create_vm_us = self.create_vm_us.saturating_add(other.create_vm_us);
-        self.execute_us = self.execute_us.saturating_add(other.execute_us);
-        self.deserialize_us = self.deserialize_us.saturating_add(other.deserialize_us);
-        self.changed_account_count = self
-            .changed_account_count
-            .saturating_add(other.changed_account_count);
-        self.total_account_count = self
-            .total_account_count
-            .saturating_add(other.total_account_count);
-        self.total_data_size = self.total_data_size.saturating_add(other.total_data_size);
-        self.data_size_changed = self
-            .data_size_changed
-            .saturating_add(other.data_size_changed);
+        self.serialize_us += other.serialize_us;
+        self.create_vm_us += other.create_vm_us;
+        self.execute_us += other.execute_us;
+        self.deserialize_us += other.deserialize_us;
+        self.changed_account_count += other.changed_account_count;
+        self.total_account_count += other.total_account_count;
+        self.total_data_size += other.total_data_size;
+        self.data_size_changed += other.data_size_changed;
         for (id, other) in &other.per_program_timings {
             let program_timing = self.per_program_timings.entry(*id).or_default();
             program_timing.accumulated_us = program_timing
@@ -116,7 +115,6 @@ impl PreAccount {
         post: &AccountSharedData,
         timings: &mut ExecuteDetailsTimings,
         outermost_call: bool,
-        do_support_realloc: bool,
     ) -> Result<(), InstructionError> {
         let pre = self.account.borrow();
 
@@ -136,46 +134,31 @@ impl PreAccount {
 
         // An account not assigned to the program cannot have its balance decrease.
         if program_id != pre.owner() // line coverage used to get branch coverage
-         && pre.tock() > post.tock()
+         && pre.tocks() > post.tocks()
         {
-            return Err(InstructionError::ExternalAccountLamportSpend);
+            return Err(InstructionError::ExternalAccountTockSpend);
         }
 
         // The balance of read-only and executable accounts may not change
-        let lamports_changed = pre.tock() != post.tock();
-        if lamports_changed {
+        let tocks_changed = pre.tocks() != post.tocks();
+        if tocks_changed {
             if !is_writable {
-                return Err(InstructionError::ReadonlyLamportChange);
+                return Err(InstructionError::ReadonlyTockChange);
             }
             if pre.executable() {
-                return Err(InstructionError::ExecutableLamportChange);
+                return Err(InstructionError::ExecutableTockChange);
             }
         }
 
-        let data_len_changed = if do_support_realloc {
-            // Account data size cannot exceed a maxumum length
-            if post.data().len() > MAX_PERMITTED_DATA_LENGTH as usize {
-                return Err(InstructionError::InvalidRealloc);
-            }
-
-            // The owner of the account can change the size of the data
-            let data_len_changed = pre.data().len() != post.data().len();
-            if data_len_changed && program_id != pre.owner() {
-                return Err(InstructionError::AccountDataSizeChanged);
-            }
-            data_len_changed
-        } else {
-            // Only the system program can change the size of the data
-            //  and only if the system program owns the account
-            let data_len_changed = pre.data().len() != post.data().len();
-            if data_len_changed
-                && (!system_program::check_id(program_id) // line coverage used to get branch coverage
-                    || !system_program::check_id(pre.owner()))
-            {
-                return Err(InstructionError::AccountDataSizeChanged);
-            }
-            data_len_changed
-        };
+        // Only the system program can change the size of the data
+        //  and only if the system program owns the account
+        let data_len_changed = pre.data().len() != post.data().len();
+        if data_len_changed
+            && (!system_program::check_id(program_id) // line coverage used to get branch coverage
+                || !system_program::check_id(pre.owner()))
+        {
+            return Err(InstructionError::AccountDataSizeChanged);
+        }
 
         // Only the owner may change account data
         //   and if the account is writable
@@ -197,7 +180,7 @@ impl PreAccount {
         // executable is one-way (false->true) and only the account owner may set it.
         let executable_changed = pre.executable() != post.executable();
         if executable_changed {
-            if !rent.is_exempt(post.tock(), post.data().len()) {
+            if !rent.is_exempt(post.tocks(), post.data().len()) {
                 return Err(InstructionError::ExecutableAccountNotRentExempt);
             }
             if !is_writable // line coverage used to get branch coverage
@@ -215,18 +198,17 @@ impl PreAccount {
         }
 
         if outermost_call {
-            timings.total_account_count = timings.total_account_count.saturating_add(1);
-            timings.total_data_size = timings.total_data_size.saturating_add(post.data().len());
+            timings.total_account_count += 1;
+            timings.total_data_size += post.data().len();
             if owner_changed
-                || lamports_changed
+                || tocks_changed
                 || data_len_changed
                 || executable_changed
                 || rent_epoch_changed
                 || self.changed
             {
-                timings.changed_account_count = timings.changed_account_count.saturating_add(1);
-                timings.data_size_changed =
-                    timings.data_size_changed.saturating_add(post.data().len());
+                timings.changed_account_count += 1;
+                timings.data_size_changed += post.data().len();
             }
         }
 
@@ -250,8 +232,8 @@ impl PreAccount {
         Ref::map(self.account.borrow(), |account| account.data())
     }
 
-    pub fn tock(&self) -> u64 {
-        self.account.borrow().tock()
+    pub fn tocks(&self) -> u64 {
+        self.account.borrow().tocks()
     }
 
     pub fn executable(&self) -> bool {
@@ -268,7 +250,7 @@ impl PreAccount {
     }
 }
 
-#[derive(Default, Deserialize, Serialize)]
+#[derive(Deserialize, Serialize)]
 pub struct InstructionProcessor {
     #[serde(skip)]
     programs: Vec<(Pubkey, ProcessInstructionWithContext)>,
@@ -280,15 +262,13 @@ impl std::fmt::Debug for InstructionProcessor {
     fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
         #[derive(Debug)]
         struct MessageProcessor<'a> {
-            #[allow(dead_code)]
             programs: Vec<String>,
-            #[allow(dead_code)]
             native_loader: &'a NativeLoader,
         }
 
         // These are just type aliases for work around of Debug-ing above pointers
         type ErasedProcessInstructionWithContext = fn(
-            usize,
+            &'static Pubkey,
             &'static [u8],
             &'static mut dyn InvokeContext,
         ) -> Result<(), InstructionError>;
@@ -312,6 +292,14 @@ impl std::fmt::Debug for InstructionProcessor {
     }
 }
 
+impl Default for InstructionProcessor {
+    fn default() -> Self {
+        Self {
+            programs: vec![],
+            native_loader: NativeLoader::default(),
+        }
+    }
+}
 impl Clone for InstructionProcessor {
     fn clone(&self) -> Self {
         InstructionProcessor {
@@ -338,19 +326,12 @@ impl InstructionProcessor {
     /// Add a static entrypoint to intercept instructions before the dynamic loader.
     pub fn add_program(
         &mut self,
-        program_id: &Pubkey,
+        program_id: Pubkey,
         process_instruction: ProcessInstructionWithContext,
     ) {
-        match self.programs.iter_mut().find(|(key, _)| program_id == key) {
+        match self.programs.iter_mut().find(|(key, _)| program_id == *key) {
             Some((_, processor)) => *processor = process_instruction,
-            None => self.programs.push((*program_id, process_instruction)),
-        }
-    }
-
-    /// Remove a program
-    pub fn remove_program(&mut self, program_id: &Pubkey) {
-        if let Some(position) = self.programs.iter().position(|(key, _)| program_id == key) {
-            self.programs.remove(position);
+            None => self.programs.push((program_id, process_instruction)),
         }
     }
 
@@ -358,41 +339,32 @@ impl InstructionProcessor {
     /// This method calls the instruction's program entrypoint method
     pub fn process_instruction(
         &self,
+        program_id: &Pubkey,
         instruction_data: &[u8],
         invoke_context: &mut dyn InvokeContext,
     ) -> Result<(), InstructionError> {
-        let keyed_accounts = invoke_context.get_keyed_accounts()?;
-        if let Ok(root_account) = keyed_account_at_index(keyed_accounts, 0) {
+        if let Some(root_account) = invoke_context.get_keyed_accounts()?.iter().next() {
             let root_id = root_account.unsigned_key();
-            let owner_id = &root_account.owner()?;
-            if analog_sdk::native_loader::check_id(owner_id) {
+            if analog_sdk::native_loader::check_id(&root_account.owner()?) {
                 for (id, process_instruction) in &self.programs {
                     if id == root_id {
+                        invoke_context.remove_first_keyed_account()?;
                         // Call the builtin program
-                        return process_instruction(
-                            1, // root_id to be skipped
-                            instruction_data,
-                            invoke_context,
-                        );
+                        return process_instruction(program_id, instruction_data, invoke_context);
                     }
                 }
-                if !invoke_context.is_feature_active(&remove_native_loader::id()) {
-                    // Call the program via the native loader
-                    return self.native_loader.process_instruction(
-                        0,
-                        instruction_data,
-                        invoke_context,
-                    );
-                }
+                // Call the program via the native loader
+                return self.native_loader.process_instruction(
+                    &analog_sdk::native_loader::id(),
+                    instruction_data,
+                    invoke_context,
+                );
             } else {
+                let owner_id = &root_account.owner()?;
                 for (id, process_instruction) in &self.programs {
                     if id == owner_id {
                         // Call the program via a builtin loader
-                        return process_instruction(
-                            0, // no root_id was provided
-                            instruction_data,
-                            invoke_context,
-                        );
+                        return process_instruction(program_id, instruction_data, invoke_context);
                     }
                 }
             }
@@ -492,7 +464,7 @@ impl InstructionProcessor {
             );
             return Err(InstructionError::AccountNotExecutable);
         }
-        let mut program_indices = vec![];
+        let mut program_indices = vec![program_account_index];
         if program_account.borrow().owner() == &bpf_loader_upgradeable::id() {
             if let UpgradeableLoaderState::Program {
                 programdata_address,
@@ -519,7 +491,6 @@ impl InstructionProcessor {
                 return Err(InstructionError::MissingAccount);
             }
         }
-        program_indices.push(program_account_index);
 
         Ok((message, caller_write_privileges, program_indices))
     }
@@ -528,15 +499,23 @@ impl InstructionProcessor {
     pub fn native_invoke(
         invoke_context: &mut dyn InvokeContext,
         instruction: Instruction,
+        keyed_account_indices_obsolete: &[usize],
         signers: &[Pubkey],
     ) -> Result<(), InstructionError> {
-        let do_support_realloc = invoke_context.is_feature_active(&do_support_realloc::id());
         let invoke_context = RefCell::new(invoke_context);
         let mut invoke_context = invoke_context.borrow_mut();
 
         // Translate and verify caller's data
-        let (message, caller_write_privileges, program_indices) =
+        let (message, mut caller_write_privileges, program_indices) =
             Self::create_message(&instruction, signers, &invoke_context)?;
+        if !invoke_context.is_feature_active(&fix_write_privs::id()) {
+            let caller_keyed_accounts = invoke_context.get_keyed_accounts()?;
+            caller_write_privileges = Vec::with_capacity(1 + keyed_account_indices_obsolete.len());
+            caller_write_privileges.push(false);
+            for index in keyed_account_indices_obsolete.iter() {
+                caller_write_privileges.push(caller_keyed_accounts[*index].is_writable());
+            }
+        };
         let mut account_indices = Vec::with_capacity(message.account_keys.len());
         let mut accounts = Vec::with_capacity(message.account_keys.len());
         for account_key in message.account_keys.iter() {
@@ -562,8 +541,7 @@ impl InstructionProcessor {
 
         // Verify the called program has not misbehaved
         for (account, prev_size) in accounts.iter() {
-            if !do_support_realloc && *prev_size != account.borrow().data().len() && *prev_size != 0
-            {
+            if *prev_size != account.borrow().data().len() && *prev_size != 0 {
                 // Only support for `CreateAccount` at this time.
                 // Need a way to limit total realloc size across multiple CPI calls
                 ic_msg!(
@@ -592,22 +570,33 @@ impl InstructionProcessor {
             .get(0)
             .ok_or(InstructionError::GenericError)?;
 
+        let program_id = instruction.program_id(&message.account_keys);
+
         // Verify the calling program hasn't misbehaved
         invoke_context.verify_and_update(instruction, account_indices, caller_write_privileges)?;
 
         // clear the return data
-        invoke_context.set_return_data(Vec::new())?;
+        invoke_context.set_return_data(None);
 
         // Invoke callee
-        invoke_context.push(message, instruction, program_indices, Some(account_indices))?;
+        invoke_context.push(
+            program_id,
+            message,
+            instruction,
+            program_indices,
+            account_indices,
+        )?;
 
         let mut instruction_processor = InstructionProcessor::default();
         for (program_id, process_instruction) in invoke_context.get_programs().iter() {
-            instruction_processor.add_program(program_id, *process_instruction);
+            instruction_processor.add_program(*program_id, *process_instruction);
         }
 
-        let mut result =
-            instruction_processor.process_instruction(&instruction.data, invoke_context);
+        let mut result = instruction_processor.process_instruction(
+            program_id,
+            &instruction.data,
+            invoke_context,
+        );
         if result.is_ok() {
             // Verify the called program has not misbehaved
             let demote_program_write_locks =
@@ -628,7 +617,7 @@ impl InstructionProcessor {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use analog_sdk::{account::Account, instruction::InstructionError, system_program};
+    use analog_sdk::{account::Account, instruction::InstructionError};
 
     #[test]
     fn test_is_zeroed() {
@@ -669,14 +658,14 @@ mod tests {
                     &analog_sdk::pubkey::new_rand(),
                     &AccountSharedData::from(Account {
                         owner: *owner,
-                        tock: std::u64::MAX,
+                        tocks: std::u64::MAX,
                         data: vec![],
                         ..Account::default()
                     }),
                 ),
                 post: AccountSharedData::from(Account {
                     owner: *owner,
-                    tock: std::u64::MAX,
+                    tocks: std::u64::MAX,
                     ..Account::default()
                 }),
             }
@@ -690,9 +679,9 @@ mod tests {
             self.post.set_executable(post);
             self
         }
-        pub fn tock(mut self, pre: u64, post: u64) -> Self {
-            self.pre.account.borrow_mut().set_lamports(pre);
-            self.post.set_lamports(post);
+        pub fn tocks(mut self, pre: u64, post: u64) -> Self {
+            self.pre.account.borrow_mut().set_tocks(pre);
+            self.post.set_tocks(post);
             self
         }
         pub fn owner(mut self, post: &Pubkey) -> Self {
@@ -717,7 +706,6 @@ mod tests {
                 &self.post,
                 &mut ExecuteDetailsTimings::default(),
                 false,
-                true,
             )
         }
     }
@@ -849,33 +837,33 @@ mod tests {
         assert_eq!(
             Change::new(&owner, &owner)
                 .executable(true, true)
-                .tock(1, 2)
+                .tocks(1, 2)
                 .verify(),
-            Err(InstructionError::ExecutableLamportChange),
-            "owner should not be able to add tock once marked executable"
+            Err(InstructionError::ExecutableTockChange),
+            "owner should not be able to add tocks once marked executable"
         );
         assert_eq!(
             Change::new(&owner, &owner)
                 .executable(true, true)
-                .tock(1, 2)
+                .tocks(1, 2)
                 .verify(),
-            Err(InstructionError::ExecutableLamportChange),
-            "owner should not be able to add tock once marked executable"
+            Err(InstructionError::ExecutableTockChange),
+            "owner should not be able to add tocks once marked executable"
         );
         assert_eq!(
             Change::new(&owner, &owner)
                 .executable(true, true)
-                .tock(2, 1)
+                .tocks(2, 1)
                 .verify(),
-            Err(InstructionError::ExecutableLamportChange),
-            "owner should not be able to subtract tock once marked executable"
+            Err(InstructionError::ExecutableTockChange),
+            "owner should not be able to subtract tocks once marked executable"
         );
         let data = vec![1; 100];
-        let min_lamports = Rent::default().minimum_balance(data.len());
+        let min_tocks = Rent::default().minimum_balance(data.len());
         assert_eq!(
             Change::new(&owner, &owner)
                 .executable(false, true)
-                .tock(0, min_lamports)
+                .tocks(0, min_tocks)
                 .data(data.clone(), data.clone())
                 .verify(),
             Ok(()),
@@ -883,7 +871,7 @@ mod tests {
         assert_eq!(
             Change::new(&owner, &owner)
                 .executable(false, true)
-                .tock(0, min_lamports - 1)
+                .tocks(0, min_tocks - 1)
                 .data(data.clone(), data)
                 .verify(),
             Err(InstructionError::ExecutableAccountNotRentExempt),
@@ -959,7 +947,7 @@ mod tests {
     }
 
     #[test]
-    fn test_verify_account_changes_deduct_lamports_and_reassign_account() {
+    fn test_verify_account_changes_deduct_tocks_and_reassign_account() {
         let alice_program_id = analog_sdk::pubkey::new_rand();
         let bob_program_id = analog_sdk::pubkey::new_rand();
 
@@ -967,37 +955,37 @@ mod tests {
         assert_eq!(
             Change::new(&alice_program_id, &alice_program_id)
             .owner(&bob_program_id)
-            .tock(42, 1)
+            .tocks(42, 1)
             .data(vec![42], vec![0])
             .verify(),
         Ok(()),
-        "alice should be able to deduct tock and give the account to bob if the data is zeroed",
+        "alice should be able to deduct tocks and give the account to bob if the data is zeroed",
     );
     }
 
     #[test]
-    fn test_verify_account_changes_lamports() {
+    fn test_verify_account_changes_tocks() {
         let alice_program_id = analog_sdk::pubkey::new_rand();
 
         assert_eq!(
             Change::new(&alice_program_id, &system_program::id())
-                .tock(42, 0)
+                .tocks(42, 0)
                 .read_only()
                 .verify(),
-            Err(InstructionError::ExternalAccountLamportSpend),
+            Err(InstructionError::ExternalAccountTockSpend),
             "debit should fail, even if system program"
         );
         assert_eq!(
             Change::new(&alice_program_id, &alice_program_id)
-                .tock(42, 0)
+                .tocks(42, 0)
                 .read_only()
                 .verify(),
-            Err(InstructionError::ReadonlyLamportChange),
+            Err(InstructionError::ReadonlyTockChange),
             "debit should fail, even if owning program"
         );
         assert_eq!(
             Change::new(&alice_program_id, &system_program::id())
-                .tock(42, 0)
+                .tocks(42, 0)
                 .owner(&system_program::id())
                 .verify(),
             Err(InstructionError::ModifiedProgramId),
@@ -1005,7 +993,7 @@ mod tests {
         );
         assert_eq!(
             Change::new(&system_program::id(), &system_program::id())
-                .tock(42, 0)
+                .tocks(42, 0)
                 .owner(&alice_program_id)
                 .verify(),
             Ok(()),
@@ -1025,18 +1013,11 @@ mod tests {
             "system program should not be able to change another program's account data size"
         );
         assert_eq!(
-            Change::new(&alice_program_id, &analog_sdk::pubkey::new_rand())
-                .data(vec![0], vec![0, 0])
-                .verify(),
-            Err(InstructionError::AccountDataSizeChanged),
-            "one program should not be able to change another program's account data size"
-        );
-        assert_eq!(
             Change::new(&alice_program_id, &alice_program_id)
                 .data(vec![0], vec![0, 0])
                 .verify(),
-            Ok(()),
-            "programs can change their own data size"
+            Err(InstructionError::AccountDataSizeChanged),
+            "non-system programs cannot change their data size"
         );
         assert_eq!(
             Change::new(&system_program::id(), &system_program::id())
@@ -1058,7 +1039,7 @@ mod tests {
                 .executable(false, true)
                 .verify(),
             Err(InstructionError::ExecutableModified),
-            "program should not be able to change owner and executable at the same time"
+            "Program should not be able to change owner and executable at the same time"
         );
     }
 
@@ -1067,7 +1048,7 @@ mod tests {
         let mut instruction_processor = InstructionProcessor::default();
         #[allow(clippy::unnecessary_wraps)]
         fn mock_process_instruction(
-            _first_instruction_account: usize,
+            _program_id: &Pubkey,
             _data: &[u8],
             _invoke_context: &mut dyn InvokeContext,
         ) -> Result<(), InstructionError> {
@@ -1075,15 +1056,15 @@ mod tests {
         }
         #[allow(clippy::unnecessary_wraps)]
         fn mock_ix_processor(
-            _first_instruction_account: usize,
+            _pubkey: &Pubkey,
             _data: &[u8],
             _context: &mut dyn InvokeContext,
         ) -> Result<(), InstructionError> {
             Ok(())
         }
         let program_id = analog_sdk::pubkey::new_rand();
-        instruction_processor.add_program(&program_id, mock_process_instruction);
-        instruction_processor.add_program(&program_id, mock_ix_processor);
+        instruction_processor.add_program(program_id, mock_process_instruction);
+        instruction_processor.add_program(program_id, mock_ix_processor);
 
         assert!(!format!("{:?}", instruction_processor).is_empty());
     }

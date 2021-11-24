@@ -101,13 +101,13 @@ export class Loader {
           );
         }
 
-        if (programInfo.tock < balanceNeeded) {
+        if (programInfo.tocks < balanceNeeded) {
           transaction = transaction || new Transaction();
           transaction.add(
             SystemProgram.transfer({
               fromPubkey: payer.publicKey,
               toPubkey: program.publicKey,
-              tock: balanceNeeded - programInfo.tock,
+              tocks: balanceNeeded - programInfo.tocks,
             }),
           );
         }
@@ -116,7 +116,7 @@ export class Loader {
           SystemProgram.createAccount({
             fromPubkey: payer.publicKey,
             newAccountPubkey: program.publicKey,
-            tock: balanceNeeded > 0 ? balanceNeeded : 1,
+            tocks: balanceNeeded > 0 ? balanceNeeded : 1,
             space: data.length,
             programId,
           }),

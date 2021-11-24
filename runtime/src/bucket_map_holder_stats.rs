@@ -2,15 +2,13 @@ use crate::accounts_index::IndexValue;
 use crate::bucket_map_holder::BucketMapHolder;
 use analog_sdk::timing::{timestamp, AtomicInterval};
 use std::fmt::Debug;
-use std::sync::atomic::{AtomicBool, AtomicU64, AtomicU8, Ordering};
+use std::sync::atomic::{AtomicU64, AtomicU8, Ordering};
 
 // stats logged every 10 s
 const STATS_INTERVAL_MS: u64 = 10_000;
 
 #[derive(Debug, Default)]
 pub struct BucketMapHolderStats {
-    pub held_in_mem_slot_list_len: AtomicU64,
-    pub held_in_mem_slot_list_cached: AtomicU64,
     pub get_mem_us: AtomicU64,
     pub gets_from_mem: AtomicU64,
     pub get_missing_us: AtomicU64,
@@ -28,21 +26,18 @@ pub struct BucketMapHolderStats {
     pub keys: AtomicU64,
     pub deletes: AtomicU64,
     pub inserts: AtomicU64,
-    count: AtomicU64,
+    pub count: AtomicU64,
     pub bg_waiting_us: AtomicU64,
-    pub bg_throttling_wait_us: AtomicU64,
     pub count_in_mem: AtomicU64,
     pub per_bucket_count: Vec<AtomicU64>,
     pub flush_entries_updated_on_disk: AtomicU64,
-    pub flush_entries_removed_from_mem: AtomicU64,
     pub active_threads: AtomicU64,
     pub get_range_us: AtomicU64,
     last_age: AtomicU8,
     last_age_time: AtomicU64,
-    pub flush_scan_update_us: AtomicU64,
+    pub flush_scan_us: AtomicU64,
+    pub flush_update_us: AtomicU64,
     pub flush_remove_us: AtomicU64,
-    pub flush_grow_us: AtomicU64,
-    last_was_startup: AtomicBool,
     last_time: AtomicInterval,
 }
 
@@ -68,17 +63,13 @@ impl BucketMapHolderStats {
     }
 
     pub fn insert_or_delete_mem(&self, insert: bool, bin: usize) {
-        self.insert_or_delete_mem_count(insert, bin, 1)
-    }
-
-    pub fn insert_or_delete_mem_count(&self, insert: bool, bin: usize, count: u64) {
         let per_bucket = self.per_bucket_count.get(bin);
         if insert {
-            self.count_in_mem.fetch_add(count, Ordering::Relaxed);
-            per_bucket.map(|stat| stat.fetch_add(count, Ordering::Relaxed));
+            self.count_in_mem.fetch_add(1, Ordering::Relaxed);
+            per_bucket.map(|count| count.fetch_add(1, Ordering::Relaxed));
         } else {
-            self.count_in_mem.fetch_sub(count, Ordering::Relaxed);
-            per_bucket.map(|stat| stat.fetch_sub(count, Ordering::Relaxed));
+            self.count_in_mem.fetch_sub(1, Ordering::Relaxed);
+            per_bucket.map(|count| count.fetch_sub(1, Ordering::Relaxed));
         }
     }
 
@@ -88,21 +79,20 @@ impl BucketMapHolderStats {
         now.saturating_sub(last) // could saturate to 0. That is ok.
     }
 
-    fn ms_per_age<T: IndexValue>(&self, storage: &BucketMapHolder<T>, elapsed_ms: u64) -> u64 {
-        if !storage.get_startup() {
-            let age_now = storage.current_age();
-            let last_age = self.last_age.swap(age_now, Ordering::Relaxed) as u64;
-            let mut age_now = age_now as u64;
-            if last_age > age_now {
-                // age wrapped
-                age_now += u8::MAX as u64 + 1;
-            }
-            let age_delta = age_now.saturating_sub(last_age) as u64;
-            if age_delta > 0 {
-                return elapsed_ms / age_delta;
-            }
+    fn ms_per_age<T: IndexValue>(&self, storage: &BucketMapHolder<T>) -> u64 {
+        let elapsed_ms = self.get_elapsed_ms_and_reset();
+        let mut age_now = storage.current_age();
+        let last_age = self.last_age.swap(age_now, Ordering::Relaxed);
+        if last_age > age_now {
+            // age may have wrapped
+            age_now += u8::MAX;
         }
-        0 // avoid crazy numbers
+        let age_delta = age_now.saturating_sub(last_age) as u64;
+        if age_delta > 0 {
+            elapsed_ms / age_delta
+        } else {
+            0
+        }
     }
 
     pub fn remaining_until_next_interval(&self) -> u64 {
@@ -110,71 +100,27 @@ impl BucketMapHolderStats {
             .remaining_until_next_interval(STATS_INTERVAL_MS)
     }
 
-    /// return min, max, sum, median of data
-    fn get_stats(mut data: Vec<u64>) -> (u64, u64, u64, u64) {
-        if data.is_empty() {
-            (0, 0, 0, 0)
-        } else {
-            data.sort_unstable();
-            (
-                *data.first().unwrap(),
-                *data.last().unwrap(),
-                data.iter().sum(),
-                data[data.len() / 2],
-            )
-        }
-    }
-
-    fn calc_percent(&self, ms: u64, elapsed_ms: u64) -> f32 {
-        if elapsed_ms == 0 {
-            0.0
-        } else {
-            (ms as f32 / elapsed_ms as f32) * 100.0
-        }
-    }
-
     pub fn report_stats<T: IndexValue>(&self, storage: &BucketMapHolder<T>) {
         if !self.last_time.should_update(STATS_INTERVAL_MS) {
             return;
         }
 
-        let elapsed_ms = self.get_elapsed_ms_and_reset();
+        let ms_per_age = self.ms_per_age(storage);
 
-        let ms_per_age = self.ms_per_age(storage, elapsed_ms);
+        let mut ct = 0;
+        let mut min = usize::MAX;
+        let mut max = 0;
+        for d in &self.per_bucket_count {
+            let d = d.load(Ordering::Relaxed) as usize;
+            ct += d;
+            min = std::cmp::min(min, d);
+            max = std::cmp::max(max, d);
+        }
 
-        let in_mem_per_bucket_counts = self
-            .per_bucket_count
-            .iter()
-            .map(|count| count.load(Ordering::Relaxed))
-            .collect::<Vec<_>>();
         let disk = storage.disk.as_ref();
-        let disk_per_bucket_counts = disk
-            .map(|disk| {
-                disk.stats
-                    .per_bucket_count
-                    .iter()
-                    .map(|count| count.load(Ordering::Relaxed))
-                    .collect::<Vec<_>>()
-            })
-            .unwrap_or_default();
-        let in_mem_stats = Self::get_stats(in_mem_per_bucket_counts);
-        let disk_stats = Self::get_stats(disk_per_bucket_counts);
 
-        const US_PER_MS: u64 = 1_000;
-
-        // all metrics during startup are written to a different data point
-        let startup = storage.get_startup();
-        let was_startup = self.last_was_startup.swap(startup, Ordering::Relaxed);
-
-        // sum of elapsed time in each thread
-        let mut thread_time_elapsed_ms = elapsed_ms * storage.threads as u64;
         datapoint_info!(
-            if startup || was_startup {
-                thread_time_elapsed_ms *= 2; // more threads are allocated during startup
-                "accounts_index_startup"
-            } else {
-                "accounts_index"
-            },
+            "accounts_index",
             (
                 "count_in_mem",
                 self.count_in_mem.load(Ordering::Relaxed),
@@ -182,39 +128,13 @@ impl BucketMapHolderStats {
             ),
             ("count", self.count.load(Ordering::Relaxed), i64),
             (
-                "bg_waiting_percent",
-                self.calc_percent(
-                    self.bg_waiting_us.swap(0, Ordering::Relaxed) / US_PER_MS,
-                    thread_time_elapsed_ms
-                ),
-                f64
-            ),
-            (
-                "bg_throttling_wait_percent",
-                self.calc_percent(
-                    self.bg_throttling_wait_us.swap(0, Ordering::Relaxed) / US_PER_MS,
-                    thread_time_elapsed_ms
-                ),
-                f64
-            ),
-            (
-                "held_in_mem_slot_list_len",
-                self.held_in_mem_slot_list_len.swap(0, Ordering::Relaxed),
+                "bg_waiting_us",
+                self.bg_waiting_us.swap(0, Ordering::Relaxed),
                 i64
             ),
-            (
-                "held_in_mem_slot_list_cached",
-                self.held_in_mem_slot_list_cached.swap(0, Ordering::Relaxed),
-                i64
-            ),
-            ("min_in_bin_mem", in_mem_stats.0, i64),
-            ("max_in_bin_mem", in_mem_stats.1, i64),
-            ("count_from_bins_mem", in_mem_stats.2, i64),
-            ("median_from_bins_mem", in_mem_stats.3, i64),
-            ("min_in_bin_disk", disk_stats.0, i64),
-            ("max_in_bin_disk", disk_stats.1, i64),
-            ("count_from_bins_disk", disk_stats.2, i64),
-            ("median_from_bins_disk", disk_stats.3, i64),
+            ("min_in_bin", min, i64),
+            ("max_in_bin", max, i64),
+            ("count_from_bins", ct, i64),
             (
                 "gets_from_mem",
                 self.gets_from_mem.swap(0, Ordering::Relaxed),
@@ -222,7 +142,7 @@ impl BucketMapHolderStats {
             ),
             (
                 "get_mem_us",
-                self.get_mem_us.swap(0, Ordering::Relaxed),
+                self.get_mem_us.swap(0, Ordering::Relaxed) / 1000,
                 i64
             ),
             (
@@ -232,7 +152,7 @@ impl BucketMapHolderStats {
             ),
             (
                 "get_missing_us",
-                self.get_missing_us.swap(0, Ordering::Relaxed),
+                self.get_missing_us.swap(0, Ordering::Relaxed) / 1000,
                 i64
             ),
             (
@@ -242,7 +162,7 @@ impl BucketMapHolderStats {
             ),
             (
                 "entry_mem_us",
-                self.entry_mem_us.swap(0, Ordering::Relaxed),
+                self.entry_mem_us.swap(0, Ordering::Relaxed) / 1000,
                 i64
             ),
             (
@@ -252,7 +172,7 @@ impl BucketMapHolderStats {
             ),
             (
                 "load_disk_found_us",
-                self.load_disk_found_us.swap(0, Ordering::Relaxed),
+                self.load_disk_found_us.swap(0, Ordering::Relaxed) / 1000,
                 i64
             ),
             (
@@ -262,7 +182,7 @@ impl BucketMapHolderStats {
             ),
             (
                 "load_disk_missing_us",
-                self.load_disk_missing_us.swap(0, Ordering::Relaxed),
+                self.load_disk_missing_us.swap(0, Ordering::Relaxed) / 1000,
                 i64
             ),
             (
@@ -272,7 +192,7 @@ impl BucketMapHolderStats {
             ),
             (
                 "entry_missing_us",
-                self.entry_missing_us.swap(0, Ordering::Relaxed),
+                self.entry_missing_us.swap(0, Ordering::Relaxed) / 1000,
                 i64
             ),
             (
@@ -296,13 +216,13 @@ impl BucketMapHolderStats {
             ("keys", self.keys.swap(0, Ordering::Relaxed), i64),
             ("ms_per_age", ms_per_age, i64),
             (
-                "flush_scan_update_us",
-                self.flush_scan_update_us.swap(0, Ordering::Relaxed),
+                "flush_scan_us",
+                self.flush_scan_us.swap(0, Ordering::Relaxed),
                 i64
             ),
             (
-                "flush_grow_us",
-                self.flush_remove_us.swap(0, Ordering::Relaxed),
+                "flush_update_us",
+                self.flush_update_us.swap(0, Ordering::Relaxed),
                 i64
             ),
             (
@@ -395,12 +315,6 @@ impl BucketMapHolderStats {
             (
                 "flush_entries_updated_on_disk",
                 self.flush_entries_updated_on_disk
-                    .swap(0, Ordering::Relaxed),
-                i64
-            ),
-            (
-                "flush_entries_removed_from_mem",
-                self.flush_entries_removed_from_mem
                     .swap(0, Ordering::Relaxed),
                 i64
             ),

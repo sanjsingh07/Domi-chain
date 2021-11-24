@@ -1,5 +1,5 @@
 //! The `faucet` module provides an object for launching a Analog Faucet,
-//! which is the custodian of any remaining tock in a mint.
+//! which is the custodian of any remaining tocks in a mint.
 //! The Analog Faucet builds and sends airdrop transactions,
 //! checking requests against a single-request cap and a per-IP limit
 //! for a given time time_slice.
@@ -14,7 +14,7 @@ use {
         hash::Hash,
         instruction::Instruction,
         message::Message,
-        native_token::tock_to_anlog,
+        native_token::tocks_to_anlog,
         packet::PACKET_DATA_SIZE,
         pubkey::Pubkey,
         signature::{Keypair, Signer},
@@ -68,20 +68,30 @@ pub enum FaucetError {
     #[error("transaction_length from faucet: 0")]
     NoDataReceived,
 
-    #[error("request too large; req: ◎{0}, cap: ◎{1}")]
+    #[error("request too large; req: GM{0}, cap: GM{1}")]
     PerRequestCapExceeded(f64, f64),
 
-    #[error("limit reached; req: ◎{0}, to: {1}, current: ◎{2}, cap: ◎{3}")]
+    #[error("limit reached; req: GM{0}, to: {1}, current: GM{2}, cap: GM{3}")]
     PerTimeCapExceeded(f64, String, f64, f64),
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone, Copy)]
 pub enum FaucetRequest {
     GetAirdrop {
-        tock: u64,
+        tocks: u64,
         to: Pubkey,
         blockhash: Hash,
     },
+}
+
+impl Default for FaucetRequest {
+    fn default() -> Self {
+        Self::GetAirdrop {
+            tocks: u64::default(),
+            to: Pubkey::default(),
+            blockhash: Hash::default(),
+        }
+    }
 }
 
 pub enum FaucetTransaction {
@@ -128,8 +138,8 @@ impl Faucet {
                 warn!(
                     "per_time_cap {} ANLOG < per_request_cap {} ANLOG; \
                     maximum single requests will fail",
-                   tock_to_anlog(per_time_cap),
-                   tock_to_anlog(per_request_cap),
+                    tocks_to_anlog(per_time_cap),
+                    tocks_to_anlog(per_request_cap),
                 );
             }
         }
@@ -154,10 +164,10 @@ impl Faucet {
         if let Some(cap) = self.per_time_cap {
             if new_total > cap {
                 return Err(FaucetError::PerTimeCapExceeded(
-                   tock_to_anlog(request_amount),
+                    tocks_to_anlog(request_amount),
                     to.to_string(),
-                   tock_to_anlog(new_total),
-                   tock_to_anlog(cap),
+                    tocks_to_anlog(new_total),
+                    tocks_to_anlog(cap),
                 ));
             }
         }
@@ -181,24 +191,24 @@ impl Faucet {
         trace!("build_airdrop_transaction: {:?}", req);
         match req {
             FaucetRequest::GetAirdrop {
-                tock,
+                tocks,
                 to,
                 blockhash,
             } => {
                 let mint_pubkey = self.faucet_keypair.pubkey();
                 info!(
                     "Requesting airdrop of {} ANLOG to {:?}",
-                   tock_to_anlog(tock),
+                    tocks_to_anlog(tocks),
                     to
                 );
 
                 if let Some(cap) = self.per_request_cap {
-                    if tock > cap {
+                    if tocks > cap {
                         let memo = format!(
                             "{}",
                             FaucetError::PerRequestCapExceeded(
-                               tock_to_anlog(tock),
-                               tock_to_anlog(cap),
+                                tocks_to_anlog(tocks),
+                                tocks_to_anlog(cap),
                             )
                         );
                         let memo_instruction = Instruction {
@@ -214,12 +224,12 @@ impl Faucet {
                     }
                 }
                 if !ip.is_loopback() && !self.allowed_ips.contains(&ip) {
-                    self.check_time_request_limit(tock, ip)?;
+                    self.check_time_request_limit(tocks, ip)?;
                 }
-                self.check_time_request_limit(tock, to)?;
+                self.check_time_request_limit(tocks, to)?;
 
                 let transfer_instruction =
-                    system_instruction::transfer(&mint_pubkey, &to, tock);
+                    system_instruction::transfer(&mint_pubkey, &to, tocks);
                 let message = Message::new(&[transfer_instruction], Some(&mint_pubkey));
                 Ok(FaucetTransaction::Airdrop(Transaction::new(
                     &[&self.faucet_keypair],
@@ -277,18 +287,18 @@ impl Drop for Faucet {
 pub fn request_airdrop_transaction(
     faucet_addr: &SocketAddr,
     id: &Pubkey,
-    tock: u64,
+    tocks: u64,
     blockhash: Hash,
 ) -> Result<Transaction, FaucetError> {
     info!(
-        "request_airdrop_transaction: faucet_addr={} id={} tock={} blockhash={}",
-        faucet_addr, id, tock, blockhash
+        "request_airdrop_transaction: faucet_addr={} id={} tocks={} blockhash={}",
+        faucet_addr, id, tocks, blockhash
     );
 
     let mut stream = TcpStream::connect_timeout(faucet_addr, Duration::new(3, 0))?;
     stream.set_read_timeout(Some(Duration::new(10, 0)))?;
     let req = FaucetRequest::GetAirdrop {
-        tock,
+        tocks,
         blockhash,
         to: *id,
     };
@@ -406,15 +416,7 @@ async fn process(
     mut stream: TokioTcpStream,
     faucet: Arc<Mutex<Faucet>>,
 ) -> Result<(), Box<dyn std::error::Error>> {
-    let mut request = vec![
-        0u8;
-        serialized_size(&FaucetRequest::GetAirdrop {
-            tock: u64::default(),
-            to: Pubkey::default(),
-            blockhash: Hash::default(),
-        })
-        .unwrap() as usize
-    ];
+    let mut request = vec![0u8; serialized_size(&FaucetRequest::default()).unwrap() as usize];
     while stream.read_exact(&mut request).await.is_ok() {
         trace!("{:?}", request);
 
@@ -549,7 +551,7 @@ mod tests {
         let to = Pubkey::new_unique();
         let blockhash = Hash::default();
         let request = FaucetRequest::GetAirdrop {
-            tock: 2,
+            tocks: 2,
             to,
             blockhash,
         };
@@ -574,7 +576,7 @@ mod tests {
             assert_eq!(message.instructions.len(), 1);
             let instruction: SystemInstruction =
                 deserialize(&message.instructions[0].data).unwrap();
-            assert_eq!(instruction, SystemInstruction::Transfer { tock: 2 });
+            assert_eq!(instruction, SystemInstruction::Transfer { tocks: 2 });
         } else {
             panic!("airdrop should succeed");
         }
@@ -593,7 +595,7 @@ mod tests {
         let other = Pubkey::new_unique();
         let _tx0 = faucet.build_airdrop_transaction(request, ip).unwrap(); // first request succeeds
         let request1 = FaucetRequest::GetAirdrop {
-            tock: 2,
+            tocks: 2,
             to: other,
             blockhash,
         };
@@ -612,7 +614,7 @@ mod tests {
         let other = Pubkey::new_unique();
         let _tx0 = faucet.build_airdrop_transaction(request, ip).unwrap(); // first request succeeds
         let request1 = FaucetRequest::GetAirdrop {
-            tock: 2,
+            tocks: 2,
             to: other,
             blockhash,
         };
@@ -641,7 +643,7 @@ mod tests {
 
             assert_eq!(message.instructions.len(), 1);
             let parsed_memo = std::str::from_utf8(&message.instructions[0].data).unwrap();
-            let expected_memo = "request too large; req: ◎0.000000002, cap: ◎0.000000001";
+            let expected_memo = "request too large; req: GM0.000000002, cap: GM0.000000001";
             assert_eq!(parsed_memo, expected_memo);
             assert_eq!(memo, expected_memo);
         } else {
@@ -653,9 +655,9 @@ mod tests {
     fn test_process_faucet_request() {
         let to = analog_sdk::pubkey::new_rand();
         let blockhash = Hash::new(to.as_ref());
-        let tock = 50;
+        let tocks = 50;
         let req = FaucetRequest::GetAirdrop {
-            tock,
+            tocks,
             blockhash,
             to,
         };
@@ -663,7 +665,7 @@ mod tests {
         let req = serialize(&req).unwrap();
 
         let keypair = Keypair::new();
-        let expected_instruction = system_instruction::transfer(&keypair.pubkey(), &to, tock);
+        let expected_instruction = system_instruction::transfer(&keypair.pubkey(), &to, tocks);
         let message = Message::new(&[expected_instruction], Some(&keypair.pubkey()));
         let expected_tx = Transaction::new(&[&keypair], message, blockhash);
         let expected_bytes = serialize(&expected_tx).unwrap();

@@ -7,6 +7,7 @@ use analog_client::{
     blockhash_query::{self, BlockhashQuery},
     rpc_client::RpcClient,
 };
+use analog_core::test_validator::TestValidator;
 use analog_faucet::faucet::run_local_faucet;
 use analog_sdk::{
     account_utils::StateMut,
@@ -14,7 +15,6 @@ use analog_sdk::{
     signature::{Keypair, Signer},
 };
 use analog_streamer::socket::SocketAddrSpace;
-use analog_test_validator::TestValidator;
 use analog_vote_program::vote_state::{VoteAuthorize, VoteState, VoteStateVersions};
 
 #[test]

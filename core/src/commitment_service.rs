@@ -183,8 +183,8 @@ impl AggregateCommitmentService {
 
         let mut commitment = HashMap::new();
         let mut rooted_stake: Vec<(Slot, u64)> = Vec::new();
-        for (tock, account) in bank.vote_accounts().values() {
-            if *tock == 0 {
+        for (tocks, account) in bank.vote_accounts().values() {
+            if *tocks == 0 {
                 continue;
             }
             if let Ok(vote_state) = account.vote_state().as_ref() {
@@ -193,7 +193,7 @@ impl AggregateCommitmentService {
                     &mut rooted_stake,
                     vote_state,
                     ancestors,
-                    *tock,
+                    *tocks,
                 );
             }
         }
@@ -206,7 +206,7 @@ impl AggregateCommitmentService {
         rooted_stake: &mut Vec<(Slot, u64)>,
         vote_state: &VoteState,
         ancestors: &[Slot],
-        tock: u64,
+        tocks: u64,
     ) {
         assert!(!ancestors.is_empty());
         let mut ancestors_index = 0;
@@ -216,13 +216,13 @@ impl AggregateCommitmentService {
                     commitment
                         .entry(*a)
                         .or_insert_with(BlockCommitment::default)
-                        .increase_rooted_stake(tock);
+                        .increase_rooted_stake(tocks);
                 } else {
                     ancestors_index = i;
                     break;
                 }
             }
-            rooted_stake.push((root, tock));
+            rooted_stake.push((root, tocks));
         }
 
         for vote in &vote_state.votes {
@@ -230,7 +230,7 @@ impl AggregateCommitmentService {
                 commitment
                     .entry(ancestors[ancestors_index])
                     .or_insert_with(BlockCommitment::default)
-                    .increase_confirmation_stake(vote.confirmation_count as usize, tock);
+                    .increase_confirmation_stake(vote.confirmation_count as usize, tocks);
                 ancestors_index += 1;
 
                 if ancestors_index == ancestors.len() {
@@ -275,7 +275,7 @@ mod tests {
         let ancestors = vec![3, 4, 5, 7, 9, 11];
         let mut commitment = HashMap::new();
         let mut rooted_stake = vec![];
-        let tock = 5;
+        let tocks = 5;
         let mut vote_state = VoteState::default();
 
         let root = *ancestors.last().unwrap();
@@ -285,15 +285,15 @@ mod tests {
             &mut rooted_stake,
             &vote_state,
             &ancestors,
-            tock,
+            tocks,
         );
 
         for a in ancestors {
             let mut expected = BlockCommitment::default();
-            expected.increase_rooted_stake(tock);
+            expected.increase_rooted_stake(tocks);
             assert_eq!(*commitment.get(&a).unwrap(), expected);
         }
-        assert_eq!(rooted_stake[0], (root, tock));
+        assert_eq!(rooted_stake[0], (root, tocks));
     }
 
     #[test]
@@ -301,7 +301,7 @@ mod tests {
         let ancestors = vec![3, 4, 5, 7, 9, 11];
         let mut commitment = HashMap::new();
         let mut rooted_stake = vec![];
-        let tock = 5;
+        let tocks = 5;
         let mut vote_state = VoteState::default();
 
         let root = ancestors[2];
@@ -312,19 +312,19 @@ mod tests {
             &mut rooted_stake,
             &vote_state,
             &ancestors,
-            tock,
+            tocks,
         );
 
         for a in ancestors {
             let mut expected = BlockCommitment::default();
             if a <= root {
-                expected.increase_rooted_stake(tock);
+                expected.increase_rooted_stake(tocks);
             } else {
-                expected.increase_confirmation_stake(1, tock);
+                expected.increase_confirmation_stake(1, tocks);
             }
             assert_eq!(*commitment.get(&a).unwrap(), expected);
         }
-        assert_eq!(rooted_stake[0], (root, tock));
+        assert_eq!(rooted_stake[0], (root, tocks));
     }
 
     #[test]
@@ -332,7 +332,7 @@ mod tests {
         let ancestors = vec![3, 4, 5, 7, 9, 10, 11];
         let mut commitment = HashMap::new();
         let mut rooted_stake = vec![];
-        let tock = 5;
+        let tocks = 5;
         let mut vote_state = VoteState::default();
 
         let root = ancestors[2];
@@ -345,25 +345,25 @@ mod tests {
             &mut rooted_stake,
             &vote_state,
             &ancestors,
-            tock,
+            tocks,
         );
 
         for (i, a) in ancestors.iter().enumerate() {
             if *a <= root {
                 let mut expected = BlockCommitment::default();
-                expected.increase_rooted_stake(tock);
+                expected.increase_rooted_stake(tocks);
                 assert_eq!(*commitment.get(a).unwrap(), expected);
             } else if i <= 4 {
                 let mut expected = BlockCommitment::default();
-                expected.increase_confirmation_stake(2, tock);
+                expected.increase_confirmation_stake(2, tocks);
                 assert_eq!(*commitment.get(a).unwrap(), expected);
             } else if i <= 6 {
                 let mut expected = BlockCommitment::default();
-                expected.increase_confirmation_stake(1, tock);
+                expected.increase_confirmation_stake(1, tocks);
                 assert_eq!(*commitment.get(a).unwrap(), expected);
             }
         }
-        assert_eq!(rooted_stake[0], (root, tock));
+        assert_eq!(rooted_stake[0], (root, tocks));
     }
 
     #[test]

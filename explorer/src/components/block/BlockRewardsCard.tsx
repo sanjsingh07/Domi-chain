@@ -1,6 +1,6 @@
 import React from "react";
-import { SolBalance } from "utils";
-import { BlockResponse, PublicKey } from "@solana/web3.js";
+import { AnlogBalance } from "utils";
+import { BlockResponse, PublicKey } from "@analog/web3.js";
 import { Address } from "components/common/Address";
 
 const PAGE_SIZE = 10;
@@ -38,8 +38,8 @@ export function BlockRewardsCard({ block }: { block: BlockResponse }) {
               let percentChange;
               if (reward.postBalance !== null && reward.postBalance !== 0) {
                 percentChange = (
-                  (Math.abs(reward.tock) /
-                    (reward.postBalance - reward.tock)) *
+                  (Math.abs(reward.tocks) /
+                    (reward.postBalance - reward.tocks)) *
                   100
                 ).toFixed(9);
               }
@@ -50,11 +50,11 @@ export function BlockRewardsCard({ block }: { block: BlockResponse }) {
                   </td>
                   <td>{reward.rewardType}</td>
                   <td>
-                    <SolBalance tock={reward.tock} />
+                    <AnlogBalance tocks={reward.tocks} />
                   </td>
                   <td>
                     {reward.postBalance ? (
-                      <SolBalance tock={reward.postBalance} />
+                      <AnlogBalance tocks={reward.postBalance} />
                     ) : (
                       "-"
                     )}

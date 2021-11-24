@@ -19,7 +19,7 @@ pub enum Source {
 }
 
 impl Source {
-    #[deprecated(since = "1.9.0", note = "Please use `get_blockhash` instead")]
+    #[deprecated(since = "1.8.0", note = "Please use `get_blockhash` instead")]
     pub fn get_blockhash_and_fee_calculator(
         &self,
         rpc_client: &RpcClient,
@@ -34,7 +34,6 @@ impl Source {
                 Ok((res.0, res.1))
             }
             Self::NonceAccount(ref pubkey) => {
-                #[allow(clippy::redundant_closure)]
                 let data = nonce_utils::get_account_with_commitment(rpc_client, pubkey, commitment)
                     .and_then(|ref a| nonce_utils::data_from_account(a))?;
                 Ok((data.blockhash, data.fee_calculator))
@@ -43,7 +42,7 @@ impl Source {
     }
 
     #[deprecated(
-        since = "1.9.0",
+        since = "1.8.0",
         note = "Please do not use, will no longer be available in the future"
     )]
     pub fn get_fee_calculator(
@@ -81,7 +80,6 @@ impl Source {
                 Ok(blockhash)
             }
             Self::NonceAccount(ref pubkey) => {
-                #[allow(clippy::redundant_closure)]
                 let data = nonce_utils::get_account_with_commitment(rpc_client, pubkey, commitment)
                     .and_then(|ref a| nonce_utils::data_from_account(a))?;
                 Ok(data.blockhash)
@@ -98,7 +96,6 @@ impl Source {
         Ok(match self {
             Self::Cluster => rpc_client.is_blockhash_valid(blockhash, commitment)?,
             Self::NonceAccount(ref pubkey) => {
-                #[allow(clippy::redundant_closure)]
                 let _ = nonce_utils::get_account_with_commitment(rpc_client, pubkey, commitment)
                     .and_then(|ref a| nonce_utils::data_from_account(a))?;
                 true
@@ -134,7 +131,7 @@ impl BlockhashQuery {
         BlockhashQuery::new(blockhash, sign_only, nonce_account)
     }
 
-    #[deprecated(since = "1.9.0", note = "Please use `get_blockhash` instead")]
+    #[deprecated(since = "1.8.0", note = "Please use `get_blockhash` instead")]
     pub fn get_blockhash_and_fee_calculator(
         &self,
         rpc_client: &RpcClient,

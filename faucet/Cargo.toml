@@ -1,9 +1,9 @@
 [package]
 name = "analog-faucet"
-version = "1.9.0"
+version = "1.8.2"
 description = "Analog Faucet"
 authors = ["Analog Maintainers <maintainers@analog.foundation>"]
-repository = "https://github.com/analog-labs/analog"
+repository = "https://github.com/analog/testnet"
 license = "Apache-2.0"
 homepage = "https://analog.com/"
 documentation = "https://docs.rs/analog-faucet"
@@ -16,12 +16,12 @@ clap = "2.33"
 log = "0.4.14"
 serde = "1.0.130"
 serde_derive = "1.0.103"
-analog-clap-utils = { path = "../clap-utils", version = "=1.9.0" }
-analog-cli-config = { path = "../cli-config", version = "=1.9.0" }
-analog-logger = { path = "../logger", version = "=1.9.0" }
-analog-metrics = { path = "../metrics", version = "=1.9.0" }
-analog-sdk = { path = "../sdk", version = "=1.9.0" }
-analog-version = { path = "../version", version = "=1.9.0" }
+analog-clap-utils = { path = "../clap-utils", version = "=1.8.2" }
+analog-cli-config = { path = "../cli-config", version = "=1.8.2" }
+analog-logger = { path = "../logger", version = "=1.8.2" }
+analog-metrics = { path = "../metrics", version = "=1.8.2" }
+analog-sdk = { path = "../sdk", version = "=1.8.2" }
+analog-version = { path = "../version", version = "=1.8.2" }
 spl-memo = { version = "=3.0.1", features = ["no-entrypoint"] }
 thiserror = "1.0"
 tokio = { version = "1", features = ["full"] }

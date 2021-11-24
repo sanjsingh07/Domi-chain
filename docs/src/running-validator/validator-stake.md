@@ -12,7 +12,7 @@ to the cluster. It may take some time to catch up after your validator boots.
 Use the `catchup` command to monitor your validator through this process:
 
 ```bash
-solana catchup ~/validator-keypair.json
+analog catchup ~/validator-keypair.json
 ```
 
 Until your validator has caught up, it will not be able to vote successfully and
@@ -34,38 +34,38 @@ analog-keygen new -o ~/validator-stake-keypair.json
 
 ## Delegate Stake
 
-Now delegate 1 ANLOG to your validator by first creating your stake account:
+Now delegate 1 SOL to your validator by first creating your stake account:
 
 ```bash
-solana create-stake-account ~/validator-stake-keypair.json 1
+analog create-stake-account ~/validator-stake-keypair.json 1
 ```
 
 and then delegating that stake to your validator:
 
 ```bash
-solana delegate-stake ~/validator-stake-keypair.json ~/vote-account-keypair.json
+analog delegate-stake ~/validator-stake-keypair.json ~/vote-account-keypair.json
 ```
 
-> Don’t delegate your remaining ANLOG, as your validator will use those tokens to vote.
+> Don’t delegate your remaining SOL, as your validator will use those tokens to vote.
 
 Stakes can be re-delegated to another node at any time with the same command,
 but only one re-delegation is permitted per epoch:
 
 ```bash
-solana delegate-stake ~/validator-stake-keypair.json ~/some-other-vote-account-keypair.json
+analog delegate-stake ~/validator-stake-keypair.json ~/some-other-vote-account-keypair.json
 ```
 
 Assuming the node is voting, now you're up and running and generating validator
 rewards. Rewards are paid automatically on epoch boundaries.
 
-The rewards tock earned are split between your stake account and the vote
+The rewards lamports earned are split between your stake account and the vote
 account according to the commission rate set in the vote account. Rewards can
 only be earned while the validator is up and running. Further, once staked, the
 validator becomes an important part of the network. In order to safely remove a
 validator from the network, first deactivate its stake.
 
 At the end of each slot, a validator is expected to send a vote transaction.
-These vote transactions are paid for by tock from a validator's identity
+These vote transactions are paid for by lamports from a validator's identity
 account.
 
 This is a normal transaction so the standard transaction fee will apply. The
@@ -84,18 +84,18 @@ period.
 
 Monitor a validator's stake during warmup by:
 
-- View your vote account:`solana vote-account ~/vote-account-keypair.json` This displays the current state of all the votes the validator has submitted to the network.
-- View your stake account, the delegation preference and details of your stake:`solana stake-account ~/validator-stake-keypair.json`
-- `solana validators` displays the current active stake of all validators, including yours
-- `solana stake-history` shows the history of stake warming up and cooling down over recent epochs
+- View your vote account:`analog vote-account ~/vote-account-keypair.json` This displays the current state of all the votes the validator has submitted to the network.
+- View your stake account, the delegation preference and details of your stake:`analog stake-account ~/validator-stake-keypair.json`
+- `analog validators` displays the current active stake of all validators, including yours
+- `analog stake-history` shows the history of stake warming up and cooling down over recent epochs
 - Look for log messages on your validator indicating your next leader slot: `[2019-09-27T20:16:00.319721164Z INFO analog_core::replay_stage] <VALIDATOR_IDENTITY_PUBKEY> voted and reset PoH at tick height ####. My next leader slot is ####`
-- Once your stake is warmed up, you will see a stake balance listed for your validator by running `solana validators`
+- Once your stake is warmed up, you will see a stake balance listed for your validator by running `analog validators`
 
 ## Monitor Your Staked Validator
 
 Confirm your validator becomes a [leader](../terminology.md#leader)
 
-- After your validator is caught up, use the `solana balance` command to monitor the earnings as your validator is selected as leader and collects transaction fees
+- After your validator is caught up, use the `analog balance` command to monitor the earnings as your validator is selected as leader and collects transaction fees
 - Analog nodes offer a number of useful JSON-RPC methods to return information about the network and your validator's participation. Make a request by using curl \(or another http client of your choosing\), specifying the desired method in JSON-RPC-formatted data. For example:
 
 ```bash
@@ -118,7 +118,7 @@ Before detaching your validator from the cluster, you should deactivate the
 stake that was previously delegated by running:
 
 ```bash
-solana deactivate-stake ~/validator-stake-keypair.json
+analog deactivate-stake ~/validator-stake-keypair.json
 ```
 
 Stake is not deactivated immediately and instead cools down in a similar fashion
@@ -129,4 +129,4 @@ withdraw it from the network. Cooldown may take several epochs to complete,
 depending on active stake and the size of your stake.
 
 Note that a stake account may only be used once, so after deactivation, use the
-cli's `withdraw-stake` command to recover the previously staked tock.
+cli's `withdraw-stake` command to recover the previously staked lamports.

@@ -69,18 +69,18 @@ Operate a configured testnet
                                       - Override the default --hashes-per-tick for the cluster
    --no-airdrop
                                       - If set, disables the faucet keypair.  Nodes must be funded in genesis config
-   --faucet-tock NUM_LAMPORTS_TO_MINT
-                                      - Override the default 500000000000000000 tock minted in genesis
+   --faucet-lamports NUM_LAMPORTS_TO_MINT
+                                      - Override the default 500000000000000000 lamports minted in genesis
    --extra-primordial-stakes NUM_EXTRA_PRIMORDIAL_STAKES
                                       - Number of extra nodes to be initially staked in genesis.
                                         Implies --wait-for-supermajority 1 --async-node-init and the supermajority
                                         wait slot may be overridden with the corresponding flag
-   --internal-nodes-stake-tock NUM_LAMPORTS_PER_NODE
+   --internal-nodes-stake-lamports NUM_LAMPORTS_PER_NODE
                                       - Amount to stake internal nodes.
-   --internal-nodes-tock NUM_LAMPORTS_PER_NODE
+   --internal-nodes-lamports NUM_LAMPORTS_PER_NODE
                                       - Amount to fund internal nodes in genesis config.
    --external-accounts-file FILE_PATH
-                                      - A YML file with a list of account pubkeys and correspondingtockbalances
+                                      - A YML file with a list of account pubkeys and corresponding lamport balances
                                         in genesis config for external nodes
    --no-snapshot-fetch
                                       - If set, disables booting validators from a snapshot
@@ -105,8 +105,6 @@ Operate a configured testnet
                                       - Override the number of slots in an epoch
    --warp-slot WARP_SLOT
                                       - Boot from a snapshot that has warped ahead to WARP_SLOT rather than a slot 0 genesis.
-   --full-rpc
-                                      - Support full RPC services on all nodes
  sanity/start-specific options:
    -F                   - Discard validator nodes that didn't bootup successfully
    -o noInstallCheck    - Skip analog-install sanity
@@ -312,7 +310,6 @@ startBootstrapLeader() {
          \"$maybeNoSnapshot $maybeSkipLedgerVerify $maybeLimitLedgerSize $maybeWaitForSupermajority $maybeAllowPrivateAddr $maybeAccountsDbSkipShrink $maybeSkipRequireTower\" \
          \"$gpuMode\" \
          \"$maybeWarpSlot\" \
-         \"$maybeFullRpc\" \
          \"$waitForNodeInit\" \
          \"$extraPrimordialStakes\" \
          \"$TMPFS_ACCOUNTS\" \
@@ -384,7 +381,6 @@ startNode() {
          \"$maybeNoSnapshot $maybeSkipLedgerVerify $maybeLimitLedgerSize $maybeWaitForSupermajority $maybeAllowPrivateAddr $maybeAccountsDbSkipShrink $maybeSkipRequireTower\" \
          \"$gpuMode\" \
          \"$maybeWarpSlot\" \
-         \"$maybeFullRpc\" \
          \"$waitForNodeInit\" \
          \"$extraPrimordialStakes\" \
          \"$TMPFS_ACCOUNTS\" \
@@ -792,7 +788,6 @@ netemCommand="add"
 clientDelayStart=0
 netLogDir=
 maybeWarpSlot=
-maybeFullRpc=false
 waitForNodeInit=true
 extraPrimordialStakes=0
 
@@ -809,10 +804,10 @@ while [[ -n $1 ]]; do
     elif [[ $1 = --slots-per-epoch ]]; then
       genesisOptions="$genesisOptions $1 $2"
       shift 2
-    elif [[ $1 = --target-tock-per-signature ]]; then
+    elif [[ $1 = --target-lamports-per-signature ]]; then
       genesisOptions="$genesisOptions $1 $2"
       shift 2
-    elif [[ $1 = --faucet-tock ]]; then
+    elif [[ $1 = --faucet-lamports ]]; then
       genesisOptions="$genesisOptions $1 $2"
       shift 2
     elif [[ $1 = --cluster-type ]]; then
@@ -853,10 +848,10 @@ while [[ -n $1 ]]; do
     elif [[ $1 = --platform ]]; then
       updatePlatforms="$updatePlatforms $2"
       shift 2
-    elif [[ $1 = --internal-nodes-stake-tock ]]; then
+    elif [[ $1 = --internal-nodes-stake-lamports ]]; then
       internalNodesStakeLamports="$2"
       shift 2
-    elif [[ $1 = --internal-nodes-tock ]]; then
+    elif [[ $1 = --internal-nodes-lamports ]]; then
       internalNodesLamports="$2"
       shift 2
     elif [[ $1 = --external-accounts-file ]]; then
@@ -901,9 +896,6 @@ while [[ -n $1 ]]; do
     elif [[ $1 == --warp-slot ]]; then
       maybeWarpSlot="$1 $2"
       shift 2
-    elif [[ $1 == --full-rpc ]]; then
-      maybeFullRpc=true
-      shift 1
     elif [[ $1 == --async-node-init ]]; then
       waitForNodeInit=false
       shift 1

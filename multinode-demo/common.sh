@@ -25,7 +25,7 @@ if [[ $(uname) != Linux ]]; then
 fi
 
 if [[ -n $USE_INSTALL || ! -f "$ANALOG_ROOT"/Cargo.toml ]]; then
-  solana_program() {
+  analog_program() {
     declare program="$1"
     if [[ -z $program ]]; then
       printf "analog"
@@ -34,7 +34,7 @@ if [[ -n $USE_INSTALL || ! -f "$ANALOG_ROOT"/Cargo.toml ]]; then
     fi
   }
 else
-  solana_program() {
+  analog_program() {
     declare program="$1"
     declare crate="$program"
     if [[ -z $program ]]; then
@@ -61,15 +61,15 @@ else
   }
 fi
 
-analog_bench_tps=$(solana_program bench-tps)
-analog_faucet=$(solana_program faucet)
-analog_validator=$(solana_program validator)
+analog_bench_tps=$(analog_program bench-tps)
+analog_faucet=$(analog_program faucet)
+analog_validator=$(analog_program validator)
 analog_validator_cuda="$analog_validator --cuda"
-analog_genesis=$(solana_program genesis)
-analog_gossip=$(solana_program gossip)
-analog_keygen=$(solana_program keygen)
-analog_ledger_tool=$(solana_program ledger-tool)
-analog_cli=$(solana_program)
+analog_genesis=$(analog_program genesis)
+analog_gossip=$(analog_program gossip)
+analog_keygen=$(analog_program keygen)
+analog_ledger_tool=$(analog_program ledger-tool)
+analog_cli=$(analog_program)
 
 export RUST_BACKTRACE=1
 

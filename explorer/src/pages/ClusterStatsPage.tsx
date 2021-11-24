@@ -7,7 +7,7 @@ import {
   usePerformanceInfo,
   useStatsProvider,
 } from "providers/stats/solanaClusterStats";
-import { abbreviatedNumber, lamportsToSol, slotsToHumanString } from "utils";
+import { abbreviatedNumber, tocksToAnlog, slotsToHumanString } from "utils";
 import { ClusterStatus, useCluster } from "providers/cluster";
 import { TpsCard } from "components/TpsCard";
 import { displayTimestampWithoutDate, displayTimestampUtc } from "utils/date";
@@ -16,7 +16,6 @@ import { ErrorCard } from "components/common/ErrorCard";
 import { LoadingCard } from "components/common/LoadingCard";
 import { useVoteAccounts } from "providers/accounts/vote-accounts";
 import { CoingeckoStatus, useCoinGecko } from "utils/coingecko";
-import { Epoch } from "components/common/Epoch";
 
 const CLUSTER_STATS_TIMEOUT = 5000;
 
@@ -43,7 +42,7 @@ function StakingComponent() {
   const { status } = useCluster();
   const supply = useSupply();
   const fetchSupply = useFetchSupply();
-  const coinInfo = useCoinGecko("analog");
+  const coinInfo = useCoinGecko("solana");
   const { fetchVoteAccounts, voteAccounts } = useVoteAccounts();
 
   function fetchData() {
@@ -100,9 +99,9 @@ function StakingComponent() {
     );
   }
 
-  let analogInfo;
+  let solanaInfo;
   if (coinInfo.status === CoingeckoStatus.Success) {
-    analogInfo = coinInfo.coinInfo;
+    solanaInfo = coinInfo.coinInfo;
   }
 
   return (
@@ -112,8 +111,8 @@ function StakingComponent() {
           <div className="card-body">
             <h4>Circulating Supply</h4>
             <h1>
-              <em>{displayLamports(supply.circulating)}</em> /{" "}
-              <small>{displayLamports(supply.total)}</small>
+              <em>{displayTocks(supply.circulating)}</em> /{" "}
+              <small>{displayTocks(supply.total)}</small>
             </h1>
             <h5>
               <em>{circulatingPercentage}%</em> is circulating
@@ -127,8 +126,8 @@ function StakingComponent() {
             <h4>Active Stake</h4>
             {activeStake && (
               <h1>
-                <em>{displayLamports(activeStake)}</em> /{" "}
-                <small>{displayLamports(supply.total)}</small>
+                <em>{displayTocks(activeStake)}</em> /{" "}
+                <small>{displayTocks(supply.total)}</small>
               </h1>
             )}
             {delinquentStakePercentage && (
@@ -196,8 +195,8 @@ function StakingComponent() {
   );
 }
 
-function displayLamports(value: number) {
-  return abbreviatedNumber(lamportsToSol(value));
+function displayTocks(value: number) {
+  return abbreviatedNumber(tocksToAnlog(value));
 }
 
 function StatsCardBody() {
@@ -226,6 +225,7 @@ function StatsCardBody() {
   const hourlySlotTime = Math.round(1000 * avgSlotTime_1h);
   const averageSlotTime = Math.round(1000 * avgSlotTime_1min);
   const { slotIndex, slotsInEpoch } = epochInfo;
+  const currentEpoch = epochInfo.epoch.toString();
   const epochProgress = ((100 * slotIndex) / slotsInEpoch).toFixed(1) + "%";
   const epochTimeRemaining = slotsToHumanString(
     slotsInEpoch - slotIndex,
@@ -267,9 +267,7 @@ function StatsCardBody() {
       </tr>
       <tr>
         <td className="w-100">Epoch</td>
-        <td className="text-lg-right text-monospace">
-          <Epoch epoch={epochInfo.epoch} link />
-        </td>
+        <td className="text-lg-right text-monospace">{currentEpoch}</td>
       </tr>
       <tr>
         <td className="w-100">Epoch progress</td>

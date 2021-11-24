@@ -8,7 +8,7 @@ use analog_clap_utils::{
     input_validators::{is_amount, is_rfc3339_datetime, is_valid_pubkey, is_valid_signer},
 };
 use analog_cli_config::CONFIG_FILE;
-use analog_sdk::native_token::anlog_to_tock;
+use analog_sdk::native_token::anlog_to_tocks;
 use std::ffi::OsString;
 use std::process::exit;
 
@@ -149,7 +149,7 @@ where
                 .global(true)
                 .takes_value(true)
                 .value_name("URL")
-                .help("RPC entrypoint address. i.e. http://api.devnet.solana.com"),
+                .help("RPC entrypoint address. i.e. http://api.devnet.analog.com"),
         )
         .subcommand(
             SubCommand::with_name("new")
@@ -280,7 +280,7 @@ fn parse_new_args(matches: &ArgMatches<'_>) -> NewArgs<String, String> {
     NewArgs {
         fee_payer: value_t_or_exit!(matches, "fee_payer", String),
         funding_keypair: value_t_or_exit!(matches, "funding_keypair", String),
-        tock: anlog_to_tock(value_t_or_exit!(matches, "amount", f64)),
+        tocks: anlog_to_tocks(value_t_or_exit!(matches, "amount", f64)),
         base_keypair: value_t_or_exit!(matches, "base_keypair", String),
         stake_authority: value_t_or_exit!(matches, "stake_authority", String),
         withdraw_authority: value_t_or_exit!(matches, "withdraw_authority", String),

@@ -41,20 +41,20 @@ impl Feature {
 
 /// Activate a feature
 pub fn activate(feature_id: &Pubkey, funding_address: &Pubkey, rent: &Rent) -> Vec<Instruction> {
-    activate_with_lamports(
+    activate_with_tocks(
         feature_id,
         funding_address,
         rent.minimum_balance(Feature::size_of()),
     )
 }
 
-pub fn activate_with_lamports(
+pub fn activate_with_tocks(
     feature_id: &Pubkey,
     funding_address: &Pubkey,
-    tock: u64,
+    tocks: u64,
 ) -> Vec<Instruction> {
     vec![
-        system_instruction::transfer(funding_address, feature_id, tock),
+        system_instruction::transfer(funding_address, feature_id, tocks),
         system_instruction::allocate(feature_id, Feature::size_of() as u64),
         system_instruction::assign(feature_id, &id()),
     ]
@@ -63,7 +63,7 @@ pub fn activate_with_lamports(
 #[cfg(test)]
 mod test {
     use super::*;
-    use solana_program::clock::Slot;
+    use analog_program::clock::Slot;
 
     #[test]
     fn feature_sizeof() {

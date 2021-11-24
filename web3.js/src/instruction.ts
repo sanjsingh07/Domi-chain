@@ -7,7 +7,7 @@ import * as Layout from './layout';
  * @internal
  */
 export type InstructionType = {
-  /** The Instruction index (from analog upstream program) */
+  /** The Instruction index (from solana upstream program) */
   index: number;
   /** The BufferLayout to use to build data */
   layout: BufferLayout.Layout;

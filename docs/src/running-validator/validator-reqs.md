@@ -2,14 +2,14 @@
 title: Validator Requirements
 ---
 
-## Minimum ANLOG requirements
+## Minimum SOL requirements
 
-There is no strict minimum amount of ANLOG required to run a validator on Analog.
+There is no strict minimum amount of SOL required to run a validator on Analog.
 
 However in order to participate in consensus, a vote account is required which
-has a rent-exempt reserve of 0.02685864 ANLOG. Voting also requires sending a vote
+has a rent-exempt reserve of 0.02685864 SOL. Voting also requires sending a vote
 transaction for each block the validator agrees with, which can cost up to
-1.1 ANLOG per day.
+1.1 SOL per day.
 
 ## Hardware Recommendations
 
@@ -78,7 +78,7 @@ Docker's containerzation overhead and resultant performance degradation unless
 specially configured.
 
 We use Docker only for development purposes. Docker Hub contains images for all
-releases at [solanalabs/solana](https://hub.docker.com/r/solanalabs/solana).
+releases at [analoglabs/analog](https://hub.docker.com/r/analoglabs/analog).
 
 ## Software
 

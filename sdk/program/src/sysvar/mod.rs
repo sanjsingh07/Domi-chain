@@ -1,7 +1,6 @@
 //! named accounts for synthesized data accounts for bank state, etc.
 //!
 use crate::{account_info::AccountInfo, program_error::ProgramError, pubkey::Pubkey};
-use lazy_static::lazy_static;
 
 pub mod clock;
 pub mod epoch_schedule;
@@ -14,25 +13,18 @@ pub mod slot_hashes;
 pub mod slot_history;
 pub mod stake_history;
 
-lazy_static! {
-    pub static ref ALL_IDS: Vec<Pubkey> = vec![
-        clock::id(),
-        epoch_schedule::id(),
-        #[allow(deprecated)]
-        fees::id(),
-        #[allow(deprecated)]
-        recent_blockhashes::id(),
-        rent::id(),
-        rewards::id(),
-        slot_hashes::id(),
-        slot_history::id(),
-        stake_history::id(),
-        instructions::id(),
-    ];
-}
-
+#[allow(deprecated)]
 pub fn is_sysvar_id(id: &Pubkey) -> bool {
-    ALL_IDS.iter().any(|key| key == id)
+    clock::check_id(id)
+        || epoch_schedule::check_id(id)
+        || fees::check_id(id)
+        || recent_blockhashes::check_id(id)
+        || rent::check_id(id)
+        || rewards::check_id(id)
+        || slot_hashes::check_id(id)
+        || slot_history::check_id(id)
+        || stake_history::check_id(id)
+        || instructions::check_id(id)
 }
 
 #[macro_export]
@@ -53,7 +45,9 @@ macro_rules! declare_sysvar_id(
         #[cfg(test)]
         #[test]
         fn test_sysvar_id() {
-            assert!($crate::sysvar::is_sysvar_id(&id()), "sysvar::is_sysvar_id() doesn't know about {}", $name);
+            if !$crate::sysvar::is_sysvar_id(&id()) {
+                panic!("sysvar::is_sysvar_id() doesn't know about {}", $name);
+            }
         }
     )
 );
@@ -78,7 +72,10 @@ macro_rules! declare_deprecated_sysvar_id(
         #[cfg(test)]
         #[test]
         fn test_sysvar_id() {
-            assert!($crate::sysvar::is_sysvar_id(&id()), "sysvar::is_sysvar_id() doesn't know about {}", $name);
+            #[allow(deprecated)]
+            if !$crate::sysvar::is_sysvar_id(&id()) {
+                panic!("sysvar::is_sysvar_id() doesn't know about {}", $name);
+            }
         }
     )
 );
@@ -167,13 +164,13 @@ mod tests {
         let key = crate::sysvar::tests::id();
         let wrong_key = Pubkey::new_unique();
         let owner = Pubkey::new_unique();
-        let mut tock = 42;
+        let mut tocks = 42;
         let mut data = vec![0_u8; TestSysvar::size_of()];
         let mut account_info = AccountInfo::new(
             &key,
             false,
             true,
-            &mut tock,
+            &mut tocks,
             &mut data,
             &owner,
             false,

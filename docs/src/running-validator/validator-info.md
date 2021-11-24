@@ -9,13 +9,13 @@ You can publish your validator information to the chain to be publicly visible t
 Run the analog CLI to populate a validator info account:
 
 ```bash
-solana validator-info publish --keypair ~/validator-keypair.json <VALIDATOR_INFO_ARGS> <VALIDATOR_NAME>
+analog validator-info publish --keypair ~/validator-keypair.json <VALIDATOR_INFO_ARGS> <VALIDATOR_NAME>
 ```
 
 For details about optional fields for VALIDATOR_INFO_ARGS:
 
 ```bash
-solana validator-info publish --help
+analog validator-info publish --help
 ```
 
 ## Example Commands
@@ -23,13 +23,13 @@ solana validator-info publish --help
 Example publish command:
 
 ```bash
-solana validator-info publish "Elvis Validator" -n elvis -w "https://elvis-validates.com"
+analog validator-info publish "Elvis Validator" -n elvis -w "https://elvis-validates.com"
 ```
 
 Example query command:
 
 ```bash
-solana validator-info get
+analog validator-info get
 ```
 
 which outputs
@@ -53,12 +53,12 @@ pubkey with Keybase:
    - Create an empty file on your local computer called `validator-<PUBKEY>`
    - In Keybase, navigate to the Files section, and upload your pubkey file to
 
-     a `solana` subdirectory in your public folder: `/keybase/public/<KEYBASE_USERNAME>/solana`
+     a `analog` subdirectory in your public folder: `/keybase/public/<KEYBASE_USERNAME>/analog`
 
    - To check your pubkey, ensure you can successfully browse to
 
-     `https://keybase.pub/<KEYBASE_USERNAME>/solana/validator-<PUBKEY>`
+     `https://keybase.pub/<KEYBASE_USERNAME>/analog/validator-<PUBKEY>`
 
-3. Add or update your `solana validator-info` with your Keybase username. The
+3. Add or update your `analog validator-info` with your Keybase username. The
 
    CLI will verify the `validator-<PUBKEY>` file

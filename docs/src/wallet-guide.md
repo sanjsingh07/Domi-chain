@@ -4,7 +4,7 @@ title: Analog Wallet Guide
 
 This document describes the different wallet options that are available to users
 of Analog who want to be able to send, receive and interact with
-ANLOG tokens on the Analog blockchain.
+SOL tokens on the Analog blockchain.
 
 ## What is a Wallet?
 
@@ -37,14 +37,14 @@ private key to a wallet, they can withdraw all the tokens it contains.
 If the private key for a wallet is lost, any tokens that have been sent
 to that wallet's address are **permanently lost**.
 
-Different wallet solutions offer different approaches to keypair security,
-interacting with the keypair, and signing transactions to use/spend the tokens.
+Different wallet solutions offer different approaches to keypair security and
+interacting with the keypair and sign transactions to use/spend the tokens.
 Some are easier to use than others.
 Some store and back up private keys more securely.
 Analog supports multiple types of wallets so you can choose the right balance
 of security and convenience.
 
-**If you want to be able to receive ANLOG tokens on the Analog blockchain,
+**If you want to be able to receive SOL tokens on the Analog blockchain,
 you first will need to create a wallet.**
 
 ## Supported Wallets

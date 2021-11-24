@@ -220,13 +220,13 @@ fn new_update_manifest(
     {
         let recent_blockhash = rpc_client.get_latest_blockhash()?;
 
-        let tock = rpc_client
+        let tocks = rpc_client
             .get_minimum_balance_for_rent_exemption(SignedUpdateManifest::max_space() as usize)?;
 
         let instructions = config_instruction::create_account::<SignedUpdateManifest>(
             &from_keypair.pubkey(),
             &update_manifest_keypair.pubkey(),
-            tock,
+            tocks,
             vec![], // additional keys
         );
         let message = Message::new(&instructions, Some(&from_keypair.pubkey()));
@@ -436,7 +436,7 @@ fn add_to_path(new_path: &str) -> bool {
 
 #[cfg(unix)]
 fn add_to_path(new_path: &str) -> bool {
-    let shell_export_string = format!("\nexport PATH=\"{}:$PATH\"", new_path);
+    let shell_export_string = format!(r#"export PATH="{}:$PATH""#, new_path);
     let mut modified_rcfiles = false;
 
     // Look for sh, bash, and zsh rc files
@@ -561,7 +561,7 @@ pub fn init(
 
 fn github_release_download_url(release_semver: &str) -> String {
     format!(
-        "https://github.com/analog-labs/analog/releases/download/v{}/analog-release-{}.tar.bz2",
+        "https://github.com/analog/testnet/releases/download/v{}/analog-release-{}.tar.bz2",
         release_semver,
         crate::build_env::TARGET
     )
@@ -860,7 +860,7 @@ fn check_for_newer_github_release(
     prerelease_allowed: bool,
 ) -> reqwest::Result<Option<String>> {
     let url =
-        reqwest::Url::parse("https://api.github.com/repos/analog-labs/analog/releases").unwrap();
+        reqwest::Url::parse("https://api.github.com/repos/analog/analog/releases").unwrap();
     let client = reqwest::blocking::Client::builder()
         .user_agent("analog-install")
         .build()?;

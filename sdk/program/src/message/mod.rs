@@ -33,7 +33,7 @@ pub struct MessageHeader {
 
     /// The last num_readonly_signed_accounts of the signed keys are read-only accounts. Programs
     /// may process multiple transactions that load read-only accounts within a single PoH entry,
-    /// but are not permitted to credit or debit tock or modify account data. Transactions
+    /// but are not permitted to credit or debit tocks or modify account data. Transactions
     /// targeting the same read-write account are evaluated sequentially.
     pub num_readonly_signed_accounts: u8,
 

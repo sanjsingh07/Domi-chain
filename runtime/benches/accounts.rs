@@ -17,7 +17,7 @@ use analog_sdk::{
     account::{AccountSharedData, ReadableAccount},
     genesis_config::{create_genesis_config, ClusterType},
     hash::Hash,
-    tock::LamportsError,
+    tocks::TocksError,
     pubkey::Pubkey,
 };
 use std::{
@@ -28,7 +28,7 @@ use std::{
 };
 use test::Bencher;
 
-fn deposit_many(bank: &Bank, pubkeys: &mut Vec<Pubkey>, num: usize) -> Result<(), LamportsError> {
+fn deposit_many(bank: &Bank, pubkeys: &mut Vec<Pubkey>, num: usize) -> Result<(), TocksError> {
     for t in 0..num {
         let pubkey = analog_sdk::pubkey::new_rand();
         let account =
@@ -107,13 +107,13 @@ fn test_accounts_hash_bank_hash(bencher: &mut Bencher) {
     let slot = 0;
     create_test_accounts(&accounts, &mut pubkeys, num_accounts, slot);
     let ancestors = Ancestors::from(vec![0]);
-    let (_, total_lamports) = accounts.accounts_db.update_accounts_hash(0, &ancestors);
+    let (_, total_tocks) = accounts.accounts_db.update_accounts_hash(0, &ancestors);
     let test_hash_calculation = false;
     bencher.iter(|| {
-        assert!(accounts.verify_bank_hash_and_lamports(
+        assert!(accounts.verify_bank_hash_and_tocks(
             0,
             &ancestors,
-            total_lamports,
+            total_tocks,
             test_hash_calculation
         ))
     });
@@ -391,9 +391,9 @@ fn bench_load_largest_accounts(b: &mut Bencher) {
     );
     let mut rng = rand::thread_rng();
     for _ in 0..10_000 {
-        let tock = rng.gen();
+        let tocks = rng.gen();
         let pubkey = Pubkey::new_unique();
-        let account = AccountSharedData::new(tock, 0, &Pubkey::default());
+        let account = AccountSharedData::new(tocks, 0, &Pubkey::default());
         accounts.store_slow_uncached(0, &pubkey, &account);
     }
     let ancestors = Ancestors::from(vec![0]);

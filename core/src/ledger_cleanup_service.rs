@@ -65,7 +65,7 @@ impl LedgerCleanupService {
         let blockstore_compact = blockstore.clone();
 
         let t_cleanup = Builder::new()
-            .name("anlog-led-cleanup".to_string())
+            .name("sol-led-cleanup".to_string())
             .spawn(move || loop {
                 if exit.load(Ordering::Relaxed) {
                     break;
@@ -87,7 +87,7 @@ impl LedgerCleanupService {
             .unwrap();
 
         let t_compact = Builder::new()
-            .name("anlog-led-compact".to_string())
+            .name("sol-led-compact".to_string())
             .spawn(move || loop {
                 if exit_compact.load(Ordering::Relaxed) {
                     break;

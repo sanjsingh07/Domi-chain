@@ -76,7 +76,6 @@ Major releases:
 - [`analog-program`](https://docs.rs/analog-program/) - Rust SDK for writing programs
 - [`analog-client`](https://docs.rs/analog-client/) - Rust client for connecting to RPC API
 - [`analog-cli-config`](https://docs.rs/analog-cli-config/) - Rust client for managing Analog CLI config files
-- [`analog-accountsdb-plugin-interface`](https://docs.rs/analog-accountsdb-plugin-interface/) - Rust interface for developing Analog AccountsDb plugins.
 
 Patch releases:
 

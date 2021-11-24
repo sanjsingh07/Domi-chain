@@ -34,7 +34,7 @@ fn create_inputs() -> (
     ];
     let accounts = vec![
         RefCell::new(AccountSharedData::from(Account {
-            tock: 1,
+            tocks: 1,
             data: vec![1u8, 2, 3, 4, 5],
             owner: bpf_loader::id(),
             executable: false,
@@ -42,28 +42,28 @@ fn create_inputs() -> (
         })),
         // dup
         RefCell::new(AccountSharedData::from(Account {
-            tock: 1,
+            tocks: 1,
             data: vec![1u8; 100000],
             owner: bpf_loader::id(),
             executable: false,
             rent_epoch: 100,
         })),
         RefCell::new(AccountSharedData::from(Account {
-            tock: 2,
+            tocks: 2,
             data: vec![11u8; 100000],
             owner: bpf_loader::id(),
             executable: true,
             rent_epoch: 200,
         })),
         RefCell::new(AccountSharedData::from(Account {
-            tock: 3,
+            tocks: 3,
             data: vec![],
             owner: bpf_loader::id(),
             executable: false,
             rent_epoch: 3100,
         })),
         RefCell::new(AccountSharedData::from(Account {
-            tock: 4,
+            tocks: 4,
             data: vec![1u8; 100000],
             owner: bpf_loader::id(),
             executable: false,
@@ -71,21 +71,21 @@ fn create_inputs() -> (
         })),
         // dup
         RefCell::new(AccountSharedData::from(Account {
-            tock: 4,
+            tocks: 4,
             data: vec![1u8; 1000000],
             owner: bpf_loader::id(),
             executable: false,
             rent_epoch: 100,
         })),
         RefCell::new(AccountSharedData::from(Account {
-            tock: 5,
+            tocks: 5,
             data: vec![11u8; 10000],
             owner: bpf_loader::id(),
             executable: true,
             rent_epoch: 200,
         })),
         RefCell::new(AccountSharedData::from(Account {
-            tock: 6,
+            tocks: 6,
             data: vec![],
             owner: bpf_loader::id(),
             executable: false,

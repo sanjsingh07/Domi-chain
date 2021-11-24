@@ -3,7 +3,7 @@ use log::*;
 use analog_runtime::append_vec::AppendVec;
 
 fn main() {
-    analog_logger::setup_with_default("solana=info");
+    analog_logger::setup_with_default("analog=info");
     let matches = App::new(crate_name!())
         .about(crate_description!())
         .version(analog_version::version!())

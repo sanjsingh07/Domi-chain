@@ -1,7 +1,7 @@
-//! Example Rust-based BPF program that moves atockfrom one account to another
+//! @brief Example Rust-based BPF program that moves a tock from one account to another
 
-extern crate solana_program;
-use solana_program::{
+extern crate analog_program;
+use analog_program::{
     account_info::AccountInfo, entrypoint, entrypoint::ProgramResult, pubkey::Pubkey,
 };
 
@@ -12,10 +12,10 @@ fn process_instruction(
     accounts: &[AccountInfo],
     _instruction_data: &[u8],
 ) -> ProgramResult {
-    // account 0 is the mint and not owned by this program, any debit of its tock
+    // account 0 is the mint and not owned by this program, any debit of its tocks
     // should result in a failed program execution.  Test to ensure that this debit
     // is seen by the runtime and fails as expected
-    **accounts[0].tock.borrow_mut() -= 1;
+    **accounts[0].tocks.borrow_mut() -= 1;
 
     Ok(())
 }

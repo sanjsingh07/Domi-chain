@@ -1,11 +1,11 @@
 use analog_account_decoder::parse_token::real_number_string_trimmed;
-use analog_sdk::native_token::tock_to_anlog;
+use analog_sdk::native_token::tocks_to_anlog;
 use std::{
     fmt::{Debug, Display, Formatter, Result},
     ops::Add,
 };
 
-const ANLOG_SYMBOL: &str = "◎";
+const ANLOG_SYMBOL: &str = "GM";
 
 #[derive(PartialEq)]
 pub enum TokenType {
@@ -23,7 +23,7 @@ impl Token {
     fn write_with_symbol(&self, f: &mut Formatter) -> Result {
         match &self.token_type {
             TokenType::Anlog => {
-                let amount =tock_to_anlog(self.amount);
+                let amount = tocks_to_anlog(self.amount);
                 write!(f, "{}{}", ANLOG_SYMBOL, amount)
             }
             TokenType::SplToken => {

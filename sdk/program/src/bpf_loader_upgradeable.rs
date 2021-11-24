@@ -1,4 +1,4 @@
-//! An Upgradeable Analog BPF loader.
+//! @brief An Upgradeable Analog BPF loader.
 //!
 //! The upgradeable BPF loader is responsible for deploying, upgrading, and
 //! executing BPF programs.  The upgradeable loader allows a program's authority
@@ -88,14 +88,14 @@ pub fn create_buffer(
     payer_address: &Pubkey,
     buffer_address: &Pubkey,
     authority_address: &Pubkey,
-    tock: u64,
+    tocks: u64,
     program_len: usize,
 ) -> Result<Vec<Instruction>, InstructionError> {
     Ok(vec![
         system_instruction::create_account(
             payer_address,
             buffer_address,
-            tock,
+            tocks,
             UpgradeableLoaderState::buffer_len(program_len)? as u64,
             &id(),
         ),
@@ -136,7 +136,7 @@ pub fn deploy_with_max_program_len(
     program_address: &Pubkey,
     buffer_address: &Pubkey,
     upgrade_authority_address: &Pubkey,
-    program_lamports: u64,
+    program_tocks: u64,
     max_data_len: usize,
 ) -> Result<Vec<Instruction>, InstructionError> {
     let (programdata_address, _) = Pubkey::find_program_address(&[program_address.as_ref()], &id());
@@ -144,7 +144,7 @@ pub fn deploy_with_max_program_len(
         system_instruction::create_account(
             payer_address,
             program_address,
-            program_lamports,
+            program_tocks,
             UpgradeableLoaderState::program_len()? as u64,
             &id(),
         ),

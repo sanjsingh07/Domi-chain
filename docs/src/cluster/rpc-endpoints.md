@@ -10,7 +10,7 @@ public RPC endpoints currently available and recommended for each public cluster
 
 #### Endpoint
 
-- `https://api.devnet.solana.com` - single Analog-hosted api node; rate-limited
+- `https://api.devnet.analog.com` - single Analog-hosted api node; rate-limited
 
 #### Rate Limits
 
@@ -24,7 +24,7 @@ public RPC endpoints currently available and recommended for each public cluster
 
 #### Endpoint
 
-- `https://api.testnet.solana.com` - single Analog-hosted api node; rate-limited
+- `https://api.testnet.analog.com` - single Analog-hosted api node; rate-limited
 
 #### Rate Limits
 
@@ -38,7 +38,7 @@ public RPC endpoints currently available and recommended for each public cluster
 
 #### Endpoints
 
-- `https://api.mainnet-beta.solana.com` - Analog-hosted api node cluster, backed by a load balancer; rate-limited
+- `https://api.mainnet-beta.analog.com` - Analog-hosted api node cluster, backed by a load balancer; rate-limited
 - `https://analog-api.projectserum.com` - Project Serum-hosted api node
 
 #### Rate Limits

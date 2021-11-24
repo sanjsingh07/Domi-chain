@@ -1,12 +1,10 @@
-use {
-    crate::parse_instruction::{
-        check_num_accounts, ParsableProgram, ParseInstructionError, ParsedInstructionEnum,
-    },
-    bincode::deserialize,
-    serde_json::{json, Map},
-    analog_sdk::{
-        instruction::CompiledInstruction, pubkey::Pubkey, stake::instruction::StakeInstruction,
-    },
+use crate::parse_instruction::{
+    check_num_accounts, ParsableProgram, ParseInstructionError, ParsedInstructionEnum,
+};
+use bincode::deserialize;
+use serde_json::{json, Map};
+use analog_sdk::{
+    instruction::CompiledInstruction, pubkey::Pubkey, stake::instruction::StakeInstruction,
 };
 
 pub fn parse_stake(
@@ -81,7 +79,7 @@ pub fn parse_stake(
                 }),
             })
         }
-        StakeInstruction::Split(tock) => {
+        StakeInstruction::Split(tocks) => {
             check_num_stake_accounts(&instruction.accounts, 3)?;
             Ok(ParsedInstructionEnum {
                 instruction_type: "split".to_string(),
@@ -89,11 +87,11 @@ pub fn parse_stake(
                     "stakeAccount": account_keys[instruction.accounts[0] as usize].to_string(),
                     "newSplitAccount": account_keys[instruction.accounts[1] as usize].to_string(),
                     "stakeAuthority": account_keys[instruction.accounts[2] as usize].to_string(),
-                    "tock": tock,
+                    "tocks": tocks,
                 }),
             })
         }
-        StakeInstruction::Withdraw(tock) => {
+        StakeInstruction::Withdraw(tocks) => {
             check_num_stake_accounts(&instruction.accounts, 5)?;
             let mut value = json!({
                 "stakeAccount": account_keys[instruction.accounts[0] as usize].to_string(),
@@ -101,7 +99,7 @@ pub fn parse_stake(
                 "clockSysvar": account_keys[instruction.accounts[2] as usize].to_string(),
                 "stakeHistorySysvar": account_keys[instruction.accounts[3] as usize].to_string(),
                 "withdrawAuthority": account_keys[instruction.accounts[4] as usize].to_string(),
-                "tock": tock,
+                "tocks": tocks,
             });
             let map = value.as_object_mut().unwrap();
             if instruction.accounts.len() >= 6 {
@@ -277,15 +275,13 @@ fn check_num_stake_accounts(accounts: &[u8], num: usize) -> Result<(), ParseInst
 
 #[cfg(test)]
 mod test {
-    use {
-        super::*,
-        analog_sdk::{
-            message::Message,
-            pubkey::Pubkey,
-            stake::{
-                instruction::{self, LockupArgs},
-                state::{Authorized, Lockup, StakeAuthorize},
-            },
+    use super::*;
+    use analog_sdk::{
+        message::Message,
+        pubkey::Pubkey,
+        stake::{
+            instruction::{self, LockupArgs},
+            state::{Authorized, Lockup, StakeAuthorize},
         },
     };
 
@@ -306,10 +302,10 @@ mod test {
             epoch: 11,
             custodian: Pubkey::new_unique(),
         };
-        let tock = 55;
+        let tocks = 55;
 
         let instructions =
-            instruction::create_account(&keys[0], &keys[1], &authorized, &lockup, tock);
+            instruction::create_account(&keys[0], &keys[1], &authorized, &lockup, tocks);
         let message = Message::new(&instructions, None);
         assert_eq!(
             parse_stake(&message.instructions[1], &keys[0..3]).unwrap(),
@@ -396,7 +392,7 @@ mod test {
         //  * split account (signer, allocate + assign first)
         //  * stake authority (signer)
         //  * stake account
-        let instructions = instruction::split(&keys[2], &keys[1], tock, &keys[0]);
+        let instructions = instruction::split(&keys[2], &keys[1], tocks, &keys[0]);
         let message = Message::new(&instructions, None);
         assert_eq!(
             parse_stake(&message.instructions[2], &keys[0..3]).unwrap(),
@@ -406,13 +402,13 @@ mod test {
                     "stakeAccount": keys[2].to_string(),
                     "newSplitAccount": keys[0].to_string(),
                     "stakeAuthority": keys[1].to_string(),
-                    "tock": tock,
+                    "tocks": tocks,
                 }),
             }
         );
         assert!(parse_stake(&message.instructions[2], &keys[0..2]).is_err());
 
-        let instruction = instruction::withdraw(&keys[1], &keys[0], &keys[2], tock, None);
+        let instruction = instruction::withdraw(&keys[1], &keys[0], &keys[2], tocks, None);
         let message = Message::new(&[instruction], None);
         assert_eq!(
             parse_stake(&message.instructions[0], &keys[0..5]).unwrap(),
@@ -424,12 +420,12 @@ mod test {
                     "clockSysvar": keys[3].to_string(),
                     "stakeHistorySysvar": keys[4].to_string(),
                     "withdrawAuthority": keys[0].to_string(),
-                    "tock": tock,
+                    "tocks": tocks,
                 }),
             }
         );
         let instruction =
-            instruction::withdraw(&keys[2], &keys[0], &keys[3], tock, Some(&keys[1]));
+            instruction::withdraw(&keys[2], &keys[0], &keys[3], tocks, Some(&keys[1]));
         let message = Message::new(&[instruction], None);
         assert_eq!(
             parse_stake(&message.instructions[0], &keys[0..6]).unwrap(),
@@ -442,7 +438,7 @@ mod test {
                     "stakeHistorySysvar": keys[5].to_string(),
                     "withdrawAuthority": keys[0].to_string(),
                     "custodian": keys[1].to_string(),
-                    "tock": tock,
+                    "tocks": tocks,
                 }),
             }
         );
@@ -697,10 +693,10 @@ mod test {
             staker: keys[3],
             withdrawer: keys[0],
         };
-        let tock = 55;
+        let tocks = 55;
 
         let instructions =
-            instruction::create_account_checked(&keys[0], &keys[1], &authorized, tock);
+            instruction::create_account_checked(&keys[0], &keys[1], &authorized, tocks);
         let message = Message::new(&instructions, None);
         assert_eq!(
             parse_stake(&message.instructions[1], &keys[0..4]).unwrap(),

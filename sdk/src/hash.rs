@@ -1,4 +1,4 @@
-pub use solana_program::hash::*;
+pub use analog_program::hash::*;
 
 /// random hash value for tests and benchmarks.
 #[cfg(feature = "full")]

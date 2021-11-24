@@ -12,9 +12,9 @@ use analog_account_decoder::{UiAccountEncoding, UiDataSliceConfig};
 use analog_bpf_loader_program::{syscalls::register_syscalls, BpfError, ThisInstructionMeter};
 use analog_clap_utils::{self, input_parsers::*, input_validators::*, keypair::*};
 use analog_cli_output::{
-    CliProgram, CliProgramAccountType, CliProgramAuthority, CliProgramBuffer, CliProgramId,
-    CliUpgradeableBuffer, CliUpgradeableBuffers, CliUpgradeableProgram,
-    CliUpgradeableProgramClosed, CliUpgradeablePrograms,
+    display::new_spinner_progress_bar, CliProgram, CliProgramAccountType, CliProgramAuthority,
+    CliProgramBuffer, CliProgramId, CliUpgradeableBuffer, CliUpgradeableBuffers,
+    CliUpgradeableProgram, CliUpgradeableProgramClosed, CliUpgradeablePrograms,
 };
 use analog_client::{
     client_error::ClientErrorKind,
@@ -22,10 +22,10 @@ use analog_client::{
     rpc_config::RpcSendTransactionConfig,
     rpc_config::{RpcAccountInfoConfig, RpcProgramAccountsConfig},
     rpc_filter::{Memcmp, MemcmpEncodedBytes, RpcFilterType},
+    rpc_request::MAX_GET_SIGNATURE_STATUSES_QUERY_ITEMS,
     tpu_client::{TpuClient, TpuClientConfig},
 };
-use solana_program_runtime::invoke_context::ThisInvokeContext;
-use solana_rbpf::{
+use analog_rbpf::{
     verifier,
     vm::{Config, Executable},
 };
@@ -41,20 +41,27 @@ use analog_sdk::{
     message::Message,
     native_token::Anlog,
     packet::PACKET_DATA_SIZE,
+    process_instruction::MockInvokeContext,
     pubkey::Pubkey,
     signature::{keypair_from_seed, read_keypair_file, Keypair, Signature, Signer},
+    signers::Signers,
     system_instruction::{self, SystemError},
     system_program,
     transaction::Transaction,
     transaction::TransactionError,
 };
+use analog_transaction_status::TransactionConfirmationStatus;
 use std::{
+    collections::HashMap,
+    error,
     fs::File,
     io::{Read, Write},
     mem::size_of,
     path::PathBuf,
     str::FromStr,
     sync::Arc,
+    thread::sleep,
+    time::Duration,
 };
 
 #[derive(Debug, PartialEq)]
@@ -93,7 +100,7 @@ pub enum ProgramCliCommand {
         get_programs: bool,
         get_buffers: bool,
         all: bool,
-        use_lamports_unit: bool,
+        use_tocks_unit: bool,
     },
     Dump {
         account_pubkey: Option<Pubkey>,
@@ -103,7 +110,7 @@ pub enum ProgramCliCommand {
         account_pubkey: Option<Pubkey>,
         recipient_pubkey: Pubkey,
         authority_index: SignerIndex,
-        use_lamports_unit: bool,
+        use_tocks_unit: bool,
     },
 }
 
@@ -310,10 +317,10 @@ impl ProgramSubCommands for App<'_, '_> {
                                 "Authority [default: the default configured keypair]"),
                         )
                         .arg(
-                            Arg::with_name("tock")
-                                .long("tock")
+                            Arg::with_name("tocks")
+                                .long("tocks")
                                 .takes_value(false)
-                                .help("Display balance in tock instead of ANLOG"),
+                                .help("Display balance in tocks instead of ANLOG"),
                         ),
                 )
                 .subcommand(
@@ -338,7 +345,7 @@ impl ProgramSubCommands for App<'_, '_> {
                 )
                 .subcommand(
                     SubCommand::with_name("close")
-                        .about("Close a program or buffer account and withdraw all tock")
+                        .about("Close a program or buffer account and withdraw all tocks")
                         .arg(
                             Arg::with_name("account")
                                 .index(1)
@@ -367,20 +374,19 @@ impl ProgramSubCommands for App<'_, '_> {
                             pubkey!(Arg::with_name("recipient_account")
                                 .long("recipient")
                                 .value_name("RECIPIENT_ADDRESS"),
-                                "Address of the account to deposit the closed account's tock [default: the default configured keypair]"),
+                                "Address of the account to deposit the closed account's tocks [default: the default configured keypair]"),
                         )
                         .arg(
-                            Arg::with_name("tock")
-                                .long("tock")
+                            Arg::with_name("tocks")
+                                .long("tocks")
                                 .takes_value(false)
-                                .help("Display balance in tock instead of ANLOG"),
+                                .help("Display balance in tocks instead of ANLOG"),
                         ),
                 )
         )
         .subcommand(
             SubCommand::with_name("deploy")
                 .about("Deploy a program")
-                .setting(AppSettings::Hidden)
                 .arg(
                     Arg::with_name("program_location")
                         .index(1)
@@ -600,7 +606,7 @@ pub fn parse_program_subcommand(
                     get_programs: matches.is_present("programs"),
                     get_buffers: matches.is_present("buffers"),
                     all: matches.is_present("all"),
-                    use_lamports_unit: matches.is_present("tock"),
+                    use_tocks_unit: matches.is_present("tocks"),
                 }),
                 signers: vec![],
             }
@@ -646,7 +652,7 @@ pub fn parse_program_subcommand(
                     account_pubkey,
                     recipient_pubkey,
                     authority_index: signer_info.index_of(authority_pubkey).unwrap(),
-                    use_lamports_unit: matches.is_present("tock"),
+                    use_tocks_unit: matches.is_present("tocks"),
                 }),
                 signers: signer_info.signers,
             }
@@ -730,7 +736,7 @@ pub fn process_program_subcommand(
             get_programs,
             get_buffers,
             all,
-            use_lamports_unit,
+            use_tocks_unit,
         } => process_show(
             &rpc_client,
             config,
@@ -739,7 +745,7 @@ pub fn process_program_subcommand(
             *get_programs,
             *get_buffers,
             *all,
-            *use_lamports_unit,
+            *use_tocks_unit,
         ),
         ProgramCliCommand::Dump {
             account_pubkey,
@@ -749,14 +755,14 @@ pub fn process_program_subcommand(
             account_pubkey,
             recipient_pubkey,
             authority_index,
-            use_lamports_unit,
+            use_tocks_unit,
         } => process_close(
             &rpc_client,
             config,
             *account_pubkey,
             *recipient_pubkey,
             *authority_index,
-            *use_lamports_unit,
+            *use_tocks_unit,
         ),
     }
 }
@@ -1138,22 +1144,22 @@ const PUBKEY_LEN: usize = 32;
 fn get_buffers(
     rpc_client: &RpcClient,
     authority_pubkey: Option<Pubkey>,
-    use_lamports_unit: bool,
+    use_tocks_unit: bool,
 ) -> Result<CliUpgradeableBuffers, Box<dyn std::error::Error>> {
     let mut filters = vec![RpcFilterType::Memcmp(Memcmp {
         offset: 0,
-        bytes: MemcmpEncodedBytes::Base58(bs58::encode(vec![1, 0, 0, 0]).into_string()),
+        bytes: MemcmpEncodedBytes::Binary(bs58::encode(vec![1, 0, 0, 0]).into_string()),
         encoding: None,
     })];
     if let Some(authority_pubkey) = authority_pubkey {
         filters.push(RpcFilterType::Memcmp(Memcmp {
             offset: ACCOUNT_TYPE_SIZE,
-            bytes: MemcmpEncodedBytes::Base58(bs58::encode(vec![1]).into_string()),
+            bytes: MemcmpEncodedBytes::Binary(bs58::encode(vec![1]).into_string()),
             encoding: None,
         }));
         filters.push(RpcFilterType::Memcmp(Memcmp {
             offset: ACCOUNT_TYPE_SIZE + OPTION_SIZE,
-            bytes: MemcmpEncodedBytes::Base58(
+            bytes: MemcmpEncodedBytes::Binary(
                 bs58::encode(authority_pubkey.as_ref()).into_string(),
             ),
             encoding: None,
@@ -1175,8 +1181,8 @@ fn get_buffers(
                     .map(|pubkey| pubkey.to_string())
                     .unwrap_or_else(|| "none".to_string()),
                 data_len: 0,
-                tock: account.tock,
-                use_lamports_unit,
+                tocks: account.tocks,
+                use_tocks_unit,
             });
         } else {
             return Err(format!("Error parsing Buffer account {}", address).into());
@@ -1184,29 +1190,29 @@ fn get_buffers(
     }
     Ok(CliUpgradeableBuffers {
         buffers,
-        use_lamports_unit,
+        use_tocks_unit,
     })
 }
 
 fn get_programs(
     rpc_client: &RpcClient,
     authority_pubkey: Option<Pubkey>,
-    use_lamports_unit: bool,
+    use_tocks_unit: bool,
 ) -> Result<CliUpgradeablePrograms, Box<dyn std::error::Error>> {
     let mut filters = vec![RpcFilterType::Memcmp(Memcmp {
         offset: 0,
-        bytes: MemcmpEncodedBytes::Base58(bs58::encode(vec![3, 0, 0, 0]).into_string()),
+        bytes: MemcmpEncodedBytes::Binary(bs58::encode(vec![3, 0, 0, 0]).into_string()),
         encoding: None,
     })];
     if let Some(authority_pubkey) = authority_pubkey {
         filters.push(RpcFilterType::Memcmp(Memcmp {
             offset: ACCOUNT_TYPE_SIZE + SLOT_SIZE,
-            bytes: MemcmpEncodedBytes::Base58(bs58::encode(vec![1]).into_string()),
+            bytes: MemcmpEncodedBytes::Binary(bs58::encode(vec![1]).into_string()),
             encoding: None,
         }));
         filters.push(RpcFilterType::Memcmp(Memcmp {
             offset: ACCOUNT_TYPE_SIZE + SLOT_SIZE + OPTION_SIZE,
-            bytes: MemcmpEncodedBytes::Base58(
+            bytes: MemcmpEncodedBytes::Binary(
                 bs58::encode(authority_pubkey.as_ref()).into_string(),
             ),
             encoding: None,
@@ -1230,7 +1236,7 @@ fn get_programs(
             bytes.extend_from_slice(programdata_address.as_ref());
             let filters = vec![RpcFilterType::Memcmp(Memcmp {
                 offset: 0,
-                bytes: MemcmpEncodedBytes::Base58(bs58::encode(bytes).into_string()),
+                bytes: MemcmpEncodedBytes::Binary(bs58::encode(bytes).into_string()),
                 encoding: None,
             })];
 
@@ -1252,8 +1258,8 @@ fn get_programs(
                 last_deploy_slot: slot,
                 data_len: programdata_account.data.len()
                     - UpgradeableLoaderState::programdata_data_offset()?,
-                tock: programdata_account.tock,
-                use_lamports_unit,
+                tocks: programdata_account.tocks,
+                use_tocks_unit,
             });
         } else {
             return Err(
@@ -1263,7 +1269,7 @@ fn get_programs(
     }
     Ok(CliUpgradeablePrograms {
         programs,
-        use_lamports_unit,
+        use_tocks_unit,
     })
 }
 
@@ -1295,7 +1301,7 @@ fn process_show(
     programs: bool,
     buffers: bool,
     all: bool,
-    use_lamports_unit: bool,
+    use_tocks_unit: bool,
 ) -> ProcessResult {
     if let Some(account_pubkey) = account_pubkey {
         if let Some(account) = rpc_client
@@ -1334,8 +1340,8 @@ fn process_show(
                                     last_deploy_slot: slot,
                                     data_len: programdata_account.data.len()
                                         - UpgradeableLoaderState::programdata_data_offset()?,
-                                    tock: programdata_account.tock,
-                                    use_lamports_unit,
+                                    tocks: programdata_account.tocks,
+                                    use_tocks_unit,
                                 }))
                         } else {
                             Err(format!("Program {} has been closed", account_pubkey).into())
@@ -1355,8 +1361,8 @@ fn process_show(
                                 .unwrap_or_else(|| "none".to_string()),
                             data_len: account.data.len()
                                 - UpgradeableLoaderState::buffer_data_offset()?,
-                            tock: account.tock,
-                            use_lamports_unit,
+                            tocks: account.tocks,
+                            use_tocks_unit,
                         }))
                 } else {
                     Err(format!(
@@ -1373,11 +1379,11 @@ fn process_show(
         }
     } else if programs {
         let authority_pubkey = if all { None } else { Some(authority_pubkey) };
-        let programs = get_programs(rpc_client, authority_pubkey, use_lamports_unit)?;
+        let programs = get_programs(rpc_client, authority_pubkey, use_tocks_unit)?;
         Ok(config.output_format.formatted_string(&programs))
     } else if buffers {
         let authority_pubkey = if all { None } else { Some(authority_pubkey) };
-        let buffers = get_buffers(rpc_client, authority_pubkey, use_lamports_unit)?;
+        let buffers = get_buffers(rpc_client, authority_pubkey, use_tocks_unit)?;
         Ok(config.output_format.formatted_string(&buffers))
     } else {
         Err("Invalid parameters".to_string().into())
@@ -1503,7 +1509,7 @@ fn process_close(
     account_pubkey: Option<Pubkey>,
     recipient_pubkey: Pubkey,
     authority_index: SignerIndex,
-    use_lamports_unit: bool,
+    use_tocks_unit: bool,
 ) -> ProcessResult {
     let authority_signer = config.signers[authority_index];
 
@@ -1540,10 +1546,10 @@ fn process_close(
                                     .map(|pubkey| pubkey.to_string())
                                     .unwrap_or_else(|| "none".to_string()),
                                 data_len: 0,
-                                tock: account.tock,
-                                use_lamports_unit,
+                                tocks: account.tocks,
+                                use_tocks_unit,
                             }],
-                            use_lamports_unit,
+                            use_tocks_unit,
                         }))
                 }
                 Ok(UpgradeableLoaderState::Program {
@@ -1577,8 +1583,8 @@ fn process_close(
                                 Ok(config.output_format.formatted_string(
                                     &CliUpgradeableProgramClosed {
                                         program_id: account_pubkey.to_string(),
-                                        tock: account.tock,
-                                        use_lamports_unit,
+                                        tocks: account.tocks,
+                                        use_tocks_unit,
                                     },
                                 ))
                             }
@@ -1604,7 +1610,7 @@ fn process_close(
         let buffers = get_buffers(
             rpc_client,
             Some(authority_signer.pubkey()),
-            use_lamports_unit,
+            use_tocks_unit,
         )?;
 
         let mut closed = vec![];
@@ -1626,7 +1632,7 @@ fn process_close(
             .output_format
             .formatted_string(&CliUpgradeableBuffers {
                 buffers: closed,
-                use_lamports_unit,
+                use_tocks_unit,
             }))
     }
 }
@@ -1710,7 +1716,6 @@ fn do_process_program_write_and_deploy(
 ) -> ProcessResult {
     // Build messages to calculate fees
     let mut messages: Vec<&Message> = Vec::new();
-    let blockhash = rpc_client.get_latest_blockhash()?;
 
     // Initialize buffer account or complete if already partially initialized
     let (initial_message, write_messages, balance_needed) =
@@ -1756,10 +1761,9 @@ fn do_process_program_write_and_deploy(
                 )
             };
             let initial_message = if !initial_instructions.is_empty() {
-                Some(Message::new_with_blockhash(
+                Some(Message::new(
                     &initial_instructions,
                     Some(&config.signers[0].pubkey()),
-                    &blockhash,
                 ))
             } else {
                 None
@@ -1779,7 +1783,7 @@ fn do_process_program_write_and_deploy(
                 } else {
                     loader_instruction::write(buffer_pubkey, loader_id, offset, bytes)
                 };
-                Message::new_with_blockhash(&[instruction], Some(&payer_pubkey), &blockhash)
+                Message::new(&[instruction], Some(&payer_pubkey))
             };
 
             let mut write_messages = vec![];
@@ -1808,7 +1812,7 @@ fn do_process_program_write_and_deploy(
 
     let final_message = if let Some(program_signers) = program_signers {
         let message = if loader_id == &bpf_loader_upgradeable::id() {
-            Message::new_with_blockhash(
+            Message::new(
                 &bpf_loader_upgradeable::deploy_with_max_program_len(
                     &config.signers[0].pubkey(),
                     &program_signers[0].pubkey(),
@@ -1820,13 +1824,11 @@ fn do_process_program_write_and_deploy(
                     programdata_len,
                 )?,
                 Some(&config.signers[0].pubkey()),
-                &blockhash,
             )
         } else {
-            Message::new_with_blockhash(
+            Message::new(
                 &[loader_instruction::finalize(buffer_pubkey, loader_id)],
                 Some(&config.signers[0].pubkey()),
-                &blockhash,
             )
         };
         Some(message)
@@ -1880,7 +1882,6 @@ fn do_process_program_upgrade(
 
     // Build messages to calculate fees
     let mut messages: Vec<&Message> = Vec::new();
-    let blockhash = rpc_client.get_latest_blockhash()?;
 
     let (initial_message, write_messages, balance_needed) =
         if let Some(buffer_signer) = buffer_signer {
@@ -1912,10 +1913,9 @@ fn do_process_program_upgrade(
             };
 
             let initial_message = if !initial_instructions.is_empty() {
-                Some(Message::new_with_blockhash(
+                Some(Message::new(
                     &initial_instructions,
                     Some(&config.signers[0].pubkey()),
-                    &blockhash,
                 ))
             } else {
                 None
@@ -1931,7 +1931,7 @@ fn do_process_program_upgrade(
                     offset,
                     bytes,
                 );
-                Message::new_with_blockhash(&[instruction], Some(&payer_pubkey), &blockhash)
+                Message::new(&[instruction], Some(&payer_pubkey))
             };
 
             // Create and add write messages
@@ -1958,7 +1958,7 @@ fn do_process_program_upgrade(
     }
 
     // Create and add final message
-    let final_message = Message::new_with_blockhash(
+    let final_message = Message::new(
         &[bpf_loader_upgradeable::upgrade(
             program_id,
             buffer_pubkey,
@@ -1966,7 +1966,6 @@ fn do_process_program_upgrade(
             &config.signers[0].pubkey(),
         )],
         Some(&config.signers[0].pubkey()),
-        &blockhash,
     );
     messages.push(&final_message);
 
@@ -1994,7 +1993,7 @@ fn read_and_verify_elf(program_location: &str) -> Result<Vec<u8>, Box<dyn std::e
     let mut program_data = Vec::new();
     file.read_to_end(&mut program_data)
         .map_err(|err| format!("Unable to read program file: {}", err))?;
-    let mut invoke_context = ThisInvokeContext::new_mock(&[], &[]);
+    let mut invoke_context = MockInvokeContext::new(vec![]);
 
     // Verify the program
     <dyn Executable<BpfError, ThisInstructionMeter>>::from_elf(
@@ -2027,13 +2026,7 @@ fn complete_partial_program_init(
         return Err("Buffer account is already executable".into());
     }
     if account.owner != *loader_id && !system_program::check_id(&account.owner) {
-        return Err("Buffer account passed is already in use by another program".into());
-    }
-    if !account.data.is_empty() && account.data.len() < account_data_len {
-        return Err(
-            "Buffer account passed is not large enough, may have been for a different deploy?"
-                .into(),
-        );
+        return Err("Buffer account is already owned by another account".into());
     }
 
     if account.data.is_empty() && system_program::check_id(&account.owner) {
@@ -2044,24 +2037,25 @@ fn complete_partial_program_init(
         if account.owner != *loader_id {
             instructions.push(system_instruction::assign(elf_pubkey, loader_id));
         }
-        if account.tock < minimum_balance {
-            let balance = minimum_balance - account.tock;
-            instructions.push(system_instruction::transfer(
-                payer_pubkey,
-                elf_pubkey,
-                balance,
-            ));
-            balance_needed = balance;
-        } else if account.tock > minimum_balance
-            && system_program::check_id(&account.owner)
-            && !allow_excessive_balance
-        {
-            return Err(format!(
-                "Buffer account has a balance: {:?}; it may already be in use",
-                Anlog(account.tock)
-            )
-            .into());
-        }
+    }
+    if account.tocks < minimum_balance {
+        let balance = minimum_balance - account.tocks;
+        instructions.push(system_instruction::transfer(
+            payer_pubkey,
+            elf_pubkey,
+            balance,
+        ));
+        balance_needed = balance;
+    } else if account.tocks > minimum_balance
+        && system_program::check_id(&account.owner)
+        && !allow_excessive_balance
+    {
+        return Err(format!(
+            "Buffer account has a balance: {:?}; it may already be in use",
+            Anlog(account.tocks)
+
+        )
+        .into());
     }
     Ok((instructions, balance_needed))
 }
@@ -2072,11 +2066,14 @@ fn check_payer(
     balance_needed: u64,
     messages: &[&Message],
 ) -> Result<(), Box<dyn std::error::Error>> {
+    let blockhash = rpc_client.get_latest_blockhash()?;
+
     // Does the payer have enough?
     check_account_for_spend_multiple_fees_with_commitment(
         rpc_client,
         &config.signers[0].pubkey(),
         balance_needed,
+        &blockhash,
         messages,
         config.commitment,
     )?;
@@ -2121,20 +2118,16 @@ fn send_deploy_messages(
     if let Some(write_messages) = write_messages {
         if let Some(write_signer) = write_signer {
             trace!("Writing program data");
-            let tpu_client = TpuClient::new(
+            let transaction_errors = send_and_confirm_messages_with_spinner(
                 rpc_client.clone(),
                 &config.websocket_url,
-                TpuClientConfig::default(),
-            )?;
-            let transaction_errors = tpu_client
-                .send_and_confirm_messages_with_spinner(
-                    write_messages,
-                    &[payer_signer, write_signer],
-                )
-                .map_err(|err| format!("Data writes to account failed: {}", err))?
-                .into_iter()
-                .flatten()
-                .collect::<Vec<_>>();
+                write_messages,
+                &[payer_signer, write_signer],
+            )
+            .map_err(|err| format!("Data writes to account failed: {}", err))?
+            .into_iter()
+            .flatten()
+            .collect::<Vec<_>>();
 
             if !transaction_errors.is_empty() {
                 for transaction_error in &transaction_errors {
@@ -2195,13 +2188,154 @@ fn report_ephemeral_mnemonic(words: usize, mnemonic: bip39::Mnemonic) {
         words
     );
     eprintln!("{}\n{}\n{}", divider, phrase, divider);
-    eprintln!("To resume a deploy, pass the recovered keypair as the");
-    eprintln!("[BUFFER_SIGNER] to `solana program deploy` or `solana write-buffer'.");
-    eprintln!("Or to recover the account's tock, pass it as the");
+    eprintln!("To resume a deploy, pass the recovered keypair as");
+    eprintln!("the [PROGRAM_ADDRESS_SIGNER] argument to `analog deploy` or");
+    eprintln!("as the [BUFFER_SIGNER] to `analog program deploy` or `analog write-buffer'.");
+    eprintln!("Or to recover the account's tocks, pass it as the");
     eprintln!(
-        "[BUFFER_ACCOUNT_ADDRESS] argument to `solana program close`.\n{}",
+        "[BUFFER_ACCOUNT_ADDRESS] argument to `analog program close`.\n{}",
         divider
     );
+}
+
+fn send_and_confirm_messages_with_spinner<T: Signers>(
+    rpc_client: Arc<RpcClient>,
+    websocket_url: &str,
+    messages: &[Message],
+    signers: &T,
+) -> Result<Vec<Option<TransactionError>>, Box<dyn error::Error>> {
+    let commitment = rpc_client.commitment();
+
+    let progress_bar = new_spinner_progress_bar();
+    let send_transaction_interval = Duration::from_millis(10); /* ~100 TPS */
+    let mut send_retries = 5;
+
+    let (blockhash, mut last_valid_block_height) =
+        rpc_client.get_latest_blockhash_with_commitment(commitment)?;
+
+    let mut transactions = vec![];
+    let mut transaction_errors = vec![None; messages.len()];
+    for (i, message) in messages.iter().enumerate() {
+        let mut transaction = Transaction::new_unsigned(message.clone());
+        transaction.try_sign(signers, blockhash)?;
+        transactions.push((i, transaction));
+    }
+
+    progress_bar.set_message("Finding leader nodes...");
+    let tpu_client = TpuClient::new(
+        rpc_client.clone(),
+        websocket_url,
+        TpuClientConfig::default(),
+    )?;
+    loop {
+        // Send all transactions
+        let mut pending_transactions = HashMap::new();
+        let num_transactions = transactions.len();
+        for (i, transaction) in transactions {
+            if !tpu_client.send_transaction(&transaction) {
+                let _result = rpc_client
+                    .send_transaction_with_config(
+                        &transaction,
+                        RpcSendTransactionConfig {
+                            preflight_commitment: Some(commitment.commitment),
+                            ..RpcSendTransactionConfig::default()
+                        },
+                    )
+                    .ok();
+            }
+            pending_transactions.insert(transaction.signatures[0], (i, transaction));
+            progress_bar.set_message(format!(
+                "[{}/{}] Transactions sent",
+                pending_transactions.len(),
+                num_transactions
+            ));
+
+            sleep(send_transaction_interval);
+        }
+
+        // Collect statuses for all the transactions, drop those that are confirmed
+        loop {
+            let mut block_height = 0;
+            let pending_signatures = pending_transactions.keys().cloned().collect::<Vec<_>>();
+            for pending_signatures_chunk in
+                pending_signatures.chunks(MAX_GET_SIGNATURE_STATUSES_QUERY_ITEMS)
+            {
+                if let Ok(result) = rpc_client.get_signature_statuses(pending_signatures_chunk) {
+                    let statuses = result.value;
+                    for (signature, status) in
+                        pending_signatures_chunk.iter().zip(statuses.into_iter())
+                    {
+                        if let Some(status) = status {
+                            if let Some(confirmation_status) = &status.confirmation_status {
+                                if *confirmation_status != TransactionConfirmationStatus::Processed
+                                {
+                                    if let Some((i, _)) = pending_transactions.remove(signature) {
+                                        transaction_errors[i] = status.err;
+                                    }
+                                }
+                            } else if status.confirmations.is_none()
+                                || status.confirmations.unwrap() > 1
+                            {
+                                if let Some((i, _)) = pending_transactions.remove(signature) {
+                                    transaction_errors[i] = status.err;
+                                }
+                            }
+                        }
+                    }
+                }
+
+                block_height = rpc_client.get_block_height()?;
+                progress_bar.set_message(format!(
+                    "[{}/{}] Transactions confirmed. Retrying in {} blocks",
+                    num_transactions - pending_transactions.len(),
+                    num_transactions,
+                    last_valid_block_height.saturating_sub(block_height)
+                ));
+            }
+
+            if pending_transactions.is_empty() {
+                return Ok(transaction_errors);
+            }
+
+            if block_height > last_valid_block_height {
+                break;
+            }
+
+            for (_i, transaction) in pending_transactions.values() {
+                if !tpu_client.send_transaction(transaction) {
+                    let _result = rpc_client
+                        .send_transaction_with_config(
+                            transaction,
+                            RpcSendTransactionConfig {
+                                preflight_commitment: Some(commitment.commitment),
+                                ..RpcSendTransactionConfig::default()
+                            },
+                        )
+                        .ok();
+                }
+            }
+
+            if cfg!(not(test)) {
+                // Retry twice a second
+                sleep(Duration::from_millis(500));
+            }
+        }
+
+        if send_retries == 0 {
+            return Err("Transactions failed".into());
+        }
+        send_retries -= 1;
+
+        // Re-sign any failed transactions with a new blockhash and retry
+        let (blockhash, new_last_valid_block_height) =
+            rpc_client.get_latest_blockhash_with_commitment(commitment)?;
+        last_valid_block_height = new_last_valid_block_height;
+        transactions = vec![];
+        for (_, (i, mut transaction)) in pending_transactions.into_iter() {
+            transaction.try_sign(signers, blockhash)?;
+            transactions.push((i, transaction));
+        }
+    }
 }
 
 #[cfg(test)]
@@ -2781,7 +2915,7 @@ mod tests {
                     get_programs: false,
                     get_buffers: false,
                     all: false,
-                    use_lamports_unit: false,
+                    use_tocks_unit: false,
                 }),
                 signers: vec![],
             }
@@ -2793,7 +2927,7 @@ mod tests {
             "show",
             "--programs",
             "--all",
-            "--tock",
+            "--tocks",
         ]);
         assert_eq!(
             parse_command(&test_command, &default_signer, &mut None).unwrap(),
@@ -2804,7 +2938,7 @@ mod tests {
                     get_programs: true,
                     get_buffers: false,
                     all: true,
-                    use_lamports_unit: true,
+                    use_tocks_unit: true,
                 }),
                 signers: vec![],
             }
@@ -2816,7 +2950,7 @@ mod tests {
             "show",
             "--buffers",
             "--all",
-            "--tock",
+            "--tocks",
         ]);
         assert_eq!(
             parse_command(&test_command, &default_signer, &mut None).unwrap(),
@@ -2827,7 +2961,7 @@ mod tests {
                     get_programs: false,
                     get_buffers: true,
                     all: true,
-                    use_lamports_unit: true,
+                    use_tocks_unit: true,
                 }),
                 signers: vec![],
             }
@@ -2850,7 +2984,7 @@ mod tests {
                     get_programs: false,
                     get_buffers: true,
                     all: false,
-                    use_lamports_unit: false,
+                    use_tocks_unit: false,
                 }),
                 signers: vec![],
             }
@@ -2873,7 +3007,7 @@ mod tests {
                     get_programs: false,
                     get_buffers: true,
                     all: false,
-                    use_lamports_unit: false,
+                    use_tocks_unit: false,
                 }),
                 signers: vec![],
             }
@@ -2909,7 +3043,7 @@ mod tests {
                     account_pubkey: Some(buffer_pubkey),
                     recipient_pubkey: default_keypair.pubkey(),
                     authority_index: 0,
-                    use_lamports_unit: false,
+                    use_tocks_unit: false,
                 }),
                 signers: vec![read_keypair_file(&keypair_file).unwrap().into()],
             }
@@ -2932,7 +3066,7 @@ mod tests {
                     account_pubkey: Some(buffer_pubkey),
                     recipient_pubkey: default_keypair.pubkey(),
                     authority_index: 1,
-                    use_lamports_unit: false,
+                    use_tocks_unit: false,
                 }),
                 signers: vec![
                     read_keypair_file(&keypair_file).unwrap().into(),
@@ -2957,19 +3091,19 @@ mod tests {
                     account_pubkey: Some(buffer_pubkey),
                     recipient_pubkey,
                     authority_index: 0,
-                    use_lamports_unit: false,
+                    use_tocks_unit: false,
                 }),
                 signers: vec![read_keypair_file(&keypair_file).unwrap().into(),],
             }
         );
 
-        // --buffers and tock
+        // --buffers and tocks
         let test_command = test_commands.clone().get_matches_from(vec![
             "test",
             "program",
             "close",
             "--buffers",
-            "--tock",
+            "--tocks",
         ]);
         assert_eq!(
             parse_command(&test_command, &default_signer, &mut None).unwrap(),
@@ -2978,7 +3112,7 @@ mod tests {
                     account_pubkey: None,
                     recipient_pubkey: default_keypair.pubkey(),
                     authority_index: 0,
-                    use_lamports_unit: true,
+                    use_tocks_unit: true,
                 }),
                 signers: vec![read_keypair_file(&keypair_file).unwrap().into(),],
             }

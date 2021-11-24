@@ -203,7 +203,6 @@ mod tests {
             false,
             false,
             Some(ACCOUNTS_DB_CONFIG_FOR_TESTING),
-            None,
         )
         .unwrap();
 
@@ -501,7 +500,6 @@ mod tests {
             &exit,
             &cluster_info,
             snapshot_config.clone(),
-            true,
         );
 
         let _package_receiver = std::thread::Builder::new()
@@ -609,7 +607,7 @@ mod tests {
         snapshot_version: SnapshotVersion,
         cluster_type: ClusterType,
     ) {
-        // create banks up to slot (MAX_CACHE_ENTRIES * 2) + 1 while transferring 1tockinto 2 different accounts each time
+        // create banks up to slot (MAX_CACHE_ENTRIES * 2) + 1 while transferring 1 tock into 2 different accounts each time
         // this is done to ensure the AccountStorageEntries keep getting cleaned up as the root moves
         // ahead. Also tests the status_cache purge and status cache snapshotting.
         // Makes sure that the last bank is restored correctly
@@ -840,7 +838,6 @@ mod tests {
             false,
             false,
             Some(ACCOUNTS_DB_CONFIG_FOR_TESTING),
-            None,
         )?;
 
         assert_eq!(bank, &deserialized_bank);
@@ -929,7 +926,6 @@ mod tests {
             &exit,
             &cluster_info,
             snapshot_test_config.snapshot_config.clone(),
-            true,
         );
 
         let tmpdir = TempDir::new().unwrap();
@@ -1020,7 +1016,6 @@ mod tests {
             false,
             false,
             Some(ACCOUNTS_DB_CONFIG_FOR_TESTING),
-            None,
         )
         .unwrap();
 

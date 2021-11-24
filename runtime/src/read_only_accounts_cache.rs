@@ -278,9 +278,9 @@ pub mod tests {
             ..Account::default()
         });
         let mut account2 = account1.clone();
-        account2.checked_add_lamports(1).unwrap(); // so they compare differently
+        account2.checked_add_tocks(1).unwrap(); // so they compare differently
         let mut account3 = account1.clone();
-        account3.checked_add_lamports(4).unwrap(); // so they compare differently
+        account3.checked_add_tocks(4).unwrap(); // so they compare differently
         cache.store(&key1, slot, &account1);
         assert_eq!(100 + per_account_size, cache.data_size());
         assert!(accounts_equal(&cache.load(&key1, slot).unwrap(), &account1));

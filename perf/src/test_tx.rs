@@ -1,14 +1,11 @@
-use {
-    analog_sdk::{
-        hash::Hash,
-        instruction::CompiledInstruction,
-        signature::{Keypair, Signer},
-        stake,
-        system_instruction::SystemInstruction,
-        system_program, system_transaction,
-        transaction::Transaction,
-    },
-    analog_vote_program::vote_transaction,
+use analog_sdk::{
+    hash::Hash,
+    instruction::CompiledInstruction,
+    signature::{Keypair, Signer},
+    stake,
+    system_instruction::SystemInstruction,
+    system_program, system_transaction,
+    transaction::Transaction,
 };
 
 pub fn test_tx() -> Transaction {
@@ -22,10 +19,10 @@ pub fn test_multisig_tx() -> Transaction {
     let keypair0 = Keypair::new();
     let keypair1 = Keypair::new();
     let keypairs = vec![&keypair0, &keypair1];
-    let tock = 5;
+    let tocks = 5;
     let blockhash = Hash::default();
 
-    let transfer_instruction = SystemInstruction::Transfer { tock };
+    let transfer_instruction = SystemInstruction::Transfer { tocks };
 
     let program_ids = vec![system_program::id(), stake::program::id()];
 
@@ -41,18 +38,5 @@ pub fn test_multisig_tx() -> Transaction {
         blockhash,
         program_ids,
         instructions,
-    )
-}
-
-pub fn vote_tx() -> Transaction {
-    let keypair = Keypair::new();
-    vote_transaction::new_vote_transaction(
-        vec![2],
-        Hash::default(),
-        Hash::default(),
-        &keypair,
-        &keypair,
-        &keypair,
-        None,
     )
 }

@@ -1,6 +1,6 @@
 import React from "react";
 import { TableCardBody } from "components/common/TableCardBody";
-import { SolBalance } from "utils";
+import { AnlogBalance } from "utils";
 import { displayTimestampUtc } from "utils/date";
 import { Account, useFetchAccountInfo } from "providers/accounts";
 import { Address } from "components/common/Address";
@@ -10,8 +10,7 @@ import {
   StakeAccountType,
 } from "validators/accounts/stake";
 import BN from "bn.js";
-import { StakeActivationData } from "@solana/web3.js";
-import { Epoch } from "components/common/Epoch";
+import { StakeActivationData } from "@analog/web3.js";
 
 const MAX_EPOCH = new BN(2).pow(new BN(64)).sub(new BN(1));
 
@@ -124,15 +123,15 @@ function OverviewCard({
           </td>
         </tr>
         <tr>
-          <td>Balance (ANLOG)</td>
+          <td>Balance (GM)</td>
           <td className="text-lg-right text-uppercase">
-            <SolBalance tock={account.tock || 0} />
+            <AnlogBalance tocks={account.tocks || 0} />
           </td>
         </tr>
         <tr>
-          <td>Rent Reserve (ANLOG)</td>
+          <td>Rent Reserve (GM)</td>
           <td className="text-lg-right">
-            <SolBalance tock={stakeAccount.meta.rentExemptReserve} />
+            <AnlogBalance tocks={stakeAccount.meta.rentExemptReserve} />
           </td>
         </tr>
         {hideDelegation && (
@@ -163,12 +162,12 @@ function DelegationCard({
   const delegation = stakeAccount?.stake?.delegation;
   if (delegation) {
     voterPubkey = delegation.voter;
-    if (!delegation.activationEpoch.eq(MAX_EPOCH)) {
-      activationEpoch = delegation.activationEpoch.toNumber();
-    }
-    if (!delegation.deactivationEpoch.eq(MAX_EPOCH)) {
-      deactivationEpoch = delegation.deactivationEpoch.toNumber();
-    }
+    activationEpoch = delegation.activationEpoch.eq(MAX_EPOCH)
+      ? "-"
+      : delegation.activationEpoch.toString();
+    deactivationEpoch = delegation.deactivationEpoch.eq(MAX_EPOCH)
+      ? "-"
+      : delegation.deactivationEpoch.toString();
   }
   const { stake } = stakeAccount;
   return (
@@ -189,25 +188,25 @@ function DelegationCard({
         {stake && (
           <>
             <tr>
-              <td>Delegated Stake (ANLOG)</td>
+              <td>Delegated Stake (GM)</td>
               <td className="text-lg-right">
-                <SolBalance tock={stake.delegation.stake} />
+                <AnlogBalance tocks={stake.delegation.stake} />
               </td>
             </tr>
 
             {activation && (
               <>
                 <tr>
-                  <td>Active Stake (ANLOG)</td>
+                  <td>Active Stake (GM)</td>
                   <td className="text-lg-right">
-                    <SolBalance tock={activation.active} />
+                    <AnlogBalance tocks={activation.active} />
                   </td>
                 </tr>
 
                 <tr>
-                  <td>Inactive Stake (ANLOG)</td>
+                  <td>Inactive Stake (GM)</td>
                   <td className="text-lg-right">
-                    <SolBalance tock={activation.inactive} />
+                    <AnlogBalance tocks={activation.inactive} />
                   </td>
                 </tr>
               </>
@@ -224,23 +223,12 @@ function DelegationCard({
 
             <tr>
               <td>Activation Epoch</td>
-              <td className="text-lg-right">
-                {activationEpoch !== undefined ? (
-                  <Epoch epoch={activationEpoch} link />
-                ) : (
-                  "-"
-                )}
-              </td>
+              <td className="text-lg-right">{activationEpoch}</td>
             </tr>
+
             <tr>
               <td>Deactivation Epoch</td>
-              <td className="text-lg-right">
-                {deactivationEpoch !== undefined ? (
-                  <Epoch epoch={deactivationEpoch} link />
-                ) : (
-                  "-"
-                )}
-              </td>
+              <td className="text-lg-right">{deactivationEpoch}</td>
             </tr>
           </>
         )}

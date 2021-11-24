@@ -1,20 +1,20 @@
 [package]
-authors = ["Analog Maintainers <maintainers@solana.foundation>"]
+authors = ["Analog Maintainers <maintainers@analog.foundation>"]
 edition = "2018"
 name = "analog-bench-streamer"
-version = "1.9.0"
-repository = "https://github.com/analog-labs/solana"
+version = "1.8.2"
+repository = "https://github.com/analog/testnet"
 license = "Apache-2.0"
-homepage = "https://solana.com/"
+homepage = "https://analog.com/"
 publish = false
 
 [dependencies]
 clap = "2.33.1"
-analog-clap-utils = { path = "../clap-utils", version = "=1.9.0" }
-analog-streamer = { path = "../streamer", version = "=1.9.0" }
-analog-logger = { path = "../logger", version = "=1.9.0" }
-analog-net-utils = { path = "../net-utils", version = "=1.9.0" }
-analog-version = { path = "../version", version = "=1.9.0" }
+analog-clap-utils = { path = "../clap-utils", version = "=1.8.2" }
+analog-streamer = { path = "../streamer", version = "=1.8.2" }
+analog-logger = { path = "../logger", version = "=1.8.2" }
+analog-net-utils = { path = "../net-utils", version = "=1.8.2" }
+analog-version = { path = "../version", version = "=1.8.2" }
 
 [package.metadata.docs.rs]
 targets = ["x86_64-unknown-linux-gnu"]

@@ -65,13 +65,13 @@ software.
 #### Configure the CLI Tool Suite to target a local cluster by default
 
 ```
-solana config set --url http://127.0.0.1:8899
+analog config set --url http://127.0.0.1:8899
 ```
 
 #### Verify the CLI Tool Suite configuration
 
 ```
-solana genesis-hash
+analog genesis-hash
 ```
 
 - **NOTE:** The result should match the `Genesis Hash:` field in the
@@ -80,24 +80,24 @@ solana genesis-hash
 #### Check the wallet balance
 
 ```
-solana balance
+analog balance
 ```
 
 - **NOTE:** `Error: No such file or directory (os error 2)` means that the default
   wallet does not yet exist. Create it with `analog-keygen new`.
-- **NOTE:** If the wallet has a zero ANLOG balance, airdrop some localnet ANLOG with
-  `solana airdrop 10`
+- **NOTE:** If the wallet has a zero SOL balance, airdrop some localnet SOL with
+  `analog airdrop 10`
 
 #### Perform a basic transfer transaction
 
 ```
-solana transfer EPhgPANa5Rh2wa4V2jxt7YbtWa3Uyw4sTeZ13cQjDDB8 1
+analog transfer EPhgPANa5Rh2wa4V2jxt7YbtWa3Uyw4sTeZ13cQjDDB8 1
 ```
 
 #### Monitor `msg!()` output from on-chain programs
 
 ```
-solana logs
+analog logs
 ```
 
 - **NOTE:** This command needs to be running when the target transaction is

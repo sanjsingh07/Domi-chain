@@ -16,10 +16,10 @@ use analog_vote_program::vote_state;
 use std::borrow::Borrow;
 
 // Default amount received by the validator
-const VALIDATOR_LAMPORTS: u64 = 42;
+const VALIDATOR_TOCKS: u64 = 42;
 
 // fun fact: rustc is very close to make this const fn.
-pub fn bootstrap_validator_stake_lamports() -> u64 {
+pub fn bootstrap_validator_stake_tocks() -> u64 {
     StakeState::get_rent_exempt_reserve(&Rent::default())
 }
 
@@ -53,17 +53,17 @@ pub struct GenesisConfigInfo {
     pub voting_keypair: Keypair,
 }
 
-pub fn create_genesis_config(mint_lamports: u64) -> GenesisConfigInfo {
-    create_genesis_config_with_leader(mint_lamports, &analog_sdk::pubkey::new_rand(), 0)
+pub fn create_genesis_config(mint_tocks: u64) -> GenesisConfigInfo {
+    create_genesis_config_with_leader(mint_tocks, &analog_sdk::pubkey::new_rand(), 0)
 }
 
 pub fn create_genesis_config_with_vote_accounts(
-    mint_lamports: u64,
+    mint_tocks: u64,
     voting_keypairs: &[impl Borrow<ValidatorVoteKeypairs>],
     stakes: Vec<u64>,
 ) -> GenesisConfigInfo {
     create_genesis_config_with_vote_accounts_and_cluster_type(
-        mint_lamports,
+        mint_tocks,
         voting_keypairs,
         stakes,
         ClusterType::Development,
@@ -71,7 +71,7 @@ pub fn create_genesis_config_with_vote_accounts(
 }
 
 pub fn create_genesis_config_with_vote_accounts_and_cluster_type(
-    mint_lamports: u64,
+    mint_tocks: u64,
     voting_keypairs: &[impl Borrow<ValidatorVoteKeypairs>],
     stakes: Vec<u64>,
     cluster_type: ClusterType,
@@ -84,13 +84,13 @@ pub fn create_genesis_config_with_vote_accounts_and_cluster_type(
         Keypair::from_bytes(&voting_keypairs[0].borrow().vote_keypair.to_bytes()).unwrap();
 
     let genesis_config = create_genesis_config_with_leader_ex(
-        mint_lamports,
+        mint_tocks,
         &mint_keypair.pubkey(),
         &voting_keypairs[0].borrow().node_keypair.pubkey(),
         &voting_keypairs[0].borrow().vote_keypair.pubkey(),
         &voting_keypairs[0].borrow().stake_keypair.pubkey(),
         stakes[0],
-        VALIDATOR_LAMPORTS,
+        VALIDATOR_TOCKS,
         FeeRateGovernor::new(0, 0), // most tests can't handle transaction fees
         Rent::free(),               // most tests don't expect rent
         cluster_type,
@@ -109,7 +109,7 @@ pub fn create_genesis_config_with_vote_accounts_and_cluster_type(
         let stake_pubkey = validator_voting_keypairs.borrow().stake_keypair.pubkey();
 
         // Create accounts
-        let node_account = Account::new(VALIDATOR_LAMPORTS, 0, &system_program::id());
+        let node_account = Account::new(VALIDATOR_TOCKS, 0, &system_program::id());
         let vote_account = vote_state::create_account(&vote_pubkey, &node_pubkey, 0, *stake);
         let stake_account = Account::from(stake_state::create_account(
             &stake_pubkey,
@@ -133,21 +133,21 @@ pub fn create_genesis_config_with_vote_accounts_and_cluster_type(
 }
 
 pub fn create_genesis_config_with_leader(
-    mint_lamports: u64,
+    mint_tocks: u64,
     validator_pubkey: &Pubkey,
-    validator_stake_lamports: u64,
+    validator_stake_tocks: u64,
 ) -> GenesisConfigInfo {
     let mint_keypair = Keypair::new();
     let voting_keypair = Keypair::new();
 
     let genesis_config = create_genesis_config_with_leader_ex(
-        mint_lamports,
+        mint_tocks,
         &mint_keypair.pubkey(),
         validator_pubkey,
         &voting_keypair.pubkey(),
         &analog_sdk::pubkey::new_rand(),
-        validator_stake_lamports,
-        VALIDATOR_LAMPORTS,
+        validator_stake_tocks,
+        VALIDATOR_TOCKS,
         FeeRateGovernor::new(0, 0), // most tests can't handle transaction fees
         Rent::free(),               // most tests don't expect rent
         ClusterType::Development,
@@ -178,13 +178,13 @@ pub fn activate_all_features(genesis_config: &mut GenesisConfig) {
 
 #[allow(clippy::too_many_arguments)]
 pub fn create_genesis_config_with_leader_ex(
-    mint_lamports: u64,
+    mint_tocks: u64,
     mint_pubkey: &Pubkey,
     validator_pubkey: &Pubkey,
     validator_vote_account_pubkey: &Pubkey,
     validator_stake_account_pubkey: &Pubkey,
-    validator_stake_lamports: u64,
-    validator_lamports: u64,
+    validator_stake_tocks: u64,
+    validator_tocks: u64,
     fee_rate_governor: FeeRateGovernor,
     rent: Rent,
     cluster_type: ClusterType,
@@ -194,7 +194,7 @@ pub fn create_genesis_config_with_leader_ex(
         validator_vote_account_pubkey,
         validator_pubkey,
         0,
-        validator_stake_lamports,
+        validator_stake_tocks,
     );
 
     let validator_stake_account = stake_state::create_account(
@@ -202,16 +202,16 @@ pub fn create_genesis_config_with_leader_ex(
         validator_vote_account_pubkey,
         &validator_vote_account,
         &rent,
-        validator_stake_lamports,
+        validator_stake_tocks,
     );
 
     initial_accounts.push((
         *mint_pubkey,
-        AccountSharedData::new(mint_lamports, 0, &system_program::id()),
+        AccountSharedData::new(mint_tocks, 0, &system_program::id()),
     ));
     initial_accounts.push((
         *validator_pubkey,
-        AccountSharedData::new(validator_lamports, 0, &system_program::id()),
+        AccountSharedData::new(validator_tocks, 0, &system_program::id()),
     ));
     initial_accounts.push((*validator_vote_account_pubkey, validator_vote_account));
     initial_accounts.push((*validator_stake_account_pubkey, validator_stake_account));

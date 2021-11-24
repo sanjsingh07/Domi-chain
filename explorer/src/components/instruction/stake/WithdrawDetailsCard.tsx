@@ -3,8 +3,8 @@ import {
   SignatureResult,
   StakeProgram,
   ParsedInstruction,
-} from "@solana/web3.js";
-import { SolBalance } from "utils";
+} from "@analog/web3.js";
+import { AnlogBalance } from "utils";
 import { InstructionCard } from "../InstructionCard";
 import { Address } from "components/common/Address";
 import { WithdrawInfo } from "./types";
@@ -57,9 +57,9 @@ export function WithdrawDetailsCard(props: {
       </tr>
 
       <tr>
-        <td>Withdraw Amount (ANLOG)</td>
+        <td>Withdraw Amount (GM)</td>
         <td className="text-lg-right">
-          <SolBalance tock={info.tock} />
+          <AnlogBalance tocks={info.tocks} />
         </td>
       </tr>
     </InstructionCard>

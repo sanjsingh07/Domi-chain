@@ -52,7 +52,11 @@
 use {
     crate::{blockstore::MAX_DATA_SHREDS_PER_SLOT, erasure::Session},
     bincode::config::Options,
-    rayon::{prelude::*, ThreadPool},
+    rayon::{
+        iter::{IndexedParallelIterator, IntoParallelRefMutIterator, ParallelIterator},
+        slice::ParallelSlice,
+        ThreadPool,
+    },
     serde::{Deserialize, Serialize},
     analog_entry::entry::{create_ticks, Entry},
     analog_measure::measure::Measure,
@@ -717,8 +721,8 @@ impl Shredder {
         // 2) Sign coding shreds
         PAR_THREAD_POOL.with(|thread_pool| {
             thread_pool.borrow().install(|| {
-                coding_shreds.par_iter_mut().for_each(|coding_shred| {
-                    Shredder::sign_shred(keypair, coding_shred);
+                coding_shreds.par_iter_mut().for_each(|mut coding_shred| {
+                    Shredder::sign_shred(keypair, &mut coding_shred);
                 })
             })
         });
@@ -811,6 +815,36 @@ impl Shredder {
             .collect()
     }
 
+    fn fill_in_missing_shreds(
+        num_data: usize,
+        num_coding: usize,
+        first_index_in_fec_set: usize,
+        expected_index: usize,
+        index_found: usize,
+        present: &mut [bool],
+    ) -> Vec<Vec<u8>> {
+        let end_index = index_found.saturating_sub(1);
+        // The index of current shred must be within the range of shreds that are being
+        // recovered
+        if !(first_index_in_fec_set..first_index_in_fec_set + num_data + num_coding)
+            .contains(&end_index)
+        {
+            return vec![];
+        }
+
+        let missing_blocks: Vec<Vec<u8>> = (expected_index..index_found)
+            .map(|missing| {
+                present[missing.saturating_sub(first_index_in_fec_set)] = false;
+                if missing < first_index_in_fec_set + num_data {
+                    Shred::new_empty_data_shred().payload
+                } else {
+                    vec![0; SHRED_PAYLOAD_SIZE]
+                }
+            })
+            .collect();
+        missing_blocks
+    }
+
     pub fn try_recovery(
         shreds: Vec<Shred>,
         num_data: usize,
@@ -818,54 +852,92 @@ impl Shredder {
         first_index: usize,
         slot: Slot,
     ) -> std::result::Result<Vec<Shred>, reed_solomon_erasure::Error> {
-        use reed_solomon_erasure::Error::InvalidIndex;
         Self::verify_consistent_shred_payload_sizes("try_recovery()", &shreds)?;
+        let mut recovered_data = vec![];
         let fec_set_size = num_data + num_coding;
-        if num_coding == 0 || shreds.len() >= fec_set_size {
-            return Ok(Vec::default());
-        }
-        // Mask to exclude data shreds already received from the return value.
-        let mut mask = vec![false; num_data];
-        let mut blocks = vec![None; fec_set_size];
-        for shred in shreds {
-            if (shred.index() as usize) < first_index {
-                return Err(InvalidIndex);
+
+        if num_coding > 0 && shreds.len() < fec_set_size {
+            // Let's try recovering missing shreds using erasure
+            let mut present = &mut vec![true; fec_set_size];
+            let mut next_expected_index = first_index;
+            let mut shred_bufs: Vec<Vec<u8>> = shreds
+                .into_iter()
+                .flat_map(|shred| {
+                    let offset = if shred.is_data() { 0 } else { num_data };
+                    let index = offset + shred.index() as usize;
+                    let mut blocks = Self::fill_in_missing_shreds(
+                        num_data,
+                        num_coding,
+                        first_index,
+                        next_expected_index,
+                        index,
+                        &mut present,
+                    );
+                    blocks.push(shred.payload);
+                    next_expected_index = index + 1;
+                    blocks
+                })
+                .collect();
+
+            // Insert any other missing shreds after the last shred we have received in the
+            // current FEC block
+            let mut pending_shreds = Self::fill_in_missing_shreds(
+                num_data,
+                num_coding,
+                first_index,
+                next_expected_index,
+                first_index + fec_set_size,
+                &mut present,
+            );
+
+            shred_bufs.append(&mut pending_shreds);
+
+            if shred_bufs.len() != fec_set_size {
+                return Err(reed_solomon_erasure::Error::TooFewShardsPresent);
             }
-            let shred_is_data = shred.is_data();
-            let offset = if shred_is_data { 0 } else { num_data };
-            let index = offset + shred.index() as usize - first_index;
-            let mut block = shred.payload;
-            if shred_is_data {
-                if index >= num_data {
-                    return Err(InvalidIndex);
-                }
-                mask[index] = true;
-                // SIZE_OF_CODING_SHRED_HEADERS bytes at the end of data shreds
-                // is never used and is not part of erasure coding.
-                block.resize(SHRED_PAYLOAD_SIZE - SIZE_OF_CODING_SHRED_HEADERS, 0u8);
-            } else {
-                if index >= fec_set_size {
-                    return Err(InvalidIndex);
-                }
-                // SIZE_OF_CODING_SHRED_HEADERS bytes at the begining of the
-                // coding shreds contains the header and is not part of erasure
-                // coding.
-                block.drain(..SIZE_OF_CODING_SHRED_HEADERS);
-            };
-            blocks[index] = Some(block);
+
+            let session = Session::new(num_data, num_coding)?;
+
+            // All information (excluding the restricted section) from a data shred is encoded
+            let valid_data_len = SHRED_PAYLOAD_SIZE - SIZE_OF_CODING_SHRED_HEADERS;
+            let coding_block_offset = SIZE_OF_CODING_SHRED_HEADERS;
+            let mut blocks: Vec<(&mut [u8], bool)> = shred_bufs
+                .iter_mut()
+                .enumerate()
+                .map(|(position, x)| {
+                    if position < num_data {
+                        x[..valid_data_len].as_mut()
+                    } else {
+                        x[coding_block_offset..].as_mut()
+                    }
+                })
+                .zip(present.clone())
+                .collect();
+            session.decode_blocks(&mut blocks)?;
+
+            let mut num_drained = 0;
+            present
+                .iter()
+                .enumerate()
+                .for_each(|(position, was_present)| {
+                    if !*was_present && position < num_data {
+                        let drain_this = position - num_drained;
+                        let shred_buf = shred_bufs.remove(drain_this);
+                        num_drained += 1;
+                        if let Ok(shred) = Shred::new_from_serialized_shred(shred_buf) {
+                            let shred_index = shred.index() as usize;
+                            // Valid shred must be in the same slot as the original shreds
+                            if shred.slot() == slot {
+                                // A valid data shred must be indexed between first_index and first+num_data index
+                                if (first_index..first_index + num_data).contains(&shred_index) {
+                                    recovered_data.push(shred)
+                                }
+                            }
+                        }
+                    }
+                });
         }
-        Session::new(num_data, num_coding)?.decode_blocks(&mut blocks)?;
-        let data_shred_indices = first_index..first_index + num_data;
-        let recovered_data = mask
-            .into_iter()
-            .zip(blocks)
-            .filter(|(mask, _)| !mask)
-            .filter_map(|(_, block)| Shred::new_from_serialized_shred(block?).ok())
-            .filter(|shred| {
-                let index = shred.index() as usize;
-                shred.slot() == slot && data_shred_indices.contains(&index)
-            })
-            .collect();
+
         Ok(recovered_data)
     }
 
@@ -1566,13 +1638,13 @@ pub mod tests {
                 15,
                 slot,
             ),
-            Err(reed_solomon_erasure::Error::InvalidIndex)
+            Err(reed_solomon_erasure::Error::TooFewShardsPresent)
         );
 
         // Test8: Try recovery/reassembly with incorrect index. Hint: does not recover any shreds
         assert_matches!(
             Shredder::try_recovery(shred_info, num_data_shreds, num_coding_shreds, 35, slot),
-            Err(reed_solomon_erasure::Error::InvalidIndex)
+            Err(reed_solomon_erasure::Error::TooFewShardsPresent)
         );
     }
 
@@ -1585,19 +1657,12 @@ pub mod tests {
     fn run_recovery_with_expanded_coding_shreds(num_tx: usize, is_last_in_slot: bool) {
         let mut rng = rand::thread_rng();
         let txs = repeat_with(|| {
-            let from_pubkey = Pubkey::new_unique();
-            let instruction = analog_sdk::system_instruction::transfer(
-                &from_pubkey,
-                &Pubkey::new_unique(), // to
-                rng.gen(),             // tock
-            );
-            let message = analog_sdk::message::Message::new(&[instruction], Some(&from_pubkey));
-            let mut tx = analog_sdk::transaction::Transaction::new_unsigned(message);
-            // Also randomize the signatre bytes.
-            let mut signature = [0u8; 64];
-            rng.fill(&mut signature[..]);
-            tx.signatures = vec![Signature::new(&signature)];
-            tx
+            system_transaction::transfer(
+                &Keypair::new(),          // from
+                &Pubkey::new_unique(),    // to
+                rng.gen(),                // tocks
+                hash::new_rand(&mut rng), // recent block hash
+            )
         })
         .take(num_tx)
         .collect();
@@ -1655,7 +1720,7 @@ pub mod tests {
 
     #[test]
     fn test_recovery_with_expanded_coding_shreds() {
-        for num_tx in 0..50 {
+        for num_tx in 0..100 {
             run_recovery_with_expanded_coding_shreds(num_tx, false);
             run_recovery_with_expanded_coding_shreds(num_tx, true);
         }

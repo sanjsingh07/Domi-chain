@@ -29,7 +29,6 @@ pub const MAX_ACTIVE_SUBSCRIPTIONS: usize = 1_000_000;
 pub const DEFAULT_QUEUE_CAPACITY_ITEMS: usize = 10_000_000;
 pub const DEFAULT_TEST_QUEUE_CAPACITY_ITEMS: usize = 100;
 pub const DEFAULT_QUEUE_CAPACITY_BYTES: usize = 256 * 1024 * 1024;
-pub const DEFAULT_WORKER_THREADS: usize = 1;
 
 #[derive(Debug, Clone)]
 pub struct PubSubConfig {
@@ -37,8 +36,6 @@ pub struct PubSubConfig {
     pub max_active_subscriptions: usize,
     pub queue_capacity_items: usize,
     pub queue_capacity_bytes: usize,
-    pub worker_threads: usize,
-    pub notification_threads: Option<usize>,
 }
 
 impl Default for PubSubConfig {
@@ -48,8 +45,6 @@ impl Default for PubSubConfig {
             max_active_subscriptions: MAX_ACTIVE_SUBSCRIPTIONS,
             queue_capacity_items: DEFAULT_QUEUE_CAPACITY_ITEMS,
             queue_capacity_bytes: DEFAULT_QUEUE_CAPACITY_BYTES,
-            worker_threads: DEFAULT_WORKER_THREADS,
-            notification_threads: None,
         }
     }
 }
@@ -61,8 +56,6 @@ impl PubSubConfig {
             max_active_subscriptions: MAX_ACTIVE_SUBSCRIPTIONS,
             queue_capacity_items: DEFAULT_TEST_QUEUE_CAPACITY_ITEMS,
             queue_capacity_bytes: DEFAULT_QUEUE_CAPACITY_BYTES,
-            worker_threads: DEFAULT_WORKER_THREADS,
-            notification_threads: Some(2),
         }
     }
 }
@@ -84,8 +77,7 @@ impl PubSubService {
         let thread_hdl = Builder::new()
             .name("analog-pubsub".to_string())
             .spawn(move || {
-                let runtime = tokio::runtime::Builder::new_multi_thread()
-                    .worker_threads(pubsub_config.worker_threads)
+                let runtime = tokio::runtime::Builder::new_current_thread()
                     .enable_all()
                     .build()
                     .expect("runtime creation failed");
@@ -153,17 +145,6 @@ impl BroadcastHandler {
         {
             count_final(entry.get().params());
 
-            let time_since_created = notification.created_at.elapsed();
-
-            datapoint_info!(
-                "pubsub_notifications",
-                (
-                    "created_to_queue_time_us",
-                    time_since_created.as_micros() as i64,
-                    i64
-                ),
-            );
-
             if notification.is_final {
                 entry.remove();
             }
@@ -191,25 +172,20 @@ impl TestBroadcastReceiver {
         use std::time::{Duration, Instant};
         use tokio::sync::broadcast::error::TryRecvError;
 
-        let timeout = Duration::from_secs(5);
+        let timeout = Duration::from_millis(500);
         let started = Instant::now();
 
         loop {
             match self.inner.try_recv() {
                 Ok(notification) => {
-                    debug!(
-                        "TestBroadcastReceiver: {:?}ms elapsed",
-                        started.elapsed().as_millis()
-                    );
                     if let Some(json) = self.handler.handle(notification).expect("handler failed") {
                         return json.to_string();
                     }
                 }
                 Err(TryRecvError::Empty) => {
-                    assert!(
-                        started.elapsed() <= timeout,
-                        "TestBroadcastReceiver: no data, timeout reached"
-                    );
+                    if started.elapsed() > timeout {
+                        panic!("TestBroadcastReceiver: no data, timeout reached");
+                    }
                     sleep(Duration::from_millis(50));
                 }
                 Err(err) => panic!("broadcast receiver error: {}", err),

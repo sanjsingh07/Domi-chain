@@ -144,7 +144,7 @@ impl From<Fees> for UiFees {
 #[derive(Debug, Serialize, Deserialize, PartialEq, Default)]
 #[serde(rename_all = "camelCase")]
 pub struct UiRent {
-    pub lamports_per_byte_year: StringAmount,
+    pub tocks_per_byte_year: StringAmount,
     pub exemption_threshold: f64,
     pub burn_percent: u8,
 }
@@ -152,7 +152,7 @@ pub struct UiRent {
 impl From<Rent> for UiRent {
     fn from(rent: Rent) -> Self {
         Self {
-            lamports_per_byte_year: rent.lamports_per_byte_year.to_string(),
+            tocks_per_byte_year: rent.tocks_per_byte_year.to_string(),
             exemption_threshold: rent.exemption_threshold,
             burn_percent: rent.burn_percent,
         }
@@ -254,8 +254,12 @@ mod test {
                 SysvarAccountType::Fees(UiFees::default()),
             );
 
-            let recent_blockhashes: RecentBlockhashes =
-                vec![IterItem(0, &hash, 10)].into_iter().collect();
+            let fee_calculator = FeeCalculator {
+                tocks_per_signature: 10,
+            };
+            let recent_blockhashes: RecentBlockhashes = vec![IterItem(0, &hash, &fee_calculator)]
+                .into_iter()
+                .collect();
             let recent_blockhashes_sysvar = create_account_for_test(&recent_blockhashes);
             assert_eq!(
                 parse_sysvar(
@@ -265,13 +269,13 @@ mod test {
                 .unwrap(),
                 SysvarAccountType::RecentBlockhashes(vec![UiRecentBlockhashesEntry {
                     blockhash: hash.to_string(),
-                    fee_calculator: FeeCalculator::new(10).into(),
+                    fee_calculator: fee_calculator.into(),
                 }]),
             );
         }
 
         let rent = Rent {
-            lamports_per_byte_year: 10,
+            tocks_per_byte_year: 10,
             exemption_threshold: 2.0,
             burn_percent: 5,
         };

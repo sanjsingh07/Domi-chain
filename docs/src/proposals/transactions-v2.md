@@ -74,7 +74,7 @@ struct AddressMap {
 #### Cleanup
 
 Once an address map gets stale and is no longer used, it can be reclaimed by the
-authority withdrawing tock but the remaining balance must be greater than
+authority withdrawing lamports but the remaining balance must be greater than
 two epochs of rent. This ensures that it takes at least one full epoch to
 deactivate a map.
 

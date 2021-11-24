@@ -1,11 +1,11 @@
-use solana_program::{
+use analog_program::{
     account_info::AccountInfo, entrypoint, entrypoint::ProgramResult, msg, program::invoke,
     program_error::ProgramError, pubkey::Pubkey, system_instruction,
 };
 
 #[derive(Debug)]
 #[repr(C)]
-struct SolInstruction {
+struct AnlogInstruction {
     program_id_addr: u64,
     accounts_addr: u64,
     accounts_len: usize,
@@ -13,21 +13,21 @@ struct SolInstruction {
     data_len: usize,
 }
 
-/// Rust representation of C's SolAccountMeta
+/// Rust representation of C's AnlogAccountMeta
 #[derive(Debug)]
 #[repr(C)]
-struct SolAccountMeta {
+struct AnlogAccountMeta {
     pubkey_addr: u64,
     is_writable: bool,
     is_signer: bool,
 }
 
-/// Rust representation of C's SolAccountInfo
+/// Rust representation of C's AnlogAccountInfo
 #[derive(Debug, Clone)]
 #[repr(C)]
-struct SolAccountInfo {
+struct AnlogAccountInfo {
     key_addr: u64,
-    lamports_addr: u64,
+    tocks_addr: u64,
     data_len: u64,
     data_addr: u64,
     owner_addr: u64,
@@ -37,51 +37,51 @@ struct SolAccountInfo {
     executable: bool,
 }
 
-/// Rust representation of C's SolSignerSeed
+/// Rust representation of C's AnlogSignerSeed
 #[derive(Debug)]
 #[repr(C)]
-struct SolSignerSeedC {
+struct AnlogSignerSeedC {
     addr: u64,
     len: u64,
 }
 
-/// Rust representation of C's SolSignerSeeds
+/// Rust representation of C's AnlogSignerSeeds
 #[derive(Debug)]
 #[repr(C)]
-struct SolSignerSeedsC {
+struct AnlogSignerSeedsC {
     addr: u64,
     len: u64,
 }
 
 extern "C" {
     fn anlog_invoke_signed_c(
-        instruction_addr: *const SolInstruction,
-        account_infos_addr: *const SolAccountInfo,
+        instruction_addr: *const AnlogInstruction,
+        account_infos_addr: *const AnlogAccountInfo,
         account_infos_len: u64,
-        signers_seeds_addr: *const SolSignerSeedsC,
+        signers_seeds_addr: *const AnlogSignerSeedsC,
         signers_seeds_len: u64,
     ) -> u64;
 }
 
-const READONLY_ACCOUNTS: &[SolAccountInfo] = &[
-    SolAccountInfo {
+const READONLY_ACCOUNTS: &[AnlogAccountInfo] = &[
+    AnlogAccountInfo {
         is_signer: false,
         is_writable: false,
         executable: true,
         key_addr: 0x400000010,
         owner_addr: 0x400000030,
-        lamports_addr: 0x400000050,
+        tocks_addr: 0x400000050,
         rent_epoch: 0,
         data_addr: 0x400000060,
         data_len: 14,
     },
-    SolAccountInfo {
+    AnlogAccountInfo {
         is_signer: true,
         is_writable: true,
         executable: false,
         key_addr: 0x400002880,
         owner_addr: 0x4000028A0,
-        lamports_addr: 0x4000028c0,
+        tocks_addr: 0x4000028c0,
         rent_epoch: 0,
         data_addr: 0x4000028d0,
         data_len: 0,
@@ -95,7 +95,7 @@ const PUBKEY: Pubkey = Pubkey::new_from_array([
 
 fn check_preconditions(
     in_infos: &[AccountInfo],
-    static_infos: &[SolAccountInfo],
+    static_infos: &[AnlogAccountInfo],
 ) -> Result<(), ProgramError> {
     for (in_info, static_info) in in_infos.iter().zip(static_infos) {
         check!(in_info.key.as_ref().as_ptr() as u64, static_info.key_addr);
@@ -104,8 +104,8 @@ fn check_preconditions(
             static_info.owner_addr
         );
         check!(
-            unsafe { *in_info.tock.as_ptr() as *const u64 as u64 },
-            static_info.lamports_addr
+            unsafe { *in_info.tocks.as_ptr() as *const u64 as u64 },
+            static_info.tocks_addr
         );
         check!(
             in_info.try_borrow_data()?.as_ptr() as u64,
@@ -127,12 +127,12 @@ fn process_instruction(
     match instruction_data[0] {
         1 => {
             let system_instruction = system_instruction::allocate(accounts[1].key, 42);
-            let metas = &[SolAccountMeta {
+            let metas = &[AnlogAccountMeta {
                 is_signer: true,
                 is_writable: true,
                 pubkey_addr: accounts[1].key as *const _ as u64,
             }];
-            let instruction = SolInstruction {
+            let instruction = AnlogInstruction {
                 accounts_addr: metas.as_ptr() as u64,
                 accounts_len: metas.len(),
                 data_addr: system_instruction.data.as_ptr() as u64,
@@ -146,7 +146,7 @@ fn process_instruction(
                         &instruction as *const _,
                         READONLY_ACCOUNTS.as_ptr(),
                         READONLY_ACCOUNTS.len() as u64,
-                        std::ptr::null::<SolSignerSeedsC>(),
+                        std::ptr::null::<AnlogSignerSeedsC>(),
                         0,
                     )
                 );
@@ -162,12 +162,12 @@ fn process_instruction(
                 &mut [READONLY_ACCOUNTS[0].clone(), READONLY_ACCOUNTS[1].clone()];
             new_accounts[1].owner_addr = &PUBKEY as *const _ as u64;
             let system_instruction = system_instruction::assign(accounts[1].key, program_id);
-            let metas = &[SolAccountMeta {
+            let metas = &[AnlogAccountMeta {
                 is_signer: true,
                 is_writable: true,
                 pubkey_addr: accounts[1].key as *const _ as u64,
             }];
-            let instruction = SolInstruction {
+            let instruction = AnlogInstruction {
                 accounts_addr: metas.as_ptr() as u64,
                 accounts_len: metas.len(),
                 data_addr: system_instruction.data.as_ptr() as u64,
@@ -181,7 +181,7 @@ fn process_instruction(
                         &instruction as *const _,
                         new_accounts.as_ptr(),
                         new_accounts.len() as u64,
-                        std::ptr::null::<SolSignerSeedsC>(),
+                        std::ptr::null::<AnlogSignerSeedsC>(),
                         0,
                     )
                 );

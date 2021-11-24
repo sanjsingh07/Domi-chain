@@ -1,0 +1,22 @@
+[package]
+authors = ["Analog Maintainers <maintainers@analog.foundation>"]
+edition = "2018"
+name = "analog-scripts"
+description = "Blockchain, Rebuilt for Scale"
+version = "1.8.2"
+repository = "https://github.com/analog/testnet"
+license = "Apache-2.0"
+homepage = "https://analog.com/"
+publish = false
+
+[dependencies]
+csv = "1.1"
+serde = { version = "1.0.130", features = ["derive"] }
+
+[[bin]]
+name = "analog-csv-to-validator-infos"
+path = "src/csv_to_validator_infos.rs"
+
+
+[package.metadata.docs.rs]
+targets = ["x86_64-unknown-linux-gnu"]

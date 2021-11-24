@@ -8,7 +8,7 @@ import {
   Lockup,
   PublicKey,
   sendAndConfirmTransaction,
-  TOCK_PER_ANLOG,
+  TOCKS_PER_ANLOG,
   StakeAuthorizationLayout,
   StakeInstruction,
   StakeProgram,
@@ -32,7 +32,7 @@ describe('StakeProgram', () => {
     const authorizedPubkey = Keypair.generate().publicKey;
     const authorized = new Authorized(authorizedPubkey, authorizedPubkey);
     const lockup = new Lockup(0, 0, fromPubkey);
-    const tock = 123;
+    const tocks = 123;
     const transaction = StakeProgram.createAccountWithSeed({
       fromPubkey,
       stakePubkey: newAccountPubkey,
@@ -40,7 +40,7 @@ describe('StakeProgram', () => {
       seed,
       authorized,
       lockup,
-      tock,
+      tocks,
     });
     expect(transaction.instructions).to.have.length(2);
     const [systemInstruction, stakeInstruction] = transaction.instructions;
@@ -49,7 +49,7 @@ describe('StakeProgram', () => {
       newAccountPubkey,
       basePubkey: fromPubkey,
       seed,
-      tock,
+      tocks,
       space: StakeProgram.space,
       programId: StakeProgram.programId,
     };
@@ -68,20 +68,20 @@ describe('StakeProgram', () => {
     const authorizedPubkey = Keypair.generate().publicKey;
     const authorized = new Authorized(authorizedPubkey, authorizedPubkey);
     const lockup = new Lockup(0, 0, fromPubkey);
-    const tock = 123;
+    const tocks = 123;
     const transaction = StakeProgram.createAccount({
       fromPubkey,
       stakePubkey: newAccountPubkey,
       authorized,
       lockup,
-      tock,
+      tocks,
     });
     expect(transaction.instructions).to.have.length(2);
     const [systemInstruction, stakeInstruction] = transaction.instructions;
     const systemParams = {
       fromPubkey,
       newAccountPubkey,
-      tock,
+      tocks,
       space: StakeProgram.space,
       programId: StakeProgram.programId,
     };
@@ -202,7 +202,7 @@ describe('StakeProgram', () => {
       stakePubkey,
       authorizedPubkey,
       splitStakePubkey,
-      tock: 123,
+      tocks: 123,
     };
     const transaction = StakeProgram.split(params);
     expect(transaction.instructions).to.have.length(2);
@@ -210,7 +210,7 @@ describe('StakeProgram', () => {
     const systemParams = {
       fromPubkey: authorizedPubkey,
       newAccountPubkey: splitStakePubkey,
-      tock: 0,
+      tocks: 0,
       space: StakeProgram.space,
       programId: StakeProgram.programId,
     };
@@ -243,7 +243,7 @@ describe('StakeProgram', () => {
       stakePubkey,
       authorizedPubkey,
       toPubkey,
-      tock: 123,
+      tocks: 123,
     };
     const transaction = StakeProgram.withdraw(params);
     expect(transaction.instructions).to.have.length(1);
@@ -260,7 +260,7 @@ describe('StakeProgram', () => {
       stakePubkey,
       authorizedPubkey,
       toPubkey,
-      tock: 123,
+      tocks: 123,
       custodianPubkey,
     };
     const transaction = StakeProgram.withdraw(params);
@@ -297,7 +297,7 @@ describe('StakeProgram', () => {
       seed,
       authorized: new Authorized(authorized.publicKey, authorized.publicKey),
       lockup: new Lockup(0, 0, from.publicKey),
-      tock: amount,
+      tocks: amount,
     });
     const createWithSeedTransaction = new Transaction({recentBlockhash}).add(
       createWithSeed,
@@ -351,14 +351,14 @@ describe('StakeProgram', () => {
       await helpers.airdrop({
         connection,
         address: payer.publicKey,
-        amount: 2 * TOCK_PER_ANLOG,
+        amount: 2 * TOCKS_PER_ANLOG,
       });
 
       const authorized = Keypair.generate();
       await helpers.airdrop({
         connection,
         address: authorized.publicKey,
-        amount: 2 * TOCK_PER_ANLOG,
+        amount: 2 * TOCKS_PER_ANLOG,
       });
 
       const minimumAmount = await connection.getMinimumBalanceForRentExemption(
@@ -366,10 +366,10 @@ describe('StakeProgram', () => {
       );
 
       expect(await connection.getBalance(payer.publicKey)).to.eq(
-        2 * TOCK_PER_ANLOG,
+        2 * TOCKS_PER_ANLOG,
       );
       expect(await connection.getBalance(authorized.publicKey)).to.eq(
-        2 * TOCK_PER_ANLOG,
+        2 * TOCKS_PER_ANLOG,
       );
 
       {
@@ -382,7 +382,7 @@ describe('StakeProgram', () => {
             authorized.publicKey,
             authorized.publicKey,
           ),
-          tock: minimumAmount + 42,
+          tocks: minimumAmount + 42,
         });
 
         await sendAndConfirmTransaction(
@@ -420,7 +420,7 @@ describe('StakeProgram', () => {
         seed,
         authorized: new Authorized(authorized.publicKey, authorized.publicKey),
         lockup: new Lockup(0, 0, new PublicKey(0)),
-        tock: 3 * minimumAmount + 42,
+        tocks: 3 * minimumAmount + 42,
       });
 
       await sendAndConfirmTransaction(
@@ -447,7 +447,7 @@ describe('StakeProgram', () => {
         stakePubkey: newAccountPubkey,
         authorizedPubkey: authorized.publicKey,
         toPubkey: recipient.publicKey,
-        tock: 1000,
+        tocks: 1000,
       });
       await expect(
         sendAndConfirmTransaction(connection, withdraw, [authorized], {
@@ -476,7 +476,7 @@ describe('StakeProgram', () => {
         stakePubkey: newAccountPubkey,
         authorizedPubkey: authorized.publicKey,
         toPubkey: recipient.publicKey,
-        tock: minimumAmount + 20,
+        tocks: minimumAmount + 20,
       });
 
       await sendAndConfirmTransaction(connection, withdraw, [authorized], {
@@ -491,7 +491,7 @@ describe('StakeProgram', () => {
         stakePubkey: newAccountPubkey,
         authorizedPubkey: authorized.publicKey,
         splitStakePubkey: newStake.publicKey,
-        tock: minimumAmount + 20,
+        tocks: minimumAmount + 20,
       });
       await sendAndConfirmTransaction(
         connection,
@@ -521,7 +521,7 @@ describe('StakeProgram', () => {
         stakePubkey: newAccountPubkey,
         authorizedPubkey: authorized.publicKey,
         splitStakePubkey: newStake.publicKey,
-        tock: minimumAmount + 20,
+        tocks: minimumAmount + 20,
       });
       await sendAndConfirmTransaction(
         connection,
@@ -536,7 +536,7 @@ describe('StakeProgram', () => {
       const newAuthorized = Keypair.generate();
       await connection.requestAirdrop(
         newAuthorized.publicKey,
-        TOCK_PER_ANLOG,
+        TOCKS_PER_ANLOG,
       );
 
       let authorize = StakeProgram.authorize({

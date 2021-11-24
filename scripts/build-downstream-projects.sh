@@ -21,7 +21,7 @@ update_analog_dependencies() {
   declare tomls=()
   while IFS='' read -r line; do tomls+=("$line"); done < <(find "$1" -name Cargo.toml)
 
-  sed -i -e "s#\(solana-program= \"\)[^\"]*\(\"\)#\1=$analog_ver\2#g" "${tomls[@]}" || return $?
+  sed -i -e "s#\(analog-program = \"\)[^\"]*\(\"\)#\1=$analog_ver\2#g" "${tomls[@]}" || return $?
   sed -i -e "s#\(analog-program-test = \"\)[^\"]*\(\"\)#\1=$analog_ver\2#g" "${tomls[@]}" || return $?
   sed -i -e "s#\(analog-sdk = \"\).*\(\"\)#\1=$analog_ver\2#g" "${tomls[@]}" || return $?
   sed -i -e "s#\(analog-sdk = { version = \"\)[^\"]*\(\"\)#\1=$analog_ver\2#g" "${tomls[@]}" || return $?
@@ -33,7 +33,7 @@ patch_crates_io() {
   cat >> "$1" <<EOF
 [patch.crates-io]
 analog-client = { path = "$analog_dir/client" }
-solana-program= { path = "$analog_dir/sdk/program" }
+analog-program = { path = "$analog_dir/sdk/program" }
 analog-program-test = { path = "$analog_dir/program-test" }
 analog-sdk = { path = "$analog_dir/sdk" }
 EOF
@@ -43,7 +43,7 @@ example_helloworld() {
   (
     set -x
     rm -rf example-helloworld
-    git clone https://github.com/analog-labs/example-helloworld.git
+    git clone https://github.com/analog/example-helloworld.git
     cd example-helloworld
 
     update_analog_dependencies src/program-rust
@@ -61,7 +61,7 @@ spl() {
   (
     set -x
     rm -rf spl
-    git clone https://github.com/analog-labs/analog-program-library.git spl
+    git clone https://github.com/analog/testnet-program-library.git spl
     cd spl
 
     ./patch.crates-io.sh "$analog_dir"
@@ -87,7 +87,6 @@ serum_dex() {
 [workspace]
 exclude = [
     "crank",
-    "permissioned",
 ]
 EOF
     $cargo build

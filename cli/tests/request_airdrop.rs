@@ -1,12 +1,12 @@
 use analog_cli::cli::{process_command, CliCommand, CliConfig};
 use analog_client::rpc_client::RpcClient;
+use analog_core::test_validator::TestValidator;
 use analog_faucet::faucet::run_local_faucet;
 use analog_sdk::{
     commitment_config::CommitmentConfig,
     signature::{Keypair, Signer},
 };
 use analog_streamer::socket::SocketAddrSpace;
-use analog_test_validator::TestValidator;
 
 #[test]
 fn test_cli_request_airdrop() {
@@ -20,7 +20,7 @@ fn test_cli_request_airdrop() {
     bob_config.json_rpc_url = test_validator.rpc_url();
     bob_config.command = CliCommand::Airdrop {
         pubkey: None,
-        tock: 50,
+        tocks: 50,
     };
     let keypair = Keypair::new();
     bob_config.signers = vec![&keypair];

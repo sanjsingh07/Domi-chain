@@ -69,7 +69,7 @@ describe('Nonce', () => {
         fromPubkey: from.publicKey,
         noncePubkey: nonceAccount.publicKey,
         authorizedPubkey: from.publicKey,
-        tock: minimumAmount,
+        tocks: minimumAmount,
       }),
     );
 
@@ -88,7 +88,7 @@ describe('Nonce', () => {
       ],
       value: {
         owner: '11111111111111111111111111111111',
-        tock: minimumAmount,
+        tocks: minimumAmount,
         data: expectedData(from.publicKey),
         executable: false,
         rentEpoch: 20,
@@ -140,7 +140,7 @@ describe('Nonce', () => {
         basePubkey: from.publicKey,
         seed,
         authorizedPubkey: from.publicKey,
-        tock: minimumAmount,
+        tocks: minimumAmount,
       }),
     );
 
@@ -159,7 +159,7 @@ describe('Nonce', () => {
       ],
       value: {
         owner: '11111111111111111111111111111111',
-        tock: minimumAmount,
+        tocks: minimumAmount,
         data: expectedData(from.publicKey),
         executable: false,
         rentEpoch: 20,

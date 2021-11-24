@@ -11,5 +11,5 @@ apt-get --assume-yes install libssl-dev
 # Install libssl1.1 to be compatible with binaries built in the
 # analoglabs/rust docker image
 #
-# cc: https://github.com/analog-labs/analog/issues/1090
+# cc: https://github.com/analog/testnet/issues/1090
 apt-get --assume-yes install libssl1.1

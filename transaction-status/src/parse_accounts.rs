@@ -22,7 +22,8 @@ pub fn parse_accounts(message: &Message) -> Vec<ParsedAccount> {
 
 #[cfg(test)]
 mod test {
-    use {super::*, analog_sdk::message::MessageHeader};
+    use super::*;
+    use analog_sdk::message::MessageHeader;
 
     #[test]
     fn test_parse_accounts() {

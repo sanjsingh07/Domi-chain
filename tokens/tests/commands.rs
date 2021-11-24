@@ -1,7 +1,7 @@
 use analog_client::rpc_client::RpcClient;
+use analog_core::test_validator::TestValidator;
 use analog_sdk::signature::{Keypair, Signer};
 use analog_streamer::socket::SocketAddrSpace;
-use analog_test_validator::TestValidator;
 use analog_tokens::commands::test_process_distribute_tokens_with_client;
 
 #[test]

@@ -16,9 +16,9 @@
 { # this ensures the entire script is downloaded #
 
 if [ -z "$ANALOG_DOWNLOAD_ROOT" ]; then
-    ANALOG_DOWNLOAD_ROOT="https://github.com/analog-labs/analog/releases/download/"
+    ANALOG_DOWNLOAD_ROOT="https://github.com/analog/testnet/releases/download/"
 fi
-GH_LATEST_RELEASE="https://api.github.com/repos/analog-labs/analog/releases/latest"
+GH_LATEST_RELEASE="https://api.github.com/repos/analog/analog/releases/latest"
 
 set -e
 

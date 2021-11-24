@@ -91,6 +91,10 @@ pub mod secp256k1_recover_syscall_enabled {
     analog_sdk::declare_id!("6RvdSWHh8oh72Dp7wMTS2DBkf3fRPtChfNrAo3cZZoXJ");
 }
 
+pub mod add_missing_program_error_mappings {
+    analog_sdk::declare_id!("3QEUpjhgPEt92nz3Mqf6pABkHPGCQwSvKtyGMq4SuQyL");
+}
+
 pub mod system_transfer_zero_check {
     analog_sdk::declare_id!("BrTR9hzw4WBGFP65AJMbpAo64DcA3U6jdPSga9fMV5cS");
 }
@@ -155,6 +159,10 @@ pub mod gate_large_block {
     analog_sdk::declare_id!("2ry7ygxiYURULZCrypHhveanvP5tzZ4toRwVp89oCNSj");
 }
 
+pub mod mem_overlap_fix {
+    analog_sdk::declare_id!("vXDCFK7gphrEmyf5VnKgLmqbdJ4UxD2eZH1qbdouYKF");
+}
+
 pub mod versioned_tx_message_enabled {
     analog_sdk::declare_id!("3KZZ6Ks1885aGBQ45fwRcPXVBCtzUvxhUTkwKMR41Tca");
 }
@@ -165,6 +173,10 @@ pub mod libsecp256k1_fail_on_bad_count {
 
 pub mod instructions_sysvar_owned_by_sysvar {
     analog_sdk::declare_id!("H3kBSaKdeiUsyHmeHqjJYNc27jesXZ6zWj3zWkowQbkV");
+}
+
+pub mod close_upgradeable_program_accounts {
+    analog_sdk::declare_id!("EQMtCuSAkMVF9ZdhGuABtgvyXJLtSRF5AQKv1RNsrhj7");
 }
 
 pub mod stake_program_advance_activating_credits_observed {
@@ -179,58 +191,36 @@ pub mod ed25519_program_enabled {
     analog_sdk::declare_id!("E1TvTNipX8TKNHrhRC8SMuAwQmGY58TZ4drdztP3Gxwc");
 }
 
+pub mod allow_native_ids {
+    analog_sdk::declare_id!("GVnDbNkECwrzLM7aVBGWpBYo3yH1ACaXB4ottNX8pedZ");
+}
+
+pub mod check_seed_length {
+    analog_sdk::declare_id!("8HYXgkoKGreAMA3MfJkdjbKNVbfZRQP3jqFpa7iqN4v7");
+}
+
 pub mod return_data_syscall_enabled {
     analog_sdk::declare_id!("BJVXq6NdLC7jCDGjfqJv7M1XHD4Y13VrpDqRF2U7UBcC");
+}
+
+pub mod fix_write_privs {
+    analog_sdk::declare_id!("7Tr5C1tdcCeBVD8jxtHYnvjL1DGdFboYBHCJkEFdenBb");
 }
 
 pub mod reduce_required_deploy_balance {
     analog_sdk::declare_id!("EBeznQDjcPG8491sFsKZYBi5S5jTVXMpAKNDJMQPS2kq");
 }
 
-pub mod anlog_log_data_syscall_enabled {
+// pub mod anlog_log_data_syscall_enabled {
+//     analog_sdk::declare_id!("HYPs7jyJ3KwQFdDpuSzMtVKf1MLJDaZRv3CSWvfUqdFo");
+// }
+
+pub mod sol_log_data_syscall_enabled {
     analog_sdk::declare_id!("HYPs7jyJ3KwQFdDpuSzMtVKf1MLJDaZRv3CSWvfUqdFo");
 }
 
 pub mod stakes_remove_delegation_if_inactive {
     analog_sdk::declare_id!("HFpdDDNQjvcXnXKec697HDDsyk6tFoWS2o8fkxuhQZpL");
-}
-
-pub mod do_support_realloc {
-    analog_sdk::declare_id!("75m6ysz33AfLA5DDEzWM1obBrnPQRSsdVQ2nRmc8Vuu1");
-}
-
-// Note: when this feature is cleaned up, also remove the secp256k1 program from
-// the list of builtins and remove its files from /programs
-pub mod prevent_calling_precompiles_as_programs {
-    analog_sdk::declare_id!("4ApgRX3ud6p7LNMJmsuaAcZY5HWctGPr5obAsjB3A54d");
-}
-
-pub mod optimize_epoch_boundary_updates {
-    analog_sdk::declare_id!("265hPS8k8xJ37ot82KEgjRunsUp5w4n4Q4VwwiN9i9ps");
-}
-
-pub mod remove_native_loader {
-    analog_sdk::declare_id!("HTTgmruMYRZEntyL3EdCDdnS6e4D5wRq1FA7kQsb66qq");
-}
-
-pub mod send_to_tpu_vote_port {
-    analog_sdk::declare_id!("C5fh68nJ7uyKAuYZg2x9sEQ5YrVf3dkW6oojNBSc3Jvo");
-}
-
-pub mod turbine_peers_shuffle {
-    analog_sdk::declare_id!("4VvpgRD6UsHvkXwpuQhtR5NG1G4esMaExeWuSEpsYRUa");
-}
-
-pub mod requestable_heap_size {
-    analog_sdk::declare_id!("CCu4boMmfLuqcmfTLPHQiUo22ZdUsXjgzPAURYaWt1Bw");
-}
-
-pub mod disable_fee_calculator {
-    analog_sdk::declare_id!("2jXx2yDmGysmBKfKYNgLj2DQyAQv6mMk2BPh4eSbyB4H");
-}
-
-pub mod add_compute_budget_program {
-    analog_sdk::declare_id!("4d5AKtxoh93Dwm1vHXUU3iRATuMndx1c431KgT2td52r");
 }
 
 lazy_static! {
@@ -251,7 +241,8 @@ lazy_static! {
         (check_init_vote_data::id(), "check initialized Vote data"),
         (stake_program_v4::id(), "analog_stake_program v4"),
         (secp256k1_recover_syscall_enabled::id(), "secp256k1_recover syscall"),
-        (system_transfer_zero_check::id(), "perform all checks for transfers of 0 tock"),
+        (add_missing_program_error_mappings::id(), "add missing program error mappings"),
+        (system_transfer_zero_check::id(), "perform all checks for transfers of 0 tocks"),
         (blake3_syscall_enabled::id(), "blake3 syscall"),
         (dedupe_config_program_signers::id(), "dedupe config program signers"),
         (deterministic_shred_seed_enabled::id(), "deterministic shred seed"),
@@ -267,25 +258,22 @@ lazy_static! {
         (disable_fees_sysvar::id(), "disable fees sysvar"),
         (stake_merge_with_unmatched_credits_observed::id(), "allow merging active stakes with unmatched credits_observed #18985"),
         (gate_large_block::id(), "validator checks block cost against max limit in realtime, reject if exceeds."),
+        (mem_overlap_fix::id(), "memory overlap fix"),
         (versioned_tx_message_enabled::id(), "enable versioned transaction message processing"),
         (libsecp256k1_fail_on_bad_count::id(), "fail libsec256k1_verify if count appears wrong"),
         (instructions_sysvar_owned_by_sysvar::id(), "fix owner for instructions sysvar"),
+        (close_upgradeable_program_accounts::id(), "enable closing upgradeable program accounts"),
         (stake_program_advance_activating_credits_observed::id(), "Enable advancing credits observed for activation epoch #19309"),
-        (demote_program_write_locks::id(), "demote program write locks to readonly, except when upgradeable loader present #19593 #20265"),
+        (demote_program_write_locks::id(), "demote program write locks to readonly #19593"),
         (ed25519_program_enabled::id(), "enable builtin ed25519 signature verify program"),
+        (allow_native_ids::id(), "allow native program ids in program derived addresses"),
+        (check_seed_length::id(), "Check program address seed lengths"),
         (return_data_syscall_enabled::id(), "enable anlog_{set,get}_return_data syscall"),
+        (fix_write_privs::id(), "fix native invoke write privileges"),
         (reduce_required_deploy_balance::id(), "reduce required payer balance for program deploys"),
-        (anlog_log_data_syscall_enabled::id(), "enable anlog_log_data syscall"),
+        // (anlog_log_data_syscall_enabled::id(), "enable anlog_log_data syscall"),
+        (sol_log_data_syscall_enabled::id(), "enable sol_log_data syscall"),
         (stakes_remove_delegation_if_inactive::id(), "remove delegations from stakes cache when inactive"),
-        (do_support_realloc::id(), "support account data reallocation"),
-        (prevent_calling_precompiles_as_programs::id(), "prevent calling precompiles as programs"),
-        (optimize_epoch_boundary_updates::id(), "optimize epoch boundary updates"),
-        (remove_native_loader::id(), "remove support for the native loader"),
-        (send_to_tpu_vote_port::id(), "send votes to the tpu vote port"),
-        (turbine_peers_shuffle::id(), "turbine peers shuffle patch"),
-        (requestable_heap_size::id(), "Requestable heap frame size"),
-        (disable_fee_calculator::id(), "deprecate fee calculator"),
-        (add_compute_budget_program::id(), "Add compute_budget_program"),
         /*************** ADD NEW FEATURES HERE ***************/
     ]
     .iter()

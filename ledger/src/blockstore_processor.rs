@@ -1,6 +1,7 @@
 use crate::{
-    block_error::BlockError, blockstore::Blockstore, blockstore_db::BlockstoreError,
-    blockstore_meta::SlotMeta, leader_schedule_cache::LeaderScheduleCache,
+    block_cost_limits::*, block_error::BlockError, blockstore::Blockstore,
+    blockstore_db::BlockstoreError, blockstore_meta::SlotMeta,
+    leader_schedule_cache::LeaderScheduleCache,
 };
 use chrono_humanize::{Accuracy, HumanTime, Tense};
 use crossbeam_channel::Sender;
@@ -17,14 +18,12 @@ use analog_rayon_threadlimit::get_thread_count;
 use analog_runtime::{
     accounts_db::{AccountShrinkThreshold, AccountsDbConfig},
     accounts_index::AccountSecondaryIndexes,
-    accounts_update_notifier_interface::AccountsUpdateNotifier,
     bank::{
         Bank, ExecuteTimings, InnerInstructionsList, RentDebits, TransactionBalancesSet,
         TransactionExecutionResult, TransactionLogMessages, TransactionResults,
     },
     bank_forks::BankForks,
     bank_utils,
-    block_cost_limits::*,
     commitment::VOTE_THRESHOLD_SIZE,
     snapshot_config::SnapshotConfig,
     snapshot_package::{AccountsPackageSender, SnapshotType},
@@ -66,7 +65,7 @@ pub struct BlockCostCapacityMeter {
 
 impl Default for BlockCostCapacityMeter {
     fn default() -> Self {
-        BlockCostCapacityMeter::new(MAX_BLOCK_UNITS)
+        BlockCostCapacityMeter::new(BLOCK_COST_MAX)
     }
 }
 
@@ -143,8 +142,7 @@ fn aggregate_total_execution_units(execute_timings: &ExecuteTimings) -> u64 {
         if timing.count < 1 {
             continue;
         }
-        execute_cost_units =
-            execute_cost_units.saturating_add(timing.accumulated_units / timing.count as u64);
+        execute_cost_units += timing.accumulated_units / timing.count as u64;
         trace!("aggregated execution cost of {:?} {:?}", program_id, timing);
     }
     execute_cost_units
@@ -485,7 +483,6 @@ pub fn process_blockstore(
     cache_block_meta_sender: Option<&CacheBlockMetaSender>,
     snapshot_config: Option<&SnapshotConfig>,
     accounts_package_sender: AccountsPackageSender,
-    accounts_update_notifier: Option<AccountsUpdateNotifier>,
 ) -> BlockstoreProcessorResult {
     if let Some(num_threads) = opts.override_num_threads {
         PAR_THREAD_POOL.with(|pool| {
@@ -508,7 +505,6 @@ pub fn process_blockstore(
         opts.shrink_ratio,
         false,
         opts.accounts_db_config.clone(),
-        accounts_update_notifier,
     );
     let bank0 = Arc::new(bank0);
     info!("processing ledger for slot 0...");
@@ -603,8 +599,8 @@ fn do_process_blockstore_from_root(
         blockstore
             .set_roots(std::iter::once(&start_slot))
             .expect("Couldn't set root slot on startup");
-    } else {
-        assert!(blockstore.is_root(start_slot), "starting slot isn't root and can't update due to being secondary blockstore access: {}", start_slot);
+    } else if !blockstore.is_root(start_slot) {
+        panic!("starting slot isn't root and can't update due to being secondary blockstore access: {}", start_slot);
     }
 
     if let Ok(metas) = blockstore.slot_meta_iterator(start_slot) {
@@ -1204,7 +1200,6 @@ fn load_frozen_forks(
                             snapshot_config.accounts_hash_use_index,
                             snapshot_config.accounts_hash_debug_verify,
                             Some(new_root_bank.epoch_schedule().slots_per_epoch),
-                            false,
                         );
                         snapshot_utils::snapshot_bank(
                             new_root_bank,
@@ -1342,8 +1337,8 @@ fn process_single_slot(
             blockstore
                 .set_dead_slot(slot)
                 .expect("Failed to mark slot as dead in blockstore");
-        } else {
-            assert!(blockstore.is_dead(slot), "Failed slot isn't dead and can't update due to being secondary blockstore access: {}", slot);
+        } else if !blockstore.is_dead(slot) {
+            panic!("Failed slot isn't dead and can't update due to being secondary blockstore access: {}", slot);
         }
         err
     })?;
@@ -1355,7 +1350,6 @@ fn process_single_slot(
     Ok(())
 }
 
-#[allow(clippy::large_enum_variant)]
 pub enum TransactionStatusMessage {
     Batch(TransactionStatusBatch),
     Freeze(Slot),
@@ -1519,7 +1513,6 @@ pub mod tests {
             None,
             None,
             accounts_package_sender,
-            None,
         )
         .unwrap()
     }
@@ -2201,7 +2194,7 @@ pub mod tests {
             entries.push(entry);
 
             // Add a second Transaction that will produce a
-            // InstructionError<0, ResultWithNegativeLamports> error when processed
+            // InstructionError<0, ResultWithNegativeTocks> error when processed
             let keypair2 = Keypair::new();
             let tx =
                 system_transaction::transfer(&mint_keypair, &keypair2.pubkey(), 101, blockhash);
@@ -2547,7 +2540,7 @@ pub mod tests {
         )
         .is_err());
 
-        // First transaction in first entry succeeded, so keypair1 lost 1 lamport
+        // First transaction in first entry succeeded, so keypair1 lost 1 tock
         assert_eq!(bank.get_balance(&keypair1.pubkey()), 3);
         assert_eq!(bank.get_balance(&keypair2.pubkey()), 4);
 
@@ -2726,7 +2719,7 @@ pub mod tests {
 
         let keypairs: Vec<_> = (0..NUM_TRANSFERS * 2).map(|_| Keypair::new()).collect();
 
-        // give everybody one lamport
+        // give everybody one tock
         for keypair in &keypairs {
             bank.transfer(1, &mint_keypair, &keypair.pubkey())
                 .expect("funding failed");
@@ -2771,7 +2764,7 @@ pub mod tests {
         // entropy multiplier should be big enough to provide sufficient entropy
         // but small enough to not take too much time while executing the test.
         let entropy_multiplier: usize = 25;
-        let initial_lamports = 100;
+        let initial_tocks = 100;
 
         // number of accounts need to be in multiple of 4 for correct
         // execution of the test.
@@ -2780,7 +2773,7 @@ pub mod tests {
             genesis_config,
             mint_keypair,
             ..
-        } = create_genesis_config((num_accounts + 1) as u64 * initial_lamports);
+        } = create_genesis_config((num_accounts + 1) as u64 * initial_tocks);
 
         let bank = Arc::new(Bank::new_for_tests(&genesis_config));
 
@@ -2796,7 +2789,7 @@ pub mod tests {
             );
             assert_eq!(bank.process_transaction(&create_account_tx), Ok(()));
             assert_matches!(
-                bank.transfer(initial_lamports, &mint_keypair, &keypair.pubkey()),
+                bank.transfer(initial_tocks, &mint_keypair, &keypair.pubkey()),
                 Ok(_)
             );
             keypairs.push(keypair);
@@ -2809,19 +2802,19 @@ pub mod tests {
                 system_transaction::transfer(
                     &keypairs[i + 1],
                     &keypairs[i].pubkey(),
-                    initial_lamports,
+                    initial_tocks,
                     bank.last_blockhash(),
                 ),
                 system_transaction::transfer(
                     &keypairs[i + 3],
                     &keypairs[i + 2].pubkey(),
-                    initial_lamports,
+                    initial_tocks,
                     bank.last_blockhash(),
                 ),
             ]);
         }
 
-        // Transfer tock to each other
+        // Transfer tocks to each other
         let entry = next_entry(&bank.last_blockhash(), 1, tx_vector);
         assert_eq!(
             process_entries(&bank, vec![entry], true, None, None),
@@ -2829,13 +2822,13 @@ pub mod tests {
         );
         bank.squash();
 
-        // Even number keypair should have balance of 2 * initial_lamports and
+        // Even number keypair should have balance of 2 * initial_tocks and
         // odd number keypair should have balance of 0, which proves
         // that even in case of random order of execution, overall state remains
         // consistent.
         for (i, keypair) in keypairs.iter().enumerate() {
             if i % 2 == 0 {
-                assert_eq!(bank.get_balance(&keypair.pubkey()), 2 * initial_lamports);
+                assert_eq!(bank.get_balance(&keypair.pubkey()), 2 * initial_tocks);
             } else {
                 assert_eq!(bank.get_balance(&keypair.pubkey()), 0);
             }
@@ -2923,7 +2916,7 @@ pub mod tests {
             bank.transfer(10_001, &mint_keypair, &pubkey),
             Err(TransactionError::InstructionError(
                 0,
-                SystemError::ResultWithNegativeLamports.into(),
+                SystemError::ResultWithNegativeTocks.into(),
             ))
         );
         assert_eq!(
@@ -3130,8 +3123,8 @@ pub mod tests {
 
         let ticks_per_slot = 1;
         genesis_config.ticks_per_slot = ticks_per_slot;
-        let (ledger_path, blockhash) = create_new_tmp_ledger_auto_delete!(&genesis_config);
-        let blockstore = Blockstore::open(ledger_path.path()).unwrap();
+        let (ledger_path, blockhash) = create_new_tmp_ledger!(&genesis_config);
+        let blockstore = Blockstore::open(&ledger_path).unwrap();
 
         const ROOT_INTERVAL_SLOTS: Slot = 2;
         const FULL_SNAPSHOT_ARCHIVE_INTERVAL_SLOTS: Slot = ROOT_INTERVAL_SLOTS * 5;
@@ -3241,7 +3234,7 @@ pub mod tests {
 
         let keypairs: Vec<_> = (0..NUM_TRANSFERS * 2).map(|_| Keypair::new()).collect();
 
-        // give everybody one lamport
+        // give everybody one tock
         for keypair in &keypairs {
             bank.transfer(1, &mint_keypair, &keypair.pubkey())
                 .expect("funding failed");
@@ -3434,7 +3427,7 @@ pub mod tests {
             Hash::default(),
         );
         let txs = vec![account_not_found_tx, invalid_blockhash_tx];
-        let batch = bank.prepare_batch_for_tests(txs);
+        let batch = bank.prepare_batch(txs).unwrap();
         let (
             TransactionResults {
                 fee_collection_results,

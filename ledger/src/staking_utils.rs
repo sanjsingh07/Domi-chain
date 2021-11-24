@@ -111,7 +111,7 @@ pub(crate) mod tests {
         let mut rng = rand::thread_rng();
         let vote_accounts = stakes.into_iter().map(|(stake, vote_state)| {
             let account = AccountSharedData::new_data(
-                rng.gen(), // tock
+                rng.gen(), // tocks
                 &VoteStateVersions::new_current(vote_state),
                 &Pubkey::new_unique(), // owner
             )

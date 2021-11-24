@@ -1,9 +1,9 @@
 [package]
 name = "analog-metrics"
-version = "1.9.0"
+version = "1.8.2"
 description = "Analog Metrics"
 authors = ["Analog Maintainers <maintainers@analog.foundation>"]
-repository = "https://github.com/analog-labs/analog"
+repository = "https://github.com/analog/testnet"
 license = "Apache-2.0"
 homepage = "https://analog.com/"
 documentation = "https://docs.rs/analog-metrics"
@@ -14,8 +14,8 @@ env_logger = "0.9.0"
 gethostname = "0.2.1"
 lazy_static = "1.4.0"
 log = "0.4.14"
-reqwest = { version = "0.11.6", default-features = false, features = ["blocking", "rustls-tls", "json"] }
-analog-sdk = { path = "../sdk", version = "=1.9.0" }
+reqwest = { version = "0.11.4", default-features = false, features = ["blocking", "rustls-tls", "json"] }
+analog-sdk = { path = "../sdk", version = "=1.8.2" }
 
 [dev-dependencies]
 rand = "0.7.0"

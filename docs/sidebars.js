@@ -36,11 +36,12 @@ module.exports = {
     Staking: ["staking", "staking/stake-accounts"],
     "Command Line": [
       "cli",
-      "cli/install-analog-cli-tools",
+      "cli/install-solana-cli-tools",
       "cli/conventions",
       "cli/choose-a-cluster",
       "cli/transfer-tokens",
       "cli/delegate-stake",
+      "cli/manage-stake-accounts",
       "cli/deploy-a-program",
       "offline-signing",
       "offline-signing/durable-nonce",

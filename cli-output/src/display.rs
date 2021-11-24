@@ -4,7 +4,7 @@ use {
     console::style,
     indicatif::{ProgressBar, ProgressStyle},
     analog_sdk::{
-        clock::UnixTimestamp, hash::Hash, message::Message, native_token::tock_to_anlog,
+        clock::UnixTimestamp, hash::Hash, message::Message, native_token::tocks_to_anlog,
         program_utils::limited_deserialize, pubkey::Pubkey, stake, transaction::Transaction,
     },
     analog_transaction_status::UiTransactionStatusMeta,
@@ -15,7 +15,7 @@ use {
 
 #[derive(Clone, Debug)]
 pub struct BuildBalanceMessageConfig {
-    pub use_lamports_unit: bool,
+    pub use_tocks_unit: bool,
     pub show_unit: bool,
     pub trim_trailing_zeros: bool,
 }
@@ -23,7 +23,7 @@ pub struct BuildBalanceMessageConfig {
 impl Default for BuildBalanceMessageConfig {
     fn default() -> Self {
         Self {
-            use_lamports_unit: false,
+            use_tocks_unit: false,
             show_unit: true,
             trim_trailing_zeros: true,
         }
@@ -36,13 +36,13 @@ fn is_memo_program(k: &Pubkey) -> bool {
 }
 
 pub fn build_balance_message_with_config(
-    tock: u64,
+    tocks: u64,
     config: &BuildBalanceMessageConfig,
 ) -> String {
-    let value = if config.use_lamports_unit {
-        tock.to_string()
+    let value = if config.use_tocks_unit {
+        tocks.to_string()
     } else {
-        let anlog =tock_to_anlog(tock);
+        let anlog = tocks_to_anlog(tocks);
         let anlog_str = format!("{:.9}", anlog);
         if config.trim_trailing_zeros {
             anlog_str
@@ -54,9 +54,9 @@ pub fn build_balance_message_with_config(
         }
     };
     let unit = if config.show_unit {
-        if config.use_lamports_unit {
-            let ess = if tock == 1 { "" } else { "s" };
-            format!(" lamport{}", ess)
+        if config.use_tocks_unit {
+            let ess = if tocks == 1 { "" } else { "s" };
+            format!(" tock{}", ess)
         } else {
             " ANLOG".to_string()
         }
@@ -66,11 +66,11 @@ pub fn build_balance_message_with_config(
     format!("{}{}", value, unit)
 }
 
-pub fn build_balance_message(tock: u64, use_lamports_unit: bool, show_unit: bool) -> String {
+pub fn build_balance_message(tocks: u64, use_tocks_unit: bool, show_unit: bool) -> String {
     build_balance_message_with_config(
-        tock,
+        tocks,
         &BuildBalanceMessageConfig {
-            use_lamports_unit,
+            use_tocks_unit,
             show_unit,
             ..BuildBalanceMessageConfig::default()
         },
@@ -283,9 +283,9 @@ pub fn write_transaction<W: io::Write>(
         )?;
         writeln!(
             w,
-            "{}  Fee: ◎{}",
+            "{}  Fee: GM{}",
             prefix,
-           tock_to_anlog(transaction_status.fee)
+            tocks_to_anlog(transaction_status.fee)
         )?;
         assert_eq!(
             transaction_status.pre_balances.len(),
@@ -300,19 +300,19 @@ pub fn write_transaction<W: io::Write>(
             if pre == post {
                 writeln!(
                     w,
-                    "{}  Account {} balance: ◎{}",
+                    "{}  Account {} balance: GM{}",
                     prefix,
                     i,
-                   tock_to_anlog(*pre)
+                    tocks_to_anlog(*pre)
                 )?;
             } else {
                 writeln!(
                     w,
-                    "{}  Account {} balance: ◎{} -> ◎{}",
+                    "{}  Account {} balance: GM{} -> GM{}",
                     prefix,
                     i,
-                   tock_to_anlog(*pre),
-                   tock_to_anlog(*post)
+                    tocks_to_anlog(*pre),
+                    tocks_to_anlog(*post)
                 )?;
             }
         }
@@ -335,10 +335,10 @@ pub fn write_transaction<W: io::Write>(
                     prefix, "Address", "Type", "Amount", "New Balance"
                 )?;
                 for reward in rewards {
-                    let sign = if reward.tock < 0 { "-" } else { "" };
+                    let sign = if reward.tocks < 0 { "-" } else { "" };
                     writeln!(
                         w,
-                        "{}  {:<44}  {:^15}  {}◎{:<14.9}  ◎{:<18.9}",
+                        "{}  {:<44}  {:^15}  {:<15}  {}",
                         prefix,
                         reward.pubkey,
                         if let Some(reward_type) = reward.reward_type {
@@ -346,9 +346,12 @@ pub fn write_transaction<W: io::Write>(
                         } else {
                             "-".to_string()
                         },
-                        sign,
-                       tock_to_anlog(reward.tock.abs() as u64),
-                       tock_to_anlog(reward.post_balance)
+                        format!(
+                            "{}GM{:<14.9}",
+                            sign,
+                            tocks_to_anlog(reward.tocks.abs() as u64)
+                        ),
+                        format!("GM{:<18.9}", tocks_to_anlog(reward.post_balance),)
                     )?;
                 }
             }

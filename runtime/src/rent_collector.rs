@@ -52,37 +52,7 @@ impl RentCollector {
         }
     }
 
-    /// true if it is easy to determine this account should consider having rent collected from it
-    pub fn should_collect_rent(
-        &self,
-        address: &Pubkey,
-        account: &impl ReadableAccount,
-        rent_for_sysvars: bool,
-    ) -> bool {
-        !(account.executable() // executable accounts must be rent-exempt balance
-            || (!rent_for_sysvars && sysvar::check_id(account.owner()))
-            || *address == incinerator::id())
-    }
-
-    /// given an account that 'should_collect_rent'
-    /// returns (amount rent due, is_exempt_from_rent)
-    pub fn get_rent_due(&self, account: &impl ReadableAccount) -> (u64, bool) {
-        let slots_elapsed: u64 = (account.rent_epoch()..=self.epoch)
-            .map(|epoch| self.epoch_schedule.get_slots_in_epoch(epoch + 1))
-            .sum();
-
-        // avoid infinite rent in rust 1.45
-        let years_elapsed = if self.slots_per_year != 0.0 {
-            slots_elapsed as f64 / self.slots_per_year
-        } else {
-            0.0
-        };
-
-        self.rent
-            .due(account.tock(), account.data().len(), years_elapsed)
-    }
-
-    // updates this account's tock and status and returns
+    // updates this account's tocks and status and returns
     //  the account rent collected, if any
     // This is NOT thread safe at some level. If we try to collect from the same account in parallel, we may collect twice.
     #[must_use = "add to Bank::collected_rent"]
@@ -91,21 +61,31 @@ impl RentCollector {
         address: &Pubkey,
         account: &mut AccountSharedData,
         rent_for_sysvars: bool,
-        filler_account_suffix: Option<&Pubkey>,
     ) -> u64 {
-        if !self.should_collect_rent(address, account, rent_for_sysvars)
+        if account.executable() // executable accounts must be rent-exempt balance
             || account.rent_epoch() > self.epoch
-            || crate::accounts_db::AccountsDb::is_filler_account_helper(
-                address,
-                filler_account_suffix,
-            )
+            || (!rent_for_sysvars && sysvar::check_id(account.owner()))
+            || *address == incinerator::id()
         {
             0
         } else {
-            let (rent_due, exempt) = self.get_rent_due(account);
+            let slots_elapsed: u64 = (account.rent_epoch()..=self.epoch)
+                .map(|epoch| self.epoch_schedule.get_slots_in_epoch(epoch + 1))
+                .sum();
+
+            // avoid infinite rent in rust 1.45
+            let years_elapsed = if self.slots_per_year != 0.0 {
+                slots_elapsed as f64 / self.slots_per_year
+            } else {
+                0.0
+            };
+
+            let (rent_due, exempt) =
+                self.rent
+                    .due(account.tocks(), account.data().len(), years_elapsed);
 
             if exempt || rent_due != 0 {
-                if account.tock() > rent_due {
+                if account.tocks() > rent_due {
                     account.set_rent_epoch(
                         self.epoch
                             + if exempt {
@@ -117,10 +97,10 @@ impl RentCollector {
                                 1
                             },
                     );
-                    let _ = account.checked_sub_lamports(rent_due); // will not fail. We check above.
+                    let _ = account.checked_sub_tocks(rent_due); // will not fail. We check above.
                     rent_due
                 } else {
-                    let rent_charged = account.tock();
+                    let rent_charged = account.tocks();
                     *account = AccountSharedData::default();
                     rent_charged
                 }
@@ -140,7 +120,7 @@ impl RentCollector {
     ) -> u64 {
         // initialize rent_epoch as created at this epoch
         account.set_rent_epoch(self.epoch);
-        self.collect_from_existing_account(address, account, rent_for_sysvars, None)
+        self.collect_from_existing_account(address, account, rent_for_sysvars)
     }
 }
 
@@ -151,13 +131,13 @@ mod tests {
 
     #[test]
     fn test_collect_from_account_created_and_existing() {
-        let old_lamports = 1000;
+        let old_tocks = 1000;
         let old_epoch = 1;
         let new_epoch = 3;
 
         let (mut created_account, mut existing_account) = {
             let account = AccountSharedData::from(Account {
-                tock: old_lamports,
+                tocks: old_tocks,
                 rent_epoch: old_epoch,
                 ..Account::default()
             });
@@ -173,8 +153,8 @@ mod tests {
             &mut created_account,
             true,
         );
-        assert!(created_account.tock() < old_lamports);
-        assert_eq!(created_account.tock() + collected, old_lamports);
+        assert!(created_account.tocks() < old_tocks);
+        assert_eq!(created_account.tocks() + collected, old_tocks);
         assert_ne!(created_account.rent_epoch(), old_epoch);
 
         // collect rent on a already-existing account
@@ -182,14 +162,13 @@ mod tests {
             &analog_sdk::pubkey::new_rand(),
             &mut existing_account,
             true,
-            None,
         );
-        assert!(existing_account.tock() < old_lamports);
-        assert_eq!(existing_account.tock() + collected, old_lamports);
+        assert!(existing_account.tocks() < old_tocks);
+        assert_eq!(existing_account.tocks() + collected, old_tocks);
         assert_ne!(existing_account.rent_epoch(), old_epoch);
 
         // newly created account should be collected for less rent; thus more remaining balance
-        assert!(created_account.tock() > existing_account.tock());
+        assert!(created_account.tocks() > existing_account.tocks());
         assert_eq!(created_account.rent_epoch(), existing_account.rent_epoch());
     }
 
@@ -197,37 +176,37 @@ mod tests {
     fn test_rent_exempt_temporal_escape() {
         let mut account = AccountSharedData::default();
         let epoch = 3;
-        let huge_lamports = 123_456_789_012;
-        let tiny_lamports = 789_012;
+        let huge_tocks = 123_456_789_012;
+        let tiny_tocks = 789_012;
         let mut collected;
         let pubkey = analog_sdk::pubkey::new_rand();
 
-        account.set_lamports(huge_lamports);
+        account.set_tocks(huge_tocks);
         assert_eq!(account.rent_epoch(), 0);
 
         // create a tested rent collector
         let rent_collector = RentCollector::default().clone_with_epoch(epoch);
 
         // first mark account as being collected while being rent-exempt
-        collected = rent_collector.collect_from_existing_account(&pubkey, &mut account, true, None);
-        assert_eq!(account.tock(), huge_lamports);
+        collected = rent_collector.collect_from_existing_account(&pubkey, &mut account, true);
+        assert_eq!(account.tocks(), huge_tocks);
         assert_eq!(collected, 0);
 
         // decrease the balance not to be rent-exempt
-        account.set_lamports(tiny_lamports);
+        account.set_tocks(tiny_tocks);
 
         // ... and trigger another rent collection on the same epoch and check that rent is working
-        collected = rent_collector.collect_from_existing_account(&pubkey, &mut account, true, None);
-        assert_eq!(account.tock(), tiny_lamports - collected);
+        collected = rent_collector.collect_from_existing_account(&pubkey, &mut account, true);
+        assert_eq!(account.tocks(), tiny_tocks - collected);
         assert_ne!(collected, 0);
     }
 
     #[test]
     fn test_rent_exempt_sysvar() {
-        let tiny_lamports = 1;
+        let tiny_tocks = 1;
         let mut account = AccountSharedData::default();
         account.set_owner(sysvar::id());
-        account.set_lamports(tiny_lamports);
+        account.set_tocks(tiny_tocks);
 
         let pubkey = analog_sdk::pubkey::new_rand();
 
@@ -237,15 +216,13 @@ mod tests {
         let rent_collector = RentCollector::default().clone_with_epoch(epoch);
 
         // old behavior: sysvars are special-cased
-        let collected =
-            rent_collector.collect_from_existing_account(&pubkey, &mut account, false, None);
-        assert_eq!(account.tock(), tiny_lamports);
+        let collected = rent_collector.collect_from_existing_account(&pubkey, &mut account, false);
+        assert_eq!(account.tocks(), tiny_tocks);
         assert_eq!(collected, 0);
 
         // new behavior: sysvars are NOT special-cased
-        let collected =
-            rent_collector.collect_from_existing_account(&pubkey, &mut account, true, None);
-        assert_eq!(account.tock(), 0);
+        let collected = rent_collector.collect_from_existing_account(&pubkey, &mut account, true);
+        assert_eq!(account.tocks(), 0);
         assert_eq!(collected, 1);
     }
 }

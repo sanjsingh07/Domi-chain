@@ -1,15 +1,15 @@
-//! Example Rust-based BPF program that panics
+//! @brief Example Rust-based BPF program that panics
 
 #[cfg(all(feature = "custom-panic", target_arch = "bpf"))]
 #[no_mangle]
 fn custom_panic(info: &core::panic::PanicInfo<'_>) {
     // Note: Full panic reporting is included here for testing purposes
-    solana_program::msg!("program custom panic enabled");
-    solana_program::msg!(&format!("{}", info));
+    analog_program::msg!("program custom panic enabled");
+    analog_program::msg!(&format!("{}", info));
 }
 
-extern crate solana_program;
-use solana_program::{
+extern crate analog_program;
+use analog_program::{
     account_info::AccountInfo, entrypoint, entrypoint::ProgramResult, pubkey::Pubkey,
 };
 

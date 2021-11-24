@@ -1,4 +1,4 @@
-pub use solana_program::pubkey::*;
+pub use analog_program::pubkey::*;
 
 /// New random Pubkey for tests and benchmarks.
 #[cfg(feature = "full")]

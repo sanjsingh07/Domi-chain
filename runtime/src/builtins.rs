@@ -13,19 +13,15 @@ use analog_frozen_abi::abi_example::AbiExample;
 
 fn process_instruction_with_program_logging(
     process_instruction: ProcessInstructionWithContext,
-    first_instruction_account: usize,
+    program_id: &Pubkey,
     instruction_data: &[u8],
     invoke_context: &mut dyn InvokeContext,
 ) -> Result<(), InstructionError> {
-    debug_assert_eq!(first_instruction_account, 1);
-
     let logger = invoke_context.get_logger();
-    let program_id = invoke_context.get_caller()?;
     stable_log::program_invoke(&logger, program_id, invoke_context.invoke_depth());
 
-    let result = process_instruction(first_instruction_account, instruction_data, invoke_context);
+    let result = process_instruction(program_id, instruction_data, invoke_context);
 
-    let program_id = invoke_context.get_caller()?;
     match &result {
         Ok(()) => stable_log::program_success(&logger, program_id),
         Err(err) => stable_log::program_failure(&logger, program_id, err),
@@ -35,12 +31,10 @@ fn process_instruction_with_program_logging(
 
 macro_rules! with_program_logging {
     ($process_instruction:expr) => {
-        |first_instruction_account: usize,
-         instruction_data: &[u8],
-         invoke_context: &mut dyn InvokeContext| {
+        |program_id: &Pubkey, instruction_data: &[u8], invoke_context: &mut dyn InvokeContext| {
             process_instruction_with_program_logging(
                 $process_instruction,
-                first_instruction_account,
+                program_id,
                 instruction_data,
                 invoke_context,
             )
@@ -52,7 +46,6 @@ macro_rules! with_program_logging {
 pub enum ActivationType {
     NewProgram,
     NewVersion,
-    RemoveProgram,
 }
 
 #[derive(Clone)]
@@ -98,7 +91,7 @@ pub struct Builtins {
     /// Builtin programs that are always available
     pub genesis_builtins: Vec<Builtin>,
 
-    /// Builtin programs activated or deactivated dynamically by feature
+    /// Builtin programs activated dynamically by feature
     pub feature_builtins: Vec<(Builtin, Pubkey, ActivationType)>,
 }
 
@@ -128,18 +121,9 @@ fn genesis_builtins() -> Vec<Builtin> {
         Builtin::new(
             "secp256k1_program",
             analog_sdk::secp256k1_program::id(),
-            dummy_process_instruction,
+            analog_secp256k1_program::process_instruction,
         ),
     ]
-}
-
-/// place holder for secp256k1, remove when the precompile program is deactivated via feature activation
-fn dummy_process_instruction(
-    _first_instruction_account: usize,
-    _data: &[u8],
-    _invoke_context: &mut dyn InvokeContext,
-) -> Result<(), InstructionError> {
-    Ok(())
 }
 
 /// Builtin programs activated dynamically by feature
@@ -149,7 +133,7 @@ fn dummy_process_instruction(
 /// This is to enable the runtime to determine categorically whether the builtin update has
 /// occurred, and preserve idempotency in Bank::add_native_program across genesis, snapshot, and
 /// normal child Bank creation.
-/// https://github.com/analog-labs/solana/blob/84b139cc94b5be7c9e0c18c2ad91743231b85a0d/runtime/src/bank.rs#L1723
+/// https://github.com/analog/testnet/blob/84b139cc94b5be7c9e0c18c2ad91743231b85a0d/runtime/src/bank.rs#L1723
 fn feature_builtins() -> Vec<(Builtin, Pubkey, ActivationType)> {
     vec![
         (
@@ -158,20 +142,17 @@ fn feature_builtins() -> Vec<(Builtin, Pubkey, ActivationType)> {
                 analog_sdk::compute_budget::id(),
                 analog_compute_budget_program::process_instruction,
             ),
-            feature_set::add_compute_budget_program::id(),
+            feature_set::tx_wide_compute_cap::id(),
             ActivationType::NewProgram,
         ),
-        // TODO when feature `prevent_calling_precompiles_as_programs` is
-        // cleaned up also remove "secp256k1_program" from the main builtins
-        // list
         (
             Builtin::new(
-                "secp256k1_program",
-                analog_sdk::secp256k1_program::id(),
-                dummy_process_instruction,
+                "ed25519_program",
+                analog_sdk::ed25519_program::id(),
+                analog_ed25519_program::process_instruction,
             ),
-            feature_set::prevent_calling_precompiles_as_programs::id(),
-            ActivationType::RemoveProgram,
+            feature_set::ed25519_program_enabled::id(),
+            ActivationType::NewProgram,
         ),
     ]
 }

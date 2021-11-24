@@ -1,9 +1,9 @@
 [package]
 name = "analog-sdk"
-version = "1.9.0"
+version = "1.8.2"
 description = "Analog SDK"
 authors = ["Analog Maintainers <maintainers@analog.foundation>"]
-repository = "https://github.com/analog-labs/analog"
+repository = "https://github.com/analog/testnet"
 homepage = "https://analog.com/"
 documentation = "https://docs.rs/analog-sdk"
 readme = "README.md"
@@ -13,7 +13,7 @@ edition = "2018"
 [features]
 # "program" feature is a legacy feature retained to support v1.3 and older
 # programs.  New development should not use this feature.  Instead use the
-# solana-programcrate
+# analog-program crate
 program = []
 
 default = [
@@ -69,27 +69,24 @@ rustversion = "1.0.5"
 serde = "1.0.130"
 serde_bytes = "0.11"
 serde_derive = "1.0.103"
-serde_json = { version = "1.0.69", optional = true }
+serde_json = { version = "1.0.68", optional = true }
 sha2 = "0.9.8"
 sha3 = { version = "0.9.1", optional = true }
-analog-crate-features = { path = "../crate-features", version = "=1.9.0", optional = true }
-analog-logger = { path = "../logger", version = "=1.9.0", optional = true }
-analog-frozen-abi = { path = "../frozen-abi", version = "=1.9.0" }
-analog-frozen-abi-macro = { path = "../frozen-abi/macro", version = "=1.9.0" }
-solana-program= { path = "program", version = "=1.9.0" }
-analog-sdk-macro = { path = "macro", version = "=1.9.0" }
+analog-crate-features = { path = "../crate-features", version = "=1.8.2", optional = true }
+analog-logger = { path = "../logger", version = "=1.8.2", optional = true }
+analog-frozen-abi = { path = "../frozen-abi", version = "=1.8.2" }
+analog-frozen-abi-macro = { path = "../frozen-abi/macro", version = "=1.8.2" }
+analog-program = { path = "program", version = "=1.8.2" }
+analog-sdk-macro = { path = "macro", version = "=1.8.2" }
 thiserror = "1.0"
 uriparse = "0.6.3"
 
 [dev-dependencies]
 curve25519-dalek = "3.2.0"
-tiny-bip39 = "0.8.2"
+tiny-bip39 = "0.8.1"
 
 [build-dependencies]
 rustc_version = "0.4"
 
 [package.metadata.docs.rs]
 targets = ["x86_64-unknown-linux-gnu"]
-
-[lib]
-crate-type = ["cdylib", "rlib"]

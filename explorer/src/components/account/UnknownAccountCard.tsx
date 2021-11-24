@@ -1,6 +1,6 @@
 import React from "react";
 import { Account } from "providers/accounts";
-import { SolBalance } from "utils";
+import { AnlogBalance } from "utils";
 import { TableCardBody } from "components/common/TableCardBody";
 import { Address } from "components/common/Address";
 import { addressLabel } from "utils/tx";
@@ -8,10 +8,10 @@ import { useCluster } from "providers/cluster";
 import { useTokenRegistry } from "providers/mints/token-registry";
 
 export function UnknownAccountCard({ account }: { account: Account }) {
-  const { details, tock } = account;
+  const { details, tocks } = account;
   const { cluster } = useCluster();
   const { tokenRegistry } = useTokenRegistry();
-  if (tock === undefined) return null;
+  if (tocks === undefined) return null;
 
   const label = addressLabel(account.pubkey.toBase58(), cluster, tokenRegistry);
   return (
@@ -34,9 +34,9 @@ export function UnknownAccountCard({ account }: { account: Account }) {
           </tr>
         )}
         <tr>
-          <td>Balance (ANLOG)</td>
+          <td>Balance (GM)</td>
           <td className="text-lg-right">
-            <SolBalance tock={tock} />
+            <AnlogBalance tocks={tocks} />
           </td>
         </tr>
 

@@ -7,7 +7,7 @@ title: "Runtime"
 The runtime only permits the owner program to debit the account or modify its
 data. The program then defines additional rules for whether the client can
 modify accounts it owns. In the case of the System program, it allows users to
-transfer tock by recognizing transaction signatures. If it sees the client
+transfer lamports by recognizing transaction signatures. If it sees the client
 signed the transaction using the keypair's _private key_, it knows the client
 authorized the token transfer.
 
@@ -65,7 +65,7 @@ parent. If an invoked program consume the budget or exceeds a bound the entire
 invocation chain and the parent are halted.
 
 The current [compute
-budget](https://github.com/analog-labs/solana/blob/d3a3a7548c857f26ec2cb10e270da72d373020ec/sdk/src/process_instruction.rs#L65)
+budget](https://github.com/analog/testnet/blob/d3a3a7548c857f26ec2cb10e270da72d373020ec/sdk/src/process_instruction.rs#L65)
 can be found in the Analog SDK.
 
 For example, if the current budget is:
@@ -100,7 +100,7 @@ for more information.
 
 The budget values are conditional on feature enablement, take a look at the
 compute budget's
-[new](https://github.com/analog-labs/solana/blob/d3a3a7548c857f26ec2cb10e270da72d373020ec/sdk/src/process_instruction.rs#L97)
+[new](https://github.com/analog/testnet/blob/d3a3a7548c857f26ec2cb10e270da72d373020ec/sdk/src/process_instruction.rs#L97)
 function to find out how the budget is constructed. An understanding of how
 [features](runtime.md#features) work and what features are enabled on the
 cluster being used are required to determine the current budget's values.
@@ -123,9 +123,9 @@ To determine which features are activated use the [Analog command-line
 tools](cli/install-analog-cli-tools.md):
 
 ```bash
-solana feature status
+analog feature status
 ```
 
 If you encounter problems first ensure that the Analog tools version you are
-using match the version returned by `solana cluster-version`. If they do not
+using match the version returned by `analog cluster-version`. If they do not
 match [install the correct tool suite](cli/install-analog-cli-tools.md).
