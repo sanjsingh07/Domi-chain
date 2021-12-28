@@ -1905,6 +1905,7 @@ pub struct CliProgram {
     pub owner: String,
     pub data_len: usize,
 }
+
 impl QuietDisplay for CliProgram {}
 impl VerboseDisplay for CliProgram {}
 impl fmt::Display for CliProgram {
