@@ -1,6 +1,6 @@
 use crate::{
     clap_app::*, cluster_query::*, feature::*, inflation::*, nonce::*, program::*, spend_utils::*,
-    stake::*, validator_info::*, vote::*, wallet::*,
+    stake::*, validator_info::*, vote::*, wallet::*, partkey::*,
 };
 use clap::{crate_description, crate_name, value_t_or_exit, ArgMatches, Shell};
 use log::*;
@@ -334,6 +334,10 @@ pub enum CliCommand {
         withdraw_authority: SignerIndex,
         memo: Option<String>,
     },
+
+    //participation key
+    AddPartkey,
+
     // Wallet Commands
     Address,
     Airdrop {
@@ -826,6 +830,7 @@ pub fn parse_command(
             signers: vec![default_signer.signer_from_path(matches, wallet_manager)?],
         }),
         ("airdrop", Some(matches)) => parse_airdrop(matches, default_signer, wallet_manager),
+        ("addpartkey", Some(matches)) => parse_addPartKey(matches,default_signer, wallet_manager),
         ("balance", Some(matches)) => parse_balance(matches, default_signer, wallet_manager),
         ("confirm", Some(matches)) => match matches.value_of("signature").unwrap().parse() {
             Ok(signature) => Ok(CliCommandInfo {
@@ -1474,6 +1479,11 @@ pub fn process_command(config: &CliConfig) -> ProcessResult {
             *withdraw_authority,
             memo.as_ref(),
         ),
+
+        // Partkey Commands
+        CliCommand::AddPartkey => {
+            process_genPartKey(config)
+        }
 
         // Wallet Commands
 

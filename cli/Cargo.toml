@@ -43,6 +43,12 @@ analog-vote-program = { path = "../programs/vote", version = "=1.8.2" }
 spl-memo = { version = "=3.0.1", features = ["no-entrypoint"] }
 thiserror = "1.0.29"
 tiny-bip39 = "0.8.1"
+bip32 = "0.2.2"
+rand_core = { version = "0.6", features = ["std"] }
+
+[dependencies.rusqlite]
+version = "0.26.0"
+features = ["bundled"]
 
 [dev-dependencies]
 analog-core = { path = "../core", version = "=1.8.2" }
