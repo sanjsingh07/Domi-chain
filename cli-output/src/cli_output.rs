@@ -1996,6 +1996,19 @@ impl fmt::Display for CliUpgradeablePrograms {
                     build_balance_message(program.tocks, self.use_tocks_unit, true)
                 )
             )?;
+    pub tock: u64,
+    #[serde(skip_serializing)]
+    pub use_lamports_unit: bool,
+}
+impl QuietDisplay for CliUpgradeableProgram {}
+impl VerboseDisplay for CliUpgradeableProgram {}
+impl fmt::Display for CliUpgradeableProgram {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        writeln!(f)?;
+        writeln_name_value(f, "Program Id:", &self.program_id)?;
+        writeln_name_value(f, "Owner:", &self.owner)?;
+        writeln_name_value(f, "ProgramData Address:", &self.programdata_address)?;
+        writeln_name_value(f, "Authority:", 
         }
         Ok(())
     }
