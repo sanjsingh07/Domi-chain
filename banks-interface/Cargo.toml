@@ -10,7 +10,7 @@ documentation = "https://docs.rs/analog-banks-interface"
 edition = "2018"
 
 [dependencies]
-serde = { version = "1.0.130", features = ["derive"] }
+serde = { version = "1.0.141", features = ["derive"] }
 analog-sdk = { path = "../sdk", version = "=1.8.2" }
 tarpc = { version = "0.26.2", features = ["full"] }
 
